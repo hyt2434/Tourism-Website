@@ -1,14 +1,16 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Navigation from "./components/Navigation";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { Navigation, Footer } from "./components/Navigation";
 import Hero from "./components/Hero";
-import { TourCarousel } from "./components/TourCarousel";
 import HighlightCard from "./components/HighlightCard";
+import { SeasonCard } from "./components/SeasonCard";
+import { PromotionCard } from "./components/PromotionCard";
+import { ReviewCard } from "./components/ReviewCard";
+import { TourCarousel } from "./components/TourCarousel";
 import { WeatherForecast } from "./components/WeatherForecast";
-import Footer from "./components/Footer";
-import Login from "./components/Login";
-import ToursPage from "./components/TourPage"; // ✅ Import trang mới
+import Login from "./components/Login"; // 👈 trang đăng nhập
 
 export default function App() {
+  // Giữ nguyên dữ liệu của bạn
   const heroImage =
     "https://images.unsplash.com/photo-1722706202511-8743d7b34794?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2aWV0bmFtJTIwbGFuZHNjYXBlJTIwaG9pJTIwYW58ZW58MXx8fHwxNzYwOTc4OTgyfDA&ixlib=rb-4.1.0&q=80&w=1080";
 
@@ -26,16 +28,27 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      {/* Thanh điều hướng luôn hiển thị */}
+      <Navigation />
+
+      {/* ✅ Nút “Đăng nhập” thêm ở trên cùng bên phải */}
+
+      <Link
+        to="/login"
+        className="text-blue-600 hover:underline font-medium text-lg"
+      >
+      </Link>
+
       <Routes>
-        {/* Trang chủ */}
+        {/* ✅ Trang chủ */}
         <Route
           path="/"
           element={
             <div className="min-h-screen bg-white">
-              <Navigation />
               <Hero heroImage={heroImage} />
               <TourCarousel tours={tours} />
 
+              {/* Giữ nguyên phần nội dung của bạn */}
               <section className="max-w-[1440px] mx-auto px-20 py-20">
                 <h2 className="text-black mb-12 tracking-tight">Highlights</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -53,10 +66,7 @@ export default function App() {
           }
         />
 
-        {/* ✅ Trang danh sách tour */}
-        <Route path="/tours" element={<ToursPage />} />
-
-        {/* Trang đăng nhập */}
+        {/* ✅ Trang đăng nhập */}
         <Route path="/login" element={<Login />} />
       </Routes>
     </BrowserRouter>
