@@ -1,6 +1,6 @@
 import { Search } from "lucide-react";
 
-export function Hero({ heroImage }) {
+export default function Hero({ heroImage }) {
   return (
     <div className="relative w-full h-[720px] overflow-hidden">
       {/* Background Image */}
