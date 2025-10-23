@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-import { Navigation, Footer} from "./components/Navigation";
+import { Navigation, Footer } from "./components/Navigation";
 import { Hero } from "./components/Hero";
 import { HighlightCard } from "./components/HighlightCard";
 import { SeasonCard } from "./components/SeasonCard";
@@ -32,12 +32,12 @@ export default function App() {
       <Navigation />
 
       {/* ✅ Nút “Đăng nhập” thêm ở trên cùng bên phải */}
-    
-        <Link
-          to="/login"
-          className="text-blue-600 hover:underline font-medium text-lg"
-        >
-        </Link>
+
+      <Link
+        to="/login"
+        className="text-blue-600 hover:underline font-medium text-lg"
+      >
+      </Link>
 
       <Routes>
         {/* ✅ Trang chủ */}
@@ -72,3 +72,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+
