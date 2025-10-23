@@ -7,7 +7,9 @@ import { PromotionCard } from "./components/PromotionCard";
 import { ReviewCard } from "./components/ReviewCard";
 import { TourCarousel } from "./components/TourCarousel";
 import { WeatherForecast } from "./components/WeatherForecast";
-import Login from "./components/Login"; // 👈 trang đăng nhập
+import Login from "./components/Login"; 
+import Admin from "./components/admin"; 
+
 
 export default function App() {
   // Giữ nguyên dữ liệu của bạn
@@ -68,6 +70,7 @@ export default function App() {
 
         {/* ✅ Trang đăng nhập */}
         <Route path="/login" element={<Login />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>
   );

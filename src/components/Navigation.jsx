@@ -7,16 +7,14 @@ export function Navigation() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ Kiểm tra đăng nhập khi load trang VÀ khi có thay đổi
   useEffect(() => {
     const checkAuth = () => {
       const user = localStorage.getItem("user");
       setIsLoggedIn(!!user);
     };
 
-    checkAuth(); // Kiểm tra ngay khi mount
+    checkAuth(); 
 
-    // ✅ Lắng nghe sự kiện từ Login
     window.addEventListener("storage", checkAuth);
 
     return () => {
@@ -24,7 +22,6 @@ export function Navigation() {
     };
   }, []);
 
-  // ✅ Xử lý đăng xuất
   const handleLogout = () => {
     localStorage.removeItem("user");
     setIsLoggedIn(false);
@@ -64,6 +61,11 @@ export function Navigation() {
             <a href="#" className="text-black hover:text-blue-600">
               About us
             </a>
+
+            <Link to="/admin" className="text-black hover:text-blue-600">
+            Admin
+            </Link>
+
 
             {/* ✅ Nút login / icon */}
             {isLoggedIn ? (
