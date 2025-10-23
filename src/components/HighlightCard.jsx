@@ -1,4 +1,4 @@
-export function HighlightCard({ image, title, description, className = "" }) {
+export default function HighlightCard({ image, title, description, className = "" }) {
   return (
     <div className={`flex flex-col gap-6 ${className}`}>
       <img

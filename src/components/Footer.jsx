@@ -1,70 +1,9 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import { Link } from "react-router-dom";
+
+
 import { Facebook, Linkedin, Youtube, Instagram } from "lucide-react";
 
-export function Navigation() {
-  return (
-    <nav className="bg-white border-b shadow-sm">
-      <div className="max-w-[1440px] mx-auto px-20 py-6">
-        <div className="flex items-center justify-between">
-          {/* Logo */}
-          <div
-            style={{
-              fontSize: "36px",
-              fontWeight: "bold",
-              color: "black",
-              textDecoration: "none",
-            }}
-          >
-            MagicViet
-          </div>
-
-          {/* Menu */}
-          <div className="flex items-center gap-10 text-lg">
-            <Link to="/" className="text-black hover:text-blue-600">
-              Home
-            </Link>
-
-
-            <a href="#" className="text-black">Tour</a>
-            <a href="#" className="text-black">Social</a>
-            <a href="#" className="text-black">Partner</a>
-            <a href="#" className="text-black">About us</a>
-
-            {/* ✅ Nút login / icon */}
-            {isLoggedIn ? (
-              <button
-                onClick={handleLogout}
-                className="bg-black text-white px-5 py-2 rounded-lg shadow hover:bg-gray-800 transition"
-                title="Đăng xuất"
-              >
-                <AccountCircleIcon fontSize="medium" />
-              </button>
-            ) : (
-              <div className="flex gap-3">
-                <Link
-                  to="/login"
-                  className="bg-black text-white px-6 py-2 rounded-lg shadow hover:bg-gray-800 transition"
-                >
-                  Đăng nhập
-                </Link>
-                <Link
-                  to="/register"
-                  className="bg-gray-200 text-black px-6 py-2 rounded-lg shadow hover:bg-gray-300 transition"
-                >
-                  Đăng ký
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
-}
-
-export function Footer() {
+export  default  function Footer() {
   return (
     <footer className="bg-white border-t">
       <div className="max-w-[1440px] mx-auto px-20 py-12">
