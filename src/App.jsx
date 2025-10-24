@@ -4,13 +4,11 @@ import NAV from "./components/NAV";
 import Footer from "./components/Footer";
 import Hero from "./components/Hero";
 import HighlightCard from "./components/HighlightCard";
-import { SeasonCard } from "./components/SeasonCard";
-import { PromotionCard } from "./components/PromotionCard";
-import { ReviewCard } from "./components/ReviewCard";
-import { TourCarousel } from "./components/TourCarousel";
-import { WeatherForecast } from "./components/WeatherForecast";
+import SeasonCard from "./components/SeasonCard";
+import ReviewCard from "./components/ReviewCard";
+import TourCarousel from "./components/TourCarousel";
+import WeatherForecast from "./components/WeatherForecast";
 import Login from "./components/Login";
-import Admin from "./components/admin";
 import Register from "./components/Register";
 import Profile from "./components/Profile";
 import SocialPage from "./components/social/SocialPage";
@@ -19,9 +17,6 @@ import AdminPage from "./components/AdminSections/AdminPage";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { Autoplay } from "swiper/modules";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination } from "swiper/modules";
 
 export default function App() {
   const heroImage =
@@ -260,7 +255,8 @@ export default function App() {
         <Route path="/tour" element={<ToursPage />} />
         <Route path="/login" element={<Login />} />
         {/* ✅ Trang đăng ký */}
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/social" element={<SocialPage />} />
         <Route path="/partner" element={<div>Hello</div>} />
         <Route path="/profile" element={<Profile />} />

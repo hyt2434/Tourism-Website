@@ -36,9 +36,13 @@ export default function WeatherForecast() {
     <section className="max-w-[1440px] mx-auto px-20 py-20">
       <div className="relative w-full h-[549px] rounded-lg overflow-hidden bg-gradient-to-br from-blue-400 via-blue-300 to-blue-200">
         {/* Background effect */}
-        <div className="absolute inset-0 opacity-20 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=1200')" }}>
-        </div>
+        <div
+          className="absolute inset-0 opacity-20 bg-cover bg-center"
+          style={{
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=1200')",
+          }}
+        ></div>
 
         <div className="relative z-10 h-full flex items-center justify-between px-12">
           {/* Left side - Title */}
@@ -50,17 +54,21 @@ export default function WeatherForecast() {
 
           {/* Right side - Weather cards */}
           <div className="flex gap-4">
-            {weatherData.map((day, index) => (a
-              <div
-                key={index}
-                className="bg-gradient-to-b from-teal-600 to-teal-700 text-white rounded-lg p-4 w-[90px] flex flex-col items-center hover:scale-105 transition-transform"
-              >
-                <div className="mb-2">{day.day}</div>
-                <div className="my-4">{getWeatherIcon(day.condition)}</div>
-                <div className="mb-1">{day.high}</div>
-                <div className="text-white text-opacity-70 mb-4">{day.low}</div>
-                <div className="text-white text-opacity-80">{day.date}</div>
-              </div>
+            {weatherData.map((day, index) => (
+              <>
+                <div
+                  key={index}
+                  className="bg-gradient-to-b from-teal-600 to-teal-700 text-white rounded-lg p-4 w-[90px] flex flex-col items-center hover:scale-105 transition-transform"
+                >
+                  <div className="mb-2">{day.day}</div>
+                  <div className="my-4">{getWeatherIcon(day.condition)}</div>
+                  <div className="mb-1">{day.high}</div>
+                  <div className="text-white text-opacity-70 mb-4">
+                    {day.low}
+                  </div>
+                  <div className="text-white text-opacity-80">{day.date}</div>
+                </div>
+              </>
             ))}
           </div>
         </div>
