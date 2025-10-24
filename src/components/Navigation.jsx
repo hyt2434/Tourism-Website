@@ -8,16 +8,14 @@ export function Navigation() {
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ Kiểm tra đăng nhập khi load trang VÀ khi có thay đổi
   useEffect(() => {
     const checkAuth = () => {
       const user = localStorage.getItem("currentUser"); // ✅ ĐỔI từ "user" sang "currentUser"
       setIsLoggedIn(!!user);
     };
 
-    checkAuth(); // Kiểm tra ngay khi mount
+    checkAuth(); 
 
-    // ✅ Lắng nghe sự kiện từ Login
     window.addEventListener("storage", checkAuth);
 
     // ✅ Đóng dropdown khi click bên ngoài
@@ -34,7 +32,6 @@ export function Navigation() {
     };
   }, []);
 
-  // ✅ Xử lý đăng xuất
   const handleLogout = () => {
     localStorage.removeItem("currentUser"); // ✅ Chỉ xóa currentUser, không xóa danh sách users
     setIsLoggedIn(false);
@@ -76,7 +73,16 @@ export function Navigation() {
               About us
             </a>
 
+<<<<<<< HEAD
             {/* ✅ Nút login / icon với dropdown */}
+=======
+            <Link to="/admin" className="text-black hover:text-blue-600">
+            Admin
+            </Link>
+
+
+            {/* ✅ Nút login / icon */}
+>>>>>>> 0d8b371f818154293b0645f7a8a4429cf973ab3c
             {isLoggedIn ? (
               <div className="relative">
                 <button
