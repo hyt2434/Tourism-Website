@@ -1,8 +1,6 @@
 import { useState } from "react";
 import TourCard from "./TourCard";
 import FilterSidebar from "./FilterSidebar";
-import Navigation from "./Navigation";
-import Footer from "./Footer";
 
 export default function ToursPage() {
   // Mock data - sẽ thay bằng API call
@@ -83,8 +81,6 @@ export default function ToursPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
-
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
         <div className="max-w-[1440px] mx-auto px-6 lg:px-20">
@@ -109,7 +105,8 @@ export default function ToursPage() {
           <div className="lg:col-span-3">
             <div className="flex justify-between items-center mb-6">
               <p className="text-gray-600">
-                Tìm thấy <span className="font-bold">{filteredTours.length}</span> tour
+                Tìm thấy{" "}
+                <span className="font-bold">{filteredTours.length}</span> tour
               </p>
               <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 <option>Phổ biến nhất</option>
@@ -135,8 +132,6 @@ export default function ToursPage() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

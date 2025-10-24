@@ -1,4 +1,4 @@
-export function SeasonCard({ title, description }) {
+export default function SeasonCard({ title, description }) {
   return (
     <div className="flex flex-col gap-2">
       <h4 className="text-black">{title}</h4>

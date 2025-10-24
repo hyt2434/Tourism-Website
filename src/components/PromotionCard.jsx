@@ -1,4 +1,4 @@
-export function PromotionCard({ image, title, features }) {
+export default function PromotionCard({ image, title, features }) {
   return (
     <div className="flex flex-col">
       <img
