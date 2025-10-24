@@ -1,15 +1,18 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import PromotionCarousel from "./components/PromotionCarousel";
 import NAV from "./components/NAV";
 import Footer from "./components/Footer";
 import Hero from "./components/Hero";
 import HighlightCard from "./components/HighlightCard";
-import SeasonCard from "./components/SeasonCard";
-import PromotionCard from "./components/PromotionCard";
-import ReviewCard from "./components/ReviewCard";
-import TourCarousel from "./components/TourCarousel";
-import WeatherForecast from "./components/WeatherForecast";
+import { SeasonCard } from "./components/SeasonCard";
+import { PromotionCard } from "./components/PromotionCard";
+import { ReviewCard } from "./components/ReviewCard";
+import { TourCarousel } from "./components/TourCarousel";
+import { WeatherForecast } from "./components/WeatherForecast";
 import Login from "./components/Login";
+import Admin from "./components/admin";
+import Register from "./components/Register";
+import Profile from "./components/Profile";
 import SocialPage from "./components/social/SocialPage";
 import ToursPage from "./components/ToursPage";
 import AdminPage from "./components/AdminSections/AdminPage";
@@ -256,9 +259,11 @@ export default function App() {
         />
         <Route path="/tour" element={<ToursPage />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/admin" element={<AdminPage />} />
+        {/* ✅ Trang đăng ký */}
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/social" element={<SocialPage />} />
         <Route path="/partner" element={<div>Hello</div>} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
       <Footer />
     </BrowserRouter>

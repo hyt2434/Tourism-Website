@@ -6,65 +6,77 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
 
-    // ✅ Login giả lập (sau này thay bằng API thật)
-    if (email && password) {
-      // Lưu trạng thái đăng nhập
-      localStorage.setItem("user", JSON.stringify({ email }));
+    const allUsers = JSON.parse(localStorage.getItem("users")) || [];
 
-      // ✅ Thông báo cho Navigation cập nhật
-      window.dispatchEvent(new Event("storage"));
+    const foundUser = allUsers.find(
+      (user) => user.email === email && user.password === password
+    );
 
-      alert("Đăng nhập thành công!");
-      navigate("/"); // quay lại trang chủ
+    if (foundUser) {
+      // ✅ Gắn thêm trạng thái đăng nhập
+      const currentUser = {
+        ...foundUser,
+        isLoggedIn: true,
+      };
+
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      window.dispatchEvent(new Event("storage")); // Cập nhật Navigation
+      navigate("/");
     } else {
-      alert("Vui lòng nhập đầy đủ thông tin!");
+      alert("Sai email hoặc mật khẩu!");
     }
   };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
-      <div className="max-w-md w-full bg-white p-8 shadow-lg rounded-2xl">
-        <h2 className="text-3xl font-bold mb-6 text-center text-black">
-          Đăng nhập
-        </h2>
+      <form
+        onSubmit={handleLogin}
+        className="bg-white shadow-xl rounded-2xl p-10 w-[420px]"
+      >
+        <h2 className="text-3xl font-bold mb-8 text-center">Đăng nhập</h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="mb-5">
+          <label className="block font-semibold mb-2">Email</label>
           <input
             type="email"
-            placeholder="Email"
-            className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring focus:ring-blue-200"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
+            className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500"
           />
+        </div>
 
+        <div className="mb-8">
+          <label className="block font-semibold mb-2">Mật khẩu</label>
           <input
             type="password"
-            placeholder="Mật khẩu"
-            className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring focus:ring-blue-200"
+            required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
+            className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500"
           />
+        </div>
 
-          <button
-            type="submit"
-            className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition"
-          >
-            Đăng nhập
-          </button>
-        </form>
+        <button
+          type="submit"
+          className="bg-black text-white w-full py-3 rounded-lg font-semibold hover:bg-gray-800 transition"
+        >
+          Đăng nhập
+        </button>
 
-        <p className="text-center text-gray-500 mt-4">
+        <p className="text-center mt-5 text-gray-600">
           Chưa có tài khoản?{" "}
-          <a href="/register" className="text-blue-600 hover:underline">
+          <span
+            onClick={() => navigate("/register")}
+            className="text-blue-600 cursor-pointer hover:underline"
+          >
             Đăng ký
-          </a>
+          </span>
         </p>
-      </div>
+      </form>
     </div>
   );
 }
