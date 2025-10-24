@@ -30,10 +30,10 @@ export function WeatherForecast() {
     <section className="max-w-[1440px] mx-auto px-20 py-20">
       <div className="relative w-full h-[549px] rounded-lg overflow-hidden bg-gradient-to-br from-blue-400 via-blue-300 to-blue-200">
         {/* Background effect */}
-        <div className="absolute inset-0 opacity-20 bg-cover bg-center" 
-             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=1200')" }}>
+        <div className="absolute inset-0 opacity-20 bg-cover bg-center"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=1200')" }}>
         </div>
-        
+
         <div className="relative z-10 h-full flex items-center justify-between px-12">
           {/* Left side - Title */}
           <div className="bg-white bg-opacity-60 backdrop-blur-md rounded-full p-12 w-[424px] h-[412px] flex items-center justify-center">

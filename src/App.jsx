@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navigation, Footer } from "./components/Navigation";
+
+
 import Hero from "./components/Hero";
 import HighlightCard from "./components/HighlightCard";
 import { TourCarousel } from "./components/TourCarousel";
@@ -8,7 +10,7 @@ import { WeatherForecast } from "./components/WeatherForecast";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Profile from "./components/Profile";
-import Admin from "./components/admin";
+
 
 
 
@@ -65,7 +67,7 @@ export default function App() {
         {/* ✅ Trang đăng ký */}
         <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/admin" element={<Admin />} />
+
 
       </Routes >
     </BrowserRouter >

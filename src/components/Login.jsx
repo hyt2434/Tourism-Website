@@ -9,18 +9,21 @@ export default function Login() {
   const handleLogin = (e) => {
     e.preventDefault();
 
-    // ✅ Lấy DANH SÁCH tất cả user đã đăng ký
     const allUsers = JSON.parse(localStorage.getItem("users")) || [];
 
-    // ✅ Tìm user khớp với email và password
     const foundUser = allUsers.find(
       (user) => user.email === email && user.password === password
     );
 
     if (foundUser) {
-      // ✅ Lưu thông tin user đang đăng nhập vào "currentUser"
-      localStorage.setItem("currentUser", JSON.stringify(foundUser));
-      window.dispatchEvent(new Event("storage")); // Cập nhật header
+      // ✅ Gắn thêm trạng thái đăng nhập
+      const currentUser = {
+        ...foundUser,
+        isLoggedIn: true,
+      };
+
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      window.dispatchEvent(new Event("storage")); // Cập nhật Navigation
       navigate("/");
     } else {
       alert("Sai email hoặc mật khẩu!");

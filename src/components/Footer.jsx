@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { Facebook, Linkedin, Youtube, Instagram } from "lucide-react";
 
-export  default  function Footer() {
+export default function Footer() {
   return (
     <footer className="bg-white border-t">
       <div className="max-w-[1440px] mx-auto px-20 py-12">
