@@ -44,7 +44,7 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
           Tạo bài viết
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle>Tạo bài viết mới</DialogTitle>
           <DialogDescription>

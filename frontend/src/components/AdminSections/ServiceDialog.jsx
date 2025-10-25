@@ -29,7 +29,7 @@ export default function ServiceDialog({ service, type }) {
           <Edit className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle>Chỉnh sửa {type}</DialogTitle>
           <DialogDescription>
