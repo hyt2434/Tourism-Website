@@ -1,4 +1,7 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> parent of 6ca8926 (Update readme)
 # MagicViet Landing Page
 
 A pixel-perfect, responsive landing page built with React, Vite, and Tailwind CSS.
@@ -107,8 +110,11 @@ MIT
 ## Author
 
 Built with ❤️ for MagicViet
+<<<<<<< HEAD
 
 # MagicViet Landing Page
 =======
 # MagicViet Landing Page
 >>>>>>> 6ca89267b552b0f66325b4e3d2aa37b9e6f89916
+=======
+>>>>>>> parent of 6ca8926 (Update readme)
