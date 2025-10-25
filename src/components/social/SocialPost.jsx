@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -18,19 +18,9 @@ import {
   MapPin,
   Flag,
 } from "lucide-react";
-import { ImageWithFallback } from "../../figma/ImageWithFallback";
+import ImageWithFallback from "../../figma/ImageWithFallback.jsx";
 
-interface SocialPostProps {
-  post: any;
-  onServiceClick: (serviceName: string) => void;
-  onReport: (postId: number) => void;
-}
-
-export default function SocialPost({
-  post,
-  onServiceClick,
-  onReport,
-}: SocialPostProps) {
+export default function SocialPost({ post, onServiceClick, onReport }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -146,7 +136,7 @@ export default function SocialPost({
 
         {/* Hashtags */}
         <div className="flex flex-wrap gap-1 mb-2">
-          {post.hashtags.map((tag: string, index: number) => (
+          {post.hashtags.map((tag, index) => (
             <span
               key={index}
               className="text-blue-600 cursor-pointer hover:underline"

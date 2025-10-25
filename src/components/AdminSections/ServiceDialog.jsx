@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Dialog,
   DialogContent,
@@ -22,12 +21,7 @@ import { Switch } from "../ui/switch";
 import { Separator } from "../ui/separator";
 import { Edit } from "lucide-react";
 
-interface ServiceDialogProps {
-  service: any;
-  type: string;
-}
-
-export default function ServiceDialog({ service, type }: ServiceDialogProps) {
+export default function ServiceDialog({ service, type }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -35,7 +29,7 @@ export default function ServiceDialog({ service, type }: ServiceDialogProps) {
           <Edit className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white text-black">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Chỉnh sửa {type}</DialogTitle>
           <DialogDescription>

@@ -1,19 +1,21 @@
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-import PromotionCarousel from "./components/PromotionCarousel";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import NAV from "./components/NAV";
 import Footer from "./components/Footer";
-import Hero from "./components/Hero";
-import HighlightCard from "./components/HighlightCard";
-import SeasonCard from "./components/SeasonCard";
-import ReviewCard from "./components/ReviewCard";
 import TourCarousel from "./components/TourCarousel";
-import WeatherForecast from "./components/WeatherForecast";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Profile from "./components/Profile";
 import SocialPage from "./components/social/SocialPage";
 import ToursPage from "./components/ToursPage";
 import AdminPage from "./components/AdminSections/AdminPage";
+import WeatherBanner from "./components/home/WeatherBanner";
+
+import HeroSection from "./components/home/HeroSection";
+import FlightSearchForm from "./components/home/FlightSearchForm";
+import Promotions from "./components/home/Promotions";
+import FlightDeals from "./components/home/FlightDeals";
+import Reviews from "./components/home/Reviews";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -158,97 +160,16 @@ export default function App() {
         <Route
           path="/"
           element={
-            <div className="min-h-screen bg-white">
-              <Hero heroImage={heroImage} />
-
-              {/* Highlights */}
-              <section className="max-w-[1440px] mx-auto px-20 py-20">
-                <h2 className="text-black mb-12 tracking-tight">Highlights</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  <HighlightCard
-                    image={beachImage}
-                    title="Escape to a Tropical Paradise"
-                    description="Immerse yourself in crystal-clear waters, soft white sand, and swaying palm trees—your perfect hideaway for pure relaxation."
-                  />
-                  <HighlightCard
-                    image={coastalImage}
-                    title="Where the Sea Meets Modern Living"
-                    description="Discover a vibrant coastal destination that blends ocean charm with city energy—ideal for adventure, dining, and seaside leisure."
-                  />
-                  <HighlightCard
-                    image={oceanImage}
-                    title="Relax With Ocean Breeze"
-                    description="Unwind by the shore with peaceful waves, warm sunshine, and endless calm—because you deserve a moment of serenity."
-                  />
-                </div>
-              </section>
-
+            <div className="min-h-screen bg-gray-50 ">
+              <HeroSection>
+                <FlightSearchForm />
+              </HeroSection>
               <TourCarousel tours={tours} />
+              <Promotions />
 
-              {/* Discover Hội An */}
-              <section className="max-w-[1440px] mx-auto px-20 py-20">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                  <div>
-                    <h2 className="text-black mb-8 tracking-tight">
-                      Discover Hội An in every season
-                    </h2>
-                    <div className="space-y-6">
-                      <SeasonCard
-                        title="Spring – Full of life"
-                        description="Mild weather and blooming bougainvillea make spring perfect for exploring the ancient town and local festivals."
-                      />
-                      <SeasonCard
-                        title="Summer – Bright and lively"
-                        description="Vibrant and sunny—ideal for beach days at An Bàng or Cửa Đại, and magical lantern nights by the river."
-                      />
-                      <SeasonCard
-                        title="Autumn – Romantic and peaceful"
-                        description="Comfortable temperatures and peaceful scenery make autumn great for cycling through rice fields and river cruises."
-                      />
-                      <SeasonCard
-                        title="Winter – Slow and nostalgic"
-                        description="Cooler and quiet, winter brings a nostalgic charm—perfect for slow travel, coffee by old streets, and cultural discovery."
-                      />
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <img
-                      src={seasonsImage}
-                      alt="Hoi An seasons"
-                      className="w-full h-[704px] object-cover rounded-lg"
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {/* Promotions */}
-              <PromotionCarousel promotions={promotions} />
-              {/* Reviews */}
-              <section className="max-w-[1440px] mx-auto px-20 py-20">
-                <h2 className="text-black mb-12 tracking-tight">Reviews</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  <ReviewCard
-                    quote="Amazing experience! The tour was well-organized and stress-free."
-                    name="Emma Wilson"
-                    location="UK"
-                    avatar={travelersImage}
-                  />
-                  <ReviewCard
-                    quote="Beautiful destinations and friendly guide. Highly recommended!"
-                    name="Daniel Nguyen"
-                    location="Australia"
-                    avatar={travelersImage}
-                  />
-                  <ReviewCard
-                    quote="Great value for money. Loved the lantern boat in Hoi An!"
-                    name="Sofia Martinez"
-                    location="Spain"
-                    avatar={travelersImage}
-                  />
-                </div>
-              </section>
-
-              <WeatherForecast />
+              <Reviews />
+              <FlightDeals />
+              <WeatherBanner />
             </div>
           }
         />

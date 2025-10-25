@@ -1,37 +1,38 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
-import { Badge } from '../ui/badge';
-import { Separator } from '../ui/separator';
-import { Alert, AlertDescription } from '../ui/alert';
-import { Plus, Camera, MapPin, X, AlertCircle } from 'lucide-react';
-import { suggestedHashtags } from './mockData';
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
+import { Badge } from "../ui/badge";
+import { Separator } from "../ui/separator";
+import { Alert, AlertDescription } from "../ui/alert";
+import { Plus, Camera, MapPin, X, AlertCircle } from "lucide-react";
+import { suggestedHashtags } from "./mockData";
 
-interface CreatePostDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: () => void;
-}
+export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [caption, setCaption] = useState("");
+  const [selectedHashtags, setSelectedHashtags] = useState([]);
 
-export default function CreatePostDialog({ open, onOpenChange, onSubmit }: CreatePostDialogProps) {
-  const [selectedImages, setSelectedImages] = useState<any[]>([]);
-  const [caption, setCaption] = useState('');
-  const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e) => {
     const files = Array.from(e.target.files || []);
-    console.log('Upload images:', files);
+    console.log("Upload images:", files);
   };
 
   const handleSubmit = () => {
-    console.log('Submit post:', { caption, selectedHashtags });
+    console.log("Submit post:", { caption, selectedHashtags });
     onSubmit();
     // Reset form
     setSelectedImages([]);
-    setCaption('');
+    setCaption("");
     setSelectedHashtags([]);
   };
 
@@ -50,11 +51,11 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }: Creat
             Chia sẻ trải nghiệm du lịch của bạn với cộng đồng
           </DialogDescription>
         </DialogHeader>
-        
+
         <Alert className="mt-4">
           <AlertCircle className="w-4 h-4" />
           <AlertDescription>
-            Bài viết của bạn sẽ được kiểm duyệt trước khi hiển thị công khai. 
+            Bài viết của bạn sẽ được kiểm duyệt trước khi hiển thị công khai.
             Vui lòng không đăng nội dung vi phạm hoặc thông tin nhạy cảm.
           </AlertDescription>
         </Alert>
@@ -81,13 +82,18 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }: Creat
             {selectedImages.length > 0 && (
               <div className="grid grid-cols-4 gap-2">
                 {selectedImages.map((img, index) => (
-                  <div key={index} className="relative aspect-square bg-muted rounded-lg">
+                  <div
+                    key={index}
+                    className="relative aspect-square bg-muted rounded-lg"
+                  >
                     <Button
                       variant="destructive"
                       size="sm"
                       className="absolute top-1 right-1 h-6 w-6 p-0 rounded-full"
                       onClick={() => {
-                        setSelectedImages(selectedImages.filter((_, i) => i !== index));
+                        setSelectedImages(
+                          selectedImages.filter((_, i) => i !== index)
+                        );
                       }}
                     >
                       <X className="w-3 h-3" />
@@ -119,11 +125,15 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }: Creat
               {suggestedHashtags.map((tag) => (
                 <Badge
                   key={tag}
-                  variant={selectedHashtags.includes(tag) ? 'default' : 'outline'}
+                  variant={
+                    selectedHashtags.includes(tag) ? "default" : "outline"
+                  }
                   className="cursor-pointer"
                   onClick={() => {
                     if (selectedHashtags.includes(tag)) {
-                      setSelectedHashtags(selectedHashtags.filter(t => t !== tag));
+                      setSelectedHashtags(
+                        selectedHashtags.filter((t) => t !== tag)
+                      );
                     } else {
                       setSelectedHashtags([...selectedHashtags, tag]);
                     }
@@ -149,8 +159,8 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }: Creat
           {/* Privacy Notice */}
           <Alert>
             <AlertDescription>
-              <strong>Quyền riêng tư:</strong> Hồ sơ của bạn chỉ hiển thị tên và ảnh đại diện. 
-              Thông tin cá nhân khác sẽ được ẩn.
+              <strong>Quyền riêng tư:</strong> Hồ sơ của bạn chỉ hiển thị tên và
+              ảnh đại diện. Thông tin cá nhân khác sẽ được ẩn.
             </AlertDescription>
           </Alert>
         </div>
@@ -159,9 +169,7 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }: Creat
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Hủy
           </Button>
-          <Button onClick={handleSubmit}>
-            Đăng bài
-          </Button>
+          <Button onClick={handleSubmit}>Đăng bài</Button>
         </div>
       </DialogContent>
     </Dialog>

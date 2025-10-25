@@ -1,4 +1,4 @@
-import React from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -19,20 +19,24 @@ import {
 import { Badge } from "../ui/badge";
 import { Plus, Search, Filter, CheckCircle, EyeOff } from "lucide-react";
 import ServiceDialog from "./ServiceDialog";
-import { mockTransport, getStatusBadge } from "./mockData";
+import { mockTours, getStatusBadge } from "./mockData";
 
-export default function TransportTab() {
+export default function ToursTab() {
+  const [searchQuery, setSearchQuery] = useState("");
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Quản lý Nhà xe</CardTitle>
-            <CardDescription>Quản lý các dịch vụ vận chuyển</CardDescription>
+            <CardTitle>Quản lý Tour</CardTitle>
+            <CardDescription>
+              Tạo, sửa, duyệt và ẩn các tour du lịch
+            </CardDescription>
           </div>
           <Button>
             <Plus className="w-4 h-4 mr-2" />
-            Thêm Nhà xe
+            Thêm Tour mới
           </Button>
         </div>
       </CardHeader>
@@ -40,7 +44,12 @@ export default function TransportTab() {
         <div className="flex items-center gap-2 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Tìm kiếm nhà xe..." className="pl-9" />
+            <Input
+              placeholder="Tìm kiếm tour..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
           <Button variant="outline" size="icon">
             <Filter className="w-4 h-4" />
@@ -49,23 +58,23 @@ export default function TransportTab() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Tên nhà xe</TableHead>
-              <TableHead>Tuyến đường</TableHead>
-              <TableHead>Loại xe</TableHead>
-              <TableHead>Số ghế</TableHead>
+              <TableHead>Tên Tour</TableHead>
+              <TableHead>Nhà cung cấp</TableHead>
+              <TableHead>Giá</TableHead>
+              <TableHead>Ngày khởi hành</TableHead>
               <TableHead>Trạng thái</TableHead>
               <TableHead className="text-right">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockTransport.map((transport) => {
-              const statusConfig = getStatusBadge(transport.status);
+            {mockTours.map((tour) => {
+              const statusConfig = getStatusBadge(tour.status);
               return (
-                <TableRow key={transport.id}>
-                  <TableCell>{transport.name}</TableCell>
-                  <TableCell>{transport.route}</TableCell>
-                  <TableCell>{transport.type}</TableCell>
-                  <TableCell>{transport.seats} ghế</TableCell>
+                <TableRow key={tour.id}>
+                  <TableCell>{tour.name}</TableCell>
+                  <TableCell>{tour.provider}</TableCell>
+                  <TableCell>{tour.price}</TableCell>
+                  <TableCell>{tour.startDate}</TableCell>
                   <TableCell>
                     <Badge variant={statusConfig.variant}>
                       {statusConfig.text}
@@ -73,7 +82,7 @@ export default function TransportTab() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <ServiceDialog service={transport} type="Nhà xe" />
+                      <ServiceDialog service={tour} type="Tour" />
                       <Button variant="ghost" size="sm">
                         <CheckCircle className="w-4 h-4 text-green-600" />
                       </Button>

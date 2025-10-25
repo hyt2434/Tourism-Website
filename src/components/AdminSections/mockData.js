@@ -139,17 +139,14 @@ export const mockSocialPosts = [
   },
 ];
 
-export const getStatusBadge = (status: string) => {
+export const getStatusBadge = (status) => {
   const variants = {
-    pending: { variant: "secondary" as const, text: "Chờ duyệt" },
-    approved: { variant: "default" as const, text: "Đã duyệt" },
-    hidden: { variant: "outline" as const, text: "Đã ẩn" },
-    active: { variant: "default" as const, text: "Đang chạy" },
-    completed: { variant: "default" as const, text: "Hoàn thành" },
-    refund_requested: {
-      variant: "destructive" as const,
-      text: "Yêu cầu hoàn tiền",
-    },
+    pending: { variant: "secondary", text: "Chờ duyệt" },
+    approved: { variant: "default", text: "Đã duyệt" },
+    hidden: { variant: "outline", text: "Đã ẩn" },
+    active: { variant: "default", text: "Đang chạy" },
+    completed: { variant: "default", text: "Hoàn thành" },
+    refund_requested: { variant: "destructive", text: "Yêu cầu hoàn tiền" },
   };
   return variants[status] || variants.pending;
 };

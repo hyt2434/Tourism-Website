@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Card, CardHeader, CardDescription, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";

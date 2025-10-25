@@ -1,28 +1,28 @@
-import React, { useState } from 'react';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Alert, AlertDescription } from '../ui/alert';
-import { Search, Check } from 'lucide-react';
-import SocialPost from './SocialPost';
-import CreatePostDialog from './CreatePostDialog';
-import ReportDialog from './ReportDialog';
-import StoriesSection from './StoriesSection';
-import BottomNavigation from './BottomNavigation';
-import { mockPosts } from './mockData';
+import React, { useState } from "react";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Alert, AlertDescription } from "../ui/alert";
+import { Search, Check } from "lucide-react";
+import SocialPost from "./SocialPost";
+import CreatePostDialog from "./CreatePostDialog";
+import ReportDialog from "./ReportDialog";
+import StoriesSection from "./StoriesSection";
+import BottomNavigation from "./BottomNavigation";
+import { mockPosts } from "./mockData";
 
 export default function SocialPage() {
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState("home");
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
-  const [reportedPostId, setReportedPostId] = useState<number | null>(null);
+  const [reportedPostId, setReportedPostId] = useState(null);
   const [showSubmitSuccess, setShowSubmitSuccess] = useState(false);
 
-  const handleServiceClick = (serviceName: string) => {
-    console.log('Navigate to service:', serviceName);
+  const handleServiceClick = (serviceName) => {
+    console.log("Navigate to service:", serviceName);
     // Logic chuyển đến trang chi tiết dịch vụ
   };
 
-  const handleReport = (postId: number) => {
+  const handleReport = (postId) => {
     setReportedPostId(postId);
     setShowReportDialog(true);
   };
@@ -41,10 +41,12 @@ export default function SocialPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="m-0">Cộng đồng Du lịch</h2>
-              <p className="text-muted-foreground mt-1">Chia sẻ và khám phá hành trình của bạn</p>
+              <p className="text-muted-foreground mt-1">
+                Chia sẻ và khám phá hành trình của bạn
+              </p>
             </div>
-            <CreatePostDialog 
-              open={showCreatePost} 
+            <CreatePostDialog
+              open={showCreatePost}
               onOpenChange={setShowCreatePost}
               onSubmit={handleSubmitPost}
             />
@@ -70,8 +72,8 @@ export default function SocialPage() {
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Tìm kiếm bài viết, hashtag..." 
+            <Input
+              placeholder="Tìm kiếm bài viết, hashtag..."
               className="pl-9 bg-muted/50"
             />
           </div>
@@ -99,14 +101,14 @@ export default function SocialPage() {
       </div>
 
       {/* Bottom Navigation (Mobile) */}
-      <BottomNavigation 
+      <BottomNavigation
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onCreatePost={() => setShowCreatePost(true)}
       />
 
       {/* Report Dialog */}
-      <ReportDialog 
+      <ReportDialog
         open={showReportDialog}
         onOpenChange={setShowReportDialog}
         postId={reportedPostId}

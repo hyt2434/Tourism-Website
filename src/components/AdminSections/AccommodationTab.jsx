@@ -1,12 +1,24 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Badge } from '../ui/badge';
-import { Plus, Search, Filter, CheckCircle, EyeOff } from 'lucide-react';
-import ServiceDialog from './ServiceDialog';
-import { mockAccommodations, getStatusBadge } from './mockData';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import { Badge } from "../ui/badge";
+import { Plus, Search, Filter, CheckCircle, EyeOff } from "lucide-react";
+import ServiceDialog from "./ServiceDialog";
+import { mockAccommodations, getStatusBadge } from "./mockData";
 
 export default function AccommodationTab() {
   return (
@@ -15,7 +27,9 @@ export default function AccommodationTab() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Quản lý Lưu trú</CardTitle>
-            <CardDescription>Quản lý khách sạn, resort và chỗ nghỉ</CardDescription>
+            <CardDescription>
+              Quản lý khách sạn, resort và chỗ nghỉ
+            </CardDescription>
           </div>
           <Button>
             <Plus className="w-4 h-4 mr-2" />
@@ -54,7 +68,9 @@ export default function AccommodationTab() {
                   <TableCell>⭐ {acc.rating}</TableCell>
                   <TableCell>{acc.rooms} phòng</TableCell>
                   <TableCell>
-                    <Badge variant={statusConfig.variant}>{statusConfig.text}</Badge>
+                    <Badge variant={statusConfig.variant}>
+                      {statusConfig.text}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
