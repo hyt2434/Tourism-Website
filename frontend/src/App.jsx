@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import NAV from "./components/NAV";
@@ -22,23 +21,6 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 export default function App() {
-  const heroImage =
-    "https://images.unsplash.com/photo-1722706202511-8743d7b34794?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2aWV0bmFtJTIwbGFuZHNjYXBlJTIwaG9pJTIwYW58ZW58MXx8fHwxNzYwOTc4OTgyfDA&ixlib=rb-4.1.0&q=80&w=1080";
-
-  // ✅ Thêm các ảnh bị thiếu
-  const beachImage =
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80";
-  const coastalImage =
-    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80";
-  const oceanImage =
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80";
-  const seasonsImage =
-    "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80";
-  const promoImage =
-    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80";
-  const travelersImage =
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80";
-
   const tours = [
     {
       id: 1,
@@ -86,73 +68,6 @@ export default function App() {
       description: "Crystal waters, island hopping, and vibrant nightlife",
     },
   ];
-  const promotions = [
-    {
-      image: promoImage,
-      title: "Save 40% - Special Holiday Deal",
-      features: [
-        "40% OFF for bookings this week",
-        "Free Coconut Boat Tour in Bay Mau Forest",
-        "Complimentary Vietnamese Dinner by the river",
-        "Kids under 6 travel FREE",
-      ],
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
-      title: "Limited Offer – Up to 50% OFF!",
-      features: [
-        "Up to 50% discount for early booking",
-        "Group offer: Book 4 pay 3",
-        "Free lantern boat ride in Hoi An",
-        "Airport pick-up included",
-      ],
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1533002832-1721d16b4bb9?auto=format&fit=crop&w=800&q=80",
-      title: "Save 35% – Limited Time Offer!",
-      features: [
-        "35% OFF festival season bookings",
-        "Free Lantern Boat Ticket",
-        "Traditional Costume Rental Included (Ao Dai)",
-        "Souvenir Lantern Gift for each guest",
-      ],
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1519821172141-b5d8f0550b25?auto=format&fit=crop&w=800&q=80",
-      title: "Summer Special – Up to 30% OFF!",
-      features: [
-        "30% OFF for beach destinations",
-        "Complimentary snorkeling session",
-        "Free welcome drinks at resort",
-        "Late check-out included",
-      ],
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80",
-      title: "Romantic Getaway – 25% Discount",
-      features: [
-        "Exclusive package for couples",
-        "Free candlelight dinner by the beach",
-        "Spa session included",
-        "Complimentary wine and dessert",
-      ],
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=800&q=80",
-      title: "Family Adventure Deal – Save 20%",
-      features: [
-        "20% OFF for groups of 4+",
-        "Kids stay and eat free",
-        "Free local guide and photographer",
-        "Family-friendly attractions included",
-      ],
-    },
-  ];
 
   return (
     <BrowserRouter>
@@ -187,50 +102,3 @@ export default function App() {
     </BrowserRouter>
   );
 }
-=======
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
-import Hero from './components/Hero';
-import Highlights from './components/Highlights';
-import SeasonsHoiAn from './components/SeasonsHoiAn';
-import Promotions from './components/Promotions';
-import WeatherBanner from './components/WeatherBanner';
-import Reviews from './components/Reviews';
-import Footer from './components/Footer';
-import TestPage from './components/TestPage';
-import AuthPage from './components/AuthPage';
-
-function HomePage() {
-  return (
-    <>
-      <Header />
-      <main>
-        <Hero />
-        <Highlights />
-        <SeasonsHoiAn />
-        <Promotions />
-        <WeatherBanner />
-        <Reviews />
-      </main>
-      <Footer />
-    </>
-  );
-}
-
-function App() {
-  return (
-    <Router>
-      <div className="min-h-screen bg-white">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/test" element={<TestPage />} />
-          <Route path="/auth" element={<AuthPage />} />
-        </Routes>
-      </div>
-    </Router>
-  );
-}
-
-export default App;
->>>>>>> 6ca89267b552b0f66325b4e3d2aa37b9e6f89916

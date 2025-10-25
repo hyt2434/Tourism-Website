@@ -10,24 +10,23 @@ export default function Login() {
     e.preventDefault();
 
     const allUsers = JSON.parse(localStorage.getItem("users")) || [];
-
     const foundUser = allUsers.find(
       (user) => user.email === email && user.password === password
     );
 
-    if (foundUser) {
-      // ✅ Gắn thêm trạng thái đăng nhập
-      const currentUser = {
-        ...foundUser,
-        isLoggedIn: true,
-      };
-
-      localStorage.setItem("currentUser", JSON.stringify(currentUser));
-      window.dispatchEvent(new Event("storage")); // Cập nhật Navigation
-      navigate("/");
-    } else {
+    if (!foundUser) {
       alert("Sai email hoặc mật khẩu!");
+      return;
     }
+
+    // Gắn trạng thái đăng nhập
+    const currentUser = { ...foundUser, isLoggedIn: true };
+    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+    // Báo cho Navigation cập nhật
+    window.dispatchEvent(new Event("storage"));
+
+    navigate("/");
   };
 
   return (
