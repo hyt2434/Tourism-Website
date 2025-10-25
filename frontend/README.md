@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # MagicViet Landing Page
 
 A pixel-perfect, responsive landing page built with React, Vite, and Tailwind CSS.
@@ -108,3 +109,6 @@ MIT
 Built with ❤️ for MagicViet
 
 # MagicViet Landing Page
+=======
+# MagicViet Landing Page
+>>>>>>> 6ca89267b552b0f66325b4e3d2aa37b9e6f89916

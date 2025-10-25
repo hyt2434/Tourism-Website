@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+<<<<<<< HEAD
+=======
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply text-body;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-title;
+  }
+}
+>>>>>>> 6ca89267b552b0f66325b4e3d2aa37b9e6f89916
