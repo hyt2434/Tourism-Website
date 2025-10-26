@@ -8,10 +8,11 @@ import { Autoplay } from "swiper/modules";
 
 export default function TourCarousel({ tours }) {
   return (
-    <section className="max-w-[1440px] mx-auto px-20 py-20">
-      <h2 className="text-3xl md:text-4xl font-bold text-title mb-8">
-        Popular Tours
-      </h2>
+    <section className="py-12 bg-white">
+      <div className="container mx-auto px-36 max-w-container">
+        <h2 className="text-3xl md:text-4xl font-bold text-title mb-8">
+          Popular Tours
+        </h2>
       <Swiper
         modules={[Navigation, Pagination, Autoplay]}
         autoplay={{ delay: 3000, disableOnInteraction: false }}
@@ -43,6 +44,7 @@ export default function TourCarousel({ tours }) {
           </SwiperSlide>
         ))}
       </Swiper>
+      </div>
     </section>
   );
 }

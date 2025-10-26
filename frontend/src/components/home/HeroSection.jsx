@@ -36,7 +36,7 @@ export default function HeroSection({ children }) {
       />
 
       {/* Hero content */}
-      <div className="relative container mx-auto px-4">
+      <div className="relative container mx-auto px-36">
         <h2 className="text-white text-center text-2xl mb-12 pt-8">
           App du lịch hàng đầu, một chạm đi bất cứ đâu
         </h2>

@@ -58,13 +58,14 @@ export default function FlightDeals() {
   const [activeTab, setActiveTab] = useState("hot-deal");
 
   return (
-    <div className="container mx-auto px-4 py-12 bg-gray-50">
-      {/* Title */}
-      <div className="flex items-center gap-3 mb-6">
-        <Plane className="w-6 h-6 text-blue-600" />
-        <h2 className="text-lg font-semibold">Vé máy bay giá tốt nhất</h2>
-      </div>
-      <p className="text-gray-600 mb-6">Vô vàn điểm đến hot</p>
+    <section className="py-12 bg-section">
+      <div className="container mx-auto px-36 max-w-container">
+        {/* Title */}
+        <div className="flex items-center gap-3 mb-6">
+          <Plane className="w-6 h-6 text-blue-600" />
+          <h2 className="text-3xl md:text-4xl font-bold text-title">Vé máy bay giá tốt nhất</h2>
+        </div>
+        <p className="text-body mb-6">Vô vàn điểm đến hot</p>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-8">
@@ -127,6 +128,7 @@ export default function FlightDeals() {
           </SwiperSlide>
         ))}
       </Swiper>
-    </div>
+      </div>
+    </section>
   );
 }
