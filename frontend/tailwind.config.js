@@ -10,16 +10,19 @@ export default {
         secondaryTextColor: "#6B7280",
         borderColor: "#D1D5DB",
         hoverColor: "#306366",
+        title: '#0B0B0B',
+        body: '#555555',
+        section: '#F5F5F5',
       },
       fontFamily: {
-        sans: ['"Open Sans"', "sans-serif"],
-        serif: ['"Playfair Display"', "serif"],
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       spacing: {
         128: "32rem",
         144: "36rem",
       },
       container: {
+        center: true,
         padding: "1rem",
         screens: {
           // lg: "1124px",
