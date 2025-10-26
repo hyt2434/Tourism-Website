@@ -30,15 +30,15 @@ export default function AdminPage() {
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1>Bảng điều khiển Admin</h1>
+              <h1>Admin Dashboard</h1>
               <p className="text-muted-foreground">
-                Quản lý dịch vụ, khuyến mãi và đơn hàng
+                Manage services, promotions and orders
               </p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm">
                 <Download className="w-4 h-4 mr-2" />
-                Xuất báo cáo
+                Export Report
               </Button>
               <Avatar>
                 <AvatarFallback>AD</AvatarFallback>
@@ -53,7 +53,7 @@ export default function AdminPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardHeader className="pb-3">
-              <CardDescription>Chờ duyệt</CardDescription>
+              <CardDescription>Pending Approval</CardDescription>
               <CardTitle className="flex items-center justify-between">
                 <span>8</span>
                 <PackageIcon className="w-5 h-5 text-muted-foreground" />
@@ -62,7 +62,7 @@ export default function AdminPage() {
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardDescription>Đơn hàng mới</CardDescription>
+              <CardDescription>New Orders</CardDescription>
               <CardTitle className="flex items-center justify-between">
                 <span>24</span>
                 <ShoppingCart className="w-5 h-5 text-muted-foreground" />
@@ -71,7 +71,7 @@ export default function AdminPage() {
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardDescription>Khuyến mãi đang chạy</CardDescription>
+              <CardDescription>Active Promotions</CardDescription>
               <CardTitle className="flex items-center justify-between">
                 <span>12</span>
                 <Tag className="w-5 h-5 text-muted-foreground" />
@@ -80,7 +80,7 @@ export default function AdminPage() {
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardDescription>Doanh thu tháng</CardDescription>
+              <CardDescription>Monthly Revenue</CardDescription>
               <CardTitle className="flex items-center justify-between">
                 <span>125M</span>
                 <TrendingUp className="w-5 h-5 text-muted-foreground" />
@@ -98,26 +98,26 @@ export default function AdminPage() {
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="tours" className="flex items-center gap-2">
               <PackageIcon className="w-4 h-4" />
-              Tour
+              Tours
             </TabsTrigger>
             <TabsTrigger
               value="accommodation"
               className="flex items-center gap-2"
             >
               <Building className="w-4 h-4" />
-              Lưu trú
+              Accommodation
             </TabsTrigger>
             <TabsTrigger value="transport" className="flex items-center gap-2">
               <Bus className="w-4 h-4" />
-              Nhà xe
+              Transport
             </TabsTrigger>
             <TabsTrigger value="promotions" className="flex items-center gap-2">
               <Tag className="w-4 h-4" />
-              Khuyến mãi
+              Promotions
             </TabsTrigger>
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <ShoppingCart className="w-4 h-4" />
-              Đơn hàng
+              Orders
             </TabsTrigger>
             <TabsTrigger value="social" className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />

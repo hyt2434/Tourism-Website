@@ -38,40 +38,40 @@ export default function HeroSection({ children }) {
       {/* Hero content */}
       <div className="relative container mx-auto px-36">
         <h2 className="text-white text-center text-2xl mb-12 pt-8">
-          App du lịch hàng đầu, một chạm đi bất cứ đâu
+          Leading travel app, one touch to go anywhere
         </h2>
 
         {/* Service tabs */}
         <div className="flex flex-wrap justify-center gap-3 mb-8">
           <ServiceTab
             icon={Hotel}
-            label="Khách sạn"
+            label="Hotels"
             active={activeService === "hotel"}
             onClick={() => setActiveService("hotel")}
           />
           <ServiceTab
             icon={Plane}
-            label="Vé máy bay"
+            label="Flights"
             active={activeService === "flight"}
             onClick={() => setActiveService("flight")}
           />
 
           <ServiceTab
             icon={MapPin}
-            label="Tour"
+            label="Tours"
             active={activeService === "pickup"}
             onClick={() => setActiveService("pickup")}
           />
 
           <ServiceTab
             icon={PartyPopper}
-            label="Hoạt động & Vui chơi"
+            label="Activities & Fun"
             active={activeService === "activity"}
             onClick={() => setActiveService("activity")}
           />
           <ServiceTab
             icon={MoreHorizontal}
-            label="Khác"
+            label="More"
             active={activeService === "other"}
             onClick={() => setActiveService("other")}
           />

@@ -2,7 +2,7 @@ import React from "react";
 
 export default function WeatherBanner() {
   return (
-    <section className="py-12 bg-section">
+    <section className="py-12 bg-white">
       <div className="container mx-auto px-36 max-w-container">
         <div
           className="relative rounded-2xl overflow-hidden shadow-md h-[300px] md:h-[400px]"

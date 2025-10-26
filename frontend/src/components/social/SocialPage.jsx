@@ -19,7 +19,7 @@ export default function SocialPage() {
 
   const handleServiceClick = (serviceName) => {
     console.log("Navigate to service:", serviceName);
-    // Logic chuyển đến trang chi tiết dịch vụ
+    // Logic to navigate to service detail page
   };
 
   const handleReport = (postId) => {
@@ -40,9 +40,9 @@ export default function SocialPage() {
         <div className="container max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="m-0">Cộng đồng Du lịch</h2>
+              <h2 className="m-0">Travel Community</h2>
               <p className="text-muted-foreground mt-1">
-                Chia sẻ và khám phá hành trình của bạn
+                Share and discover your journey
               </p>
             </div>
             <CreatePostDialog
@@ -60,7 +60,7 @@ export default function SocialPage() {
           <Alert className="bg-green-50 border-green-200">
             <Check className="w-4 h-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              Bài viết đã được gửi và đang chờ kiểm duyệt!
+              Post submitted and pending moderation!
             </AlertDescription>
           </Alert>
         </div>
@@ -73,7 +73,7 @@ export default function SocialPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm bài viết, hashtag..."
+              placeholder="Search posts, hashtags..."
               className="pl-9 bg-muted/50"
             />
           </div>
@@ -96,7 +96,7 @@ export default function SocialPage() {
 
         {/* Load More */}
         <div className="text-center py-8">
-          <Button variant="outline">Xem thêm bài viết</Button>
+          <Button variant="outline">Load More Posts</Button>
         </div>
       </div>
 
