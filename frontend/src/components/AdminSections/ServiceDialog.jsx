@@ -48,7 +48,9 @@ export default function ServiceDialog({ service, type }) {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent
+                  className="bg-white rounded-lg shadow-sm border border-gray-200"
+                >
                   <SelectItem value="pending">Chờ duyệt</SelectItem>
                   <SelectItem value="approved">Đã duyệt</SelectItem>
                   <SelectItem value="hidden">Ẩn</SelectItem>
