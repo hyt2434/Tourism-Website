@@ -1,37 +1,57 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
-        'title': '#0B0B0B',
-        'body': '#555555',
-        'section': '#F5F5F5',
+        backgroundColor: "#FFFFFF",
+        textColor: "#1A1E18",
+        accentColor: "#F4F4F4",
+        secondaryTextColor: "#6B7280",
+        borderColor: "#D1D5DB",
+        hoverColor: "#306366",
+        title: '#0B0B0B',
+        body: '#555555',
+        section: '#F5F5F5',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
+      spacing: {
+        128: "32rem",
+        144: "36rem",
+      },
       container: {
         center: true,
-        padding: {
-          DEFAULT: '1rem',
-          md: '2rem',
-          lg: '2rem',
-        },
+        padding: "1rem",
         screens: {
-          sm: '640px',
-          md: '768px',
-          lg: '1024px',
-          xl: '1150px',
+          // lg: "1124px",
+          // xl: "1124px",
+          // "2xl": "1440px",
+          lg: "1024px",
+          xl: "1208px",
+          "2xl": "1536px",
         },
       },
-      maxWidth: {
-        'container': '1150px',
+      keyframes: {
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        fadeUp: {
+          "0%": { opacity: "0", transform: "translateY(20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        fadeIn: "fadeIn 0.5s ease-in-out",
+        fadeUp: "fadeUp 0.6s ease-in-out",
       },
     },
   },
-  plugins: [],
-}
+  plugins: [
+    require("@tailwindcss/typography"),
+    require("@tailwindcss/forms"),
+    require("@tailwindcss/aspect-ratio"),
+  ],
+};

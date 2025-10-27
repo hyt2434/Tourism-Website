@@ -7,8 +7,8 @@ export default function Footer() {
 
   return (
     <footer className="bg-section py-12">
-      <div className="container mx-auto px-4 md:px-8 max-w-container">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="container mx-auto px-36 max-w-container">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center lg:justify-items-start text-center lg:text-left">
           {/* Column 1 - Brand */}
           <div>
             <h3 className="text-lg font-bold text-title mb-3">
@@ -17,7 +17,7 @@ export default function Footer() {
             <p className="text-sm text-body mb-4 leading-relaxed">
               Discover the beauty of Vietnam with our premium travel services.
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-4 justify-center lg:justify-start">
               {/* Social Icons using simple SVG placeholders */}
               <a 
                 href="#facebook" 
