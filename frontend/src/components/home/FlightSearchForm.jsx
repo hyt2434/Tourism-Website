@@ -106,7 +106,7 @@ export default function FlightSearchForm() {
           />
           <button
             onClick={handleSearch}
-            className="px-6 py-2 md:py-3 bg-blue-600 text-white rounded-full hover:bg-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 flex items-center justify-center gap-2 transform hover:scale-105"
+             className="px-6 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-full hover:bg-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 flex items-center justify-center gap-2 transform hover:scale-105"
           >
             <Search className="h-5 w-5" />
             <span>Search</span>
@@ -329,7 +329,7 @@ export default function FlightSearchForm() {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-start h-12 border-2 border-gray-200 hover:border-blue-500 rounded-lg"
+                className="w-full justify-start h-12 border-2 border-gray-200 focus:border-blue-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {formatDate(departureDate)}

@@ -107,8 +107,8 @@ export default function NAV() {
             ) : (
               <Link 
                 to="/login" 
-                className="px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20"
-              >
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            >
                 Login
               </Link>
             )}
