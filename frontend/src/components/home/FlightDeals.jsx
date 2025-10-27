@@ -61,7 +61,7 @@ export default function FlightDeals() {
     <section className="py-12 bg-section">
       <div className="container mx-auto px-36 max-w-container">
         {/* Title */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-8">
           <div className="p-2 bg-blue-100 rounded-lg">
             <Plane className="w-6 h-6 text-blue-600" />
           </div>
