@@ -98,8 +98,8 @@ export default function NAV() {
             {isLoggedIn ? (
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 flex items-center gap-2"
-                title="Đăng xuất"
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 flex items-center gap-2"
+                title="Logout"
               >
                 <AccountCircleIcon fontSize="small" />
                 <span className="text-sm">Logout</span>
@@ -107,8 +107,8 @@ export default function NAV() {
             ) : (
               <Link 
                 to="/login" 
-                className="px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20"
-              >
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            >
                 Login
               </Link>
             )}
@@ -183,7 +183,7 @@ export default function NAV() {
                     handleLogout();
                     setMobileMenuOpen(false);
                   }}
-                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 flex items-center justify-center gap-2"
+                  className="mt-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 flex items-center justify-center gap-2"
                 >
                   <AccountCircleIcon fontSize="small" />
                   <span>Logout</span>
@@ -191,7 +191,7 @@ export default function NAV() {
               ) : (
                 <Link 
                   to="/login" 
-                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 block text-center" 
+                  className="mt-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 block text-center" 
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Login
