@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import PartnerPage from "./components/PartnerPage";
 import NAV from "./components/NAV";
 import Footer from "./components/Footer";
 import TourCarousel from "./components/TourCarousel";
@@ -95,7 +96,7 @@ export default function App() {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/social" element={<SocialPage />} />
-        <Route path="/partner" element={<div>Hello</div>} />
+        <Route path="/partner" element={<PartnerPage />} />
         <Route path="/profile" element={<Profile />} />
       </Routes>
       <Footer />
