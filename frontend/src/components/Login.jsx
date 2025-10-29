@@ -28,7 +28,6 @@ export default function Login() {
 
       if (foundUser) {
         const currentUser = { ...foundUser, isLoggedIn: true };
-        // ✅ Lưu user với key "user" để NAV nhận ra
         localStorage.setItem("user", JSON.stringify(currentUser));
         window.dispatchEvent(new Event("storage"));
 
@@ -42,13 +41,13 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors duration-300">
       {/* Close/Back Button */}
       <Link
         to="/"
-        className="absolute top-6 right-6 p-2 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white shadow-lg transition-all duration-300 hover:scale-110 z-10"
+        className="absolute top-6 right-6 p-2 rounded-full bg-white/80 dark:bg-gray-700 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-600 shadow-lg transition-all duration-300 hover:scale-110 z-10"
       >
-        <XMarkIcon className="h-6 w-6 text-gray-700" />
+        <XMarkIcon className="h-6 w-6 text-gray-700 dark:text-white" />
       </Link>
 
       <div className="max-w-md w-full space-y-8 relative z-10">
@@ -59,40 +58,40 @@ export default function Login() {
               <span className="text-3xl font-bold text-white">VN</span>
             </div>
           </div>
-          <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Welcome Back!</h2>
-          <p className="text-gray-600">Sign in to continue your journey</p>
+          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">Welcome Back!</h2>
+          <p className="text-gray-600 dark:text-gray-300">Sign in to continue your journey</p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleLogin} className="bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl p-8 space-y-6 border border-white/20">
+        <form onSubmit={handleLogin} className="bg-white/80 dark:bg-gray-800 backdrop-blur-md rounded-2xl shadow-2xl p-8 space-y-6 border border-white/20 dark:border-gray-600 transition-colors duration-300">
           {/* Email */}
           <div className="relative">
-            <EnvelopeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <EnvelopeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-300" />
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email Address"
               required
-              className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none bg-white/50"
+              className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none bg-white/50 dark:bg-gray-700 text-gray-800 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
 
           {/* Password */}
           <div className="relative">
-            <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-300" />
             <input
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
               required
-              className="w-full pl-10 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none bg-white/50"
+              className="w-full pl-10 pr-12 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none bg-white/50 dark:bg-gray-700 text-gray-800 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-white"
             >
               {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
             </button>
@@ -107,9 +106,9 @@ export default function Login() {
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
-              <span className="ml-2 text-gray-600">Remember me</span>
+              <span className="ml-2 text-gray-600 dark:text-gray-300">Remember me</span>
             </label>
-            <a href="#" className="text-blue-600 hover:underline">Forgot password?</a>
+            <a href="#" className="text-blue-600 hover:underline dark:text-blue-400">Forgot password?</a>
           </div>
 
           {/* Submit */}
@@ -123,12 +122,12 @@ export default function Login() {
 
           {/* Register */}
           <div className="text-center">
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               Don't have an account?{" "}
               <button
                 type="button"
                 onClick={() => navigate("/register")}
-                className="text-blue-600 hover:underline font-semibold"
+                className="text-blue-600 hover:underline dark:text-blue-400 font-semibold"
               >
                 Sign up
               </button>

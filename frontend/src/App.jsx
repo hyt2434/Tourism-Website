@@ -71,34 +71,35 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <NAV />
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <div className="min-h-screen bg-gray-50 ">
-              <HeroSection>
-                <FlightSearchForm />
-              </HeroSection>
-              <TourCarousel tours={tours} />
-              <Promotions />
-
-              <Reviews />
-              <FlightDeals />
-              <WeatherBanner />
-            </div>
-          }
-        />
-        <Route path="/tour" element={<ToursPage />} />
-        <Route path="/login" element={<Login />} />
-        {/* ✅ Trang đăng ký */}
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/social" element={<SocialPage />} />
-        <Route path="/partner" element={<div>Hello</div>} />
-        <Route path="/profile" element={<Profile />} />
-      </Routes>
-      <Footer />
+      {/* 👇 Bọc toàn bộ app trong div hỗ trợ dark mode */}
+      <div className="bg-white text-black dark:bg-gray-900 dark:text-white min-h-screen transition-colors duration-300">
+        <NAV />
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <div>
+                <HeroSection>
+                  <FlightSearchForm />
+                </HeroSection>
+                <TourCarousel tours={tours} />
+                <Promotions />
+                <Reviews />
+                <FlightDeals />
+                <WeatherBanner />
+              </div>
+            }
+          />
+          <Route path="/tour" element={<ToursPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/social" element={<SocialPage />} />
+          <Route path="/partner" element={<div>Hello</div>} />
+          <Route path="/profile" element={<Profile />} />
+        </Routes>
+        <Footer />
+      </div>
     </BrowserRouter>
   );
 }

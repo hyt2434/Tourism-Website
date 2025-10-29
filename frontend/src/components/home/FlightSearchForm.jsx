@@ -106,7 +106,7 @@ export default function FlightSearchForm() {
           />
           <button
             onClick={handleSearch}
-             className="px-6 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-full hover:bg-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 flex items-center justify-center gap-2 transform hover:scale-105"
+            className="px-6 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-full hover:bg-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 flex items-center justify-center gap-2 transform hover:scale-105"
           >
             <Search className="h-5 w-5" />
             <span>Search</span>
@@ -179,18 +179,16 @@ export default function FlightSearchForm() {
                                 selectedCity === city ? null : city
                               )
                             }
-                            className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all ${
-                              isSelected
+                            className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all ${isSelected
                                 ? "border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-500/50"
                                 : "border-gray-200 hover:border-blue-500 hover:bg-blue-50"
-                            }`}
+                              }`}
                           >
                             <span
-                              className={`font-medium ${
-                                isSelected
+                              className={`font-medium ${isSelected
                                   ? "text-white"
                                   : "text-gray-900 hover:text-blue-600"
-                              }`}
+                                }`}
                             >
                               {city}
                             </span>
@@ -224,11 +222,10 @@ export default function FlightSearchForm() {
                             setSelectedKeywords([...selectedKeywords, keyword]);
                           }
                         }}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                          isSelected
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isSelected
                             ? "bg-blue-600 text-white shadow-lg shadow-blue-500/50 scale-105"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
-                        }`}
+                          }`}
                       >
                         {keyword}
                       </button>
@@ -256,21 +253,19 @@ export default function FlightSearchForm() {
       <div className="flex gap-4 mb-6">
         <button
           onClick={() => setTripType("round-trip")}
-          className={`px-6 py-2 rounded-full text-sm font-medium transition ${
-            tripType === "round-trip"
+          className={`px-6 py-2 rounded-full text-sm font-medium transition ${tripType === "round-trip"
               ? "bg-blue-600 text-white"
               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
+            }`}
         >
           One-way / Round-trip
         </button>
         <button
           onClick={() => setTripType("multi-city")}
-          className={`px-6 py-2 rounded-full text-sm font-medium transition ${
-            tripType === "multi-city"
+          className={`px-6 py-2 rounded-full text-sm font-medium transition ${tripType === "multi-city"
               ? "bg-blue-600 text-white"
               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
+            }`}
         >
           Multi-city
         </button>
