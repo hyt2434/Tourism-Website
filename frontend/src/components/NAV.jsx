@@ -8,21 +8,23 @@ import {
   GlobeAltIcon,
 } from "@heroicons/react/24/outline";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function NAV() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [language, setLanguage] = useState("EN");
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { language, toggleLanguage, translations } = useLanguage();
 
   const navItems = [
-    { name: "Home", path: "/" },
-    { name: "Tour", path: "/tours" },
-    { name: "Social", path: "/social" },
-    { name: "Partner", path: "/partner" },
-    { name: "About us", path: "/aboutus" },
-    { name: "Admin", path: "/admin" },
+    { name: translations.home, path: "/" },
+    { name: translations.tour, path: "/tour" },
+    { name: translations.social, path: "/social" },
+    { name: translations.partner, path: "/partner" },
+    { name: translations.about, path: "/aboutus" },
+    { name: translations.admin, path: "/admin" },
   ];
 
   useEffect(() => {
@@ -30,50 +32,23 @@ export default function NAV() {
       const user = localStorage.getItem("currentUser");
       setIsLoggedIn(!!user);
     };
-
-    const savedTheme = localStorage.getItem("theme");
-    const savedLang = localStorage.getItem("language");
-
-    if (savedTheme === "dark") {
-      setIsDarkMode(true);
-      document.documentElement.classList.add("dark");
-    }
-
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-
     checkAuth();
     window.addEventListener("storage", checkAuth);
-
-    return () => {
-      window.removeEventListener("storage", checkAuth);
-    };
-  }, [location]);
+    return () => window.removeEventListener("storage", checkAuth);
+  }, []);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-      if (
-        langDropdownRef.current &&
-        !langDropdownRef.current.contains(event.target)
-      ) {
-        setShowLangDropdown(false);
-      }
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".user-menu")) setUserMenuOpen(false);
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
     setIsLoggedIn(false);
-    setShowDropdown(false);
+    setUserMenuOpen(false);
     navigate("/");
   };
 
@@ -82,69 +57,88 @@ export default function NAV() {
     document.documentElement.classList.toggle("dark");
   };
 
-  const toggleLanguage = () => {
-    setLanguage(language === "EN" ? "VI" : "EN");
-  };
-
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+    <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
       <div className="container mx-auto px-36">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="text-xl font-semibold text-title">MagicViet</div>
+          <div
+            className="text-xl font-semibold text-title dark:text-white cursor-pointer mr-6 whitespace-nowrap"
+            onClick={() => navigate("/")}
+          >
+            MagicViet
+          </div>
 
-          {/* Desktop Navigation and Actions - Right Aligned */}
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            {/* Navigation Links */}
             {navItems.map((item) => (
               <Link
                 key={item.name}
                 to={item.path}
-                className="text-body hover:text-title hover:font-bold transition-all"
+                className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white hover:font-bold transition-all whitespace-nowrap"
               >
                 {item.name}
               </Link>
             ))}
 
-            {/* Dark Mode Toggle */}
+            {/* Dark Mode */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-black/20"
-              aria-label="Toggle dark mode"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               {isDarkMode ? (
-                <MoonIcon className="h-5 w-5 text-title" />
+                <MoonIcon className="h-5 w-5 text-title dark:text-white" />
               ) : (
-                <SunIcon className="h-5 w-5 text-title" />
+                <SunIcon className="h-5 w-5 text-title dark:text-white" />
               )}
             </button>
 
-            {/* Language Switcher */}
+            {/* Language */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-black/20"
-              aria-label="Switch language"
+              className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors whitespace-nowrap"
             >
-              <GlobeAltIcon className="h-5 w-5 text-title" />
-              <span className="text-sm font-medium text-title">{language}</span>
+              <GlobeAltIcon className="h-5 w-5 text-title dark:text-white" />
+              <span className="text-sm font-medium text-title dark:text-white">{language.toUpperCase()}</span>
             </button>
 
-            {/* Login/Logout Button */}
+            {/* 🔹 Login / User Section */}
             {isLoggedIn ? (
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 flex items-center gap-2"
-                title="Đăng xuất"
-              >
-                <AccountCircleIcon fontSize="small" />
-                <span className="text-sm">Logout</span>
-              </button>
+              <div className="relative user-menu">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black/20"
+                  title="User Menu"
+                >
+                  <AccountCircleIcon className="text-title dark:text-white" fontSize="medium" />
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-2 z-50">
+                    <button
+                      onClick={() => {
+                        navigate("/profile");
+                        setUserMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-body dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap"
+                    >
+                      {translations.profile}
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-body dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap"
+                    >
+                      {translations.logout}
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <Link
                 to="/login"
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 whitespace-nowrap"
               >
-                Login
+                {translations.login}
               </Link>
             )}
           </div>
@@ -152,9 +146,7 @@ export default function NAV() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-title focus:outline-none focus:ring-2 focus:ring-black/20 rounded"
-            aria-label="Toggle mobile menu"
-            aria-expanded={mobileMenuOpen}
+            className="md:hidden p-2 text-title dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-black/20"
           >
             {mobileMenuOpen ? (
               <XMarkIcon className="h-6 w-6" />
@@ -166,74 +158,37 @@ export default function NAV() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200">
+          <div className="md:hidden py-4 border-t border-gray-200 dark:border-gray-700 transition-colors">
             <nav className="flex flex-col gap-4">
               {navItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
-                  className="text-body hover:text-title transition-colors px-2 py-1"
                   onClick={() => setMobileMenuOpen(false)}
+                  className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white transition-colors px-2 py-1 whitespace-nowrap"
                 >
                   {item.name}
                 </Link>
               ))}
 
-              {/* Mobile Dark Mode and Language */}
-              <div className="flex items-center gap-2 px-2 py-2 border-t border-gray-200 mt-2 pt-4">
-                {/* Dark Mode Toggle */}
-                <button
-                  onClick={toggleDarkMode}
-                  className="flex items-center gap-2 flex-1 p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-black/20"
-                  aria-label="Toggle dark mode"
-                >
-                  {isDarkMode ? (
-                    <>
-                      <MoonIcon className="h-5 w-5 text-title" />
-                      <span className="text-sm text-title">Dark Mode</span>
-                    </>
-                  ) : (
-                    <>
-                      <SunIcon className="h-5 w-5 text-title" />
-                      <span className="text-sm text-title">Light Mode</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Language Switcher */}
-                <button
-                  onClick={toggleLanguage}
-                  className="flex items-center gap-2 flex-1 p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-black/20"
-                  aria-label="Switch language"
-                >
-                  <GlobeAltIcon className="h-5 w-5 text-title" />
-                  <span className="text-sm font-medium text-title">
-                    {language}
-                  </span>
-                </button>
-              </div>
-
-              {/* Mobile Login/Logout */}
+              {/* Login / User (Mobile) */}
               {isLoggedIn ? (
-                <>
-                  <AccountCircleIcon fontSize="small" />
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 flex items-center justify-center gap-2"
-                  >
-                    <span>Logout</span>
-                  </button>
-                </>
+                <button
+                  onClick={() => {
+                    navigate("/profile");
+                    setMobileMenuOpen(false);
+                  }}
+                  className="mt-2 flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <AccountCircleIcon fontSize="large" className="text-title dark:text-white" />
+                </button>
               ) : (
                 <Link
                   to="/login"
-                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 block text-center"
                   onClick={() => setMobileMenuOpen(false)}
+                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 block text-center whitespace-nowrap"
                 >
-                  Login
+                  {translations.login}
                 </Link>
               )}
             </nav>

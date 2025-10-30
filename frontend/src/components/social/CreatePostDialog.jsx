@@ -30,7 +30,6 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
   const handleSubmit = () => {
     console.log("Submit post:", { caption, selectedHashtags });
     onSubmit();
-    // Reset form
     setSelectedImages([]);
     setCaption("");
     setSelectedHashtags([]);
@@ -44,7 +43,7 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
           Tạo bài viết
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 text-black dark:text-white">
         <DialogHeader>
           <DialogTitle>Tạo bài viết mới</DialogTitle>
           <DialogDescription>
@@ -52,7 +51,7 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
           </DialogDescription>
         </DialogHeader>
 
-        <Alert className="mt-4">
+        <Alert className="mt-4 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
           <AlertCircle className="w-4 h-4" />
           <AlertDescription>
             Bài viết của bạn sẽ được kiểm duyệt trước khi hiển thị công khai.
@@ -64,7 +63,7 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
           {/* Image Upload */}
           <div className="space-y-2">
             <Label>Ảnh/Video</Label>
-            <div className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 dark:hover:bg-gray-800 transition-colors">
               <input
                 type="file"
                 multiple
@@ -74,9 +73,9 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
                 onChange={handleImageUpload}
               />
               <label htmlFor="media-upload" className="cursor-pointer">
-                <Camera className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
+                <Camera className="w-12 h-12 mx-auto mb-2 text-muted-foreground dark:text-gray-400" />
                 <p>Nhấn để tải ảnh hoặc video</p>
-                <p className="text-muted-foreground">Tối đa 10 tệp</p>
+                <p className="text-muted-foreground dark:text-gray-400">Tối đa 10 tệp</p>
               </label>
             </div>
             {selectedImages.length > 0 && (
@@ -84,7 +83,7 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
                 {selectedImages.map((img, index) => (
                   <div
                     key={index}
-                    className="relative aspect-square bg-muted rounded-lg"
+                    className="relative aspect-square bg-muted dark:bg-gray-700 rounded-lg"
                   >
                     <Button
                       variant="destructive"
@@ -112,13 +111,14 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
               rows={5}
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
+              className="bg-white dark:bg-gray-800 text-black dark:text-white"
             />
           </div>
 
           {/* Hashtags */}
           <div className="space-y-2">
             <Label>Hashtag dịch vụ</Label>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground dark:text-gray-400">
               Gắn hashtag để liên kết với tour, khách sạn, nhà hàng...
             </p>
             <div className="flex flex-wrap gap-2">
@@ -149,15 +149,18 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
           <div className="space-y-2">
             <Label>Vị trí</Label>
             <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Thêm vị trí..." className="pl-9" />
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-gray-400" />
+              <Input
+                placeholder="Thêm vị trí..."
+                className="pl-9 bg-white dark:bg-gray-800 text-black dark:text-white"
+              />
             </div>
           </div>
 
           <Separator />
 
           {/* Privacy Notice */}
-          <Alert>
+          <Alert className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
             <AlertDescription>
               <strong>Quyền riêng tư:</strong> Hồ sơ của bạn chỉ hiển thị tên và
               ảnh đại diện. Thông tin cá nhân khác sẽ được ẩn.
@@ -166,10 +169,19 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            className="dark:border-gray-600 dark:text-white"
+            onClick={() => onOpenChange(false)}
+          >
             Hủy
           </Button>
-          <Button onClick={handleSubmit}>Đăng bài</Button>
+          <Button
+            className="dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700"
+            onClick={handleSubmit}
+          >
+            Đăng bài
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
