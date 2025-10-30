@@ -1,11 +1,12 @@
 // components/TourCarousel.jsx
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { Autoplay } from "swiper/modules";
+import { Link } from "react-router-dom";
 
 export default function TourCarousel({ tours }) {
   return (
@@ -14,7 +15,7 @@ export default function TourCarousel({ tours }) {
         <h2 className="text-3xl md:text-4xl font-bold text-title mb-8">
           Highlights
         </h2>
-        
+
         <div className="relative">
           {/* Previous Button */}
           <button
@@ -30,8 +31,8 @@ export default function TourCarousel({ tours }) {
             spaceBetween={30}
             slidesPerView={3}
             navigation={{
-              prevEl: '.swiper-button-prev-tours',
-              nextEl: '.swiper-button-next-tours',
+              prevEl: ".swiper-button-prev-tours",
+              nextEl: ".swiper-button-next-tours",
             }}
             pagination={{ clickable: true }}
             breakpoints={{
@@ -42,19 +43,21 @@ export default function TourCarousel({ tours }) {
           >
             {tours.map((tour) => (
               <SwiperSlide key={tour.id}>
-                <div className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition">
-                  <img
-                    src={tour.image}
-                    alt={tour.name}
-                    className="w-full h-60 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="text-xl font-semibold">{tour.name}</h3>
-                    <p className="text-gray-600 mt-2">{tour.description}</p>
-                    <p className="mt-3 font-medium">{tour.price}</p>
-                    <p className="text-sm text-gray-500">{tour.duration}</p>
+                <Link to={`/tour/${tour.id}`}>
+                  <div className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition">
+                    <img
+                      src={tour.image}
+                      alt={tour.name}
+                      className="w-full h-60 object-cover"
+                    />
+                    <div className="p-4">
+                      <h3 className="text-xl font-semibold">{tour.name}</h3>
+                      <p className="text-gray-600 mt-2">{tour.description}</p>
+                      <p className="mt-3 font-medium">{tour.price}</p>
+                      <p className="text-sm text-gray-500">{tour.duration}</p>
+                    </div>
                   </div>
-                </div>
+                </Link>
               </SwiperSlide>
             ))}
           </Swiper>

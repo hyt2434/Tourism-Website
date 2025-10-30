@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import PartnerPage from "./components/PartnerPage";
 import NAV from "./components/NAV";
 import Footer from "./components/Footer";
 import TourCarousel from "./components/TourCarousel";
@@ -10,7 +11,7 @@ import SocialPage from "./components/social/SocialPage";
 import ToursPage from "./components/ToursPage";
 import AdminPage from "./components/AdminSections/AdminPage";
 import WeatherBanner from "./components/home/WeatherBanner";
-
+import TourDetail from "./components/TourDetail/TourDetail";
 import HeroSection from "./components/home/HeroSection";
 import FlightSearchForm from "./components/home/FlightSearchForm";
 import Promotions from "./components/home/Promotions";
@@ -89,13 +90,15 @@ export default function App() {
             </div>
           }
         />
-        <Route path="/tour" element={<ToursPage />} />
+        {/* ✅ Thêm route chi tiết tour */}
+        <Route path="/tours/:id" element={<TourDetail tours={tours} />} />
+        <Route path="/tours" element={<ToursPage />} />
         <Route path="/login" element={<Login />} />
         {/* ✅ Trang đăng ký */}
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/social" element={<SocialPage />} />
-        <Route path="/partner" element={<div>Hello</div>} />
+        <Route path="/partner" element={<PartnerPage />} />
         <Route path="/profile" element={<Profile />} />
       </Routes>
       <Footer />

@@ -1,22 +1,12 @@
 import React, { useState } from "react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Calendar } from "../ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 import {
   Hotel,
   Plane,
-  Bus,
-  Car,
-  CarFront,
   PartyPopper,
   MoreHorizontal,
   MapPin,
   Calendar as CalIcon,
-  Users,
-  Search,
-  ArrowLeftRight,
 } from "lucide-react";
 
 export default function HeroSection({ children }) {

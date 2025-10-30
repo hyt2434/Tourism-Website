@@ -1,52 +1,89 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bars3Icon, XMarkIcon, SunIcon, MoonIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import {
+  Bars3Icon,
+  XMarkIcon,
+  SunIcon,
+  MoonIcon,
+  GlobeAltIcon,
+} from "@heroicons/react/24/outline";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 
 export default function NAV() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [language, setLanguage] = useState('EN');
+  const [language, setLanguage] = useState("EN");
   const navigate = useNavigate();
 
   const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'Tour', path: '/tour' },
-    { name: 'Social', path: '/social' },
-    { name: 'Partner', path: '/partner' },
-    { name: 'About us', path: '/aboutus' },
-    { name: 'Admin', path: '/admin' }
+    { name: "Home", path: "/" },
+    { name: "Tour", path: "/tours" },
+    { name: "Social", path: "/social" },
+    { name: "Partner", path: "/partner" },
+    { name: "About us", path: "/aboutus" },
+    { name: "Admin", path: "/admin" },
   ];
 
   useEffect(() => {
     const checkAuth = () => {
-      const user = localStorage.getItem("user");
+      const user = localStorage.getItem("currentUser");
       setIsLoggedIn(!!user);
     };
 
-    checkAuth();
+    const savedTheme = localStorage.getItem("theme");
+    const savedLang = localStorage.getItem("language");
 
+    if (savedTheme === "dark") {
+      setIsDarkMode(true);
+      document.documentElement.classList.add("dark");
+    }
+
+    if (savedLang) {
+      setLanguage(savedLang);
+    }
+
+    checkAuth();
     window.addEventListener("storage", checkAuth);
 
     return () => {
       window.removeEventListener("storage", checkAuth);
     };
+  }, [location]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+      if (
+        langDropdownRef.current &&
+        !langDropdownRef.current.contains(event.target)
+      ) {
+        setShowLangDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    localStorage.removeItem("currentUser");
     setIsLoggedIn(false);
+    setShowDropdown(false);
     navigate("/");
   };
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle('dark');
+    document.documentElement.classList.toggle("dark");
   };
 
   const toggleLanguage = () => {
-    setLanguage(language === 'EN' ? 'VI' : 'EN');
+    setLanguage(language === "EN" ? "VI" : "EN");
   };
 
   return (
@@ -54,9 +91,7 @@ export default function NAV() {
       <div className="container mx-auto px-36">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="text-xl font-semibold text-title">
-            MagicViet
-          </div>
+          <div className="text-xl font-semibold text-title">MagicViet</div>
 
           {/* Desktop Navigation and Actions - Right Aligned */}
           <div className="hidden md:flex items-center gap-8">
@@ -105,10 +140,10 @@ export default function NAV() {
                 <span className="text-sm">Logout</span>
               </button>
             ) : (
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-            >
+              >
                 Login
               </Link>
             )}
@@ -143,7 +178,7 @@ export default function NAV() {
                   {item.name}
                 </Link>
               ))}
-              
+
               {/* Mobile Dark Mode and Language */}
               <div className="flex items-center gap-2 px-2 py-2 border-t border-gray-200 mt-2 pt-4">
                 {/* Dark Mode Toggle */}
@@ -172,26 +207,30 @@ export default function NAV() {
                   aria-label="Switch language"
                 >
                   <GlobeAltIcon className="h-5 w-5 text-title" />
-                  <span className="text-sm font-medium text-title">{language}</span>
+                  <span className="text-sm font-medium text-title">
+                    {language}
+                  </span>
                 </button>
               </div>
 
               {/* Mobile Login/Logout */}
               {isLoggedIn ? (
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 flex items-center justify-center gap-2"
-                >
+                <>
                   <AccountCircleIcon fontSize="small" />
-                  <span>Logout</span>
-                </button>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 flex items-center justify-center gap-2"
+                  >
+                    <span>Logout</span>
+                  </button>
+                </>
               ) : (
-                <Link 
-                  to="/login" 
-                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 block text-center" 
+                <Link
+                  to="/login"
+                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 block text-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Login
