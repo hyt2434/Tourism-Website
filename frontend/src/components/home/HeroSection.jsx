@@ -13,55 +13,60 @@ export default function HeroSection({ children }) {
   const [activeService, setActiveService] = useState("flight");
 
   return (
-    <div className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 pb-32 pt-8">
-      {/* Background overlay */}
-      <div
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage:
-            "url(https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1200)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      />
+    <section className="pb-24 pt-8 px-4 md:px-8 lg:px-36">
+      {/* Background image container with content overlay */}
+      <div className="relative w-full h-[500px] md:h-[600px] lg:h-[700px] rounded-3xl overflow-visible">
+        {/* Background image with rounded corners */}
+        <div
+          className="absolute inset-0 rounded-3xl overflow-hidden"
+          style={{
+            backgroundImage:
+              "url(https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=1200)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        
+        {/* Dark overlay for better text contrast */}
+        <div className="absolute inset-0 bg-black/40 rounded-3xl" />
 
-      {/* Hero content */}
-      <div className="relative container mx-auto px-4">
-        <h2 className="text-white text-center text-2xl mb-12 pt-8">
-          App du lịch hàng đầu, một chạm đi bất cứ đâu
-        </h2>
+        {/* Hero content overlay */}
+        <div className="relative h-full flex flex-col justify-center px-4 md:px-8 lg:px-12 z-10">
+          <h2 className="text-white text-center text-2xl md:text-3xl lg:text-4xl font-bold mb-12 leading-tight drop-shadow-lg">
+            Leading travel app, one touch to go anywhere
+          </h2>
 
-        {/* Service tabs */}
-        <div className="flex flex-wrap justify-center gap-3 mb-8">
+          {/* Service tabs */}
+          <div className="flex flex-wrap justify-center gap-3 mb-8">
           <ServiceTab
             icon={Hotel}
-            label="Khách sạn"
+            label="Hotels"
             active={activeService === "hotel"}
             onClick={() => setActiveService("hotel")}
           />
           <ServiceTab
             icon={Plane}
-            label="Vé máy bay"
+            label="Flights"
             active={activeService === "flight"}
             onClick={() => setActiveService("flight")}
           />
 
           <ServiceTab
             icon={MapPin}
-            label="Tour"
+            label="Tours"
             active={activeService === "pickup"}
             onClick={() => setActiveService("pickup")}
           />
 
           <ServiceTab
             icon={PartyPopper}
-            label="Hoạt động & Vui chơi"
+            label="Activities & Fun"
             active={activeService === "activity"}
             onClick={() => setActiveService("activity")}
           />
           <ServiceTab
             icon={MoreHorizontal}
-            label="Khác"
+            label="More"
             active={activeService === "other"}
             onClick={() => setActiveService("other")}
           />
@@ -71,6 +76,7 @@ export default function HeroSection({ children }) {
         {children}
       </div>
     </div>
+    </section>
   );
 }
 
@@ -78,14 +84,14 @@ function ServiceTab({ icon: Icon, label, active, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all ${
+      className={`flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 rounded-full transition-all transform hover:scale-105 ${
         active
           ? "bg-white text-blue-600 shadow-lg"
           : "bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm"
       }`}
     >
-      <Icon className="w-5 h-5" />
-      <span className="text-sm font-medium">{label}</span>
+      <Icon className="w-4 h-4 md:w-5 md:h-5" />
+      <span className="text-xs md:text-sm font-medium">{label}</span>
     </button>
   );
 }
