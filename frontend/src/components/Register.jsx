@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { registerUser } from "../api/auth";
 import {
     EnvelopeIcon,
     LockClosedIcon,
@@ -19,36 +20,32 @@ export default function Register() {
     const navigate = useNavigate();
 
     const handleRegister = async (e) => {
-        e.preventDefault();
-        if (!agreeToTerms) {
-            alert("Please agree to the Terms and Conditions");
-            return;
-        }
-        setIsLoading(true);
-        setTimeout(() => {
-            const allUsers = JSON.parse(localStorage.getItem("users")) || [];
-            const emailExists = allUsers.some((user) => user.email === email);
-            if (emailExists) {
-                alert("Email is already registered!");
-                setIsLoading(false);
-                return;
-            }
-            const newUser = {
-                name,
-                email,
-                password,
-                phone: "",
-                address: "",
-                avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-            };
-            allUsers.push(newUser);
-            localStorage.setItem("users", JSON.stringify(allUsers));
-            setIsLoading(false);
+    e.preventDefault();
+
+    if (!agreeToTerms) {
+        alert("Please agree to the Terms and Conditions");
+        return;
+    }
+
+    setIsLoading(true);
+
+    try {
+        const result = await registerUser({ username: name, email, password });
+
+        setIsLoading(false);
+
+        if (result.message) {
             alert("Registration successful! Please login to continue.");
             navigate("/login");
-        }, 1500);
-    };
-
+        } else {
+            alert(result.error || "Registration failed!");
+        }
+    } catch (error) {
+        setIsLoading(false);
+        alert("Network error. Please try again.");
+        console.error(error);
+    }
+};
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
             {/* Background blobs */}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { loginUser } from "../api/auth";
 import {
   EnvelopeIcon,
   LockClosedIcon,
@@ -16,29 +17,30 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const handleLogin = async (e) => {
+  e.preventDefault();
+  setIsLoading(true);
 
-    setTimeout(() => {
-      const allUsers = JSON.parse(localStorage.getItem("users")) || [];
-      const foundUser = allUsers.find(
-        (user) => user.email === email && user.password === password
-      );
+  try {
+    const result = await loginUser({ email, password });
 
-      if (foundUser) {
-        const currentUser = { ...foundUser, isLoggedIn: true };
-        localStorage.setItem("user", JSON.stringify(currentUser));
-        window.dispatchEvent(new Event("storage"));
+    setIsLoading(false);
 
-        setIsLoading(false);
-        navigate("/");
-      } else {
-        setIsLoading(false);
-        alert("Incorrect email or password!");
-      }
-    }, 1500);
-  };
+    if (result.message) {
+      const currentUser = { email, username: result.user, isLoggedIn: true };
+      localStorage.setItem("user", JSON.stringify(currentUser));
+      window.dispatchEvent(new Event("storage"));
+
+      navigate("/");
+    } else {
+      alert(result.error || "Incorrect email or password!");
+    }
+  } catch (error) {
+    setIsLoading(false);
+    alert("Network error. Please try again.");
+    console.error(error);
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors duration-300">
