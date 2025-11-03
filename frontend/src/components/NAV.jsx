@@ -2,22 +2,15 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Bars3Icon, XMarkIcon, SunIcon, MoonIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function NAV() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [language, setLanguage] = useState('EN');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const { language, toggleLanguage, t } = useLanguage();
   const navigate = useNavigate();
-
-  const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'Tour', path: '/tour' },
-    { name: 'Social', path: '/social' },
-    { name: 'Partner', path: '/partner' },
-    { name: 'About us', path: '/aboutus' },
-    { name: 'Admin', path: '/admin' }
-  ];
 
   useEffect(() => {
     const checkAuth = () => {
@@ -45,9 +38,14 @@ export default function NAV() {
     document.documentElement.classList.toggle('dark');
   };
 
-  const toggleLanguage = () => {
-    setLanguage(language === 'EN' ? 'VI' : 'EN');
-  };
+  const navItems = [
+    { name: t.home, path: '/' },
+    { name: t.tour, path: '/tour' },
+    { name: t.social, path: '/social' },
+    { name: t.partner, path: '/partner' },
+    { name: t.about, path: '/aboutus' },
+    { name: t.admin, path: '/admin' }
+  ];
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
@@ -91,7 +89,7 @@ export default function NAV() {
               aria-label="Switch language"
             >
               <GlobeAltIcon className="h-5 w-5 text-title" />
-              <span className="text-sm font-medium text-title">{language}</span>
+              <span className="text-sm font-medium text-title">{language.toUpperCase()}</span>
             </button>
 
             {/* 🔹 Login / User Section */}
@@ -99,17 +97,17 @@ export default function NAV() {
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 flex items-center gap-2"
-                title="Đăng xuất"
+                title={t.logout}
               >
                 <AccountCircleIcon fontSize="small" />
-                <span className="text-sm">Logout</span>
+                <span className="text-sm">{t.logout}</span>
               </button>
             ) : (
               <Link
                 to="/login"
                 className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
               >
-                Login
+                {t.login}
               </Link>
             )}
           </div>
@@ -172,7 +170,7 @@ export default function NAV() {
                   aria-label="Switch language"
                 >
                   <GlobeAltIcon className="h-5 w-5 text-title" />
-                  <span className="text-sm font-medium text-title">{language}</span>
+                  <span className="text-sm font-medium text-title">{language.toUpperCase()}</span>
                 </button>
               </div>
 
@@ -186,7 +184,7 @@ export default function NAV() {
                   className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 flex items-center justify-center gap-2"
                 >
                   <AccountCircleIcon fontSize="small" />
-                  <span>Logout</span>
+                  <span>{t.logout}</span>
                 </button>
               ) : (
                 <Link
@@ -194,7 +192,7 @@ export default function NAV() {
                   className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 block text-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Login
+                  {t.login}
                 </Link>
               )}
             </nav>

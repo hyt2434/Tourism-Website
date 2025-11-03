@@ -2,27 +2,27 @@ import React from "react";
 import { useLanguage } from "../context/LanguageContext"; // 👈 import context
 
 export default function Footer() {
-  const { translations } = useLanguage();
+  const { t } = useLanguage();
 
   const popularProvinces = [
-    translations.hanoi,
-    translations.danang,
-    translations.hcm,
-    translations.hue,
+    t.hanoi,
+    t.danang,
+    t.hcm,
+    t.hue,
   ];
 
   const moreDestinations = [
-    translations.hoian,
-    translations.phuquoc,
-    translations.nhatrang,
-    translations.halong,
+    t.hoian,
+    t.phuquoc,
+    t.nhatrang,
+    t.halong,
   ];
 
   const legal = [
-    translations.terms,
-    translations.privacy,
-    translations.cookies,
-    translations.accessibility,
+    t.terms,
+    t.privacy,
+    t.cookies,
+    t.accessibility,
   ];
 
   return (
@@ -35,7 +35,7 @@ export default function Footer() {
               MagicViet
             </h3>
             <p className="text-sm text-body dark:text-gray-300 mb-4 leading-relaxed">
-              {translations.footerDescription}
+              {t.footerDescription}
             </p>
             <div className="flex gap-4 justify-center lg:justify-start">
               {["facebook", "instagram", "twitter", "youtube"].map((platform) => (
@@ -54,7 +54,7 @@ export default function Footer() {
           {/* Column 2 - Popular Provinces */}
           <div>
             <h3 className="text-lg font-bold text-title dark:text-white mb-3">
-              {translations.popularProvinces}
+              {t.popularProvinces}
             </h3>
             <ul className="space-y-2">
               {popularProvinces.map((province) => (
@@ -73,7 +73,7 @@ export default function Footer() {
           {/* Column 3 - More Destinations */}
           <div>
             <h3 className="text-lg font-bold text-title dark:text-white mb-3">
-              {translations.moreDestinations}
+              {t.moreDestinations}
             </h3>
             <ul className="space-y-2">
               {moreDestinations.map((destination) => (
@@ -92,7 +92,7 @@ export default function Footer() {
           {/* Column 4 - Legal */}
           <div>
             <h3 className="text-lg font-bold text-title dark:text-white mb-3">
-              {translations.legal}
+              {t.legal}
             </h3>
             <ul className="space-y-2">
               {legal.map((item) => (
@@ -112,3 +112,4 @@ export default function Footer() {
     </footer>
   );
 }
+

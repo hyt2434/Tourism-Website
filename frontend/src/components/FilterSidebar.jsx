@@ -10,17 +10,17 @@ export default function FilterSidebar({ onFilterChange }) {
     startDate: "",
   });
 
-  const { translations } = useLanguage(); // 👈 lấy translations
+  const { t } = useLanguage(); // 👈 lấy t
 
   const destinations = [
-    translations.hanoi,
-    translations.hcm,
-    translations.danang,
-    translations.halong,
-    translations.phuquoc,
-    translations.nhatrang,
-    translations.dalat,
-    translations.hoian,
+    t.hanoi,
+    t.hcm,
+    t.danang,
+    t.halong,
+    t.phuquoc,
+    t.nhatrang,
+    t.dalat,
+    t.hoian,
   ];
 
   const handleChange = (key, value) => {
@@ -34,14 +34,14 @@ export default function FilterSidebar({ onFilterChange }) {
       <div className="flex items-center gap-2 mb-6">
         <SlidersHorizontal size={20} className="text-gray-600 dark:text-gray-300" />
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-          {translations.filterTitle}
+          {t.filterTitle}
         </h3>
       </div>
 
       {/* Search */}
       <div className="mb-6">
         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          {translations.search}
+          {t.search}
         </label>
         <div className="relative">
           <Search
@@ -50,7 +50,7 @@ export default function FilterSidebar({ onFilterChange }) {
           />
           <input
             type="text"
-            placeholder={translations.searchPlaceholder}
+            placeholder={t.searchPlaceholder}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
             onChange={(e) => handleChange("search", e.target.value)}
           />
@@ -60,13 +60,13 @@ export default function FilterSidebar({ onFilterChange }) {
       {/* Destination */}
       <div className="mb-6">
         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          {translations.destination}
+          {t.destination}
         </label>
         <select
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           onChange={(e) => handleChange("destination", e.target.value)}
         >
-          <option value="">{translations.allDestinations}</option>
+          <option value="">{t.allDestinations}</option>
           {destinations.map((dest) => (
             <option key={dest} value={dest}>
               {dest}
@@ -78,7 +78,7 @@ export default function FilterSidebar({ onFilterChange }) {
       {/* Price Range */}
       <div className="mb-6">
         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          {translations.priceRange}
+          {t.priceRange}
         </label>
         <div className="space-y-3">
           <input
@@ -102,7 +102,7 @@ export default function FilterSidebar({ onFilterChange }) {
       {/* Date */}
       <div className="mb-6">
         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          {translations.startDate}
+          {t.startDate}
         </label>
         <input
           type="date"
@@ -124,7 +124,7 @@ export default function FilterSidebar({ onFilterChange }) {
         }}
         className="w-full py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold text-gray-700"
       >
-        {translations.resetFilters}
+        {t.resetFilters}
       </button>
     </div>
   );

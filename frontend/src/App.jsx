@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { LanguageProvider } from "./context/LanguageContext"; // 👈 import Provider
+import { LanguageProvider } from "./context/LanguageContext";
 
 import PartnerPage from "./components/PartnerPage";
 import NAV from "./components/NAV";
@@ -12,6 +12,7 @@ import SocialPage from "./components/social/SocialPage";
 import ToursPage from "./components/ToursPage";
 import AdminPage from "./components/AdminSections/AdminPage";
 import WeatherBanner from "./components/home/WeatherBanner";
+import TourDetail from "./components/TourDetail/TourDetail";
 
 import HeroSection from "./components/home/HeroSection";
 import FlightSearchForm from "./components/home/FlightSearchForm";
@@ -37,7 +38,7 @@ export default function App() {
         {/* 👇 Bọc toàn bộ app trong div hỗ trợ dark mode */}
         <div className="bg-white text-black dark:bg-gray-900 dark:text-white min-h-screen transition-colors duration-300">
           <NAV />
-          <Routes>
+        <Routes>
             <Route
               path="/"
               element={
@@ -62,9 +63,9 @@ export default function App() {
             <Route path="/partner" element={<PartnerPage />} />
             <Route path="/profile" element={<Profile />} />
           </Routes>
-          <Footer />
-        </div>
-      </BrowserRouter>
+        <Footer />
+      </div>
+    </BrowserRouter>
     </LanguageProvider>
   );
 }

@@ -9,7 +9,7 @@ import { PlusCircle, Star } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext"; // 👈 import context
 
 export default function PartnerPage() {
-  const { translations } = useLanguage(); // 👈 lấy translations
+  const { t } = useLanguage(); // 👈 lấy t
 
   const [partners] = useState([
     {
@@ -17,8 +17,8 @@ export default function PartnerPage() {
       name: "Sunshine Travel",
       logo: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
       date: "12/03/2023",
-      tourCore: translations.partner1Core,
-      benefit: translations.partner1Benefit,
+      tourCore: t.partner1Core,
+      benefit: t.partner1Benefit,
       rating: 5,
     },
     {
@@ -26,8 +26,8 @@ export default function PartnerPage() {
       name: "Green Hotel Group",
       logo: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
       date: "07/08/2023",
-      tourCore: translations.partner2Core,
-      benefit: translations.partner2Benefit,
+      tourCore: t.partner2Core,
+      benefit: t.partner2Benefit,
       rating: 5,
     },
     // ... các partner khác tương tự
@@ -61,7 +61,7 @@ export default function PartnerPage() {
     const existing = JSON.parse(localStorage.getItem("pendingTours") || "[]");
     localStorage.setItem("pendingTours", JSON.stringify([...existing, newTour]));
 
-    alert(translations.partnerRegisterSuccess);
+    alert(t.partnerRegisterSuccess);
 
     setFormData({
       tourName: "",
@@ -78,10 +78,10 @@ export default function PartnerPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10">
       <div className="container mx-auto px-6">
         <h1 className="text-3xl font-bold mb-4 text-center text-gray-900 dark:text-white">
-          {translations.partnerTitle}
+          {t.partnerTitle}
         </h1>
         <p className="text-center text-gray-600 dark:text-gray-300 mb-8">
-          {translations.partnerSubtitle}
+          {t.partnerSubtitle}
         </p>
 
         {/* Danh sách đối tác */}
@@ -94,11 +94,11 @@ export default function PartnerPage() {
               <img src={p.logo} alt={p.name} className="w-20 h-20 rounded-full mb-3" />
               <CardTitle className="text-lg font-semibold mb-1">{p.name}</CardTitle>
               <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">
-                {translations.partnerDate}: {p.date}
+                {t.partnerDate}: {p.date}
               </p>
               <CardContent className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
-                <p><strong>{translations.partnerTourCore}:</strong> {p.tourCore}</p>
-                <p><strong>{translations.partnerBenefit}:</strong> {p.benefit}</p>
+                <p><strong>{t.partnerTourCore}:</strong> {p.tourCore}</p>
+                <p><strong>{t.partnerBenefit}:</strong> {p.benefit}</p>
                 <div className="flex justify-center mt-2 text-yellow-500">
                   {Array.from({ length: p.rating }).map((_, i) => (
                     <Star key={i} className="w-4 h-4 fill-current" />
@@ -114,18 +114,18 @@ export default function PartnerPage() {
           <Dialog>
             <DialogTrigger asChild>
               <Button size="lg" className="flex items-center gap-2">
-                <PlusCircle className="w-5 h-5" /> {translations.partnerRegisterBtn}
+                <PlusCircle className="w-5 h-5" /> {t.partnerRegisterBtn}
               </Button>
             </DialogTrigger>
 
             <DialogContent className="max-w-lg bg-white dark:bg-gray-800 dark:text-gray-200">
               <DialogHeader>
-                <DialogTitle>{translations.partnerRegisterTitle}</DialogTitle>
+                <DialogTitle>{t.partnerRegisterTitle}</DialogTitle>
               </DialogHeader>
 
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label>{translations.tourName}</Label>
+                  <Label>{t.tourName}</Label>
                   <Input
                     required
                     value={formData.tourName}
@@ -133,7 +133,7 @@ export default function PartnerPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{translations.location}</Label>
+                  <Label>{t.location}</Label>
                   <Input
                     required
                     value={formData.location}
@@ -141,7 +141,7 @@ export default function PartnerPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{translations.provider}</Label>
+                  <Label>{t.provider}</Label>
                   <Input
                     required
                     value={formData.provider}
@@ -149,7 +149,7 @@ export default function PartnerPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{translations.price}</Label>
+                  <Label>{t.price}</Label>
                   <Input
                     type="number"
                     required
@@ -159,7 +159,7 @@ export default function PartnerPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>{translations.startDate}</Label>
+                    <Label>{t.startDate}</Label>
                     <Input
                       type="date"
                       required
@@ -168,7 +168,7 @@ export default function PartnerPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{translations.endDate}</Label>
+                    <Label>{t.endDate}</Label>
                     <Input
                       type="date"
                       required
@@ -178,16 +178,16 @@ export default function PartnerPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>{translations.shortDescription}</Label>
+                  <Label>{t.shortDescription}</Label>
                   <Textarea
-                    placeholder={translations.shortDescriptionPlaceholder}
+                    placeholder={t.shortDescriptionPlaceholder}
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
                 </div>
 
                 <div className="flex justify-end mt-4">
-                  <Button type="submit">{translations.confirmRegister}</Button>
+                  <Button type="submit">{t.confirmRegister}</Button>
                 </div>
               </form>
             </DialogContent>
@@ -197,3 +197,4 @@ export default function PartnerPage() {
     </div>
   );
 }
+
