@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
+import { useLanguage } from "../context/LanguageContext"; // 👈 import context
 
 export default function FilterSidebar({ onFilterChange }) {
   const [filters, setFilters] = useState({
@@ -9,15 +10,17 @@ export default function FilterSidebar({ onFilterChange }) {
     startDate: "",
   });
 
+  const { translations } = useLanguage(); // 👈 lấy translations
+
   const destinations = [
-    "Hà Nội",
-    "TP Hồ Chí Minh",
-    "Đà Nẵng",
-    "Hạ Long",
-    "Phú Quốc",
-    "Nha Trang",
-    "Đà Lạt",
-    "Hội An",
+    translations.hanoi,
+    translations.hcm,
+    translations.danang,
+    translations.halong,
+    translations.phuquoc,
+    translations.nhatrang,
+    translations.dalat,
+    translations.hoian,
   ];
 
   const handleChange = (key, value) => {
@@ -29,14 +32,16 @@ export default function FilterSidebar({ onFilterChange }) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-4">
       <div className="flex items-center gap-2 mb-6">
-        <SlidersHorizontal size={20} className="text-gray-600" />
-        <h3 className="text-lg font-bold text-gray-900">Bộ lọc tìm kiếm</h3>
+        <SlidersHorizontal size={20} className="text-gray-600 dark:text-gray-300" />
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+          {translations.filterTitle}
+        </h3>
       </div>
 
       {/* Search */}
       <div className="mb-6">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Tìm kiếm
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          {translations.search}
         </label>
         <div className="relative">
           <Search
@@ -45,8 +50,8 @@ export default function FilterSidebar({ onFilterChange }) {
           />
           <input
             type="text"
-            placeholder="Tên tour, địa điểm..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder={translations.searchPlaceholder}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
             onChange={(e) => handleChange("search", e.target.value)}
           />
         </div>
@@ -54,14 +59,14 @@ export default function FilterSidebar({ onFilterChange }) {
 
       {/* Destination */}
       <div className="mb-6">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Điểm đến
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          {translations.destination}
         </label>
         <select
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           onChange={(e) => handleChange("destination", e.target.value)}
         >
-          <option value="">Tất cả điểm đến</option>
+          <option value="">{translations.allDestinations}</option>
           {destinations.map((dest) => (
             <option key={dest} value={dest}>
               {dest}
@@ -72,8 +77,8 @@ export default function FilterSidebar({ onFilterChange }) {
 
       {/* Price Range */}
       <div className="mb-6">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Khoảng giá (VNĐ)
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          {translations.priceRange}
         </label>
         <div className="space-y-3">
           <input
@@ -96,8 +101,8 @@ export default function FilterSidebar({ onFilterChange }) {
 
       {/* Date */}
       <div className="mb-6">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Ngày khởi hành
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          {translations.startDate}
         </label>
         <input
           type="date"
@@ -119,7 +124,7 @@ export default function FilterSidebar({ onFilterChange }) {
         }}
         className="w-full py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold text-gray-700"
       >
-        Xóa bộ lọc
+        {translations.resetFilters}
       </button>
     </div>
   );

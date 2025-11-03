@@ -94,7 +94,7 @@ export default function NAV() {
               <span className="text-sm font-medium text-title">{language}</span>
             </button>
 
-            {/* Login/Logout Button */}
+            {/* 🔹 Login / User Section */}
             {isLoggedIn ? (
               <button
                 onClick={handleLogout}
@@ -105,10 +105,10 @@ export default function NAV() {
                 <span className="text-sm">Logout</span>
               </button>
             ) : (
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-            >
+              >
                 Login
               </Link>
             )}
@@ -143,7 +143,7 @@ export default function NAV() {
                   {item.name}
                 </Link>
               ))}
-              
+
               {/* Mobile Dark Mode and Language */}
               <div className="flex items-center gap-2 px-2 py-2 border-t border-gray-200 mt-2 pt-4">
                 {/* Dark Mode Toggle */}
@@ -189,15 +189,43 @@ export default function NAV() {
                   <span>Logout</span>
                 </button>
               ) : (
-                <Link 
-                  to="/login" 
-                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 block text-center" 
+                <Link
+                  to="/login"
+                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 block text-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Login
                 </Link>
               )}
             </nav>
+            <div className="relative account-dropdown">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="bg-black text-white px-5 py-2 rounded-lg shadow hover:bg-gray-800 transition"
+              >
+                <AccountCircleIcon fontSize="medium" />
+              </button>
+
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <button
+                    onClick={() => {
+                      setShowDropdown(false);
+                      navigate("/profile");
+                    }}
+                    className="w-full text-left px-4 py-2 text-black hover:bg-gray-100 transition"
+                  >
+                    {translations.profile}
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-black hover:bg-gray-100 transition"
+                  >
+                    {translations.logout}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
