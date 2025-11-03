@@ -211,11 +211,11 @@ export function BookingCard({ basePrice }) {
         <div className="pt-4 border-t space-y-2">
           <div className="flex justify-between text-sm">
             <span>Tour cơ bản ({guests} khách)</span>
-            <span>${basePrice * guests * 5}</span>
+            <span>${basePrice * guests}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span>Khách sạn ({rooms} phòng)</span>
-            <span>${rooms * 80 * 5}</span>
+            <span>${rooms * 80}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span>Điểm tham quan</span>
@@ -223,7 +223,7 @@ export function BookingCard({ basePrice }) {
               $
               {selectedAttractions.reduce((sum, id) => {
                 const attr = attractions.find((a) => a.id === id);
-                return sum + (attr ? attr.price * guests * 5 : 0);
+                return sum + (attr ? attr.price * guests : 0);
               }, 0)}
             </span>
           </div>
