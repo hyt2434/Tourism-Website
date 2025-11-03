@@ -71,7 +71,7 @@ export default function NAV() {
 
   return (
     <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
-      <div className="container mx-auto px-36">
+      <div className="container mx-auto px-24">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div
@@ -80,14 +80,13 @@ export default function NAV() {
           >
             MagicViet
           </div>
-
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:grid grid-cols-[auto_repeat(6,minmax(100px,1fr))_auto_auto_auto] items-center gap-1">
             {navItems.map((item) => (
               <Link
-                key={item.name}
+                key={item.path}
                 to={item.path}
-                className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white hover:font-bold transition-all whitespace-nowrap"
+                className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white hover:font-bold transition-all whitespace-nowrap text-center py-2"
               >
                 {item.name}
               </Link>
@@ -96,7 +95,7 @@ export default function NAV() {
             {/* Dark Mode */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors justify-self-center"
             >
               {isDarkMode ? (
                 <MoonIcon className="h-5 w-5 text-title dark:text-white" />
@@ -108,7 +107,7 @@ export default function NAV() {
             {/* Language */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors whitespace-nowrap"
+              className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors whitespace-nowrap justify-self-center"
             >
               <GlobeAltIcon className="h-5 w-5 text-title dark:text-white" />
               <span className="text-sm font-medium text-title dark:text-white">
@@ -116,51 +115,51 @@ export default function NAV() {
               </span>
             </button>
 
-            {/* 🔹 Login / User Section */}
-            {/* Đăng nhập / Tài khoản */}
-            {isLoggedIn ? (
-              <div className="relative user-menu">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black/20"
-                  title="User Menu"
+            <div className="w-28 flex-shrink-0">
+              {/* Login / User Section */}
+              {isLoggedIn ? (
+                <div className="relative user-menu justify-self-end">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black/20"
+                    title="User Menu"
+                  >
+                    <AccountCircleIcon
+                      className="text-title dark:text-white"
+                      fontSize="medium"
+                    />
+                  </button>
+
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-2 z-50">
+                      <button
+                        onClick={() => {
+                          navigate("/profile");
+                          setUserMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-body dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap"
+                      >
+                        {translations.profile}
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 text-sm text-body dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap"
+                      >
+                        {translations.logout}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="block px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 whitespace-nowrap text-center"
                 >
-                  <AccountCircleIcon
-                    className="text-title dark:text-white"
-                    fontSize="medium"
-                  />
-                </button>
-
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-2 z-50">
-                    <button
-                      onClick={() => {
-                        navigate("/profile");
-                        setUserMenuOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-body dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap"
-                    >
-                      {translations.profile}
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-body dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap"
-                    >
-                      {translations.logout}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link
-                to="/login"
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 whitespace-nowrap"
-              >
-                {translations.login}
-              </Link>
-            )}
+                  {translations.login}
+                </Link>
+              )}
+            </div>
           </div>
-
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -196,7 +195,7 @@ export default function NAV() {
                     navigate("/profile");
                     setMobileMenuOpen(false);
                   }}
-                  className="mt-2 flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="mt-2  flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   <AccountCircleIcon
                     fontSize="large"
