@@ -88,24 +88,25 @@ export default function FlightSearchForm() {
       city: selectedCity,
       keywords: selectedKeywords,
     });
+    setSearchOpen(false);
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-6xl mx-auto">
+    <div className="bg-white/75 backdrop-md rounded-2xl p-4 md:p-6 shadow-2xl max-w-6xl mx-auto">
       {/* Search Bar with Filter */}
       <div className="relative mb-6">
-        <div className="bg-white/90 backdrop-blur-sm rounded-full shadow-lg p-2 md:p-3 flex flex-col md:flex-row gap-2 md:gap-0">
+        <div className="bg-white/90 backdrop-md border-2 border-gray-200 hover:border-blue-400 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 p-2 md:p-3 flex flex-col md:flex-row gap-2 md:gap-0">
           <input
             type="text"
-            placeholder="Search tours, destinations, flights..."
+            placeholder="Search tours, destination"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setSearchOpen(true)}
-            className="flex-1 px-4 md:px-6 py-2 md:py-3 bg-transparent text-title placeholder:text-body/60 focus:!outline-none min-w-[250px] md:min-w-[400px]"
+            className="flex-1 px-4 md:px-6 py-2 md:py-3 bg-transparent text-gray-900 placeholder:text-gray-500/60 focus:outline-none border-0 outline-none ring-0 focus:ring-0 min-w-[250px] md:min-w-[400px] text-base font-medium"
           />
           <button
             onClick={handleSearch}
-            className="px-6 py-2 md:py-3 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:!outline-none focus:ring-2 focus:ring-black/20 flex items-center justify-center gap-2"
+            className="px-6 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-full hover:bg-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/50 flex items-center justify-center gap-2 transform hover:scale-105"
           >
             <Search className="h-5 w-5" />
             <span>Search</span>
@@ -114,7 +115,7 @@ export default function FlightSearchForm() {
 
         {/* Search Dropdown Panel */}
         {searchOpen && (
-          <div className="absolute top-full mt-4 left-0 right-0 bg-white rounded-2xl shadow-2xl p-6 animate-fadeIn min-h-[400px] z-50">
+          <div className="absolute top-full mt-4 left-0 right-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-6 animate-fadeIn min-h-[400px] z-50">
             <button
               onClick={() => {
                 setSearchOpen(false);
@@ -122,6 +123,7 @@ export default function FlightSearchForm() {
                 setSelectedCity(null);
               }}
               className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Close search"
             >
               <X className="h-5 w-5 text-gray-500" />
             </button>
@@ -177,18 +179,16 @@ export default function FlightSearchForm() {
                                 selectedCity === city ? null : city
                               )
                             }
-                            className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all ${
-                              isSelected
+                            className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all ${isSelected
                                 ? "border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-500/50"
                                 : "border-gray-200 hover:border-blue-500 hover:bg-blue-50"
-                            }`}
+                              }`}
                           >
                             <span
-                              className={`font-medium ${
-                                isSelected
+                              className={`font-medium ${isSelected
                                   ? "text-white"
                                   : "text-gray-900 hover:text-blue-600"
-                              }`}
+                                }`}
                             >
                               {city}
                             </span>
@@ -222,11 +222,10 @@ export default function FlightSearchForm() {
                             setSelectedKeywords([...selectedKeywords, keyword]);
                           }
                         }}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                          isSelected
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isSelected
                             ? "bg-blue-600 text-white shadow-lg shadow-blue-500/50 scale-105"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
-                        }`}
+                          }`}
                       >
                         {keyword}
                       </button>
@@ -240,9 +239,8 @@ export default function FlightSearchForm() {
               <button
                 onClick={() => {
                   handleSearch();
-                  setSearchOpen(false);
                 }}
-                className="px-8 py-3 bg-black text-white rounded-full hover:opacity-90 transition-opacity font-semibold"
+                className="px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors font-semibold"
               >
                 Apply Filters
               </button>
@@ -255,23 +253,21 @@ export default function FlightSearchForm() {
       <div className="flex gap-4 mb-6">
         <button
           onClick={() => setTripType("round-trip")}
-          className={`px-6 py-2 rounded-full text-sm font-medium transition ${
-            tripType === "round-trip"
-              ? "bg-blue-500 text-white"
+          className={`px-6 py-2 rounded-full text-sm font-medium transition ${tripType === "round-trip"
+              ? "bg-blue-600 text-white"
               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
+            }`}
         >
-          Một chiều / Khứ hồi
+          One-way / Round-trip
         </button>
         <button
           onClick={() => setTripType("multi-city")}
-          className={`px-6 py-2 rounded-full text-sm font-medium transition ${
-            tripType === "multi-city"
-              ? "bg-blue-500 text-white"
+          className={`px-6 py-2 rounded-full text-sm font-medium transition ${tripType === "multi-city"
+              ? "bg-blue-600 text-white"
               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
+            }`}
         >
-          Nhiều thành phố
+          Multi-city
         </button>
       </div>
 
@@ -280,7 +276,7 @@ export default function FlightSearchForm() {
         {/* From */}
         <div className="lg:col-span-3">
           <label className="block text-xs text-gray-600 mb-2 font-medium">
-            Từ
+            From
           </label>
           <div className="relative">
             <Plane className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -288,7 +284,7 @@ export default function FlightSearchForm() {
               type="text"
               value={fromLocation}
               onChange={(e) => setFromLocation(e.target.value)}
-              className="w-full pl-10 h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 h-12 border-gray-200 focus:border-blue-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
         </div>
@@ -306,7 +302,7 @@ export default function FlightSearchForm() {
         {/* To */}
         <div className="lg:col-span-3">
           <label className="block text-xs text-gray-600 mb-2 font-medium">
-            Đến
+            To
           </label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -314,7 +310,7 @@ export default function FlightSearchForm() {
               type="text"
               value={toLocation}
               onChange={(e) => setToLocation(e.target.value)}
-              className="w-full pl-10 h-12 border-2 border-gray-200 focus:border-blue-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 h-12 border-gray-200 focus:border-blue-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
         </div>
@@ -322,13 +318,13 @@ export default function FlightSearchForm() {
         {/* Departure date */}
         <div className="lg:col-span-2">
           <label className="block text-xs text-gray-600 mb-2 font-medium">
-            Ngày khởi hành
+            Departure Date
           </label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-start h-12 border-2 border-gray-200 hover:border-blue-500 rounded-lg"
+                className="w-full justify-start h-12 border-2 border-gray-200 focus:border-blue-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {formatDate(departureDate)}
@@ -348,7 +344,7 @@ export default function FlightSearchForm() {
         {/* Return date */}
         <div className="lg:col-span-2">
           <label className="block text-xs text-gray-600 mb-2 font-medium">
-            Khứ hồi
+            Return Date
           </label>
           <Popover>
             <PopoverTrigger asChild>
@@ -374,7 +370,7 @@ export default function FlightSearchForm() {
         {/* Passengers */}
         <div className="lg:col-span-1">
           <label className="block text-xs text-gray-600 mb-2 font-medium">
-            Hành khách
+            Passengers
           </label>
           <Popover>
             <PopoverTrigger asChild>
@@ -391,19 +387,19 @@ export default function FlightSearchForm() {
             <PopoverContent className="w-72 p-4">
               <div className="space-y-4">
                 <PassengerControl
-                  label="Người lớn"
+                  label="Adults"
                   value={adults}
                   onDecrease={() => setAdults(Math.max(1, adults - 1))}
                   onIncrease={() => setAdults(adults + 1)}
                 />
                 <PassengerControl
-                  label="Trẻ em"
+                  label="Children"
                   value={children}
                   onDecrease={() => setChildren(Math.max(0, children - 1))}
                   onIncrease={() => setChildren(children + 1)}
                 />
                 <PassengerControl
-                  label="Em bé"
+                  label="Infants"
                   value={infants}
                   onDecrease={() => setInfants(Math.max(0, infants - 1))}
                   onIncrease={() => setInfants(infants + 1)}

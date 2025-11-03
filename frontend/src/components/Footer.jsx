@@ -1,72 +1,101 @@
-import { Link } from "react-router-dom";
-
-
-import { Facebook, Linkedin, Youtube, Instagram } from "lucide-react";
+import React from "react";
 
 export default function Footer() {
+  const popularProvinces = ["Hanoi", "Da Nang", "Ho Chi Minh", "Hue"];
+  const moreDestinations = ["Hoi An", "Phu Quoc", "Nha Trang", "Ha Long Bay"];
+  const legal = [
+    "Terms of Service",
+    "Privacy Policy",
+    "Cookie Policy",
+    "Accessibility",
+  ];
+
   return (
-    <footer className="bg-white border-t">
-      <div className="max-w-[1440px] mx-auto px-20 py-12">
-        <div className="grid grid-cols-4 gap-8 mb-12">
-          {/* Column 1 */}
+    <footer className="bg-section dark:bg-gray-800 py-12 transition-colors duration-300">
+      <div className="container mx-auto px-36 max-w-container">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center lg:justify-items-start text-center lg:text-left">
+          {/* Column 1 - Brand */}
           <div>
-            <h3 className="mb-6">Viet Travel</h3>
-            <p className="text-black">
+            <h3 className="text-lg font-bold text-title dark:text-white mb-3">
+              MagicViet
+            </h3>
+            <p className="text-sm text-body dark:text-gray-300 mb-4 leading-relaxed">
               Discover the beauty of Vietnam with our premium travel services.
             </p>
+            <div className="flex gap-4 justify-center lg:justify-start">
+              {/* Social Icons */}
+              {["facebook", "instagram", "twitter", "youtube"].map(
+                (platform) => (
+                  <a
+                    key={platform}
+                    href={`#${platform}`}
+                    className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white transition-colors"
+                    aria-label={platform}
+                  >
+                    {/* You can keep your SVGs here as-is */}
+                  </a>
+                )
+              )}
+            </div>
           </div>
 
-          {/* Column 2 */}
+          {/* Column 2 - Popular Provinces */}
           <div>
-            <h4 className="mb-6 text-black">Popular Provinces</h4>
-            <ul className="space-y-3">
-              <li><a href="#" className="text-black">Hanoi</a></li>
-              <li><a href="#" className="text-black">Ho Chi Minh</a></li>
-              <li><a href="#" className="text-black">Da Nang</a></li>
-              <li><a href="#" className="text-black">Hue</a></li>
+            <h3 className="text-lg font-bold text-title dark:text-white mb-3">
+              Popular Provinces
+            </h3>
+            <ul className="space-y-2">
+              {popularProvinces.map((province) => (
+                <li key={province}>
+                  <a
+                    href={`#${province.toLowerCase().replace(" ", "-")}`}
+                    className="text-sm text-body dark:text-gray-300 hover:text-title dark:hover:text-white transition-colors hover:underline"
+                  >
+                    {province}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Column 3 */}
+          {/* Column 3 - More Destinations */}
           <div>
-            <h4 className="mb-6 text-black">More Destinations</h4>
-            <ul className="space-y-3">
-              <li><a href="#" className="text-black">Hoi An</a></li>
-              <li><a href="#" className="text-black">Phu Quoc</a></li>
-              <li><a href="#" className="text-black">Nha Trang</a></li>
-              <li><a href="#" className="text-black">Ha Long Bay</a></li>
+            <h3 className="text-lg font-bold text-title dark:text-white mb-3">
+              More Destinations
+            </h3>
+            <ul className="space-y-2">
+              {moreDestinations.map((destination) => (
+                <li key={destination}>
+                  <a
+                    href={`#${destination.toLowerCase().replace(" ", "-")}`}
+                    className="text-sm text-body dark:text-gray-300 hover:text-title dark:hover:text-white transition-colors hover:underline"
+                  >
+                    {destination}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Column 4 */}
+          {/* Column 4 - Legal */}
           <div>
-            <h4 className="mb-6 text-black">Legal</h4>
-            <ul className="space-y-3">
-              <li><a href="#" className="text-black">Terms of Service</a></li>
-              <li><a href="#" className="text-black">Privacy Policy</a></li>
-              <li><a href="#" className="text-black">Cookie Policy</a></li>
-              <li><a href="#" className="text-black">Accessibility</a></li>
+            <h3 className="text-lg font-bold text-title dark:text-white mb-3">
+              Legal
+            </h3>
+            <ul className="space-y-2">
+              {legal.map((item) => (
+                <li key={item}>
+                  <a
+                    href={`#${item.toLowerCase().replace(" ", "-")}`}
+                    className="text-sm text-body dark:text-gray-300 hover:text-title dark:hover:text-white transition-colors hover:underline"
+                  >
+                    {item}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
-
-        {/* Social Icons */}
-        <div className="flex gap-2 mt-8">
-          <button className="w-10 h-10 rounded flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors">
-            <Facebook className="w-6 h-6 text-gray-500" />
-          </button>
-          <button className="w-10 h-10 rounded flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors">
-            <Linkedin className="w-6 h-6 text-gray-500" />
-          </button>
-          <button className="w-10 h-10 rounded flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors">
-            <Youtube className="w-6 h-6 text-gray-500" />
-          </button>
-          <button className="w-10 h-10 rounded flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors">
-            <Instagram className="w-6 h-6 text-gray-500" />
-          </button>
-        </div>
-
-        <div className="border-t border-gray-200 mt-8"></div>
       </div>
     </footer>
   );
