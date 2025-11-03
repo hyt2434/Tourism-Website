@@ -1,9 +1,11 @@
 import { Heart, MapPin, Calendar, Users } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext"; // 👈 thêm
 
 export default function TourCard({ tour }) {
   const [isFavorite, setIsFavorite] = useState(false);
+  const { translations } = useLanguage(); // 👈 lấy translations
 
   return (
     <Link
@@ -63,7 +65,9 @@ export default function TourCard({ tour }) {
 
           <div className="flex items-center gap-2">
             <Users size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
-            <span>{tour.maxSlots} chỗ còn lại</span>
+            <span>
+              {tour.maxSlots} {translations.slotsLeft}
+            </span>
           </div>
         </div>
 
@@ -74,7 +78,7 @@ export default function TourCard({ tour }) {
               {tour.rating}
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-300">
-              ({tour.reviews} đánh giá)
+              ({tour.reviews} {translations.reviews})
             </span>
           </div>
         )}
@@ -82,13 +86,15 @@ export default function TourCard({ tour }) {
         {/* Price */}
         <div className="flex items-end justify-between pt-3 border-t border-gray-100 dark:border-gray-700 transition-colors">
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Từ</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {translations.from}
+            </p>
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {tour.price.toLocaleString("vi-VN")} đ
             </p>
           </div>
           <button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
-            Đặt ngay
+            {translations.bookNow}
           </button>
         </div>
       </div>

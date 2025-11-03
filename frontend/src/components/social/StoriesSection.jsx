@@ -1,15 +1,18 @@
 import React from "react";
-
-const stories = [
-  "Trending",
-  "Hạ Long",
-  "Sapa",
-  "Phú Quốc",
-  "Đà Lạt",
-  "Nha Trang",
-];
+import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function StoriesSection() {
+  const { translations } = useLanguage(); // 👈 lấy translations
+
+  const stories = [
+    translations.trending,
+    "Hạ Long",
+    "Sapa",
+    "Phú Quốc",
+    "Đà Lạt",
+    "Nha Trang",
+  ];
+
   return (
     <div className="mb-6 overflow-x-auto">
       <div className="flex gap-4 pb-2">

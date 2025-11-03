@@ -37,76 +37,104 @@ import { Switch } from "../ui/switch";
 import { Separator } from "../ui/separator";
 import { Plus, Edit, XCircle } from "lucide-react";
 import { mockPromotions, getStatusBadge } from "./mockData";
+import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function PromotionsTab() {
+  const { translations } = useLanguage(); // 👈 lấy translations
+
   return (
     <Card className="bg-white dark:bg-gray-900 text-black dark:text-white border border-gray-200 dark:border-gray-700">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="dark:text-white">Quản lý Khuyến mãi</CardTitle>
+            <CardTitle className="dark:text-white">
+              {translations.promotionManagement}
+            </CardTitle>
             <CardDescription className="text-muted-foreground dark:text-gray-400">
-              Tạo mã giảm giá và theo dõi hiệu quả
+              {translations.promotionDescription}
             </CardDescription>
           </div>
           <Dialog>
             <DialogTrigger asChild>
               <Button className="dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
-                Tạo khuyến mãi
+                {translations.createPromotion}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl bg-white dark:bg-gray-900 text-black dark:text-white">
               <DialogHeader>
-                <DialogTitle className="dark:text-white">Tạo khuyến mãi mới</DialogTitle>
+                <DialogTitle className="dark:text-white">
+                  {translations.newPromotion}
+                </DialogTitle>
                 <DialogDescription className="text-muted-foreground dark:text-gray-400">
-                  Thiết lập mã giảm giá và điều kiện áp dụng
+                  {translations.promotionSetup}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 {/* Form fields */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Mã khuyến mãi</Label>
-                    <Input placeholder="VD: SUMMER2025" className="bg-white dark:bg-gray-800 text-black dark:text-white" />
+                    <Label>{translations.promoCode}</Label>
+                    <Input
+                      placeholder="SUMMER2025"
+                      className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Loại giảm giá</Label>
+                    <Label>{translations.discountType}</Label>
                     <Select>
                       <SelectTrigger className="bg-white dark:bg-gray-800 text-black dark:text-white">
-                        <SelectValue placeholder="Chọn loại" />
+                        <SelectValue placeholder={translations.selectType} />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-gray-800 text-black dark:text-white">
-                        <SelectItem value="percent">Phần trăm (%)</SelectItem>
-                        <SelectItem value="fixed">Số tiền cố định (đ)</SelectItem>
+                        <SelectItem value="percent">
+                          {translations.percent}
+                        </SelectItem>
+                        <SelectItem value="fixed">
+                          {translations.fixed}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Giá trị giảm</Label>
-                    <Input type="number" placeholder="VD: 20" className="bg-white dark:bg-gray-800 text-black dark:text-white" />
+                    <Label>{translations.discountValue}</Label>
+                    <Input
+                      type="number"
+                      placeholder="20"
+                      className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Số lượt sử dụng tối đa</Label>
-                    <Input type="number" placeholder="VD: 500" className="bg-white dark:bg-gray-800 text-black dark:text-white" />
+                    <Label>{translations.maxUses}</Label>
+                    <Input
+                      type="number"
+                      placeholder="500"
+                      className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Ngày bắt đầu</Label>
-                    <Input type="date" className="bg-white dark:bg-gray-800 text-black dark:text-white" />
+                    <Label>{translations.startDate}</Label>
+                    <Input
+                      type="date"
+                      className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Ngày kết thúc</Label>
-                    <Input type="date" className="bg-white dark:bg-gray-800 text-black dark:text-white" />
+                    <Label>{translations.endDate}</Label>
+                    <Input
+                      type="date"
+                      className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Điều kiện áp dụng</Label>
+                  <Label>{translations.conditions}</Label>
                   <Textarea
-                    placeholder="VD: Áp dụng cho đơn hàng từ 1,000,000đ"
+                    placeholder={translations.conditionsPlaceholder}
                     rows={3}
                     className="bg-white dark:bg-gray-800 text-black dark:text-white"
                   />
@@ -114,18 +142,26 @@ export default function PromotionsTab() {
                 <Separator className="dark:bg-gray-700" />
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="auto-apply">Tự động áp dụng</Label>
+                    <Label htmlFor="auto-apply">
+                      {translations.autoApply}
+                    </Label>
                     <Switch id="auto-apply" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="show-homepage">Hiển thị trang chủ</Label>
+                    <Label htmlFor="show-homepage">
+                      {translations.showHomepage}
+                    </Label>
                     <Switch id="show-homepage" />
                   </div>
                 </div>
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" className="dark:border-gray-600 dark:text-white">Hủy</Button>
-                <Button className="dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700">Tạo khuyến mãi</Button>
+                <Button variant="outline" className="dark:border-gray-600 dark:text-white">
+                  {translations.cancel}
+                </Button>
+                <Button className="dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700">
+                  {translations.createPromotion}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -135,12 +171,12 @@ export default function PromotionsTab() {
         <Table>
           <TableHeader className="bg-gray-100 dark:bg-gray-800">
             <TableRow>
-              <TableHead className="text-black dark:text-white">Mã khuyến mãi</TableHead>
-              <TableHead className="text-black dark:text-white">Giảm giá</TableHead>
-              <TableHead className="text-black dark:text-white">Lượt dùng</TableHead>
-              <TableHead className="text-black dark:text-white">Hạn sử dụng</TableHead>
-              <TableHead className="text-black dark:text-white">Trạng thái</TableHead>
-              <TableHead className="text-right text-black dark:text-white">Thao tác</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.promoCode}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.discount}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.uses}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.validUntil}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.status}</TableHead>
+              <TableHead className="text-right text-black dark:text-white">{translations.actions}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -174,6 +210,5 @@ export default function PromotionsTab() {
         </Table>
       </CardContent>
     </Card>
-
   );
 }

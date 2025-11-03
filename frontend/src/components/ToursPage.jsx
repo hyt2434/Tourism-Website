@@ -1,8 +1,11 @@
 import { useState } from "react";
 import TourCard from "./TourCard";
 import FilterSidebar from "./FilterSidebar";
+import { useLanguage } from "../context/LanguageContext"; // 👈 thêm
 
 export default function ToursPage() {
+  const { translations } = useLanguage(); // 👈 lấy translations
+
   const allTours = [
     {
       id: 1,
@@ -80,10 +83,10 @@ export default function ToursPage() {
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
         <div className="max-w-[1440px] mx-auto px-6 lg:px-20">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Discover Travel Tours
+            {translations.discoverTours}
           </h1>
           <p className="text-xl text-blue-100">
-            Over {allTours.length} tours waiting for you to explore
+            {translations.overTours.replace("{count}", allTours.length)}
           </p>
         </div>
       </div>
@@ -100,14 +103,16 @@ export default function ToursPage() {
           <div className="lg:col-span-3">
             <div className="flex justify-between items-center mb-6">
               <p className="text-gray-600 dark:text-gray-300">
-                Found{" "}
-                <span className="font-bold">{filteredTours.length}</span> tours
+                {translations.foundTours.replace(
+                  "{count}",
+                  filteredTours.length
+                )}
               </p>
               <select className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors">
-                <option>Most Popular</option>
-                <option>Lowest Price</option>
-                <option>Highest Price</option>
-                <option>Highest Rating</option>
+                <option>{translations.mostPopular}</option>
+                <option>{translations.lowestPrice}</option>
+                <option>{translations.highestPrice}</option>
+                <option>{translations.highestRating}</option>
               </select>
             </div>
 
@@ -120,7 +125,7 @@ export default function ToursPage() {
             {filteredTours.length === 0 && (
               <div className="text-center py-20">
                 <p className="text-xl text-gray-500 dark:text-gray-400">
-                  No matching tours found. Try adjusting your filters!
+                  {translations.noTours}
                 </p>
               </div>
             )}

@@ -1,12 +1,15 @@
 import { Star, ThumbsUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { useLanguage } from "../../context/LanguageContext";
 
 export function ReviewCard({ name, avatar, rating, date, review, helpful }) {
+  const { translations } = useLanguage();
+
   return (
-    <div className="border rounded-xl p-6 bg-white">
+    <div className="border rounded-xl p-6 bg-white dark:bg-gray-900 dark:border-gray-700">
       <div className="flex items-start gap-4">
         <Avatar className="w-12 h-12">
-          <AvatarImage src={avatar} />
+          <AvatarImage src={avatar} alt={`${name} avatar`} />
           <AvatarFallback>{name.charAt(0)}</AvatarFallback>
         </Avatar>
 
@@ -20,11 +23,10 @@ export function ReviewCard({ name, avatar, rating, date, review, helpful }) {
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star
                   key={i}
-                  className={`w-4 h-4 ${
-                    i < rating
-                      ? "fill-yellow-400 text-yellow-400"
-                      : "fill-gray-200 text-gray-200"
-                  }`}
+                  className={`w-4 h-4 ${i < rating
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "fill-gray-200 text-gray-200"
+                    }`}
                 />
               ))}
             </div>
@@ -35,7 +37,9 @@ export function ReviewCard({ name, avatar, rating, date, review, helpful }) {
           {helpful && (
             <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
               <ThumbsUp className="w-4 h-4" />
-              <span>Hữu ích ({helpful})</span>
+              <span>
+                {translations.helpful} ({helpful})
+              </span>
             </button>
           )}
         </div>

@@ -1,28 +1,31 @@
 import React from "react";
 import Card from "./Card";
+import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function Reviews() {
+  const { translations } = useLanguage(); // 👈 lấy translations
+
   const reviews = [
     {
-      quote: "Amazing experience! The tour was well-organized and stress-free.",
+      quote: translations.review1,
       name: "Emma Wilson",
       location: "UK",
       avatar: "https://i.pravatar.cc/150?img=1",
     },
     {
-      quote: "Beautiful destinations and friendly guide. Highly recommended!",
+      quote: translations.review2,
       name: "Daniel Nguyen",
-      location: "Descriptions",
+      location: "Vietnam",
       avatar: "https://i.pravatar.cc/150?img=12",
     },
     {
-      quote: "Beautiful destinations and friendly guide. Highly recommended!",
+      quote: translations.review2,
       name: "Daniel Nguyen",
-      location: "Descriptions",
+      location: "Vietnam",
       avatar: "https://i.pravatar.cc/150?img=13",
     },
     {
-      quote: "Great value for money. Loved the lantern boat in Hoi An!",
+      quote: translations.review3,
       name: "Sofia Martínez",
       location: "Spain",
       avatar: "https://i.pravatar.cc/150?img=5",
@@ -33,7 +36,7 @@ export default function Reviews() {
     <section className="py-12 bg-white dark:bg-gray-900">
       <div className="container mx-auto px-36 max-w-container">
         <h2 className="text-3xl md:text-4xl font-bold text-title dark:text-white mb-8">
-          Reviews / Ratings
+          {translations.reviewsTitle}
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -34,14 +34,19 @@ import { Alert, AlertDescription } from "../ui/alert";
 import { Separator } from "../ui/separator";
 import { Search, Eye } from "lucide-react";
 import { mockOrders, getStatusBadge } from "./mockData";
+import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function OrdersTab() {
+  const { translations } = useLanguage(); // 👈 lấy translations
+
   return (
     <Card className="bg-white dark:bg-gray-900 text-black dark:text-white border border-gray-200 dark:border-gray-700">
       <CardHeader>
-        <CardTitle className="text-title dark:text-white">Quản lý Đơn hàng</CardTitle>
+        <CardTitle className="text-title dark:text-white">
+          {translations.orderManagement}
+        </CardTitle>
         <CardDescription className="text-muted-foreground dark:text-gray-400">
-          Tra cứu và xử lý đơn đặt chỗ
+          {translations.orderDescription}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -49,7 +54,7 @@ export default function OrdersTab() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-gray-400" />
             <Input
-              placeholder="Tìm kiếm theo mã đơn, tên khách hàng..."
+              placeholder={translations.searchOrder}
               className="pl-9 bg-white dark:bg-gray-800 text-black dark:text-white"
             />
           </div>
@@ -58,23 +63,23 @@ export default function OrdersTab() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-gray-800 text-black dark:text-white">
-              <SelectItem value="all">Tất cả đơn</SelectItem>
-              <SelectItem value="pending">Chờ xử lý</SelectItem>
-              <SelectItem value="completed">Hoàn thành</SelectItem>
-              <SelectItem value="refund">Hoàn tiền</SelectItem>
+              <SelectItem value="all">{translations.allOrders}</SelectItem>
+              <SelectItem value="pending">{translations.pending}</SelectItem>
+              <SelectItem value="completed">{translations.completed}</SelectItem>
+              <SelectItem value="refund">{translations.refund}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <Table>
           <TableHeader className="bg-gray-100 dark:bg-gray-800">
             <TableRow>
-              <TableHead className="text-black dark:text-white">Mã đơn</TableHead>
-              <TableHead className="text-black dark:text-white">Khách hàng</TableHead>
-              <TableHead className="text-black dark:text-white">Dịch vụ</TableHead>
-              <TableHead className="text-black dark:text-white">Số tiền</TableHead>
-              <TableHead className="text-black dark:text-white">Ngày đặt</TableHead>
-              <TableHead className="text-black dark:text-white">Trạng thái</TableHead>
-              <TableHead className="text-right text-black dark:text-white">Thao tác</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.orderId}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.customer}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.service}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.amount}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.orderDate}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.status}</TableHead>
+              <TableHead className="text-right text-black dark:text-white">{translations.actions}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -102,40 +107,39 @@ export default function OrdersTab() {
                       <DialogContent className="bg-white dark:bg-gray-900 text-black dark:text-white">
                         <DialogHeader>
                           <DialogTitle>
-                            Chi tiết đơn hàng {order.id}
+                            {translations.orderDetail} {order.id}
                           </DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
                           <div>
-                            <p className="text-muted-foreground dark:text-gray-400">Khách hàng</p>
+                            <p className="text-muted-foreground dark:text-gray-400">{translations.customer}</p>
                             <p>{order.customer}</p>
                           </div>
                           <div>
-                            <p className="text-muted-foreground dark:text-gray-400">Dịch vụ</p>
+                            <p className="text-muted-foreground dark:text-gray-400">{translations.service}</p>
                             <p>{order.service}</p>
                           </div>
                           <div>
-                            <p className="text-muted-foreground dark:text-gray-400">Số tiền</p>
+                            <p className="text-muted-foreground dark:text-gray-400">{translations.amount}</p>
                             <p>{order.amount}</p>
                           </div>
                           <Separator className="dark:bg-gray-700" />
                           {order.status === "refund_requested" && (
                             <Alert className="bg-yellow-50 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700">
                               <AlertDescription>
-                                Khách hàng yêu cầu hoàn tiền. Vui lòng xem xét
-                                và xử lý.
+                                {translations.refundRequest}
                               </AlertDescription>
                             </Alert>
                           )}
                           <div className="flex gap-2">
                             <Button variant="outline" className="flex-1 dark:border-gray-600 dark:text-white">
-                              Đổi lịch
+                              {translations.reschedule}
                             </Button>
                             <Button variant="outline" className="flex-1 dark:border-gray-600 dark:text-white">
-                              Hủy đơn
+                              {translations.cancelOrder}
                             </Button>
                             <Button className="flex-1 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700">
-                              Hoàn tiền
+                              {translations.refund}
                             </Button>
                           </div>
                         </div>
