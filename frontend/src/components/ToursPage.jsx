@@ -1,57 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TourCard from "./TourCard";
 import FilterSidebar from "./FilterSidebar";
 
 export default function ToursPage() {
-  const allTours = [
-    {
-      id: 1,
-      name: "5-Star Ha Long Cruise - Luxury Experience",
-      destination: "Ha Long",
-      image: "https://images.unsplash.com/photo-1713551584340-7b7817f39a62?...",
-      price: 5990000,
-      duration: "2 days 1 night",
-      maxSlots: 12,
-      rating: 9.2,
-      reviews: 248,
-      badge: "Best Seller",
-    },
-    {
-      id: 2,
-      name: "Hoi An Ancient Town - Cultural Heritage Discovery",
-      destination: "Hoi An",
-      image: "https://images.unsplash.com/photo-1583417319070-4a69db38a482?...",
-      price: 3490000,
-      duration: "3 days 2 nights",
-      maxSlots: 8,
-      rating: 9.5,
-      reviews: 512,
-    },
-    {
-      id: 3,
-      name: "Phu Quoc - Paradise Resort",
-      destination: "Phu Quoc",
-      image: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?...",
-      price: 7290000,
-      duration: "4 days 3 nights",
-      maxSlots: 5,
-      rating: 9.0,
-      reviews: 186,
-      badge: "Special Offer",
-    },
-    {
-      id: 4,
-      name: "Sapa - Conquer Fansipan Peak",
-      destination: "Sapa",
-      image: "https://images.unsplash.com/photo-1583417319070-4a69db38a482?...",
-      price: 4590000,
-      duration: "3 days 2 nights",
-      maxSlots: 15,
-      rating: 8.8,
-      reviews: 324,
-    },
-  ];
-
+  const [allTours, setAllTours] = useState([]);
   const [filteredTours, setFilteredTours] = useState(allTours);
 
   const handleFilterChange = (filters) => {
@@ -73,6 +25,27 @@ export default function ToursPage() {
 
     setFilteredTours(result);
   };
+
+  useEffect(() => {
+    const fetchTours = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/tour/");
+        
+        if (!response.ok) {
+          throw new Error(`HTTP Error! Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        setAllTours(data);
+        setFilteredTours(data);
+      } catch (error) {
+        console.error("Fetching tour is not completed:", error);
+      }
+    };
+
+    fetchTours();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
