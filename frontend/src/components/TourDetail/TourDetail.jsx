@@ -7,11 +7,15 @@ import "swiper/css/pagination";
 import "swiper/css/thumbs";
 import { BookingCard } from "./BookingCard";
 import { ReviewCard } from "./ReviewCard";
+<<<<<<< HEAD
 import { BookingPanel } from "./BookingPanel";
+=======
+>>>>>>> main
 import ImageWithFallback from "../../figma/ImageWithFallback";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+<<<<<<< HEAD
 
 import { Separator } from "../ui/separator";
 import {
@@ -22,10 +26,16 @@ import {
   MessageCircle,
   ChevronLeft,
   ChevronRight,
+=======
+import { Separator } from "../ui/separator";
+import {
+  CheckCircle,
+>>>>>>> main
   Star,
   MapPin,
   Share2,
   Heart,
+<<<<<<< HEAD
 } from "lucide-react";
 
 export default function TourDetail() {
@@ -55,6 +65,28 @@ export default function TourDetail() {
     <div className="min-h-screen bg-gray-50">
       {/* Tour Title Section */}
       <div className="bg-white border-b">
+=======
+  X,
+  Phone,
+  Mail,
+  MessageCircle,
+} from "lucide-react";
+
+export default function TourDetail() {
+  const [thumbsSwiper, setThumbsSwiper] = useState(null);
+
+  const tourImages = [
+    "https://images.unsplash.com/photo-1668000018482-a02acf02b22a?...",
+    "https://images.unsplash.com/photo-1729605411476-defbdab14c54?...",
+    "https://res.klook.com/images/.../activities/qmgtdjekctlyucr8itqw/...",
+    "https://bcp.cdnchinhphu.vn/.../hanoi-17486566616582033334984.jpg",
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* Tiêu đề Tour */}
+      <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-700">
+>>>>>>> main
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -65,15 +97,24 @@ export default function TourDetail() {
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                   <span>4.8</span>
+<<<<<<< HEAD
                   <span className="text-muted-foreground">(324 đánh giá)</span>
                 </div>
                 <div className="flex items-center gap-1 text-muted-foreground">
+=======
+                  <span className="text-muted-foreground dark:text-gray-400">
+                    (324 đánh giá)
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground dark:text-gray-400">
+>>>>>>> main
                   <MapPin className="w-4 h-4" />
                   <span>Hà Nội & Vịnh Hạ Long, Việt Nam</span>
                 </div>
               </div>
             </div>
             <div className="flex gap-2">
+<<<<<<< HEAD
               <Button 
                 onClick={() => setIsBookingPanelOpen(true)}
                 className="bg-primary hover:bg-primary/90"
@@ -81,6 +122,8 @@ export default function TourDetail() {
               >
                 Đặt Tour Ngay
               </Button>
+=======
+>>>>>>> main
               <Button variant="outline" size="icon" className="rounded-full">
                 <Share2 className="w-5 h-5" />
               </Button>
@@ -92,6 +135,7 @@ export default function TourDetail() {
         </div>
       </div>
 
+<<<<<<< HEAD
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 gap-8">
           {/* Nội dung chính - Full width */}
@@ -99,6 +143,15 @@ export default function TourDetail() {
             {/* Thư viện ảnh */}
             <div className="relative rounded-2xl overflow-hidden bg-gray-900 aspect-video">
               {/* Swiper chính */}
+=======
+      {/* Nội dung */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Cột trái */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Thư viện ảnh */}
+            <div className="relative rounded-2xl overflow-hidden bg-gray-900 dark:bg-gray-800 aspect-video">
+>>>>>>> main
               <Swiper
                 modules={[Navigation, Pagination, Thumbs, Autoplay]}
                 navigation
@@ -119,7 +172,11 @@ export default function TourDetail() {
                 ))}
               </Swiper>
 
+<<<<<<< HEAD
               {/* Swiper thumbnails */}
+=======
+              {/* Thumbnails */}
+>>>>>>> main
               <div className="mt-4">
                 <Swiper
                   onSwiper={setThumbsSwiper}
@@ -151,6 +208,7 @@ export default function TourDetail() {
                 <TabsTrigger value="location">Địa điểm</TabsTrigger>
               </TabsList>
 
+<<<<<<< HEAD
               <TabsContent value="overview" className="space-y-4 mt-6">
                 <div className="bg-white rounded-xl p-6">
                   <h3 className="mb-4">Về chuyến đi này</h3>
@@ -193,44 +251,112 @@ export default function TourDetail() {
                       <li key={index} className="flex items-start gap-3">
                         <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                         <span>{highlight}</span>
+=======
+              {/* Tab Tổng quan */}
+              <TabsContent value="overview" className="space-y-4 mt-6">
+                <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border dark:border-gray-700">
+                  <h3 className="mb-4 dark:text-gray-100">Về chuyến đi này</h3>
+                  <p className="text-foreground dark:text-gray-300 mb-4">
+                    Bắt đầu cuộc hành trình khó quên qua những điểm đến mang tính biểu tượng...
+                  </p>
+                  <p className="text-foreground dark:text-gray-300 mb-4">
+                    Trải nghiệm nét quyến rũ của Phố Cổ Hà Nội...
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <Badge variant="secondary" className="dark:bg-gray-800 dark:text-gray-200">
+                      Du lịch văn hóa
+                    </Badge>
+                    <Badge variant="secondary" className="dark:bg-gray-800 dark:text-gray-200">
+                      Thiên nhiên
+                    </Badge>
+                    <Badge variant="secondary" className="dark:bg-gray-800 dark:text-gray-200">
+                      Ẩm thực
+                    </Badge>
+                    <Badge variant="secondary" className="dark:bg-gray-800 dark:text-gray-200">
+                      Nhiếp ảnh
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border dark:border-gray-700">
+                  <h3 className="mb-4 dark:text-gray-100">Điểm nổi bật</h3>
+                  <ul className="space-y-3">
+                    {[
+                      "Du ngoạn trên Vịnh Hạ Long bằng thuyền buồm truyền thống",
+                      "Khám phá Phố Cổ Hà Nội và các di tích lịch sử",
+                      "Tham quan Văn Miếu Quốc Tử Giám",
+                      "Thưởng thức ẩm thực Việt Nam chính gốc",
+                      "Trải nghiệm biểu diễn Múa rối nước",
+                      "Lưu trú tại khách sạn boutique",
+                    ].map((highlight, index) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="dark:text-gray-300">{highlight}</span>
+>>>>>>> main
                       </li>
                     ))}
                   </ul>
                 </div>
               </TabsContent>
+<<<<<<< HEAD
 
               <TabsContent value="itinerary" className="mt-6">
                 <div className="bg-white rounded-xl p-6 space-y-6">
+=======
+              {/* Tab Lịch trình */}
+              <TabsContent value="itinerary" className="mt-6">
+                <div className="bg-white dark:bg-gray-900 rounded-xl p-6 space-y-6 border dark:border-gray-700">
+>>>>>>> main
                   {[
                     {
                       day: 1,
                       title: "Đến Hà Nội",
                       description:
+<<<<<<< HEAD
                         "Chào mừng đến Việt Nam! Đưa đón về khách sạn và thưởng thức bữa tối chào mừng với các món ăn truyền thống Việt Nam.",
+=======
+                        "Chào mừng đến Việt Nam! Đưa đón về khách sạn và thưởng thức bữa tối chào mừng.",
+>>>>>>> main
                     },
                     {
                       day: 2,
                       title: "Tour Hà Nội",
                       description:
+<<<<<<< HEAD
                         "Khám phá Phố Cổ, Văn Miếu và thưởng thức chương trình Múa rối nước truyền thống vào buổi tối.",
+=======
+                        "Khám phá Phố Cổ, Văn Miếu và xem Múa rối nước truyền thống.",
+>>>>>>> main
                     },
                     {
                       day: 3,
                       title: "Du thuyền Vịnh Hạ Long",
                       description:
+<<<<<<< HEAD
                         "Hành trình đến Vịnh Hạ Long và lên tàu du thuyền. Tham quan hang động, chèo kayak và ngắm hoàng hôn trên boong tàu.",
+=======
+                        "Hành trình đến Vịnh Hạ Long, tham quan hang động, chèo kayak và ngắm hoàng hôn.",
+>>>>>>> main
                     },
                     {
                       day: 4,
                       title: "Vịnh Hạ Long & Trở về",
                       description:
+<<<<<<< HEAD
                         "Tập Thái Cực Quyền buổi sáng trên boong tàu, tham quan làng chài nổi và trở về Hà Nội vào buổi chiều.",
+=======
+                        "Tập Thái Cực Quyền buổi sáng, tham quan làng chài nổi và trở về Hà Nội.",
+>>>>>>> main
                     },
                     {
                       day: 5,
                       title: "Khởi hành",
                       description:
+<<<<<<< HEAD
                         "Thời gian tự do mua sắm phút chót trước khi đưa ra sân bay.",
+=======
+                        "Tự do mua sắm trước khi ra sân bay.",
+>>>>>>> main
                     },
                   ].map((day) => (
                     <div key={day.day} className="flex gap-4">
@@ -240,8 +366,13 @@ export default function TourDetail() {
                         </div>
                       </div>
                       <div className="flex-1">
+<<<<<<< HEAD
                         <h4 className="mb-2">{day.title}</h4>
                         <p className="text-muted-foreground">
+=======
+                        <h4 className="mb-2 dark:text-gray-100">{day.title}</h4>
+                        <p className="text-muted-foreground dark:text-gray-400">
+>>>>>>> main
                           {day.description}
                         </p>
                       </div>
@@ -250,10 +381,18 @@ export default function TourDetail() {
                 </div>
               </TabsContent>
 
+<<<<<<< HEAD
               <TabsContent value="included" className="mt-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="bg-white rounded-xl p-6">
                     <h4 className="mb-4 flex items-center gap-2">
+=======
+              {/* Tab Bao gồm */}
+              <TabsContent value="included" className="mt-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border dark:border-gray-700">
+                    <h4 className="mb-4 flex items-center gap-2 dark:text-gray-100">
+>>>>>>> main
                       <CheckCircle className="w-5 h-5 text-green-500" />
                       Bao gồm
                     </h4>
@@ -261,14 +400,22 @@ export default function TourDetail() {
                       {[
                         "4 đêm lưu trú",
                         "Ăn sáng hàng ngày",
+<<<<<<< HEAD
                         "Hướng dẫn viên tiếng Anh chuyên nghiệp",
+=======
+                        "Hướng dẫn viên tiếng Anh",
+>>>>>>> main
                         "Tất cả phí tham quan",
                         "Đưa đón sân bay",
                         "Du thuyền Vịnh Hạ Long",
                       ].map((item, index) => (
                         <li
                           key={index}
+<<<<<<< HEAD
                           className="flex items-center gap-2 text-foreground"
+=======
+                          className="flex items-center gap-2 text-foreground dark:text-gray-300"
+>>>>>>> main
                         >
                           <CheckCircle className="w-4 h-4 text-green-500" />
                           {item}
@@ -277,8 +424,13 @@ export default function TourDetail() {
                     </ul>
                   </div>
 
+<<<<<<< HEAD
                   <div className="bg-white rounded-xl p-6">
                     <h4 className="mb-4 flex items-center gap-2">
+=======
+                  <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border dark:border-gray-700">
+                    <h4 className="mb-4 flex items-center gap-2 dark:text-gray-100">
+>>>>>>> main
                       <X className="w-5 h-5 text-red-500" />
                       Không bao gồm
                     </h4>
@@ -293,7 +445,11 @@ export default function TourDetail() {
                       ].map((item, index) => (
                         <li
                           key={index}
+<<<<<<< HEAD
                           className="flex items-center gap-2 text-foreground"
+=======
+                          className="flex items-center gap-2 text-foreground dark:text-gray-300"
+>>>>>>> main
                         >
                           <X className="w-4 h-4 text-red-500" />
                           {item}
@@ -304,12 +460,22 @@ export default function TourDetail() {
                 </div>
               </TabsContent>
 
+<<<<<<< HEAD
               <TabsContent value="location" className="mt-6">
                 <div className="bg-white rounded-xl p-6">
                   <h3 className="mb-4">Địa điểm Tour & Khách sạn</h3>
                   <div className="rounded-lg overflow-hidden border mb-4">
                     <iframe
                       src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3723.863981044554!2d105.84117931533417!3d21.028510885995806!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ab9bd9861ca1%3A0xe7887f7b72ca17a9!2sHanoi%2C%20Vietnam!5e0!3m2!1sen!2s!4v1635000000000!5m2!1sen!2s"
+=======
+              {/* Tab Địa điểm */}
+              <TabsContent value="location" className="mt-6">
+                <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border dark:border-gray-700">
+                  <h3 className="mb-4 dark:text-gray-100">Địa điểm Tour & Khách sạn</h3>
+                  <div className="rounded-lg overflow-hidden border dark:border-gray-700 mb-4">
+                    <iframe
+                      src="https://www.google.com/maps/embed?pb=..."
+>>>>>>> main
                       width="100%"
                       height="400"
                       style={{ border: 0 }}
@@ -318,6 +484,7 @@ export default function TourDetail() {
                     ></iframe>
                   </div>
                   <div className="space-y-2">
+<<<<<<< HEAD
                     <h4>Thông tin khách sạn</h4>
                     <p className="text-muted-foreground">
                       Bạn sẽ lưu trú tại Khách sạn Hanoi Pearl, một khách sạn
@@ -325,6 +492,13 @@ export default function TourDetail() {
                       đến Hồ Hoàn Kiếm và những nhà hàng tốt nhất thành phố.
                     </p>
                     <div className="flex items-center gap-2 text-muted-foreground">
+=======
+                    <h4 className="dark:text-gray-100">Thông tin khách sạn</h4>
+                    <p className="text-muted-foreground dark:text-gray-400">
+                      Bạn sẽ lưu trú tại Khách sạn Hanoi Pearl, một khách sạn boutique 4 sao ở trung tâm Phố Cổ.
+                    </p>
+                    <div className="flex items-center gap-2 text-muted-foreground dark:text-gray-400">
+>>>>>>> main
                       <span>📍 87 Mã Mây, Phố Cổ, Hà Nội</span>
                     </div>
                   </div>
@@ -332,52 +506,88 @@ export default function TourDetail() {
               </TabsContent>
             </Tabs>
 
+<<<<<<< HEAD
             {/* Phần đánh giá */}
             <div className="bg-white rounded-xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3>Đánh giá từ khách hàng</h3>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">4.8</span>
+=======
+
+
+            {/* Phần đánh giá */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border dark:border-gray-700">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="dark:text-gray-100">Đánh giá từ khách hàng</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl dark:text-gray-100">4.8</span>
+>>>>>>> main
                   <div>
                     <div className="flex gap-1">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <span
                           key={i}
+<<<<<<< HEAD
                           className={
                             i < 5 ? "text-yellow-400" : "text-gray-300"
                           }
+=======
+                          className={i < 5 ? "text-yellow-400" : "text-gray-300"}
+>>>>>>> main
                         >
                           ★
                         </span>
                       ))}
                     </div>
+<<<<<<< HEAD
                     <span className="text-sm text-muted-foreground">
                       324 đánh giá
                     </span>
                   </div>
                 </div>
               </div>
+=======
+                    <span className="text-sm text-muted-foreground dark:text-gray-400">
+                      324 đánh giá
+                    </span>
+                  </div> {/* ✅ đóng div sau <span> */}
+                </div>   {/* ✅ đóng div flex items-center gap-2 */}
+              </div>     {/* ✅ đóng div flex justify-between */}
+>>>>>>> main
 
               <div className="space-y-4">
                 <ReviewCard
                   name="Nguyễn Minh Anh"
                   rating={5}
                   date="Tháng 10, 2025"
+<<<<<<< HEAD
                   review="Trải nghiệm tuyệt vời! Tour được tổ chức hoàn hảo, hướng dẫn viên hiểu biết và thân thiện, Vịnh Hạ Long vượt xa mong đợi. Trải nghiệm ẩm thực ở Hà Nội là điểm nhấn!"
+=======
+                  review="Trải nghiệm tuyệt vời! Tour được tổ chức hoàn hảo, hướng dẫn viên thân thiện, Vịnh Hạ Long vượt xa mong đợi."
+>>>>>>> main
                   helpful={42}
                 />
                 <ReviewCard
                   name="Trần Văn Hoàng"
                   rating={5}
                   date="Tháng 9, 2025"
+<<<<<<< HEAD
                   review="Chuyến đi tuyệt vời nhất! Mọi thứ diễn ra suôn sẻ từ đầu đến cuối. Khách sạn đẹp, du thuyền tuyệt vời, và chúng tôi học được rất nhiều về văn hóa và lịch sử Việt Nam."
+=======
+                  review="Chuyến đi tuyệt vời nhất! Mọi thứ diễn ra suôn sẻ, khách sạn đẹp, du thuyền tuyệt vời."
+>>>>>>> main
                   helpful={28}
                 />
                 <ReviewCard
                   name="Phạm Thu Hà"
                   rating={4}
                   date="Tháng 8, 2025"
+<<<<<<< HEAD
                   review="Tour tuyệt vời với những địa điểm và trải nghiệm tuyệt vời. Chỉ có một lưu ý nhỏ là một số ngày cảm thấy hơi vội, nhưng nhìn chung rất khuyến khích tour này!"
+=======
+                  review="Tour tuyệt vời với nhiều trải nghiệm. Một số ngày hơi vội nhưng nhìn chung rất đáng giá."
+>>>>>>> main
                   helpful={15}
                 />
               </div>
@@ -389,16 +599,26 @@ export default function TourDetail() {
               </Button>
             </div>
 
+<<<<<<< HEAD
             {/* Liên hệ nhà cung cấp */}
             <div className="bg-white rounded-xl p-6">
               <h3 className="mb-4">Liên hệ nhà cung cấp Tour</h3>
               <p className="text-muted-foreground mb-6">
                 Có câu hỏi về tour này? Đội ngũ của chúng tôi sẵn sàng giúp bạn
                 lên kế hoạch cho chuyến đi hoàn hảo.
+=======
+
+            {/* Liên hệ nhà cung cấp */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border dark:border-gray-700">
+              <h3 className="mb-4 dark:text-gray-100">Liên hệ nhà cung cấp Tour</h3>
+              <p className="text-muted-foreground dark:text-gray-400 mb-6">
+                Có câu hỏi về tour này? Đội ngũ của chúng tôi sẵn sàng hỗ trợ bạn.
+>>>>>>> main
               </p>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <Button variant="outline" className="flex items-center gap-2">
+<<<<<<< HEAD
                   <Phone className="w-4 h-4" />
                   Gọi điện
                 </Button>
@@ -417,10 +637,27 @@ export default function TourDetail() {
                   💡 <span className="font-medium">Mẹo:</span> Đặt trước ít nhất
                   2 tuần để có lựa chọn tốt nhất về chỗ trống và giá cả. Đội ngũ
                   của chúng tôi có thể tùy chỉnh tour này theo sở thích của bạn!
+=======
+                  <Phone className="w-4 h-4" /> Gọi điện
+                </Button>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" /> Email
+                </Button>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4" /> Chat trực tiếp
+                </Button>
+              </div>
+
+              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                <p className="text-sm dark:text-gray-300">
+                  💡 <span className="font-medium">Mẹo:</span> Đặt trước ít nhất 2 tuần để có lựa chọn tốt nhất về chỗ trống và giá cả.
+                  Đội ngũ của chúng tôi có thể tùy chỉnh tour này theo sở thích của bạn!
+>>>>>>> main
                 </p>
               </div>
             </div>
           </div>
+<<<<<<< HEAD
         </div>
       </div>
 
@@ -431,5 +668,15 @@ export default function TourDetail() {
         onClose={() => setIsBookingPanelOpen(false)}
       />
     </div>
+=======
+
+          {/* Cột phải: BookingCard */}
+          <div className="lg:col-span-1">
+            <BookingCard basePrice={599} />
+          </div>
+        </div>
+      </div>
+    </div >
+>>>>>>> main
   );
 }

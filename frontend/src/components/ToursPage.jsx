@@ -1,16 +1,17 @@
 import { useState } from "react";
 import TourCard from "./TourCard";
 import FilterSidebar from "./FilterSidebar";
+import { useLanguage } from "../context/LanguageContext"; // 👈 thêm
 
 export default function ToursPage() {
-  // Mock data - will be replaced with API call
+  const { translations } = useLanguage(); // 👈 lấy translations
+
   const allTours = [
     {
       id: 1,
       name: "5-Star Ha Long Cruise - Luxury Experience",
       destination: "Ha Long",
-      image:
-        "https://images.unsplash.com/photo-1713551584340-7b7817f39a62?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoYWxvbmclMjBiYXklMjB2aWV0bmFtJTIwdG91cnxlbnwxfHx8fDE3NjA5NzkzMzd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      image: "https://images.unsplash.com/photo-1713551584340-7b7817f39a62?...",
       price: 5990000,
       duration: "2 days 1 night",
       maxSlots: 12,
@@ -22,8 +23,7 @@ export default function ToursPage() {
       id: 2,
       name: "Hoi An Ancient Town - Cultural Heritage Discovery",
       destination: "Hoi An",
-      image:
-        "https://images.unsplash.com/photo-1583417319070-4a69db38a482?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob2klMjBhbiUyMHZpZXRuYW18ZW58MXx8fHwxNzYwOTc5Mzc1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      image: "https://images.unsplash.com/photo-1583417319070-4a69db38a482?...",
       price: 3490000,
       duration: "3 days 2 nights",
       maxSlots: 8,
@@ -34,8 +34,7 @@ export default function ToursPage() {
       id: 3,
       name: "Phu Quoc - Paradise Resort",
       destination: "Phu Quoc",
-      image:
-        "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwaHUlMjBxdW9jJTIwdmlldG5hbXxlbnwxfHx8fDE3NjA5NzkzOTB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      image: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?...",
       price: 7290000,
       duration: "4 days 3 nights",
       maxSlots: 5,
@@ -47,8 +46,7 @@ export default function ToursPage() {
       id: 4,
       name: "Sapa - Conquer Fansipan Peak",
       destination: "Sapa",
-      image:
-        "https://images.unsplash.com/photo-1583417319070-4a69db38a482?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwyfHxzYXBhJTIwdmlldG5hbXxlbnwxfHx8fDE3NjA5Nzk0MDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      image: "https://images.unsplash.com/photo-1583417319070-4a69db38a482?...",
       price: 4590000,
       duration: "3 days 2 nights",
       maxSlots: 15,
@@ -80,15 +78,15 @@ export default function ToursPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
         <div className="max-w-[1440px] mx-auto px-6 lg:px-20">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Discover Travel Tours
+            {translations.discoverTours}
           </h1>
           <p className="text-xl text-blue-100">
-            Over {allTours.length} tours waiting for you to explore
+            {translations.overTours.replace("{count}", allTours.length)}
           </p>
         </div>
       </div>
@@ -104,15 +102,17 @@ export default function ToursPage() {
           {/* Tours Grid */}
           <div className="lg:col-span-3">
             <div className="flex justify-between items-center mb-6">
-              <p className="text-gray-600">
-                Found{" "}
-                <span className="font-bold">{filteredTours.length}</span> tours
+              <p className="text-gray-600 dark:text-gray-300">
+                {translations.foundTours.replace(
+                  "{count}",
+                  filteredTours.length
+                )}
               </p>
-              <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                <option>Most Popular</option>
-                <option>Lowest Price</option>
-                <option>Highest Price</option>
-                <option>Highest Rating</option>
+              <select className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition-colors">
+                <option>{translations.mostPopular}</option>
+                <option>{translations.lowestPrice}</option>
+                <option>{translations.highestPrice}</option>
+                <option>{translations.highestRating}</option>
               </select>
             </div>
 
@@ -124,8 +124,8 @@ export default function ToursPage() {
 
             {filteredTours.length === 0 && (
               <div className="text-center py-20">
-                <p className="text-xl text-gray-500">
-                  No matching tours found. Try adjusting your filters!
+                <p className="text-xl text-gray-500 dark:text-gray-400">
+                  {translations.noTours}
                 </p>
               </div>
             )}

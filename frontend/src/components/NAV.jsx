@@ -1,39 +1,79 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bars3Icon, XMarkIcon, SunIcon, MoonIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import {
+  Bars3Icon,
+  XMarkIcon,
+  SunIcon,
+  MoonIcon,
+  GlobeAltIcon,
+} from "@heroicons/react/24/outline";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function NAV() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+<<<<<<< HEAD
   const [showDropdown, setShowDropdown] = useState(false);
   const { language, toggleLanguage, t } = useLanguage();
+=======
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+>>>>>>> main
   const navigate = useNavigate();
+  const { language, toggleLanguage, translations } = useLanguage();
 
+<<<<<<< HEAD
+=======
+  const navItems = [
+    { name: translations.home, path: "/" },
+    { name: translations.tour, path: "/tour" },
+    { name: translations.social, path: "/social" },
+    { name: translations.partner, path: "/partner" },
+    { name: translations.about, path: "/aboutus" },
+    { name: translations.admin, path: "/admin" },
+  ];
+
+  // ✅ Kiểm tra đăng nhập
+>>>>>>> main
   useEffect(() => {
     const checkAuth = () => {
-      const user = localStorage.getItem("user");
+      const user = localStorage.getItem("currentUser");
       setIsLoggedIn(!!user);
     };
-
     checkAuth();
 
     window.addEventListener("storage", checkAuth);
-
-    return () => {
-      window.removeEventListener("storage", checkAuth);
-    };
+    return () => window.removeEventListener("storage", checkAuth);
   }, []);
 
+  // ✅ Đóng dropdown khi click ngoài vùng
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".account-dropdown")) {
+        setShowDropdown(false);
+      }
+      if (!e.target.closest(".user-menu")) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  // ✅ Đăng xuất
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    localStorage.removeItem("currentUser");
     setIsLoggedIn(false);
+    setUserMenuOpen(false);
     navigate("/");
   };
 
+  // ✅ Chuyển dark mode
   const toggleDarkMode = () => {
+<<<<<<< HEAD
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
   };
@@ -46,48 +86,53 @@ export default function NAV() {
     { name: t.about, path: '/aboutus' },
     { name: t.admin, path: '/admin' }
   ];
+=======
+    setIsDarkMode((prev) => !prev);
+    document.documentElement.classList.toggle("dark");
+  };
+>>>>>>> main
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-      <div className="container mx-auto px-36">
+    <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
+      <div className="container mx-auto px-24">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="text-xl font-semibold text-title">
+          <div
+            className="text-xl font-semibold text-title dark:text-white cursor-pointer mr-6 whitespace-nowrap"
+            onClick={() => navigate("/")}
+          >
             MagicViet
           </div>
-
-          {/* Desktop Navigation and Actions - Right Aligned */}
-          <div className="hidden md:flex items-center gap-8">
-            {/* Navigation Links */}
+          {/* Desktop Navigation */}
+          <div className="hidden md:grid grid-cols-[auto_repeat(6,minmax(100px,1fr))_auto_auto_auto] items-center gap-1">
             {navItems.map((item) => (
               <Link
-                key={item.name}
+                key={item.path}
                 to={item.path}
-                className="text-body hover:text-title hover:font-bold transition-all"
+                className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white hover:font-bold transition-all whitespace-nowrap text-center py-2"
               >
                 {item.name}
               </Link>
             ))}
 
-            {/* Dark Mode Toggle */}
+            {/* Dark Mode */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-black/20"
-              aria-label="Toggle dark mode"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors justify-self-center"
             >
               {isDarkMode ? (
-                <MoonIcon className="h-5 w-5 text-title" />
+                <MoonIcon className="h-5 w-5 text-title dark:text-white" />
               ) : (
-                <SunIcon className="h-5 w-5 text-title" />
+                <SunIcon className="h-5 w-5 text-title dark:text-white" />
               )}
             </button>
 
-            {/* Language Switcher */}
+            {/* Language */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-black/20"
-              aria-label="Switch language"
+              className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors whitespace-nowrap justify-self-center"
             >
+<<<<<<< HEAD
               <GlobeAltIcon className="h-5 w-5 text-title" />
               <span className="text-sm font-medium text-title">{language.toUpperCase()}</span>
             </button>
@@ -111,13 +156,63 @@ export default function NAV() {
               </Link>
             )}
           </div>
+=======
+              <GlobeAltIcon className="h-5 w-5 text-title dark:text-white" />
+              <span className="text-sm font-medium text-title dark:text-white">
+                {language.toUpperCase()}
+              </span>
+            </button>
 
+            <div className="w-28 flex-shrink-0">
+              {/* Login / User Section */}
+              {isLoggedIn ? (
+                <div className="relative user-menu justify-self-end">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black/20"
+                    title="User Menu"
+                  >
+                    <AccountCircleIcon
+                      className="text-title dark:text-white"
+                      fontSize="medium"
+                    />
+                  </button>
+>>>>>>> main
+
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-2 z-50">
+                      <button
+                        onClick={() => {
+                          navigate("/profile");
+                          setUserMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-body dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap"
+                      >
+                        {translations.profile}
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 text-sm text-body dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap"
+                      >
+                        {translations.logout}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="block px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 whitespace-nowrap text-center"
+                >
+                  {translations.login}
+                </Link>
+              )}
+            </div>
+          </div>
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-title focus:outline-none focus:ring-2 focus:ring-black/20 rounded"
-            aria-label="Toggle mobile menu"
-            aria-expanded={mobileMenuOpen}
+            className="md:hidden p-2 text-title dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-black/20"
           >
             {mobileMenuOpen ? (
               <XMarkIcon className="h-6 w-6" />
@@ -129,18 +224,19 @@ export default function NAV() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200">
+          <div className="md:hidden py-4 border-t border-gray-200 dark:border-gray-700 transition-colors">
             <nav className="flex flex-col gap-4">
               {navItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
-                  className="text-body hover:text-title transition-colors px-2 py-1"
                   onClick={() => setMobileMenuOpen(false)}
+                  className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white transition-colors px-2 py-1 whitespace-nowrap"
                 >
                   {item.name}
                 </Link>
               ))}
+<<<<<<< HEAD
 
               {/* Mobile Dark Mode and Language */}
               <div className="flex items-center gap-2 px-2 py-2 border-t border-gray-200 mt-2 pt-4">
@@ -175,24 +271,43 @@ export default function NAV() {
               </div>
 
               {/* Mobile Login/Logout */}
+=======
+
+              {/* Login / User (Mobile) */}
+>>>>>>> main
               {isLoggedIn ? (
                 <button
                   onClick={() => {
-                    handleLogout();
+                    navigate("/profile");
                     setMobileMenuOpen(false);
                   }}
-                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 flex items-center justify-center gap-2"
+                  className="mt-2  flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
+<<<<<<< HEAD
                   <AccountCircleIcon fontSize="small" />
                   <span>{t.logout}</span>
+=======
+                  <AccountCircleIcon
+                    fontSize="large"
+                    className="text-title dark:text-white"
+                  />
+>>>>>>> main
                 </button>
               ) : (
                 <Link
                   to="/login"
+<<<<<<< HEAD
                   className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 block text-center"
+=======
+>>>>>>> main
                   onClick={() => setMobileMenuOpen(false)}
+                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 block text-center whitespace-nowrap"
                 >
+<<<<<<< HEAD
                   {t.login}
+=======
+                  {translations.login}
+>>>>>>> main
                 </Link>
               )}
             </nav>
@@ -213,17 +328,36 @@ export default function NAV() {
                     }}
                     className="w-full text-left px-4 py-2 text-black hover:bg-gray-100 transition"
                   >
+<<<<<<< HEAD
                     {translations.profile}
+=======
+                    Thông tin cá nhân
+>>>>>>> main
                   </button>
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-black hover:bg-gray-100 transition"
                   >
+<<<<<<< HEAD
                     {translations.logout}
+=======
+                    Đăng xuất
+>>>>>>> main
                   </button>
                 </div>
               )}
             </div>
+<<<<<<< HEAD
+=======
+            ) : (
+            <Link
+              to="/login"
+              className="bg-black text-white px-6 py-2 rounded-lg shadow hover:bg-gray-800 transition"
+            >
+              Đăng nhập
+            </Link>
+            )
+>>>>>>> main
           </div>
         )}
       </div>

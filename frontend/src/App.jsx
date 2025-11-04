@@ -13,7 +13,10 @@ import ToursPage from "./components/ToursPage";
 import AdminPage from "./components/AdminSections/AdminPage";
 import WeatherBanner from "./components/home/WeatherBanner";
 import TourDetail from "./components/TourDetail/TourDetail";
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
 import HeroSection from "./components/home/HeroSection";
 import FlightSearchForm from "./components/home/FlightSearchForm";
 import Promotions from "./components/home/Promotions";
@@ -33,6 +36,7 @@ export default function App() {
   ];
 
   return (
+<<<<<<< HEAD
     <LanguageProvider>
       <BrowserRouter>
         {/* 👇 Bọc toàn bộ app trong div hỗ trợ dark mode */}
@@ -63,6 +67,38 @@ export default function App() {
             <Route path="/partner" element={<PartnerPage />} />
             <Route path="/profile" element={<Profile />} />
           </Routes>
+=======
+    <BrowserRouter>
+      {/* 👇 Bọc toàn bộ app trong div hỗ trợ dark mode */}
+      <div className="bg-white text-black dark:bg-gray-900 dark:text-white min-h-screen transition-colors duration-300">
+        <NAV />
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <div>
+                <HeroSection>
+                  <FlightSearchForm />
+                </HeroSection>
+                <TourCarousel tours={tours} />
+                <Promotions />
+                <Reviews />
+                <FlightDeals />
+                <WeatherBanner />
+              </div>
+            }
+          />
+          {/* ✅ Thêm route chi tiết tour */}
+          <Route path="/tours/:id" element={<TourDetail tours={tours} />} />
+          <Route path="/tour" element={<ToursPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/social" element={<SocialPage />} />
+          <Route path="/partner" element={<PartnerPage />} />
+          <Route path="/profile" element={<Profile />} />
+        </Routes>
+>>>>>>> main
         <Footer />
       </div>
     </BrowserRouter>

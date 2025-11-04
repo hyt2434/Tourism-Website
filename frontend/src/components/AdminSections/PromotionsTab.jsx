@@ -37,48 +37,61 @@ import { Switch } from "../ui/switch";
 import { Separator } from "../ui/separator";
 import { Plus, Edit, XCircle } from "lucide-react";
 import { mockPromotions, getStatusBadge } from "./mockData";
+import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function PromotionsTab() {
+  const { translations } = useLanguage(); // 👈 lấy translations
+
   return (
-    <Card>
+    <Card className="bg-white dark:bg-gray-900 text-black dark:text-white border border-gray-200 dark:border-gray-700">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Quản lý Khuyến mãi</CardTitle>
-            <CardDescription>
-              Tạo mã giảm giá và theo dõi hiệu quả
+            <CardTitle className="dark:text-white">
+              {translations.promotionManagement}
+            </CardTitle>
+            <CardDescription className="text-muted-foreground dark:text-gray-400">
+              {translations.promotionDescription}
             </CardDescription>
           </div>
           <Dialog>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
-                Tạo khuyến mãi
+                {translations.createPromotion}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl bg-white dark:bg-gray-900 text-black dark:text-white">
               <DialogHeader>
-                <DialogTitle>Tạo khuyến mãi mới</DialogTitle>
-                <DialogDescription>
-                  Thiết lập mã giảm giá và điều kiện áp dụng
+                <DialogTitle className="dark:text-white">
+                  {translations.newPromotion}
+                </DialogTitle>
+                <DialogDescription className="text-muted-foreground dark:text-gray-400">
+                  {translations.promotionSetup}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
+                {/* Form fields */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Mã khuyến mãi</Label>
-                    <Input placeholder="VD: SUMMER2025" />
+                    <Label>{translations.promoCode}</Label>
+                    <Input
+                      placeholder="SUMMER2025"
+                      className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Loại giảm giá</Label>
+                    <Label>{translations.discountType}</Label>
                     <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn loại" />
+                      <SelectTrigger className="bg-white dark:bg-gray-800 text-black dark:text-white">
+                        <SelectValue placeholder={translations.selectType} />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="percent">Phần trăm (%)</SelectItem>
+                      <SelectContent className="bg-white dark:bg-gray-800 text-black dark:text-white">
+                        <SelectItem value="percent">
+                          {translations.percent}
+                        </SelectItem>
                         <SelectItem value="fixed">
-                          Số tiền cố định (đ)
+                          {translations.fixed}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -86,46 +99,69 @@ export default function PromotionsTab() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Giá trị giảm</Label>
-                    <Input type="number" placeholder="VD: 20" />
+                    <Label>{translations.discountValue}</Label>
+                    <Input
+                      type="number"
+                      placeholder="20"
+                      className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Số lượt sử dụng tối đa</Label>
-                    <Input type="number" placeholder="VD: 500" />
+                    <Label>{translations.maxUses}</Label>
+                    <Input
+                      type="number"
+                      placeholder="500"
+                      className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Ngày bắt đầu</Label>
-                    <Input type="date" />
+                    <Label>{translations.startDate}</Label>
+                    <Input
+                      type="date"
+                      className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Ngày kết thúc</Label>
-                    <Input type="date" />
+                    <Label>{translations.endDate}</Label>
+                    <Input
+                      type="date"
+                      className="bg-white dark:bg-gray-800 text-black dark:text-white"
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Điều kiện áp dụng</Label>
+                  <Label>{translations.conditions}</Label>
                   <Textarea
-                    placeholder="VD: Áp dụng cho đơn hàng từ 1,000,000đ"
+                    placeholder={translations.conditionsPlaceholder}
                     rows={3}
+                    className="bg-white dark:bg-gray-800 text-black dark:text-white"
                   />
                 </div>
-                <Separator />
+                <Separator className="dark:bg-gray-700" />
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="auto-apply">Tự động áp dụng</Label>
+                    <Label htmlFor="auto-apply">
+                      {translations.autoApply}
+                    </Label>
                     <Switch id="auto-apply" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="show-homepage">Hiển thị trang chủ</Label>
+                    <Label htmlFor="show-homepage">
+                      {translations.showHomepage}
+                    </Label>
                     <Switch id="show-homepage" />
                   </div>
                 </div>
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline">Hủy</Button>
-                <Button>Tạo khuyến mãi</Button>
+                <Button variant="outline" className="dark:border-gray-600 dark:text-white">
+                  {translations.cancel}
+                </Button>
+                <Button className="dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700">
+                  {translations.createPromotion}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -133,39 +169,37 @@ export default function PromotionsTab() {
       </CardHeader>
       <CardContent>
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-gray-100 dark:bg-gray-800">
             <TableRow>
-              <TableHead>Mã khuyến mãi</TableHead>
-              <TableHead>Giảm giá</TableHead>
-              <TableHead>Lượt dùng</TableHead>
-              <TableHead>Hạn sử dụng</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead className="text-right">Thao tác</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.promoCode}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.discount}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.uses}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.validUntil}</TableHead>
+              <TableHead className="text-black dark:text-white">{translations.status}</TableHead>
+              <TableHead className="text-right text-black dark:text-white">{translations.actions}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {mockPromotions.map((promo) => {
               const statusConfig = getStatusBadge(promo.status);
               return (
-                <TableRow key={promo.id}>
+                <TableRow key={promo.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <TableCell className="font-mono">{promo.code}</TableCell>
                   <TableCell>{promo.discount}</TableCell>
-                  <TableCell>
-                    {promo.uses} / {promo.maxUses}
-                  </TableCell>
+                  <TableCell>{promo.uses} / {promo.maxUses}</TableCell>
                   <TableCell>{promo.validUntil}</TableCell>
                   <TableCell>
-                    <Badge variant={statusConfig.variant}>
+                    <Badge variant={statusConfig.variant} className="dark:border-gray-600">
                       {statusConfig.text}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-4 h-4 text-black dark:text-white" />
                       </Button>
                       <Button variant="ghost" size="sm">
-                        <XCircle className="w-4 h-4 text-red-600" />
+                        <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
                       </Button>
                     </div>
                   </TableCell>
