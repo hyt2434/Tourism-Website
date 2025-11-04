@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Thumbs, Autoplay } from "swiper/modules";
 import "swiper/css";
@@ -27,17 +28,35 @@ import {
   Heart,
 } from "lucide-react";
 import { ReviewCard } from "./ReviewCard";
+import { toursData } from "./tourData";
+
+// Map tour ID từ URL sang tourId trong data
+const tourIdMapping = {
+  "1": "halong-hanoi",
+  "2": "danang-hoian", 
+  "3": "danang-hoian",
+  "4": "phuquoc",
+  "5": "nhatrang",
+  "halong-hanoi": "halong-hanoi",
+  "danang-hoian": "danang-hoian",
+  "saigon-mekong": "saigon-mekong",
+  "sapa-hagiang": "sapa-hagiang",
+  "phuquoc": "phuquoc",
+  "nhatrang": "nhatrang",
+};
+
 export default function TourDetail() {
+  const { id } = useParams(); // Lấy ID từ URL
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
   const [isBookingPanelOpen, setIsBookingPanelOpen] = useState(false);
 
-  const tourImages = [
-    "https://images.unsplash.com/photo-1668000018482-a02acf02b22a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoYWxvbmclMjBiYXklMjB2aWV0bmFtfGVufDF8fHx8MTc2MTY5OTMwMnww&ixlib=rb-4.1.0&q=80&w=1080",
-    "https://images.unsplash.com/photo-1729605411476-defbdab14c54?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob3RlbCUyMGx1eHVyeSUyMHJvb218ZW58MXx8fHwxNzYxNzkxNzI0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    "https://res.klook.com/images/fl_lossy.progressive,q_65/c_fill,w_1200,h_630/w_80,x_15,y_15,g_south_west,l_Klook_water_br_trans_yhcmh3/activities/qmgtdjekctlyucr8itqw/%C4%90%E1%BA%B7t%20tour%20%C4%91i%20V%E1%BB%8Bnh%20H%E1%BA%A1%20Long%20t%E1%BB%AB%20H%C3%A0%20N%E1%BB%99i.jpg",
-    "https://bcp.cdnchinhphu.vn/344443456812359680/2025/5/31/hanoi-17486566616582033334984.jpg",
-  ];
+  // Map ID từ URL sang tourId trong data
+  const mappedTourId = tourIdMapping[id] || "halong-hanoi";
+  
+  // Lấy dữ liệu tour theo ID
+  const tourData = toursData[mappedTourId] || toursData["halong-hanoi"];
+  const tourImages = tourData.images;
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % tourImages.length);
@@ -52,29 +71,29 @@ export default function TourDetail() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Tour Title Section */}
-      <div className="bg-white border-b">
+      <div className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h1 className="text-primary mb-2">
-                Khám phá Việt Nam: Hà Nội & Vịnh Hạ Long
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
+                {tourData.title}
               </h1>
               <div className="flex items-center gap-4 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span>4.8</span>
-                  <span className="text-muted-foreground">(324 đánh giá)</span>
+                <div className="flex items-center gap-1 text-lg font-semibold">
+                  <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                  <span className="text-gray-900">{tourData.rating}</span>
+                  <span className="text-gray-600 font-normal">({tourData.reviewCount} đánh giá)</span>
                 </div>
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <MapPin className="w-4 h-4" />
-                  <span>Hà Nội & Vịnh Hạ Long, Việt Nam</span>
+                <div className="flex items-center gap-1 text-gray-700 font-medium">
+                  <MapPin className="w-5 h-5 text-blue-600" />
+                  <span>{tourData.location}</span>
                 </div>
               </div>
             </div>
             <div className="flex gap-2">
               <Button
                 onClick={() => setIsBookingPanelOpen(true)}
-                className="bg-primary hover:bg-primary/90"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
                 size="lg"
               >
                 Đặt Tour Ngay
@@ -153,41 +172,22 @@ export default function TourDetail() {
                 <div className="bg-white rounded-xl p-6">
                   <h3 className="mb-4">Về chuyến đi này</h3>
                   <p className="text-foreground mb-4">
-                    Bắt đầu cuộc hành trình khó quên qua những điểm đến mang
-                    tính biểu tượng nhất của Việt Nam. Chuyến phiêu lưu 5 ngày
-                    được thiết kế tỉ mỉ này kết hợp những con phố nhộn nhịp của
-                    Hà Nội với vẻ đẹp thanh bình của Vịnh Hạ Long, mang đến cho
-                    bạn sự pha trộn hoàn hảo giữa văn hóa, lịch sử và kỳ quan
-                    thiên nhiên.
+                    {tourData.description.overview}
                   </p>
                   <p className="text-foreground mb-4">
-                    Trải nghiệm nét quyến rũ của Phố Cổ Hà Nội, nơi những ngôi
-                    đền cổ kính đứng cạnh những khu chợ sôi động và những người
-                    bán hàng rong phục vụ một số món ăn ngon nhất thế giới. Sau
-                    đó, thoát khỏi khung cảnh kỳ diệu của Vịnh Hạ Long, nơi hàng
-                    nghìn hòn đảo đá vôi nhô lên từ làn nước màu ngọc lục bảo,
-                    tạo nên một trong những cảnh quan biển ngoạn mục nhất thế
-                    giới.
+                    {tourData.description.detail}
                   </p>
                   <div className="flex flex-wrap gap-2 mt-4">
-                    <Badge variant="secondary">Du lịch văn hóa</Badge>
-                    <Badge variant="secondary">Thiên nhiên</Badge>
-                    <Badge variant="secondary">Ẩm thực</Badge>
-                    <Badge variant="secondary">Nhiếp ảnh</Badge>
+                    {tourData.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary">{tag}</Badge>
+                    ))}
                   </div>
                 </div>
 
                 <div className="bg-white rounded-xl p-6">
                   <h3 className="mb-4">Điểm nổi bật</h3>
                   <ul className="space-y-3">
-                    {[
-                      "Du nhoàn trên Vịnh Hạ Long bằng thuyền buồm truyền thống",
-                      "Khám phá Phố Cổ Hà Nội và các di tích lịch sử",
-                      "Tham quan Văn Miếu Quốc Tử Giám - trường đại học đầu tiên của Việt Nam",
-                      "Thưởng thức ẩm thực Việt Nam chính gốc và tour ẩm thực đường phố",
-                      "Trải nghiệm biểu diễn Múa rối nước truyền thống",
-                      "Lưu trú tại các khách sạn boutique được tuyển chọn kỹ lưỡng",
-                    ].map((highlight, index) => (
+                    {tourData.highlights.map((highlight, index) => (
                       <li key={index} className="flex items-start gap-3">
                         <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                         <span>{highlight}</span>
@@ -199,38 +199,7 @@ export default function TourDetail() {
 
               <TabsContent value="itinerary" className="mt-6">
                 <div className="bg-white rounded-xl p-6 space-y-6">
-                  {[
-                    {
-                      day: 1,
-                      title: "Đến Hà Nội",
-                      description:
-                        "Chào mừng đến Việt Nam! Đưa đón về khách sạn và thưởng thức bữa tối chào mừng với các món ăn truyền thống Việt Nam.",
-                    },
-                    {
-                      day: 2,
-                      title: "Tour Hà Nội",
-                      description:
-                        "Khám phá Phố Cổ, Văn Miếu và thưởng thức chương trình Múa rối nước truyền thống vào buổi tối.",
-                    },
-                    {
-                      day: 3,
-                      title: "Du thuyền Vịnh Hạ Long",
-                      description:
-                        "Hành trình đến Vịnh Hạ Long và lên tàu du thuyền. Tham quan hang động, chèo kayak và ngắm hoàng hôn trên boong tàu.",
-                    },
-                    {
-                      day: 4,
-                      title: "Vịnh Hạ Long & Trở về",
-                      description:
-                        "Tập Thái Cực Quyền buổi sáng trên boong tàu, tham quan làng chài nổi và trở về Hà Nội vào buổi chiều.",
-                    },
-                    {
-                      day: 5,
-                      title: "Khởi hành",
-                      description:
-                        "Thời gian tự do mua sắm phút chót trước khi đưa ra sân bay.",
-                    },
-                  ].map((day) => (
+                  {tourData.itinerary.map((day) => (
                     <div key={day.day} className="flex gap-4">
                       <div className="flex-shrink-0">
                         <div className="w-12 h-12 rounded-full bg-[#3B82F6] text-white flex items-center justify-center">
@@ -256,14 +225,7 @@ export default function TourDetail() {
                       Bao gồm
                     </h4>
                     <ul className="space-y-2">
-                      {[
-                        "4 đêm lưu trú",
-                        "Ăn sáng hàng ngày",
-                        "Hướng dẫn viên tiếng Anh chuyên nghiệp",
-                        "Tất cả phí tham quan",
-                        "Đưa đón sân bay",
-                        "Du thuyền Vịnh Hạ Long",
-                      ].map((item, index) => (
+                      {tourData.included.map((item, index) => (
                         <li
                           key={index}
                           className="flex items-center gap-2 text-foreground"
@@ -281,14 +243,7 @@ export default function TourDetail() {
                       Không bao gồm
                     </h4>
                     <ul className="space-y-2">
-                      {[
-                        "Vé máy bay quốc tế",
-                        "Bảo hiểm du lịch",
-                        "Chi phí cá nhân",
-                        "Bữa trưa và tối (trừ khi ghi chú)",
-                        "Tiền tips",
-                        "Phí visa",
-                      ].map((item, index) => (
+                      {tourData.excluded.map((item, index) => (
                         <li
                           key={index}
                           className="flex items-center gap-2 text-foreground"
@@ -307,7 +262,7 @@ export default function TourDetail() {
                   <h3 className="mb-4">Địa điểm Tour & Khách sạn</h3>
                   <div className="rounded-lg overflow-hidden border mb-4">
                     <iframe
-                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3723.863981044554!2d105.84117931533417!3d21.028510885995806!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ab9bd9861ca1%3A0xe7887f7b72ca17a9!2sHanoi%2C%20Vietnam!5e0!3m2!1sen!2s!4v1635000000000!5m2!1sen!2s"
+                      src={tourData.hotel.mapUrl}
                       width="100%"
                       height="400"
                       style={{ border: 0 }}
@@ -316,14 +271,13 @@ export default function TourDetail() {
                     ></iframe>
                   </div>
                   <div className="space-y-2">
-                    <h4>Thông tin khách sạn</h4>
+                    <h4>{tourData.hotel.name}</h4>
                     <p className="text-muted-foreground">
-                      Bạn sẽ lưu trú tại Khách sạn Hanoi Pearl, một khách sạn
-                      boutique 4 sao ở trung tâm Phố Cổ, chỉ cách vài bước chân
-                      đến Hồ Hoàn Kiếm và những nhà hàng tốt nhất thành phố.
+                      {tourData.hotel.description}
                     </p>
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <span>📍 87 Mã Mây, Phố Cổ, Hà Nội</span>
+                      <MapPin className="w-4 h-4" />
+                      <span>{tourData.hotel.address}</span>
                     </div>
                   </div>
                 </div>
@@ -335,49 +289,38 @@ export default function TourDetail() {
               <div className="flex items-center justify-between mb-6">
                 <h3>Đánh giá từ khách hàng</h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">4.8</span>
+                  <span className="text-2xl font-bold">{tourData.rating}</span>
                   <div>
                     <div className="flex gap-1">
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <span
+                        <Star
                           key={i}
-                          className={
-                            i < 5 ? "text-yellow-400" : "text-gray-300"
-                          }
-                        >
-                          ★
-                        </span>
+                          className={`w-4 h-4 ${
+                            i < Math.floor(tourData.rating)
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "fill-gray-300 text-gray-300"
+                          }`}
+                        />
                       ))}
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      324 đánh giá
+                      {tourData.reviewCount} đánh giá
                     </span>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <ReviewCard
-                  name="Nguyễn Minh Anh"
-                  rating={5}
-                  date="Tháng 10, 2025"
-                  review="Trải nghiệm tuyệt vời! Tour được tổ chức hoàn hảo, hướng dẫn viên hiểu biết và thân thiện, Vịnh Hạ Long vượt xa mong đợi. Trải nghiệm ẩm thực ở Hà Nội là điểm nhấn!"
-                  helpful={42}
-                />
-                <ReviewCard
-                  name="Trần Văn Hoàng"
-                  rating={5}
-                  date="Tháng 9, 2025"
-                  review="Chuyến đi tuyệt vời nhất! Mọi thứ diễn ra suôn sẻ từ đầu đến cuối. Khách sạn đẹp, du thuyền tuyệt vời, và chúng tôi học được rất nhiều về văn hóa và lịch sử Việt Nam."
-                  helpful={28}
-                />
-                <ReviewCard
-                  name="Phạm Thu Hà"
-                  rating={4}
-                  date="Tháng 8, 2025"
-                  review="Tour tuyệt vời với những địa điểm và trải nghiệm tuyệt vời. Chỉ có một lưu ý nhỏ là một số ngày cảm thấy hơi vội, nhưng nhìn chung rất khuyến khích tour này!"
-                  helpful={15}
-                />
+                {tourData.reviews.map((review, index) => (
+                  <ReviewCard
+                    key={index}
+                    name={review.name}
+                    rating={review.rating}
+                    date={review.date}
+                    review={review.review}
+                    helpful={review.helpful}
+                  />
+                ))}
               </div>
 
               <Separator className="my-6" />
@@ -424,7 +367,7 @@ export default function TourDetail() {
 
       {/* Floating Booking Panel */}
       <BookingPanel
-        basePrice={299}
+        basePrice={tourData.basePrice}
         isOpen={isBookingPanelOpen}
         onClose={() => setIsBookingPanelOpen(false)}
       />
