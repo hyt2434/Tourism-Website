@@ -1,32 +1,33 @@
 import React from "react";
 import { Copy, Gift, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
+import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
-const discounts = [
+const discountsData = (translations) => [
   {
     id: 1,
-    title: "Giảm đến 50.000 cho lần đặt vé máy bay đầu tiên.",
-    description:
-      "Áp dụng cho tất cả các lần đặt vé máy bay đầu tiên ứng dụng Traveloka.",
+    title: translations.discountFlightTitle,
+    description: translations.discountFlightDesc,
     code: "TVLBANNOI",
   },
   {
     id: 2,
-    title: "Giảm đến 8% cho lần đặt phòng khách sạn đầu tiên.",
-    description:
-      "Áp dụng cho tất cả các lần đặt vé máy bay đầu tiên ứng dụng Traveloka.",
+    title: translations.discountHotelTitle,
+    description: translations.discountHotelDesc,
     code: "TVLBANNOI",
   },
   {
     id: 3,
-    title: "Giảm đến 6% cho lần đặt vé tham quan/hoạt động đầu tiên.",
-    description:
-      "Áp dụng cho tất cả các lần đặt vé máy bay đầu tiên ứng dụng Traveloka.",
+    title: translations.discountActivityTitle,
+    description: translations.discountActivityDesc,
     code: "TVLBANNOI",
   },
 ];
 
 export default function DiscountCodes() {
+  const { translations } = useLanguage(); // 👈 lấy translations
+  const discounts = discountsData(translations);
+
   const copyCode = (code) => {
     navigator.clipboard.writeText(code);
   };
@@ -36,7 +37,7 @@ export default function DiscountCodes() {
       <div className="flex items-center gap-3 mb-6">
         <Gift className="w-6 h-6 text-blue-700 dark:text-blue-400" />
         <h2 className="text-blue-700 dark:text-blue-400 font-semibold">
-          Mã Ưu Đãi Tặng Bạn Mới
+          {translations.discountHeader}
         </h2>
       </div>
 
@@ -71,7 +72,7 @@ export default function DiscountCodes() {
                 className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800"
               >
                 <Copy className="w-4 h-4 mr-1" />
-                Copy
+                {translations.copy}
               </Button>
             </div>
           </div>

@@ -19,9 +19,11 @@ import TransportTab from "./TransportTab";
 import PromotionsTab from "./PromotionsTab";
 import OrdersTab from "./OrdersTab";
 import SocialModerationTab from "./SocialModerationTab";
+import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("tours");
+  const { translations } = useLanguage(); // 👈 lấy translations
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-black dark:text-white">
@@ -30,9 +32,11 @@ export default function AdminPage() {
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-title dark:text-white">Admin Dashboard</h1>
+              <h1 className="text-title dark:text-white">
+                {translations.adminDashboard}
+              </h1>
               <p className="text-muted-foreground dark:text-gray-400">
-                Manage services, promotions and orders
+                {translations.adminSubtitle}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -42,7 +46,7 @@ export default function AdminPage() {
                 className="dark:border-gray-600 dark:text-white"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Export Report
+                {translations.exportReport}
               </Button>
               <Avatar>
                 <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white">
@@ -60,7 +64,7 @@ export default function AdminPage() {
           <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
             <CardHeader className="pb-3">
               <CardDescription className="text-muted-foreground dark:text-gray-400">
-                Pending Approval
+                {translations.pendingApproval}
               </CardDescription>
               <CardTitle className="flex items-center justify-between">
                 <span>8</span>
@@ -71,7 +75,7 @@ export default function AdminPage() {
           <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
             <CardHeader className="pb-3">
               <CardDescription className="text-muted-foreground dark:text-gray-400">
-                New Orders
+                {translations.newOrders}
               </CardDescription>
               <CardTitle className="flex items-center justify-between">
                 <span>24</span>
@@ -82,7 +86,7 @@ export default function AdminPage() {
           <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
             <CardHeader className="pb-3">
               <CardDescription className="text-muted-foreground dark:text-gray-400">
-                Active Promotions
+                {translations.activePromotions}
               </CardDescription>
               <CardTitle className="flex items-center justify-between">
                 <span>12</span>
@@ -93,7 +97,7 @@ export default function AdminPage() {
           <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
             <CardHeader className="pb-3">
               <CardDescription className="text-muted-foreground dark:text-gray-400">
-                Monthly Revenue
+                {translations.monthlyRevenue}
               </CardDescription>
               <CardTitle className="flex items-center justify-between">
                 <span>125M</span>
@@ -115,42 +119,42 @@ export default function AdminPage() {
               className="flex items-center gap-2 text-black dark:text-white"
             >
               <PackageIcon className="w-4 h-4" />
-              Tours
+              {translations.tours}
             </TabsTrigger>
             <TabsTrigger
               value="accommodation"
               className="flex items-center gap-2 text-black dark:text-white"
             >
               <Building className="w-4 h-4" />
-              Accommodation
+              {translations.accommodation}
             </TabsTrigger>
             <TabsTrigger
               value="transport"
               className="flex items-center gap-2 text-black dark:text-white"
             >
               <Bus className="w-4 h-4" />
-              Transport
+              {translations.transport}
             </TabsTrigger>
             <TabsTrigger
               value="promotions"
               className="flex items-center gap-2 text-black dark:text-white"
             >
               <Tag className="w-4 h-4" />
-              Promotions
+              {translations.promotions}
             </TabsTrigger>
             <TabsTrigger
               value="orders"
               className="flex items-center gap-2 text-black dark:text-white"
             >
               <ShoppingCart className="w-4 h-4" />
-              Orders
+              {translations.orders}
             </TabsTrigger>
             <TabsTrigger
               value="social"
               className="flex items-center gap-2 text-black dark:text-white"
             >
               <MessageSquare className="w-4 h-4" />
-              Social
+              {translations.social}
             </TabsTrigger>
           </TabsList>
 
