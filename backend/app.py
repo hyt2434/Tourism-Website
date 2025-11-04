@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 from routes.auth_routes import auth_routes
+from routes.tour_routes import tour_routes
 from models import create_table
 from flask_bcrypt import Bcrypt
 
@@ -13,6 +14,7 @@ app.bcrypt = bcrypt
 create_table()
 
 app.register_blueprint(auth_routes, url_prefix="/api/auth")
+app.register_blueprint(tour_routes, url_prefix="/api/tour")
 
 @app.route("/test")
 def test():
