@@ -84,7 +84,7 @@ export default function TourCard({ tour }) {
           <div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Từ</p>
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {tour.price.toLocaleString("vi-VN")} đ
+              {parseFloat(tour.price).toLocaleString("vi-VN")} đ
             </p>
           </div>
           <button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
