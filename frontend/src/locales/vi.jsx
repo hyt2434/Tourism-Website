@@ -9,12 +9,7 @@ export default {
     logout: "Đăng xuất",
     login: "Đăng nhập",
 
-<<<<<<< HEAD
-    // vi.js
-
-=======
     // Bộ lọc
->>>>>>> main
     filterTitle: "Bộ lọc tìm kiếm",
     search: "Tìm kiếm",
     searchPlaceholder: "Tên tour, địa điểm...",
@@ -23,11 +18,8 @@ export default {
     priceRange: "Khoảng giá (VNĐ)",
     startDate: "Ngày khởi hành",
     resetFilters: "Xóa bộ lọc",
-<<<<<<< HEAD
-=======
 
     // Địa điểm
->>>>>>> main
     hanoi: "Hà Nội",
     hcm: "TP Hồ Chí Minh",
     danang: "Đà Nẵng",
@@ -37,11 +29,8 @@ export default {
     dalat: "Đà Lạt",
     hoian: "Hội An",
     hue: "Huế",
-<<<<<<< HEAD
-=======
 
     // Footer
->>>>>>> main
     footerDescription: "Khám phá vẻ đẹp Việt Nam với dịch vụ du lịch cao cấp của chúng tôi.",
     popularProvinces: "Tỉnh thành nổi bật",
     moreDestinations: "Điểm đến khác",
@@ -50,11 +39,8 @@ export default {
     privacy: "Chính sách bảo mật",
     cookies: "Chính sách Cookie",
     accessibility: "Khả năng truy cập",
-<<<<<<< HEAD
-=======
 
     // Login
->>>>>>> main
     loginTitle: "Chào mừng trở lại!",
     loginSubtitle: "Đăng nhập để tiếp tục hành trình của bạn",
     emailPlaceholder: "Địa chỉ Email",
@@ -67,11 +53,8 @@ export default {
     signUp: "Đăng ký",
     loginError: "Sai email hoặc mật khẩu!",
     networkError: "Lỗi mạng. Vui lòng thử lại.",
-<<<<<<< HEAD
-=======
 
     // Partner Page
->>>>>>> main
     partnerTitle: "Đối tác của chúng tôi",
     partnerSubtitle: "Cùng nhau hợp tác để mang đến những trải nghiệm du lịch tuyệt vời nhất.",
     partnerDate: "Ngày hợp tác",
@@ -100,8 +83,6 @@ export default {
     partner4Benefit: "Website giúp quảng bá dịch vụ đến nhóm khách quốc tế nhanh chóng hơn.",
     partner5Core: "Khám phá văn hóa và ẩm thực đặc sắc tại các thành phố lớn.",
     partner5Benefit: "Nhờ website, lượng khách nội địa tăng 50% chỉ sau 2 tháng.",
-<<<<<<< HEAD
-=======
     // Trang ca nhan
     profileTitle: "Thông tin cá nhân",
     fullName: "Họ và tên",
@@ -379,5 +360,4 @@ export default {
     actions: "Thao tác",
     transport: "Nhà xe",
 
->>>>>>> main
 };

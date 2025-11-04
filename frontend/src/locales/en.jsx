@@ -8,11 +8,8 @@ export default {
     profile: "Profile",
     logout: "Logout",
     login: "Login",
-<<<<<<< HEAD
-=======
 
     // Filter Sidebar
->>>>>>> main
     filterTitle: "Search Filters",
     search: "Search",
     searchPlaceholder: "Tour name, destination...",
@@ -21,11 +18,8 @@ export default {
     priceRange: "Price Range (VND)",
     startDate: "Start Date",
     resetFilters: "Reset Filters",
-<<<<<<< HEAD
-=======
 
     // Destinations
->>>>>>> main
     hanoi: "Hanoi",
     hcm: "Ho Chi Minh City",
     danang: "Da Nang",
@@ -35,11 +29,8 @@ export default {
     dalat: "Da Lat",
     hoian: "Hoi An",
     hue: "Hue",
-<<<<<<< HEAD
-=======
 
     // Footer
->>>>>>> main
     footerDescription: "Discover the beauty of Vietnam with our premium travel services.",
     popularProvinces: "Popular Provinces",
     moreDestinations: "More Destinations",
@@ -48,11 +39,8 @@ export default {
     privacy: "Privacy Policy",
     cookies: "Cookie Policy",
     accessibility: "Accessibility",
-<<<<<<< HEAD
-=======
 
     // Login
->>>>>>> main
     loginTitle: "Welcome Back!",
     loginSubtitle: "Sign in to continue your journey",
     emailPlaceholder: "Email Address",
@@ -65,11 +53,8 @@ export default {
     signUp: "Sign up",
     loginError: "Incorrect email or password!",
     networkError: "Network error. Please try again.",
-<<<<<<< HEAD
-=======
 
     // Partner Page
->>>>>>> main
     partnerTitle: "Our Partners",
     partnerSubtitle: "Together we bring the best travel experiences.",
     partnerDate: "Cooperation Date",
@@ -98,8 +83,6 @@ export default {
     partner4Benefit: "Website helped promote services to international customers faster.",
     partner5Core: "Explore culture and cuisine in major cities.",
     partner5Benefit: "Domestic customers increased 50% within 2 months.",
-<<<<<<< HEAD
-=======
 
     profileTitle: "Profile Information",
     fullName: "Full Name",
@@ -379,5 +362,4 @@ export default {
     actions: "Actions",
     transport: "Transport",
 
->>>>>>> main
 };

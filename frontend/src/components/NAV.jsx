@@ -15,17 +15,10 @@ export default function NAV() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-<<<<<<< HEAD
-  const [showDropdown, setShowDropdown] = useState(false);
-  const { language, toggleLanguage, t } = useLanguage();
-=======
   const [userMenuOpen, setUserMenuOpen] = useState(false);
->>>>>>> main
   const navigate = useNavigate();
   const { language, toggleLanguage, translations } = useLanguage();
 
-<<<<<<< HEAD
-=======
   const navItems = [
     { name: translations.home, path: "/" },
     { name: translations.tour, path: "/tour" },
@@ -36,7 +29,6 @@ export default function NAV() {
   ];
 
   // ✅ Kiểm tra đăng nhập
->>>>>>> main
   useEffect(() => {
     const checkAuth = () => {
       const user = localStorage.getItem("currentUser");
@@ -73,24 +65,9 @@ export default function NAV() {
 
   // ✅ Chuyển dark mode
   const toggleDarkMode = () => {
-<<<<<<< HEAD
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle('dark');
-  };
-
-  const navItems = [
-    { name: t.home, path: '/' },
-    { name: t.tour, path: '/tour' },
-    { name: t.social, path: '/social' },
-    { name: t.partner, path: '/partner' },
-    { name: t.about, path: '/aboutus' },
-    { name: t.admin, path: '/admin' }
-  ];
-=======
     setIsDarkMode((prev) => !prev);
     document.documentElement.classList.toggle("dark");
   };
->>>>>>> main
 
   return (
     <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
@@ -132,31 +109,6 @@ export default function NAV() {
               onClick={toggleLanguage}
               className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors whitespace-nowrap justify-self-center"
             >
-<<<<<<< HEAD
-              <GlobeAltIcon className="h-5 w-5 text-title" />
-              <span className="text-sm font-medium text-title">{language.toUpperCase()}</span>
-            </button>
-
-            {/* 🔹 Login / User Section */}
-            {isLoggedIn ? (
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 flex items-center gap-2"
-                title={t.logout}
-              >
-                <AccountCircleIcon fontSize="small" />
-                <span className="text-sm">{t.logout}</span>
-              </button>
-            ) : (
-              <Link
-                to="/login"
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-              >
-                {t.login}
-              </Link>
-            )}
-          </div>
-=======
               <GlobeAltIcon className="h-5 w-5 text-title dark:text-white" />
               <span className="text-sm font-medium text-title dark:text-white">
                 {language.toUpperCase()}
@@ -177,7 +129,6 @@ export default function NAV() {
                       fontSize="medium"
                     />
                   </button>
->>>>>>> main
 
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-2 z-50">
@@ -236,45 +187,8 @@ export default function NAV() {
                   {item.name}
                 </Link>
               ))}
-<<<<<<< HEAD
-
-              {/* Mobile Dark Mode and Language */}
-              <div className="flex items-center gap-2 px-2 py-2 border-t border-gray-200 mt-2 pt-4">
-                {/* Dark Mode Toggle */}
-                <button
-                  onClick={toggleDarkMode}
-                  className="flex items-center gap-2 flex-1 p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-black/20"
-                  aria-label="Toggle dark mode"
-                >
-                  {isDarkMode ? (
-                    <>
-                      <MoonIcon className="h-5 w-5 text-title" />
-                      <span className="text-sm text-title">Dark Mode</span>
-                    </>
-                  ) : (
-                    <>
-                      <SunIcon className="h-5 w-5 text-title" />
-                      <span className="text-sm text-title">Light Mode</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Language Switcher */}
-                <button
-                  onClick={toggleLanguage}
-                  className="flex items-center gap-2 flex-1 p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-black/20"
-                  aria-label="Switch language"
-                >
-                  <GlobeAltIcon className="h-5 w-5 text-title" />
-                  <span className="text-sm font-medium text-title">{language.toUpperCase()}</span>
-                </button>
-              </div>
-
-              {/* Mobile Login/Logout */}
-=======
 
               {/* Login / User (Mobile) */}
->>>>>>> main
               {isLoggedIn ? (
                 <button
                   onClick={() => {
@@ -283,31 +197,18 @@ export default function NAV() {
                   }}
                   className="mt-2  flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
-<<<<<<< HEAD
-                  <AccountCircleIcon fontSize="small" />
-                  <span>{t.logout}</span>
-=======
                   <AccountCircleIcon
                     fontSize="large"
                     className="text-title dark:text-white"
                   />
->>>>>>> main
                 </button>
               ) : (
                 <Link
                   to="/login"
-<<<<<<< HEAD
-                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-black/20 block text-center"
-=======
->>>>>>> main
                   onClick={() => setMobileMenuOpen(false)}
                   className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 block text-center whitespace-nowrap"
                 >
-<<<<<<< HEAD
-                  {t.login}
-=======
                   {translations.login}
->>>>>>> main
                 </Link>
               )}
             </nav>
@@ -328,27 +229,17 @@ export default function NAV() {
                     }}
                     className="w-full text-left px-4 py-2 text-black hover:bg-gray-100 transition"
                   >
-<<<<<<< HEAD
-                    {translations.profile}
-=======
                     Thông tin cá nhân
->>>>>>> main
                   </button>
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-black hover:bg-gray-100 transition"
                   >
-<<<<<<< HEAD
-                    {translations.logout}
-=======
                     Đăng xuất
->>>>>>> main
                   </button>
                 </div>
               )}
             </div>
-<<<<<<< HEAD
-=======
             ) : (
             <Link
               to="/login"
@@ -357,7 +248,6 @@ export default function NAV() {
               Đăng nhập
             </Link>
             )
->>>>>>> main
           </div>
         )}
       </div>
