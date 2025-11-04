@@ -224,7 +224,7 @@ export default {
     heroTitle: "Leading travel app, one touch to go anywhere",
     hotels: "Hotels",
     flights: "Flights",
-    tours: "Tours",
+    toursLabel: "Tours",
     activities: "Activities & Fun",
     more: "More",
 
@@ -259,7 +259,7 @@ export default {
     newOrders: "New Orders",
     activePromotions: "Active Promotions",
     monthlyRevenue: "Monthly Revenue",
-    tours: "Tours",
+    toursAdmin: "Tours",
     accommodation: "Accommodation",
     transport: "Transport",
     promotions: "Promotions",
