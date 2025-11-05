@@ -1,18 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination, Thumbs, Autoplay } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/pagination";
-import "swiper/css/thumbs";
 import { BookingCard } from "./BookingCard";
 import { BookingPanel } from "./BookingPanel";
 import ImageWithFallback from "../../figma/ImageWithFallback";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-
 import { Separator } from "../ui/separator";
 import {
   CheckCircle,
@@ -20,12 +13,13 @@ import {
   Phone,
   Mail,
   MessageCircle,
-  ChevronLeft,
-  ChevronRight,
   Star,
   MapPin,
   Share2,
   Heart,
+  Grid,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { ReviewCard } from "./ReviewCard";
 import { toursData } from "./tourData";
@@ -47,9 +41,11 @@ const tourIdMapping = {
 
 export default function TourDetail() {
   const { id } = useParams(); // Lấy ID từ URL
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [thumbsSwiper, setThumbsSwiper] = useState(null);
   const [isBookingPanelOpen, setIsBookingPanelOpen] = useState(false);
+  const [showStickyButton, setShowStickyButton] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const headerButtonRef = useRef(null);
 
   // Map ID từ URL sang tourId trong data
   const mappedTourId = tourIdMapping[id] || "halong-hanoi";
@@ -58,15 +54,50 @@ export default function TourDetail() {
   const tourData = toursData[mappedTourId] || toursData["halong-hanoi"];
   const tourImages = tourData.images;
 
+  // Detect khi button header scroll ra khỏi màn hình
+  useEffect(() => {
+    const handleScroll = () => {
+      // Hiện sticky button khi scroll xuống hơn 200px
+      setShowStickyButton(window.scrollY > 200);
+    };
+
+    // Check initial state
+    handleScroll();
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const openGallery = (index = 0) => {
+    setCurrentImageIndex(index);
+    setShowGallery(true);
+    document.body.style.overflow = 'hidden'; // Prevent scroll
+  };
+
+  const closeGallery = () => {
+    setShowGallery(false);
+    document.body.style.overflow = 'unset';
+  };
+
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % tourImages.length);
   };
 
   const prevImage = () => {
-    setCurrentImageIndex(
-      (prev) => (prev - 1 + tourImages.length) % tourImages.length
-    );
+    setCurrentImageIndex((prev) => (prev - 1 + tourImages.length) % tourImages.length);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (showGallery) {
+        if (e.key === 'Escape') closeGallery();
+        if (e.key === 'ArrowRight') nextImage();
+        if (e.key === 'ArrowLeft') prevImage();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showGallery]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -92,6 +123,7 @@ export default function TourDetail() {
             </div>
             <div className="flex gap-2">
               <Button
+                ref={headerButtonRef}
                 onClick={() => setIsBookingPanelOpen(true)}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
                 size="lg"
@@ -113,61 +145,154 @@ export default function TourDetail() {
         <div className="grid grid-cols-1 gap-8">
           {/* Nội dung chính - Full width */}
           <div className="space-y-8">
-            {/* Thư viện ảnh */}
-            <div className="relative rounded-2xl overflow-hidden bg-gray-900">
-              {/* Swiper chính - Giảm chiều cao */}
-              <div className="h-[300px] md:h-[400px]">
-                <Swiper
-                  modules={[Navigation, Pagination, Thumbs, Autoplay]}
-                  navigation
-                  pagination={{ clickable: true }}
-                  loop
-                  autoplay={{ delay: 3000, disableOnInteraction: false }}
-                  thumbs={{ swiper: thumbsSwiper }}
-                  className="w-full h-full"
+            {/* Thư viện ảnh - 1 lớn + 4 nhỏ */}
+            <div className="relative rounded-2xl overflow-hidden">
+              <div className="grid grid-cols-5 gap-2">
+                {/* Ảnh chính - chiếm 3 cột, giảm chiều cao */}
+                <div 
+                  className="col-span-5 md:col-span-3 relative group cursor-pointer overflow-hidden rounded-lg"
+                  onClick={() => openGallery(0)}
                 >
-                  {tourImages.map((image, index) => (
-                    <SwiperSlide key={index}>
+                  <ImageWithFallback
+                    src={tourImages[0]}
+                    alt={`${tourData.title} - Ảnh chính`}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                    style={{ minHeight: '350px', maxHeight: '450px' }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+
+                {/* 4 ảnh nhỏ - chiếm 2 cột, tăng kích thước */}
+                <div className="col-span-5 md:col-span-2 grid grid-cols-2 gap-2">
+                  {/* 3 ảnh đầu */}
+                  {tourImages.slice(1, 4).map((image, index) => (
+                    <div 
+                      key={index} 
+                      className="relative group cursor-pointer overflow-hidden rounded-lg"
+                      onClick={() => openGallery(index + 1)}
+                    >
                       <ImageWithFallback
                         src={image}
-                        alt={`Tour image ${index + 1}`}
-                        className="w-full h-full object-cover object-center"
+                        alt={`${tourData.title} - Ảnh ${index + 2}`}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        style={{ minHeight: '145px', maxHeight: '145px' }}
                       />
-                    </SwiperSlide>
+                      <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors" />
+                    </div>
                   ))}
-                </Swiper>
-              </div>
 
-              {/* Swiper thumbnails */}
-              <div className="mt-4 px-2">
-                <Swiper
-                  onSwiper={setThumbsSwiper}
-                  modules={[Thumbs]}
-                  slidesPerView={5}
-                  spaceBetween={10}
-                  watchSlidesProgress
-                  className="cursor-pointer"
-                >
-                  {tourImages.map((image, index) => (
-                    <SwiperSlide key={index}>
-                      <img
-                        src={image}
-                        alt={`Thumbnail ${index + 1}`}
-                        className="w-full h-16 object-cover rounded-md opacity-70 hover:opacity-100 transition"
-                      />
-                    </SwiperSlide>
-                  ))}
-                </Swiper>
+                  {/* Ảnh cuối cùng - có overlay "Xem thêm" */}
+                  <div 
+                    className="relative group cursor-pointer overflow-hidden rounded-lg"
+                    onClick={() => openGallery(4)}
+                  >
+                    <ImageWithFallback
+                      src={tourImages[4]}
+                      alt={`${tourData.title} - Ảnh 5`}
+                      className="w-full h-full object-cover"
+                      style={{ minHeight: '145px', maxHeight: '145px' }}
+                    />
+                    <div className="absolute inset-0 bg-black/60 hover:bg-black/70 transition-colors flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <Grid className="w-6 h-6 mx-auto mb-1" />
+                        <p className="text-sm font-bold">Xem thêm</p>
+                        <p className="text-xs">{tourImages.length} ảnh</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
+            {/* Gallery Modal - Full screen */}
+            {showGallery && (
+              <div className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center">
+                {/* Close button */}
+                <button
+                  onClick={closeGallery}
+                  className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+                >
+                  <X className="w-8 h-8" />
+                </button>
+
+                {/* Image counter */}
+                <div className="absolute top-4 left-4 text-white text-lg font-semibold z-10">
+                  {currentImageIndex + 1} / {tourImages.length}
+                </div>
+
+                {/* Previous button */}
+                <button
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-3 hover:bg-black/70"
+                >
+                  <ChevronLeft className="w-8 h-8" />
+                </button>
+
+                {/* Main image */}
+                <div className="max-w-6xl max-h-[90vh] mx-auto px-20">
+                  <img
+                    src={tourImages[currentImageIndex]}
+                    alt={`${tourData.title} - Ảnh ${currentImageIndex + 1}`}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+
+                {/* Next button */}
+                <button
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-3 hover:bg-black/70"
+                >
+                  <ChevronRight className="w-8 h-8" />
+                </button>
+
+                {/* Thumbnails */}
+                <div className="absolute bottom-4 left-0 right-0 px-4">
+                  <div className="max-w-4xl mx-auto flex gap-2 overflow-x-auto pb-2">
+                    {tourImages.map((image, index) => (
+                      <img
+                        key={index}
+                        src={image}
+                        alt={`Thumbnail ${index + 1}`}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`w-20 h-16 object-cover rounded cursor-pointer transition-all ${
+                          index === currentImageIndex 
+                            ? 'ring-2 ring-white opacity-100 scale-110' 
+                            : 'opacity-50 hover:opacity-75'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Tabs nội dung */}
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="w-full justify-start">
-                <TabsTrigger value="overview">Tổng quan</TabsTrigger>
-                <TabsTrigger value="itinerary">Lịch trình</TabsTrigger>
-                <TabsTrigger value="included">Bao gồm</TabsTrigger>
-                <TabsTrigger value="location">Địa điểm</TabsTrigger>
+              <TabsList className="w-full justify-start bg-gradient-to-r from-blue-50 to-purple-50 p-1 rounded-lg shadow-sm gap-0">
+                <TabsTrigger 
+                  value="overview"
+                  className="border-r border-blue-200/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-100 data-[state=active]:to-purple-100 data-[state=active]:text-blue-700 data-[state=active]:font-semibold data-[state=active]:shadow-sm"
+                >
+                  Tổng quan
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="itinerary"
+                  className="border-r border-blue-200/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-100 data-[state=active]:to-purple-100 data-[state=active]:text-blue-700 data-[state=active]:font-semibold data-[state=active]:shadow-sm"
+                >
+                  Lịch trình
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="included"
+                  className="border-r border-blue-200/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-100 data-[state=active]:to-purple-100 data-[state=active]:text-blue-700 data-[state=active]:font-semibold data-[state=active]:shadow-sm"
+                >
+                  Bao gồm
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="location"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-100 data-[state=active]:to-purple-100 data-[state=active]:text-blue-700 data-[state=active]:font-semibold data-[state=active]:shadow-sm"
+                >
+                  Địa điểm
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-4 mt-6">
@@ -366,6 +491,41 @@ export default function TourDetail() {
           </div>
         </div>
       </div>
+
+      {/* Sticky Booking Button - Bottom Mobile */}
+      {showStickyButton && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 md:hidden">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-sm text-gray-500">Giá từ</span>
+              <span className="text-2xl font-bold text-blue-600">
+                {tourData.basePrice.toLocaleString("vi-VN")}đ
+              </span>
+            </div>
+            <Button
+              onClick={() => setIsBookingPanelOpen(true)}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl px-8 py-6 text-lg"
+            >
+              Đặt Tour Ngay
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Sticky Booking Button - Side Desktop */}
+      {showStickyButton && (
+        <div className="hidden md:block fixed bottom-8 right-8 z-50">
+          <Button
+            onClick={() => setIsBookingPanelOpen(true)}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold shadow-2xl hover:shadow-3xl px-8 py-6 text-lg rounded-full animate-pulse hover:animate-none"
+            size="lg"
+          >
+            <span className="flex items-center gap-2">
+              💼 Đặt Tour Ngay
+            </span>
+          </Button>
+        </div>
+      )}
 
       {/* Floating Booking Panel */}
       <BookingPanel

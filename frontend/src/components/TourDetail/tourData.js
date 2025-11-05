@@ -10,9 +10,13 @@ export const toursData = {
     duration: "5 ngày 4 đêm",
     images: [
       "https://images.unsplash.com/photo-1668000018482-a02acf02b22a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoYWxvbmclMjBiYXklMjB2aWV0bmFtfGVufDF8fHx8MTc2MTY5OTMwMnww&ixlib=rb-4.1.0&q=80&w=1080",
-      "https://images.unsplash.com/photo-1729605411476-defbdab14c54?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob3RlbCUyMGx1eHVyeSUyMHJvb218ZW58MXx8fHwxNzYxNzkxNzI0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "https://res.klook.com/images/fl_lossy.progressive,q_65/c_fill,w_1200,h_630/w_80,x_15,y_15,g_south_west,l_Klook_water_br_trans_yhcmh3/activities/qmgtdjekctlyucr8itqw/%C4%90%E1%BA%B7t%20tour%20%C4%91i%20V%E1%BB%8Bnh%20H%E1%BA%A1%20Long%20t%E1%BB%AB%20H%C3%A0%20N%E1%BB%99i.jpg",
       "https://bcp.cdnchinhphu.vn/344443456812359680/2025/5/31/hanoi-17486566616582033334984.jpg",
+      "https://res.klook.com/images/fl_lossy.progressive,q_65/c_fill,w_1200,h_630/w_80,x_15,y_15,g_south_west,l_Klook_water_br_trans_yhcmh3/activities/qmgtdjekctlyucr8itqw/%C4%90%E1%BA%B7t%20tour%20%C4%91i%20V%E1%BB%8Bnh%20H%E1%BA%A1%20Long%20t%E1%BB%AB%20H%C3%A0%20N%E1%BB%99i.jpg",
+      "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800",
+      "https://images.unsplash.com/photo-1555577653-094899dad05c?w=800",
+      "https://images.unsplash.com/photo-1728468542081-43e31eddf2e8?w=800",
+      "https://ik.imagekit.io/tvlk/blog/2022/10/dia-diem-du-lich-ha-noi-1.jpg?tr=dpr-2,w-675",
+      "https://images.unsplash.com/photo-1509233725247-49e657c54213?w=800",
     ],
     tags: ["Du lịch văn hóa", "Thiên nhiên", "Ẩm thực", "Nhiếp ảnh"],
     description: {
@@ -111,8 +115,12 @@ export const toursData = {
     images: [
       "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=1080",
       "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=1080",
+      "https://cdn.tcdulichtphcm.vn/upload/3-2023/images/2023-03-14/1678795889-bana-hill-1657161996.jpg",
       "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=1080",
+      "https://res.klook.com/image/upload/v1651485064/blog/j6xwdirr0wdtfcwvqhkk.webp",
       "https://images.unsplash.com/photo-1587793258023-48fccfbd075f?w=1080",
+      "https://ik.imagekit.io/tvlk/blog/2022/06/shutterstock_1096141979.jpg?tr=dpr-2,w-675",
+      "https://top10danang.com/wp-content/uploads/2024/01/bai-tam-my-khe-da-nang.jpg",
     ],
     tags: ["Biển đảo", "Di sản văn hóa", "Nghỉ dưỡng", "Ẩm thực"],
     description: {
@@ -204,9 +212,13 @@ export const toursData = {
     duration: "4 ngày 3 đêm",
     images: [
       "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=1080",
+      "https://www.lottehotel.com/content/dam/lotte-hotel/lotte/saigon/accommodation/standard/deluxeroom/180712-52-2000-acc-saigon-hotel.jpg.thumb.768.768.jpg",
       "https://images.unsplash.com/photo-1626914366294-25e4a8c3e724?w=1080",
+      "https://media.travelmedia.vn/destination/dstimgfw_339.jpg",
       "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=1080",
       "https://images.unsplash.com/photo-1598946485440-2d4077f8a46f?w=1080",
+      "https://th.bing.com/th/id/R.d95de7f82fd8b21ab50ea51a58efd959?rik=DpyOhbIe00zCRA&riu=http%3a%2f%2fhoianexpress.com.vn%2fwp-content%2fuploads%2f2018%2f12%2fcho-noi-cai-rang-can-tho-1.jpg&ehk=vfBcKKXKl36GI8gn95yJDpwgNwHtxaGC%2fQH90XeZPxo%3d&risl=&pid=ImgRaw&r=0",
+      "https://baoquangninh.vn/uploads/Image/2022/09/14/1132462baoquangninh-diadaocuchi-14092022.jpg",
     ],
     tags: ["Thành phố", "Văn hóa miền Nam", "Chợ nổi", "Ẩm thực"],
     description: {
@@ -298,9 +310,13 @@ export const toursData = {
     duration: "6 ngày 5 đêm",
     images: [
       "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=1080",
+      "https://statics.vinpearl.com/du-lich-sapa-2_1631866527.jpg",
       "https://images.unsplash.com/photo-1528127269322-539801943592?w=1080",
       "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=1080",
+      "https://ik.imagekit.io/tvlk/blog/2022/07/kinh-nghiem-du-lich-ha-giang-2.jpg?tr=dpr-2,w-675",
       "https://images.unsplash.com/photo-1544427920-c49ccfb85579?w=1080",
+      "https://dulichkhampha24.com/wp-content/uploads/2020/03/du-lich-ha-giang-11.jpg",
+      "https://static.vinwonders.com/production/cot-co-lung-cu-1.jpg",
     ],
     tags: ["Núi non", "Ruộng bậc thang", "Văn hóa dân tộc", "Phượt"],
     description: {
@@ -402,9 +418,13 @@ export const toursData = {
     duration: "4 ngày 3 đêm",
     images: [
       "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=1080",
+      "https://static.vinwonders.com/production/bai-sao-phu-quoc-banner.jpg",
       "https://images.unsplash.com/photo-1589994965851-a8f479c573a9?w=1080",
+      "https://statics.vinpearl.com/vinwonders-phu-quoc-2_1625911963.jpg",
       "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=1080",
       "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1080",
+      "https://static.vinwonders.com/production/hon-thom-phu-quoc-1.jpg",
+      "https://ik.imagekit.io/tvlk/blog/2023/01/kinh-nghiem-du-lich-phu-quoc-cover.jpg?tr=dpr-2,w-675",
     ],
     tags: ["Biển đảo", "Nghỉ dưỡng", "Lặn biển", "Resort cao cấp"],
     description: {
@@ -496,9 +516,13 @@ export const toursData = {
     duration: "3 ngày 2 đêm",
     images: [
       "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=1080",
+      "https://ik.imagekit.io/tvlk/blog/2022/11/kinh-nghiem-du-lich-nha-trang-1.jpg?tr=dpr-2,w-675",
       "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=1080",
+      "https://static.vinwonders.com/production/vinpearl-land-nha-trang-1.jpg",
       "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=1080",
       "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1080",
+      "https://statics.vinpearl.com/thap-ba-ponagar-nha-trang-0_1633421963.jpg",
+      "https://image.sggp.org.vn/w1000/Uploaded/2024/xbcnfqobxrcb/2022_05_03/z3400699776906-5af3fedb9f3e7f0d57ef8f7c2bff15c1-2592.jpg",
     ],
     tags: ["Biển đảo", "Lặn biển", "Du lịch sinh thái", "Vui chơi giải trí"],
     description: {
