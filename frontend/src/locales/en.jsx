@@ -11,13 +11,89 @@ export default {
 
     // Filter Sidebar
     filterTitle: "Search Filters",
-    search: "Search",
-    searchPlaceholder: "Tour name, destination...",
-    destination: "Destination",
-    allDestinations: "All destinations",
-    priceRange: "Price Range (VND)",
-    startDate: "Start Date",
-    resetFilters: "Reset Filters",
+    quickSearch: "Quick Search",
+    searchTourDestination: "Search tour / destination",
+    searchPlaceholder: "Enter keywords...",
+
+    // Regions
+    region: "Region",
+    northRegion: "Northern",
+    centralRegion: "Central",
+    southRegion: "Southern",
+
+    // Price
+    priceRange: "Price Range",
+    all: "All",
+
+    // Rating
+    rating: "Rating",
+    andUp: "and up",
+
+    // Tour Types
+    tourType: "Tour Type",
+    culturalTour: "Cultural Tour",
+    beachIsland: "Beach & Island",
+    mountains: "Mountains",
+    cityTour: "City Tour",
+    foodTour: "Food Tour",
+    resort: "Resort",
+    adventure: "Adventure",
+    spiritual: "Spiritual",
+
+    // Buttons
+    applyFilters: "Apply Filters",
+    clearAll: "Clear All",
+    exploreTours: "Explore Tours",
+    totalTours: "Over",
+    toursWaiting: "amazing tours waiting for you",
+    found: "Found",
+    toursA: "tours",
+    gridView: "Grid view",
+    listView: "List view",
+
+    // Sort options
+    highestRating: "Highest rated",
+    lowestRating: "Lowest rated",
+    priceLowHigh: "Price low → high",
+    priceHighLow: "Price high → low",
+    mostReviews: "Most reviewed",
+
+    // Messages
+    noToursFound: "No tours found",
+    adjustFilters: "Try adjusting filters to see more tours",
+
+    // Sections
+    topRatedDestinations: "Top Rated Destinations",
+    weatherSuggestions: "Today's Weather Suggestions",
+    activePromotions: "Active Promotions",
+    relatedPromotions: "Related Promotions",
+
+    // Promotion details
+    discount: "Off",
+    code: "Code",
+    validUntil: "Valid until",
+    viewDetails: "View details",
+    applyFor: "Apply for",
+
+    // Tour Detail
+    tourOverview: "Overview",
+    tourItinerary: "Itinerary",
+    tourIncluded: "Included",
+    tourLocation: "Location",
+    aboutTrip: "About this trip",
+    tourHighlights: "Highlights",
+    tourIncludedItems: "Included",
+    tourExcludedItems: "Excluded",
+    tourLocationHotel: "Tour Location & Hotel",
+    customerReviews: "Customer Reviews",
+    viewAllReviews: "View All Reviews",
+    contactProvider: "Contact Tour Provider",
+    contactProviderDesc: "Have questions about this tour? Our team is ready to help you plan the perfect trip.",
+    callPhone: "Call",
+    liveChat: "Live Chat",
+    tip: "Tip",
+    bookingTip: "Book at least 2 weeks in advance for best availability and pricing. Our team can customize this tour to your preferences!",
+
 
     // Destinations
     hanoi: "Hanoi",
@@ -29,6 +105,71 @@ export default {
     dalat: "Da Lat",
     hoian: "Hoi An",
     hue: "Hue",
+
+    perPerson: "/ person",
+    basePriceNote: "Base price – customize your trip below",
+    guests: "Guests",
+    chooseGuests: "Choose number of guests",
+    adults: "Adults",
+    rooms: "Hotel rooms",
+    chooseRooms: "Choose number of rooms",
+    roomUnit: "room(s)",
+    departureDate: "Departure date",
+    chooseDeparture: "Choose departure date",
+    returnDate: "Return date",
+    chooseReturn: "Choose return date",
+    attractions: "Select attractions",
+    baseTour: "Base tour",
+    hotel: "Hotel",
+    attractionFee: "Attraction fee",
+    total: "Total",
+    bookNow: "Book now",
+    freeCancel: "Free cancellation up to 24h before departure",
+
+    // Attraction names
+    halongCruise: "Ha Long Bay Cruise",
+    hanoiOldQuarter: "Hanoi Old Quarter Tour",
+    templeOfLiterature: "Temple of Literature",
+    waterPuppetShow: "Water Puppet Show",
+
+    // BookingPanel
+    panelBookTour: "Book Tour",
+    panelCustomizeAndBook: "Customize and book now",
+    panelCustomize: "Customize",
+    panelChooseDate: "Choose date",
+    panelGuests: "Guests",
+    panelRooms: "Rooms",
+    panelDepartureDate: "Departure Date",
+    panelReturnDate: "Return Date",
+    panelFeaturedAttractions: "Featured Attractions",
+    panelAdditionalServices: "Additional Services",
+    panelRemovableServices: "Removable Services",
+    panelTotal: "Total",
+    panelPriceIncludesTax: "Price includes tax and service fees",
+
+    // Services
+    service_photo: "Professional Photography",
+    service_cooking: "Cooking Class",
+    service_spa: "Spa & Massage",
+    service_bike: "Bike Tour",
+
+
+    // Attractions
+    halongCruise: "Halong Bay Cruise",
+    hanoiOldQuarter: "Hanoi Old Quarter",
+    templeOfLiterature: "Temple of Literature",
+    waterPuppetShow: "Water Puppet Show",
+
+    // Removable services
+    removeHotelUpgrade: "Remove Hotel Upgrade",
+    removeCruiseMeal: "Remove Cruise Meal",
+    removeEntranceFees: "Remove Entrance Fees",
+
+    // Common
+    from: "From",
+    bookNow: "Book Now",
+
+    reviewHelpful: "Helpful",
 
     // Footer
     footerDescription: "Discover the beauty of Vietnam with our premium travel services.",
