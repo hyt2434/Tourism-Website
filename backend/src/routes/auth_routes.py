@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
-from database import get_connection
+from src.database import get_connection
 
 auth_routes = Blueprint('auth_routes', __name__)
 

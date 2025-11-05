@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from database import get_connection
+from src.database import get_connection
 from psycopg2.extras import RealDictCursor
 import logging
 promotion_routes = Blueprint('promotion_routes', __name__)

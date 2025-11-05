@@ -1,11 +1,11 @@
 from flask import Flask
 from flask_cors import CORS
-from routes.auth_routes import auth_routes
-from routes.filter_routes import filter_routes
-from routes.tour_routes import tour_routes
-from routes.suggestion_routes import suggestion_routes
-from routes.promotion_routes import promotion_routes
-from models import create_table
+from src.routes.auth_routes import auth_routes
+from src.routes.filter_routes import filter_routes
+from src.routes.tour_routes import tour_routes
+from src.routes.suggestion_routes import suggestion_routes
+from src.routes.promotion_routes import promotion_routes
+from src.models.models import create_table
 from flask_bcrypt import Bcrypt
 
 app = Flask(__name__)

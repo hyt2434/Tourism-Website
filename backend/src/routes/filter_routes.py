@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from database import get_connection
+from src.database import get_connection
 from psycopg2.extras import RealDictCursor
 
 filter_routes = Blueprint('filter_routes', __name__)
