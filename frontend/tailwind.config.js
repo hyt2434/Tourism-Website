@@ -1,22 +1,43 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   darkMode: "class", // ✅ Thêm dòng này
   theme: {
     extend: {
       colors: {
+        // 🌞 Light mode colors
         backgroundColor: "#FFFFFF",
         textColor: "#1A1E18",
         accentColor: "#F4F4F4",
         secondaryTextColor: "#6B7280",
         borderColor: "#D1D5DB",
         hoverColor: "#306366",
-        title: '#0B0B0B',
-        body: '#555555',
-        section: '#F5F5F5',
+        title: "#0B0B0B",
+        body: "#555555",
+        section: "#F5F5F5",
+
+        // 🌙 Dark mode colors
+        "backgroundColor-dark": "#0F0F0F",
+        "textColor-dark": "#E5E7EB",
+        "accentColor-dark": "#1F2937",
+        "secondaryTextColor-dark": "#9CA3AF",
+        "borderColor-dark": "#374151",
+        "hoverColor-dark": "#4FD1C5",
+        "title-dark": "#FFFFFF",
+        "body-dark": "#CCCCCC",
+        "section-dark": "#1A1A1A",
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: [
+          "Inter",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif",
+        ],
       },
       spacing: {
         128: "32rem",

@@ -19,23 +19,29 @@ import {
   Flag,
 } from "lucide-react";
 import ImageWithFallback from "../../figma/ImageWithFallback.jsx";
+import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function SocialPost({ post, onServiceClick, onReport }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const { translations } = useLanguage(); // 👈 lấy translations
 
   return (
-    <Card className="mb-4 overflow-hidden border-0 shadow-sm">
+    <Card className="mb-4 overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
       {/* Post Header */}
       <div className="p-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Avatar className="w-8 h-8">
-            <AvatarFallback>{post.user.displayName[0]}</AvatarFallback>
+            <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white">
+              {post.user.displayName[0]}
+            </AvatarFallback>
           </Avatar>
           <div>
-            <p className="leading-none">{post.user.username}</p>
+            <p className="leading-none text-black dark:text-white">
+              {post.user.username}
+            </p>
             {post.location && (
-              <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
+              <p className="text-muted-foreground dark:text-gray-400 flex items-center gap-1 mt-0.5">
                 <MapPin className="w-3 h-3" />
                 {post.location}
               </p>
@@ -45,26 +51,27 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <MoreHorizontal className="w-4 h-4" />
+              <MoreHorizontal className="w-4 h-4 text-black dark:text-white" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => onServiceClick(post.linkedService)}
-            >
+          <DropdownMenuContent
+            align="end"
+            className="bg-white dark:bg-gray-800 text-black dark:text-white"
+          >
+            <DropdownMenuItem onClick={() => onServiceClick(post.linkedService)}>
               <MapPin className="w-4 h-4 mr-2" />
-              Xem dịch vụ liên kết
+              {translations.viewLinkedService}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onReport(post.id)}>
               <Flag className="w-4 h-4 mr-2" />
-              Báo cáo bài viết
+              {translations.reportPost}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
       {/* Post Image */}
-      <div className="relative w-full aspect-square bg-muted">
+      <div className="relative w-full aspect-square bg-muted dark:bg-gray-800">
         <ImageWithFallback
           src={post.image}
           alt={post.caption}
@@ -74,9 +81,9 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
           <div className="absolute top-2 right-2">
             <Badge
               variant="secondary"
-              className="bg-yellow-100 text-yellow-800 border-yellow-300"
+              className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-600"
             >
-              Chờ duyệt
+              {translations.pending}
             </Badge>
           </div>
         )}
@@ -93,9 +100,10 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
               onClick={() => setLiked(!liked)}
             >
               <Heart
-                className={`w-6 h-6 ${
-                  liked ? "fill-red-500 text-red-500" : ""
-                }`}
+                className={`w-6 h-6 ${liked
+                    ? "fill-red-500 text-red-500"
+                    : "text-black dark:text-white"
+                  }`}
               />
             </Button>
             <Button
@@ -103,14 +111,14 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
               size="sm"
               className="h-auto p-0 hover:bg-transparent"
             >
-              <MessageCircle className="w-6 h-6" />
+              <MessageCircle className="w-6 h-6 text-black dark:text-white" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               className="h-auto p-0 hover:bg-transparent"
             >
-              <Send className="w-6 h-6" />
+              <Send className="w-6 h-6 text-black dark:text-white" />
             </Button>
           </div>
           <Button
@@ -119,18 +127,23 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
             className="h-auto p-0 hover:bg-transparent"
             onClick={() => setSaved(!saved)}
           >
-            <Bookmark className={`w-6 h-6 ${saved ? "fill-current" : ""}`} />
+            <Bookmark
+              className={`w-6 h-6 ${saved
+                  ? "fill-current text-black dark:text-white"
+                  : "text-black dark:text-white"
+                }`}
+            />
           </Button>
         </div>
 
         {/* Likes count */}
-        <p className="mb-2">
-          {(post.likes + (liked ? 1 : 0)).toLocaleString()} lượt thích
+        <p className="mb-2 text-black dark:text-white">
+          {(post.likes + (liked ? 1 : 0)).toLocaleString()} {translations.likes}
         </p>
 
         {/* Caption */}
-        <div className="mb-2">
-          <span className="mr-2">{post.user.username}</span>
+        <div className="mb-2 text-black dark:text-white">
+          <span className="mr-2 font-semibold">{post.user.username}</span>
           <span>{post.caption}</span>
         </div>
 
@@ -139,7 +152,7 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
           {post.hashtags.map((tag, index) => (
             <span
               key={index}
-              className="text-blue-600 cursor-pointer hover:underline"
+              className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
             >
               {tag}
             </span>
@@ -151,11 +164,11 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
           <Button
             variant="outline"
             size="sm"
-            className="w-full mt-2"
+            className="w-full mt-2 dark:border-gray-600 dark:text-white"
             onClick={() => onServiceClick(post.linkedService)}
           >
             <MapPin className="w-4 h-4 mr-2" />
-            Đặt chỗ: {post.linkedService}
+            {translations.bookNow}: {post.linkedService}
           </Button>
         )}
 
@@ -164,14 +177,16 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
           <Button
             variant="ghost"
             size="sm"
-            className="p-0 h-auto text-muted-foreground hover:bg-transparent mt-2"
+            className="p-0 h-auto text-muted-foreground dark:text-gray-400 hover:bg-transparent mt-2"
           >
-            Xem tất cả {post.comments} bình luận
+            {translations.viewAllComments.replace("{count}", post.comments)}
           </Button>
         )}
 
         {/* Timestamp */}
-        <p className="text-muted-foreground mt-2">{post.timestamp}</p>
+        <p className="text-muted-foreground dark:text-gray-400 mt-2">
+          {post.timestamp}
+        </p>
       </div>
     </Card>
   );
