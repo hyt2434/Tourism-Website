@@ -1,0 +1,115 @@
+Đây là cách build database của trang Tour
+
+CREATE TABLE regions (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE provinces (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    region_id INT,
+    FOREIGN KEY (region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE tour_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE tours (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    province_id INT, -- Đây là cột MỚI thay cho 'destination'
+    image TEXT,
+    price NUMERIC(10, 2),
+    duration VARCHAR(100),
+    maxSlots INT,
+    rating NUMERIC(3, 1),
+    reviews INT,
+    badge VARCHAR(50),
+    
+    -- Tạo liên kết đến bảng provinces
+    FOREIGN KEY (province_id) REFERENCES provinces(id)
+);
+
+CREATE TABLE bookings (
+    id SERIAL PRIMARY KEY,
+    user_id INT,
+    tour_id INT,
+    booking_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Liên kết với bảng 'tours' mới
+    FOREIGN KEY (tour_id) REFERENCES tours(id) ON DELETE CASCADE
+);
+
+-- 1. Bơm dữ liệu cho regions
+INSERT INTO regions (name) VALUES 
+('Miền Bắc'), 
+('Miền Trung'), 
+('Miền Nam');
+
+-- 2. Bơm dữ liệu cho provinces (liên kết với regions)
+-- (Giả sử 'Miền Bắc' là id=1, 'Trung' id=2, 'Nam' id=3)
+INSERT INTO provinces (name, region_id) VALUES 
+('Hà Nội', 1), ('Hạ Long', 1), ('Sapa', 1), ('Ninh Bình', 1), ('Hải Phòng', 1), ('Hà Giang', 1),
+('Đà Nẵng', 2), ('Hội An', 2), ('Huế', 2), ('Quy Nhơn', 2), ('Nha Trang', 2), ('Đà Lạt', 2),
+('TP Hồ Chí Minh', 3), ('Vũng Tàu', 3), ('Phú Quốc', 3), ('Cần Thơ', 3), ('Mũi Né', 3), ('Côn Đảo', 3);
+
+-- 3. Bơm dữ liệu cho tour_types
+INSERT INTO tour_types (name) VALUES
+('Du lịch văn hóa'), ('Biển đảo'), ('Núi non'), ('Thành phố'), 
+('Ẩm thực'), ('Nghỉ dưỡng'), ('Phiêu lưu'), ('Tâm linh');
+
+-- 4.Dùng bảng nối để một tour liên kết nhiều tour_types
+CREATE TABLE tours_tour_types (
+    tour_id INT NOT NULL,
+    tour_type_id INT NOT NULL,
+    
+    FOREIGN KEY (tour_id) REFERENCES tours(id) ON DELETE CASCADE,
+    FOREIGN KEY (tour_type_id) REFERENCES tour_types(id) ON DELETE CASCADE,
+    PRIMARY KEY (tour_id, tour_type_id)
+);
+
+-- Tour 1: Hạ Long (province_id = 2)
+INSERT INTO tours (name, province_id, image, price, duration, maxSlots, rating, reviews, badge) 
+VALUES 
+('5-Star Ha Long Cruise - Luxury Experience', 2, 'https://images.unsplash.com/photo-1573428991361-4510f9370c32', 5990000, '2 days 1 night', 12, 9.2, 248, 'Best Seller');
+
+-- Tour 2: Hội An (province_id = 8)
+INSERT INTO tours (name, province_id, image, price, duration, maxSlots, rating, reviews, badge) 
+VALUES 
+('Hoi An Ancient Town - Cultural Heritage Discovery', 8, 'https://images.unsplash.com/photo-1528132742686-b99f2c2f01d4', 3490000, '3 days 2 nights', 8, 9.5, 512, NULL);
+
+-- Tour 3: Phú Quốc (province_id = 15)
+INSERT INTO tours (name, province_id, image, price, duration, maxSlots, rating, reviews, badge) 
+VALUES 
+('Phu Quoc - Paradise Resort', 15, 'https://images.unsplash.com/photo-1623069151240-6c9a73373b98', 7290000, '4 days 3 nights', 10, 9.0, 186, 'Special Offer');
+
+-- Tour 4: Sapa (province_id = 3)
+INSERT INTO tours (name, province_id, image, price, duration, maxSlots, rating, reviews, badge) 
+VALUES 
+('Sapa - Chinh phục Fansipan & Làng Cát Cát', 3, 'https://images.unsplash.com/photo-1528127269322-539801943592?w=1080', 2990000, '3 days 2 nights', 15, 9.1, 199, 'Trending');
+
+-- Tour 5: Đà Nẵng (province_id = 7)
+INSERT INTO tours (name, province_id, image, price, duration, maxSlots, rating, reviews, badge) 
+VALUES 
+('Đà Nẵng - Cầu Vàng & Bà Nà Hills', 7, 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=1080', 4500000, '3 days 2 nights', 20, 9.4, 610, 'Best Seller');
+
+-- Tour 6: Đà Lạt (province_id = 12)
+INSERT INTO tours (name, province_id, image, price, duration, maxSlots, rating, reviews, badge) 
+VALUES 
+('Đà Lạt - Thành Phố Mộng Mơ', 12, 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=1080', 3200000, '3 days 2 nights', 10, 8.9, 305, NULL);
+
+INSERT INTO tours_tour_types (tour_id, tour_type_id) VALUES
+(1, 2), -- Tour 1 (Hạ Long) là 'Biển đảo'
+(1, 6), -- Tour 1 (Hạ Long) CŨNG là 'Nghỉ dưỡng'
+(2, 1), -- Tour 2 (Hội An) là 'Du lịch văn hóa'
+(3, 2), -- Tour 3 (Phú Quốc) là 'Biển đảo'
+(3, 6); -- Tour 3 (Phú Quốc) CŨNG là 'Nghỉ dưỡng'
+(4, 3), -- Tour 4 (Sapa) là 'Núi non'
+(4, 7), -- Tour 4 (Sapa) CŨNG là 'Phiêu lưu'
+(5, 4), -- Tour 5 (Đà Nẵng) là 'Thành phố'
+(5, 2), -- Tour 5 (Đà Nẵng) CŨNG là 'Biển đảo'
+(6, 3), -- Tour 6 (Đà Lạt) là 'Núi non'
+(6, 6); -- Tour 6 (Đà Lạt) CŨNG là 'Nghỉ dưỡng'
