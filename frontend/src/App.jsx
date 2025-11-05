@@ -24,11 +24,46 @@ import "swiper/css/pagination";
 
 export default function App() {
   const tours = [
-    { id: 1, name: "Ha Long Bay Cruise", image: "...", price: "$299", duration: "2 Days", description: "Explore the stunning limestone karsts and emerald waters" },
-    { id: 2, name: "Da Nang Beach Tour", image: "...", price: "$199", duration: "1 Day", description: "Relax on pristine beaches and enjoy water activities" },
-    { id: 3, name: "Hoi An Ancient Town", image: "...", price: "$149", duration: "1 Day", description: "Walk through lantern-lit streets and historic architecture" },
-    { id: 4, name: "Phu Quoc Island", image: "...", price: "$399", duration: "3 Days", description: "Paradise beaches and tropical island adventures" },
-    { id: 5, name: "Nha Trang Bay", image: "...", price: "$249", duration: "2 Days", description: "Crystal waters, island hopping, and vibrant nightlife" },
+    {
+      id: 1,
+      name: "Ha Long Bay Cruise",
+      image: "...",
+      price: "$299",
+      duration: "2 Days",
+      description: "Explore the stunning limestone karsts and emerald waters",
+    },
+    {
+      id: 2,
+      name: "Da Nang Beach Tour",
+      image: "...",
+      price: "$199",
+      duration: "1 Day",
+      description: "Relax on pristine beaches and enjoy water activities",
+    },
+    {
+      id: 3,
+      name: "Hoi An Ancient Town",
+      image: "...",
+      price: "$149",
+      duration: "1 Day",
+      description: "Walk through lantern-lit streets and historic architecture",
+    },
+    {
+      id: 4,
+      name: "Phu Quoc Island",
+      image: "...",
+      price: "$399",
+      duration: "3 Days",
+      description: "Paradise beaches and tropical island adventures",
+    },
+    {
+      id: 5,
+      name: "Nha Trang Bay",
+      image: "...",
+      price: "$249",
+      duration: "2 Days",
+      description: "Crystal waters, island hopping, and vibrant nightlife",
+    },
   ];
 
   return (
@@ -58,6 +93,15 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/register" element={<Register />} />
+          <Route
+            path="/aboutus"
+            element={
+              <h1 className="text-center text-3xl font-bold text-gray-900 dark:text-white mb-6">
+                {" "}
+                Cao Triết nè
+              </h1>
+            }
+          />
           <Route path="/social" element={<SocialPage />} />
           <Route path="/partner" element={<PartnerPage />} />
           <Route path="/profile" element={<Profile />} />
