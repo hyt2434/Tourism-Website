@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import PartnerPage from "./components/PartnerPage";
 import NAV from "./components/NAV";
 import Footer from "./components/Footer";
 import TourCarousel from "./components/TourCarousel";
@@ -17,6 +16,8 @@ import FlightSearchForm from "./components/home/FlightSearchForm";
 import Promotions from "./components/home/Promotions";
 import FlightDeals from "./components/home/FlightDeals";
 import Reviews from "./components/home/Reviews";
+import PartnerPage from "./components/Partner/PartnerPage";
+import PartnerDetail from "./components/Partner/PartnerDetail";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -99,6 +100,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/social" element={<SocialPage />} />
           <Route path="/partner" element={<PartnerPage />} />
+          <Route path="/partner/:id" element={<PartnerDetail />} />
           <Route path="/profile" element={<Profile />} />
         </Routes>
         <Footer />
