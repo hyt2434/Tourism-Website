@@ -114,30 +114,32 @@ export default function TourDetail() {
           {/* Nội dung chính - Full width */}
           <div className="space-y-8">
             {/* Thư viện ảnh */}
-            <div className="relative rounded-2xl overflow-hidden bg-gray-900 aspect-video">
-              {/* Swiper chính */}
-              <Swiper
-                modules={[Navigation, Pagination, Thumbs, Autoplay]}
-                navigation
-                pagination={{ clickable: true }}
-                loop
-                autoplay={{ delay: 3000, disableOnInteraction: false }}
-                thumbs={{ swiper: thumbsSwiper }}
-                className="w-full h-full"
-              >
-                {tourImages.map((image, index) => (
-                  <SwiperSlide key={index}>
-                    <ImageWithFallback
-                      src={image}
-                      alt={`Tour image ${index + 1}`}
-                      className="w-full h-full object-cover object-center"
-                    />
-                  </SwiperSlide>
-                ))}
-              </Swiper>
+            <div className="relative rounded-2xl overflow-hidden bg-gray-900">
+              {/* Swiper chính - Giảm chiều cao */}
+              <div className="h-[300px] md:h-[400px]">
+                <Swiper
+                  modules={[Navigation, Pagination, Thumbs, Autoplay]}
+                  navigation
+                  pagination={{ clickable: true }}
+                  loop
+                  autoplay={{ delay: 3000, disableOnInteraction: false }}
+                  thumbs={{ swiper: thumbsSwiper }}
+                  className="w-full h-full"
+                >
+                  {tourImages.map((image, index) => (
+                    <SwiperSlide key={index}>
+                      <ImageWithFallback
+                        src={image}
+                        alt={`Tour image ${index + 1}`}
+                        className="w-full h-full object-cover object-center"
+                      />
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+              </div>
 
               {/* Swiper thumbnails */}
-              <div className="mt-4">
+              <div className="mt-4 px-2">
                 <Swiper
                   onSwiper={setThumbsSwiper}
                   modules={[Thumbs]}
