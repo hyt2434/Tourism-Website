@@ -17,7 +17,8 @@ export default function ToursPage() {
   const [filters, setFilters] = useState({});
   const [sortBy, setSortBy] = useState("rating-desc");
   const [viewMode, setViewMode] = useState("grid"); // grid or list
-  const [currentWeather] = useState("sunny"); // Giả lập thời tiết
+  const [currentWeather, setCurrentWeather] = useState("sunny"); // Giả lập thời tiết
+  const [weatherDetails, setWeatherDetails] = useState(null);
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
@@ -51,15 +52,6 @@ export default function ToursPage() {
 
   const handleSortChange = (sortOption) => {
     setSortBy(sortOption);
-  };
-
-  // Safe access to weather data with fallback
-  const weather = weatherSuggestions?.[currentWeather] || {
-    icon: "☀️",
-    condition: "Sunny",
-    temp: "28°C",
-    description: "Perfect weather for touring",
-    tours: []
   };
 
   useEffect(() => {
@@ -166,6 +158,66 @@ useEffect(() => {
 
   fetchPromotions();
 }, []);
+
+useEffect(() => {
+      const fetchRealWeather = async () => {
+        
+        const apiKey = "4d8893b02fa14aa39b2210854250511";
+        
+        const apiUrl = `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=auto:ip&lang=vi`;
+
+        try {
+          const response = await fetch(apiUrl);
+          if (!response.ok) throw new Error("Lỗi khi gọi API thời tiết");
+          
+          const data = await response.json();
+          
+          setCurrentWeather(data.current.condition.text.toLowerCase()); 
+          
+          setWeatherDetails(data.current); 
+
+        } catch (error) {
+          console.error("Không thể lấy thời tiết thật:", error);
+        }
+      };
+
+      fetchRealWeather();
+    }, []);
+
+    const WeatherDescriptions = {
+  'nắng': 'Thời tiết hoàn hảo cho hoạt động biển!',
+  'nắng đẹp': 'Ngày tuyệt vời để khám phá các điểm tham quan ngoài trời.',
+  'clear': 'Thời tiết hoàn hảo để ngắm sao và đi dạo buổi tối.',
+  'rải rác mây': 'Nhiệt độ dễ chịu, lý tưởng cho trekking và leo núi.',
+  'mưa': 'Thời tiết lý tưởng cho các tour ẩm thực trong nhà và tham quan bảo tàng.',
+  'mưa rào': 'Mang theo ô và tận hưởng chuyến thăm đến các chợ và trung tâm mua sắm.',
+  'mưa phùn': 'Không quá tệ! Rất phù hợp cho các quán cà phê ấm cúng và lớp học nấu ăn.',
+  'lốc xoáy': 'Vì sự an toàn của bạn, chúng tôi chỉ gợi ý các hoạt động trong nhà.',
+  'mây': 'Hoàn hảo cho việc đi bộ đường dài mà không bị nắng gắt.',
+  'âm u': 'Thời tiết lý tưởng cho các tour di tích lịch sử và văn hóa.',
+  'sương mù': 'Tận hưởng vẻ đẹp huyền bí, nhưng hãy cẩn thận khi lái xe.',
+  'tuyết': 'Đã đến lúc cho các hoạt động thể thao mùa đông và tour nghỉ dưỡng suối nước nóng.'
+};
+
+const removeAccents = (str) => {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+};
+
+const getWeatherTip = (weatherText) => {
+  if (!weatherText) return 'Hãy kiểm tra dự báo trước khi lên đường!';
+
+  const normalizedInput = removeAccents(weatherText.toLowerCase()); 
+
+  for (const keyword in WeatherDescriptions) {
+    const normalizedKeyword = removeAccents(keyword.toLowerCase()); 
+
+    if (normalizedInput.includes(normalizedKeyword)) {
+      return WeatherDescriptions[keyword];
+    }
+  }
+
+  return 'Thời tiết hôm nay có chút bất ngờ! Hãy chuẩn bị mọi thứ.';
+};
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
@@ -290,23 +342,27 @@ useEffect(() => {
       </div>
 
       {/* Weather-based Suggestions */}
-      {suggestedTours.length > 0 && (
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 py-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-3 mb-6">
-              <Sun className="w-8 h-8 text-orange-500" />
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {weather.icon} {translations.weatherSuggestions || "Gợi Ý Theo Thời Tiết Hôm Nay"}
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {weather.condition} • {weather.temp} • {weather.description}
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {suggestedTours.slice(0, 3).map((tour) => (
-                <TourCard key={tour.id} tour={tour} />
+      {weatherDetails && suggestedTours.length > 0 && (
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3 mb-6">
+              {/* 1. Hiển thị Icon "Thật" từ API */}
+              <img src={weatherDetails.condition.icon} alt={weatherDetails.condition.text} className="w-10 h-10" />
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {translations.weatherSuggestions || "Gợi Ý Theo Thời Tiết Hôm Nay"}
+                </h2>
+                {/* 2. Hiển thị Dữ liệu "Thật" từ API */}
+                <p className="text-gray-600 dark:text-gray-400">
+                  {weatherDetails.condition.text} • {weatherDetails.temp_c}°C
+                  {weatherDetails.condition.text && ` • ${getWeatherTip(weatherDetails.condition.text)}` }
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* 3. Hiển thị Tour Gợi ý (từ API Của Ta) */}
+              {suggestedTours.slice(0, 3).map((tour) => (
+                <TourCard key={tour.id} tour={tour} />
               ))}
             </div>
           </div>
