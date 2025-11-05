@@ -16,6 +16,7 @@ def get_tours():
     tour_type_id = request.args.get('type')
     min_rating = request.args.get('rating')
     max_price = request.args.get('price')
+    start_date = request.args.get('start_date')
 
     sql_select = """
     SELECT 
@@ -50,6 +51,10 @@ def get_tours():
     if max_price:
         where_clauses.append("t.price <= %s")
         sql_params.append(max_price)
+        
+    if start_date:
+        where_clauses.append("t.start_date = %s")
+        sql_params.append(start_date)
 
     if search_query:
         where_clauses.append("(t.name ILIKE %s OR p.name ILIKE %s)")

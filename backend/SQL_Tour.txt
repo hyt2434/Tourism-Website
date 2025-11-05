@@ -1,4 +1,4 @@
-Đây là cách build database của trang Tour
+-- Đây là cách build bảng trang Tour của HTLuat
 
 CREATE TABLE regions (
     id SERIAL PRIMARY KEY,
@@ -113,3 +113,30 @@ INSERT INTO tours_tour_types (tour_id, tour_type_id) VALUES
 (5, 2), -- Tour 5 (Đà Nẵng) CŨNG là 'Biển đảo'
 (6, 3), -- Tour 6 (Đà Lạt) là 'Núi non'
 (6, 6); -- Tour 6 (Đà Lạt) CŨNG là 'Nghỉ dưỡng'
+
+
+-- 5. Tạo bảng promotions và bảng nối promotions
+CREATE TABLE promotions (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255),
+    image_url TEXT,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    discount_type VARCHAR(20) NOT NULL CHECK (discount_type IN ('percent', 'fixed')),
+    discount_value NUMERIC(10, 2) NOT NULL,
+    max_uses INT,
+    uses INT DEFAULT 0,
+    start_date DATE,
+    end_date DATE,
+    conditions TEXT,
+    is_active BOOLEAN DEFAULT true,
+    show_on_homepage BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE tours_promotions (
+    tour_id INT NOT NULL,
+    promotion_id INT NOT NULL,
+    PRIMARY KEY (tour_id, promotion_id),
+    FOREIGN KEY (tour_id) REFERENCES tours(id) ON DELETE CASCADE,
+    FOREIGN KEY (promotion_id) REFERENCES promotions(id) ON DELETE CASCADE
+);

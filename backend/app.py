@@ -3,6 +3,8 @@ from flask_cors import CORS
 from routes.auth_routes import auth_routes
 from routes.filter_routes import filter_routes
 from routes.tour_routes import tour_routes
+from routes.suggestion_routes import suggestion_routes
+from routes.promotion_routes import promotion_routes
 from models import create_table
 from flask_bcrypt import Bcrypt
 
@@ -17,6 +19,8 @@ create_table()
 app.register_blueprint(auth_routes, url_prefix="/api/auth")
 app.register_blueprint(filter_routes, url_prefix="/api/filter")
 app.register_blueprint(tour_routes, url_prefix="/api/tour")
+app.register_blueprint(suggestion_routes, url_prefix="/api/suggestions")
+app.register_blueprint(promotion_routes, url_prefix="/api/promotions")
 
 @app.route("/test")
 def test():
