@@ -133,7 +133,8 @@ export default function TourDetail() {
                     <ImageWithFallback
                       src={image}
                       alt={`Tour image ${index + 1}`}
-                      className="w-full h-full object-cover object-center"
+                      className="w-full h-64 md:h-96 object-cover object-center"
+
                     />
                   </SwiperSlide>
                 ))}
@@ -317,8 +318,8 @@ export default function TourDetail() {
                         <Star
                           key={i}
                           className={`w-4 h-4 ${i < Math.floor(tourData.rating)
-                              ? "fill-yellow-400 text-yellow-400"
-                              : "fill-gray-300 text-gray-300 dark:fill-gray-600 dark:text-gray-600"
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "fill-gray-300 text-gray-300 dark:fill-gray-600 dark:text-gray-600"
                             }`}
                         />
                       ))}
