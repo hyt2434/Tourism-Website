@@ -224,7 +224,7 @@ export default {
     heroTitle: "Leading travel app, one touch to go anywhere",
     hotels: "Hotels",
     flights: "Flights",
-    tours: "Tours",
+    toursLabel: "Tours",
     activities: "Activities & Fun",
     more: "More",
 
@@ -259,7 +259,7 @@ export default {
     newOrders: "New Orders",
     activePromotions: "Active Promotions",
     monthlyRevenue: "Monthly Revenue",
-    tours: "Tours",
+    toursAdmin: "Tours",
     accommodation: "Accommodation",
     transport: "Transport",
     promotions: "Promotions",
@@ -362,4 +362,27 @@ export default {
     actions: "Actions",
     transport: "Transport",
 
+    tours: {
+        haLongCruise: {
+            name: "5-Star Ha Long Cruise - Luxury Experience",
+            destination: "Ha Long",
+        },
+        hoiAn: {
+            name: "Hoi An Ancient Town - Cultural Heritage Discovery",
+            destination: "Hoi An",
+        },
+        phuQuoc: {
+            name: "Phu Quoc - Paradise Resort",
+            destination: "Phu Quoc",
+        },
+        sapa: {
+            name: "Sapa - Conquer Fansipan Peak",
+            destination: "Sapa",
+        },
+    },
+    durations: {
+        "2d1n": "2 days 1 night",
+        "3d2n": "3 days 2 nights",
+        "4d3n": "4 days 3 nights",
+    },
 };

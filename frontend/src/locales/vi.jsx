@@ -224,7 +224,7 @@ export default {
     heroTitle: "Ứng dụng du lịch hàng đầu, chạm một lần đi muôn nơi",
     hotels: "Khách sạn",
     flights: "Vé máy bay",
-    tours: "Tour du lịch",
+    toursLabel: "Tour du lịch",
     activities: "Hoạt động & Vui chơi",
     more: "Thêm",
 
@@ -259,7 +259,7 @@ export default {
     newOrders: "Đơn hàng mới",
     activePromotions: "Khuyến mãi đang hoạt động",
     monthlyRevenue: "Doanh thu hàng tháng",
-    tours: "Tour",
+    toursAdmin: "Tour",
     accommodation: "Lưu trú",
     transport: "Vận chuyển",
     promotions: "Khuyến mãi",
