@@ -1,10 +1,12 @@
 import React, { useState } from "react";
+
 import {
   Hotel,
   Plane,
   PartyPopper,
   MoreHorizontal,
   MapPin,
+  Calendar as CalIcon,
 } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
@@ -51,7 +53,7 @@ export default function HeroSection({ children }) {
             />
             <ServiceTab
               icon={MapPin}
-              label={translations.tours}
+              label={translations.toursLabel}
               active={activeService === "pickup"}
               onClick={() => setActiveService("pickup")}
             />
@@ -81,10 +83,11 @@ function ServiceTab({ icon: Icon, label, active, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 rounded-full transition-all transform hover:scale-105 ${active
+      className={`flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 rounded-full transition-all transform hover:scale-105 ${
+        active
           ? "bg-white text-blue-600 shadow-lg"
           : "bg-white/20 text-white dark:text-gray-200 hover:bg-white/30 dark:hover:bg-white/30 backdrop-blur-sm"
-        }`}
+      }`}
     >
       <Icon className="w-4 h-4 md:w-5 md:h-5" />
       <span className="text-xs md:text-sm font-medium">{label}</span>

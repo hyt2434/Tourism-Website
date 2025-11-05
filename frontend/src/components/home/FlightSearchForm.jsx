@@ -14,6 +14,35 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
 
+// Dữ liệu regions và cities
+const regionsData = {
+  northernVietnam: ["Hanoi (HAN)", "Hai Phong (HPH)", "Ha Long (VDO)"],
+  centralVietnam: ["Da Nang (DAD)", "Hue (HUI)", "Quy Nhon (UIH)"],
+  southernVietnam: [
+    "Ho Chi Minh City (SGN)",
+    "Can Tho (VCA)",
+    "Phu Quoc (PQC)",
+  ],
+};
+
+// Dữ liệu keywords
+const keywordsData = [
+  "beach",
+  "moutain",
+  "cul",
+  "adventure",
+  "fooftour",
+  "history",
+  "wildlife",
+  "shopping",
+  "nightlife",
+  "relax",
+  "photography",
+  "luxury",
+  "budget",
+  "friendly",
+];
+
 export default function FlightSearchForm() {
   const [departureDate, setDepartureDate] = useState(new Date(2025, 9, 26));
   const [returnDate, setReturnDate] = useState(new Date(2025, 9, 28));
@@ -28,6 +57,9 @@ export default function FlightSearchForm() {
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [selectedCity, setSelectedCity] = useState(null);
   const [selectedKeywords, setSelectedKeywords] = useState([]);
+  const [openDeparture, setOpenDeparture] = useState(false);
+  const [openReturn, setOpenReturn] = useState(false);
+  const [openPassengers, setOpenPassengers] = useState(false);
 
   const { translations } = useLanguage();
 
@@ -42,6 +74,20 @@ export default function FlightSearchForm() {
     const temp = fromLocation;
     setFromLocation(toLocation);
     setToLocation(temp);
+  };
+
+  const toggleKeyword = (keyword) => {
+    setSelectedKeywords((prev) =>
+      prev.includes(keyword)
+        ? prev.filter((k) => k !== keyword)
+        : [...prev, keyword]
+    );
+  };
+
+  const handleCityClick = (city) => {
+    setSelectedCity(city);
+    // Có thể tự động điền vào To location
+    setToLocation(city);
   };
 
   return (
@@ -77,7 +123,7 @@ export default function FlightSearchForm() {
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Location */}
+              {/* Location - Regions & Cities */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <MapPin className="h-5 w-5 text-blue-600" />
@@ -85,7 +131,41 @@ export default function FlightSearchForm() {
                     {translations.location}
                   </h3>
                 </div>
-                {/* TODO: render regions & cities */}
+
+                <div className="space-y-3">
+                  {Object.keys(regionsData).map((region) => (
+                    <div key={region}>
+                      <button
+                        onClick={() =>
+                          setSelectedRegion(
+                            selectedRegion === region ? null : region
+                          )
+                        }
+                        className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium text-gray-900 dark:text-white"
+                      >
+                        {translations[region]}
+                      </button>
+
+                      {selectedRegion === region && (
+                        <div className="ml-4 mt-2 space-y-1">
+                          {regionsData[region].map((city) => (
+                            <button
+                              key={city}
+                              onClick={() => handleCityClick(city)}
+                              className={`block w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
+                                selectedCity === city
+                                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200"
+                                  : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              {city}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Keywords */}
@@ -96,13 +176,56 @@ export default function FlightSearchForm() {
                     {translations.keywords}
                   </h3>
                 </div>
-                {/* TODO: render keywords */}
+
+                <div className="flex flex-wrap gap-2">
+                  {keywordsData.map((keyword) => (
+                    <button
+                      key={keyword}
+                      onClick={() => toggleKeyword(keyword)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        selectedKeywords.includes(keyword)
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      }`}
+                    >
+                      {translations[keyword]}
+                    </button>
+                  ))}
+                </div>
+
+                {selectedKeywords.length > 0 && (
+                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium mb-2">
+                      Selected filters:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedKeywords.map((keyword) => (
+                        <span
+                          key={keyword}
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-800 rounded text-xs text-gray-700 dark:text-gray-300"
+                        >
+                          {translations[keyword]}
+                          <X
+                            className="h-3 w-3 cursor-pointer hover:text-red-500"
+                            onClick={() => toggleKeyword(keyword)}
+                          />
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="mt-6 flex justify-end">
               <button
-                onClick={() => console.log("Apply filters")}
+                onClick={() =>
+                  console.log("Apply filters", {
+                    selectedRegion,
+                    selectedCity,
+                    selectedKeywords,
+                  })
+                }
                 className="px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors font-semibold"
               >
                 {translations.applyFilters}
@@ -116,27 +239,29 @@ export default function FlightSearchForm() {
       <div className="flex gap-4 mb-6">
         <button
           onClick={() => setTripType("round-trip")}
-          className={`px-6 py-2 rounded-full text-sm font-medium ${tripType === "round-trip"
+          className={`px-6 py-2 rounded-full text-sm font-medium ${
+            tripType === "round-trip"
               ? "bg-blue-600 text-white"
               : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
-            }`}
+          }`}
         >
           {translations.roundTrip}
         </button>
 
         <button
           onClick={() => setTripType("multi-city")}
-          className={`px-6 py-2 rounded-full text-sm font-medium ${tripType === "multi-city"
+          className={`px-6 py-2 rounded-full text-sm font-medium ${
+            tripType === "multi-city"
               ? "bg-blue-600 text-white"
               : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
-            }`}
+          }`}
         >
           {translations.multiCity}
         </button>
       </div>
 
       {/* Các trường nhập liệu */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+      <div className="flex grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
         {/* From */}
         <div className="lg:col-span-3">
           <label className="block text-xs text-gray-600 dark:text-gray-300 mb-2 font-medium">
@@ -178,27 +303,42 @@ export default function FlightSearchForm() {
             />
           </div>
         </div>
-
         {/* Departure date */}
         <div className="lg:col-span-2">
           <label className="block text-xs text-gray-600 dark:text-gray-300 mb-2 font-medium">
             {translations.departureDate}
           </label>
-          <Popover>
+          <Popover open={openDeparture} onOpenChange={setOpenDeparture}>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-start h-12 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {formatDate(departureDate)}
-              </Button>
+              <div className="relative">
+                <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  readOnly
+                  value={formatDate(departureDate)}
+                  className={`w-full h-12 pl-10 rounded-lg cursor-pointer
+            bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+            border ${
+              openDeparture
+                ? "ring-2 ring-blue-400 border-blue-400"
+                : "border-gray-200 dark:border-gray-600"
+            }
+            focus:outline-none`}
+                />
+              </div>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600" align="start">
+            <PopoverContent
+              className="w-auto p-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600"
+              align="start"
+            >
               <Calendar
                 mode="single"
                 selected={departureDate}
-                onSelect={(date) => date && setDepartureDate(date)}
+                onSelect={(date) => {
+                  if (date) {
+                    setDepartureDate(date);
+                    setOpenDeparture(false); // đóng popover => tắt viền xanh
+                  }
+                }}
                 initialFocus
               />
             </PopoverContent>
@@ -210,21 +350,37 @@ export default function FlightSearchForm() {
           <label className="block text-xs text-gray-600 dark:text-gray-300 mb-2 font-medium">
             {translations.returnDate}
           </label>
-          <Popover>
+          <Popover open={openReturn} onOpenChange={setOpenReturn}>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-start h-12 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {formatDate(returnDate)}
-              </Button>
+              <div className="relative">
+                <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  readOnly
+                  value={formatDate(returnDate)}
+                  className={`w-full h-12 pl-10 rounded-lg cursor-pointer
+            bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+            border ${
+              openReturn
+                ? "ring-2 ring-blue-400 border-blue-400"
+                : "border-gray-200 dark:border-gray-600"
+            }
+            focus:outline-none`}
+                />
+              </div>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600" align="start">
+            <PopoverContent
+              className="w-auto p-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600"
+              align="start"
+            >
               <Calendar
                 mode="single"
                 selected={returnDate}
-                onSelect={(date) => date && setReturnDate(date)}
+                onSelect={(date) => {
+                  if (date) {
+                    setReturnDate(date);
+                    setOpenReturn(false); // đóng popover => tắt viền xanh
+                  }
+                }}
                 initialFocus
               />
             </PopoverContent>
@@ -232,15 +388,20 @@ export default function FlightSearchForm() {
         </div>
 
         {/* Passengers */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
           <label className="block text-xs text-gray-600 dark:text-gray-300 mb-2 font-medium">
             {translations.passengers}
           </label>
-          <Popover>
+          <Popover open={openPassengers} onOpenChange={setOpenPassengers}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-start h-12 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg"
+                className={`w-full justify-start h-12 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg
+                  border ${
+                    openPassengers
+                      ? "ring-2 ring-blue-400 border-blue-400"
+                      : "border-gray-200 dark:border-gray-600"
+                  }`}
               >
                 <Users className="mr-1 h-4 w-4" />
                 <span className="text-sm">
@@ -277,7 +438,7 @@ export default function FlightSearchForm() {
   );
 }
 
-// PassengerControl component - đặt ngoài FlightSearchForm
+// PassengerControl component
 function PassengerControl({ label, value, onDecrease, onIncrease }) {
   return (
     <div className="flex items-center justify-between">
@@ -300,6 +461,7 @@ function PassengerControl({ label, value, onDecrease, onIncrease }) {
         </span>
         <button
           onClick={(e) => {
+            console.log("increase");
             e.stopPropagation();
             onIncrease();
           }}
