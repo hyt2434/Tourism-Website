@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, MapPin, Star, ChevronDown, ChevronUp, X } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { Button } from "./ui/button";
@@ -26,23 +26,11 @@ export default function FilterSidebar({ onFilterChange }) {
     type: true,
   });
 
-  // Dữ liệu vùng miền và tỉnh thành
-  const regions = {
-    "Miền Bắc": ["Hà Nội", "Hạ Long", "Sapa", "Ninh Bình", "Hải Phòng", "Hà Giang"],
-    "Miền Trung": ["Đà Nẵng", "Hội An", "Huế", "Quy Nhơn", "Nha Trang", "Đà Lạt"],
-    "Miền Nam": ["TP Hồ Chí Minh", "Vũng Tàu", "Phú Quốc", "Cần Thơ", "Mũi Né", "Côn Đảo"],
-  };
-
-  const tourTypes = [
-    "Du lịch văn hóa",
-    "Biển đảo",
-    "Núi non",
-    "Thành phố",
-    "Ẩm thực",
-    "Nghỉ dưỡng",
-    "Phiêu lưu",
-    "Tâm linh",
-  ];
+  const [apiData, setApiData] = useState({
+    regions: [],
+    provinces: [],
+    tourTypes: []
+  });
 
   const popularKeywords = [
     "Hà Nội",
@@ -102,6 +90,23 @@ export default function FilterSidebar({ onFilterChange }) {
     (filters.search ? 1 : 0) +
     (filters.minRating > 0 ? 1 : 0) +
     (filters.maxPrice < 10000000 ? 1 : 0);
+
+    useEffect(() => {
+    const fetchFilterData = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/filter/");
+        if (!response.ok) {
+          throw new Error("FILTER NOT WORKING ERROR");
+        }
+        const data = await response.json();
+        setApiData(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    
+    fetchFilterData();
+  }, []);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
@@ -174,31 +179,31 @@ export default function FilterSidebar({ onFilterChange }) {
         </button>
         {expandedSections.region && (
           <div className="space-y-3">
-            {Object.keys(regions).map((region) => (
-              <div key={region} className="space-y-2">
+            {apiData.regions.map((region) => (
+              <div key={region.id} className="space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer group">
                   <Checkbox
-                    checked={filters.regions.includes(region)}
-                    onCheckedChange={() => handleArrayFilter("regions", region)}
+                    checked={filters.regions.includes(region.id)}
+                    onCheckedChange={() => handleArrayFilter("regions", region.id)}
                   />
                   <span className="text-sm text-gray-700 group-hover:text-blue-600">
-                    {region}
+                    {region.name}
                   </span>
                   <span className="text-xs text-gray-400">
-                    ({regions[region].length})
+                    ({apiData.provinces.filter(p => p.region_id === region.id).length})
                   </span>
                 </label>
                 {/* Tỉnh thành con */}
-                {filters.regions.includes(region) && (
+                {filters.regions.includes(region.id) && (
                   <div className="ml-6 space-y-2 pl-3 border-l-2 border-gray-200">
-                    {regions[region].map((province) => (
+                    {apiData.provinces.filter(p => p.region_id === region.id).map((province) => (
                       <label key={province} className="flex items-center gap-2 cursor-pointer group">
                         <Checkbox
-                          checked={filters.provinces.includes(province)}
-                          onCheckedChange={() => handleArrayFilter("provinces", province)}
+                          checked={filters.provinces.includes(province.id)}
+                          onCheckedChange={() => handleArrayFilter("provinces", province.id)}
                         />
                         <span className="text-sm text-gray-600 group-hover:text-blue-600">
-                          {province}
+                          {province.name}
                         </span>
                       </label>
                     ))}
@@ -293,14 +298,14 @@ export default function FilterSidebar({ onFilterChange }) {
         </button>
         {expandedSections.type && (
           <div className="space-y-2">
-            {tourTypes.map((type) => (
-              <label key={type} className="flex items-center gap-2 cursor-pointer group">
+            {apiData.tourTypes.map((type) => (
+              <label key={type.id} className="flex items-center gap-2 cursor-pointer group">
                 <Checkbox
-                  checked={filters.tourTypes.includes(type)}
-                  onCheckedChange={() => handleArrayFilter("tourTypes", type)}
+                  checked={filters.tourTypes.includes(type.id)}
+                  onCheckedChange={() => handleArrayFilter("tourTypes", type.id)}
                 />
                 <span className="text-sm text-gray-700 group-hover:text-blue-600">
-                  {type}
+                  {type.name}
                 </span>
               </label>
             ))}

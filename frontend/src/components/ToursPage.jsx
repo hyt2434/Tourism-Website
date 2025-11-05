@@ -1,67 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TourCard from "./TourCard";
 import FilterSidebar from "./FilterSidebar";
 import { useLanguage } from "../context/LanguageContext";
-import { allToursData, weatherSuggestions, promotions, topRatedDestinations } from "../data/toursData";
 import { Badge } from "./ui/badge";
+import { weatherSuggestions, promotions, topRatedDestinations } from "../data/toursData";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { ArrowUpDown, Grid, List, MapPin, Star, Sun, Tag } from "lucide-react";
 
 export default function ToursPage() {
   const { translations } = useLanguage();
-
-  const [filteredTours, setFilteredTours] = useState(allToursData);
-  const [sortBy, setSortBy] = useState("rating-desc");
+  const [allTours, setAllTours] = useState([]);
+  const [filteredTours, setFilteredTours] = useState([]);
+  const [filters, setFilters] = useState({});
+  const [sortBy, setSortBy] = useState("rating-desc");
   const [viewMode, setViewMode] = useState("grid"); // grid or list
   const [currentWeather] = useState("sunny"); // Giả lập thời tiết
 
-  const handleFilterChange = (filters) => {
-    let result = [...allToursData];
-
-    // Search
-    if (filters.search) {
-      result = result.filter((t) =>
-        t.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        t.destination.toLowerCase().includes(filters.search.toLowerCase())
-      );
-    }
-
-    // Regions
-    if (filters.regions && filters.regions.length > 0) {
-      result = result.filter((t) => filters.regions.includes(t.region));
-    }
-
-    // Provinces
-    if (filters.provinces && filters.provinces.length > 0) {
-      result = result.filter((t) => filters.provinces.includes(t.province));
-    }
-
-    // Price
-    if (filters.maxPrice) {
-      result = result.filter((t) => t.price <= filters.maxPrice);
-    }
-
-    // Rating
-    if (filters.minRating > 0) {
-      result = result.filter((t) => t.rating >= filters.minRating);
-    }
-
-    // Tour types
-    if (filters.tourTypes && filters.tourTypes.length > 0) {
-      result = result.filter((t) =>
-        t.type.some((type) => filters.tourTypes.includes(type))
-      );
-    }
-
-    // Start date - có thể mở rộng logic
-    if (filters.startDate) {
-      // Giả lập filter theo ngày
-    }
-
-    setFilteredTours(result);
-    applySorting(result, sortBy);
-  };
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
 
   const applySorting = (tours, sortOption) => {
     let sorted = [...tours];
@@ -86,18 +44,69 @@ export default function ToursPage() {
         break;
     }
     
-    setFilteredTours(sorted);
+    return sorted;
   };
 
   const handleSortChange = (sortOption) => {
     setSortBy(sortOption);
-    applySorting(filteredTours, sortOption);
   };
 
   const weather = weatherSuggestions[currentWeather];
-  const suggestedTours = allToursData.filter((t) =>
+  const suggestedTours = allTours.filter((t) =>
     weather.tours.includes(t.id)
   );
+
+  useEffect(() => {
+    const buildQueryString = (filterParams) => {
+      const params = new URLSearchParams();
+
+      if (filterParams.search) {
+        params.append('search', filterParams.search);
+      }
+      if (filterParams.maxPrice && filterParams.maxPrice < 10000000) {
+        params.append('price', filterParams.maxPrice);
+      }
+      if (filterParams.minRating && filterParams.minRating > 0) {
+        params.append('rating', filterParams.minRating);
+      }
+
+      if (filterParams.regions && filterParams.regions.length > 0) {
+        params.append('region', filterParams.regions[0]); 
+      }
+      if (filterParams.provinces && filterParams.provinces.length > 0) {
+        params.append('province', filterParams.provinces[0]); 
+      }
+      if (filterParams.tourTypes && filterParams.tourTypes.length > 0) {
+        params.append('type', filterParams.tourTypes[0]);
+      }
+      
+      return params.toString();
+    };
+
+    const fetchTours = async () => {
+      const queryString = buildQueryString(filters);
+      const apiUrl = `http://localhost:5000/api/tour/?${queryString}`;
+      
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`Lỗi HTTP! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        setAllTours(data); 
+
+        const sortedData = applySorting(data, sortBy);
+        
+        setFilteredTours(sortedData);
+        
+      } catch (error) {
+        console.error("Lỗi khi fetch tour:", error);
+      }
+    };
+
+    fetchTours();
+  }, [filters, sortBy]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -108,7 +117,7 @@ export default function ToursPage() {
             Khám Phá Tour Du Lịch
           </h1>
           <p className="text-xl text-blue-100">
-            Hơn {allToursData.length} tour tuyệt vời đang chờ bạn
+            Hơn {allTours.length} tour tuyệt vời đang chờ bạn
           </p>
         </div>
       </div>
@@ -284,7 +293,7 @@ export default function ToursPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {promotions.map((promo) => {
-              const relatedTours = allToursData.filter((t) =>
+              const relatedTours = allTours.filter((t) =>
                 promo.tourIds.includes(t.id)
               );
               return (
