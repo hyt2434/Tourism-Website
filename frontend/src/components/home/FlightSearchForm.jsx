@@ -57,6 +57,9 @@ export default function FlightSearchForm() {
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [selectedCity, setSelectedCity] = useState(null);
   const [selectedKeywords, setSelectedKeywords] = useState([]);
+  const [openDeparture, setOpenDeparture] = useState(false);
+  const [openReturn, setOpenReturn] = useState(false);
+  const [openPassengers, setOpenPassengers] = useState(false);
 
   const { translations } = useLanguage();
 
@@ -300,21 +303,28 @@ export default function FlightSearchForm() {
             />
           </div>
         </div>
-
         {/* Departure date */}
         <div className="lg:col-span-2">
           <label className="block text-xs text-gray-600 dark:text-gray-300 mb-2 font-medium">
             {translations.departureDate}
           </label>
-          <Popover>
+          <Popover open={openDeparture} onOpenChange={setOpenDeparture}>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-start h-12 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {formatDate(departureDate)}
-              </Button>
+              <div className="relative">
+                <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  readOnly
+                  value={formatDate(departureDate)}
+                  className={`w-full h-12 pl-10 rounded-lg cursor-pointer
+            bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+            border ${
+              openDeparture
+                ? "ring-2 ring-blue-400 border-blue-400"
+                : "border-gray-200 dark:border-gray-600"
+            }
+            focus:outline-none`}
+                />
+              </div>
             </PopoverTrigger>
             <PopoverContent
               className="w-auto p-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600"
@@ -323,7 +333,12 @@ export default function FlightSearchForm() {
               <Calendar
                 mode="single"
                 selected={departureDate}
-                onSelect={(date) => date && setDepartureDate(date)}
+                onSelect={(date) => {
+                  if (date) {
+                    setDepartureDate(date);
+                    setOpenDeparture(false); // đóng popover => tắt viền xanh
+                  }
+                }}
                 initialFocus
               />
             </PopoverContent>
@@ -335,15 +350,23 @@ export default function FlightSearchForm() {
           <label className="block text-xs text-gray-600 dark:text-gray-300 mb-2 font-medium">
             {translations.returnDate}
           </label>
-          <Popover>
+          <Popover open={openReturn} onOpenChange={setOpenReturn}>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-start h-12 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {formatDate(returnDate)}
-              </Button>
+              <div className="relative">
+                <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  readOnly
+                  value={formatDate(returnDate)}
+                  className={`w-full h-12 pl-10 rounded-lg cursor-pointer
+            bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+            border ${
+              openReturn
+                ? "ring-2 ring-blue-400 border-blue-400"
+                : "border-gray-200 dark:border-gray-600"
+            }
+            focus:outline-none`}
+                />
+              </div>
             </PopoverTrigger>
             <PopoverContent
               className="w-auto p-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600"
@@ -352,7 +375,12 @@ export default function FlightSearchForm() {
               <Calendar
                 mode="single"
                 selected={returnDate}
-                onSelect={(date) => date && setReturnDate(date)}
+                onSelect={(date) => {
+                  if (date) {
+                    setReturnDate(date);
+                    setOpenReturn(false); // đóng popover => tắt viền xanh
+                  }
+                }}
                 initialFocus
               />
             </PopoverContent>
@@ -360,15 +388,20 @@ export default function FlightSearchForm() {
         </div>
 
         {/* Passengers */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
           <label className="block text-xs text-gray-600 dark:text-gray-300 mb-2 font-medium">
             {translations.passengers}
           </label>
-          <Popover>
+          <Popover open={openPassengers} onOpenChange={setOpenPassengers}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-start h-12 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg"
+                className={`w-full justify-start h-12 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg
+                  border ${
+                    openPassengers
+                      ? "ring-2 ring-blue-400 border-blue-400"
+                      : "border-gray-200 dark:border-gray-600"
+                  }`}
               >
                 <Users className="mr-1 h-4 w-4" />
                 <span className="text-sm">

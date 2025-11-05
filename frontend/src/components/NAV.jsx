@@ -80,7 +80,7 @@ export default function NAV() {
             MagicViet
           </div>
           {/* Desktop Navigation */}
-          <div className="hidden md:grid grid-cols-[auto_repeat(5,minmax(110px,1fr))_auto_auto_auto] items-center gap-1">
+          <div className="hidden md:grid grid-cols-[repeat(6,minmax(110px,1fr))_auto_auto_auto] items-center gap-1">
             {navItems.map((item) => (
               <Link
                 key={item.path}

@@ -48,6 +48,164 @@ export default {
   dalat: "Đà Lạt",
   hoian: "Hội An",
   hue: "Huế",
+  // Bộ lọc
+  filterTitle: "Bộ lọc tìm kiếm",
+  quickSearch: "Tìm kiếm nhanh",
+  searchTourDestination: "Tìm kiếm tour / điểm đến",
+  searchPlaceholder: "Nhập từ khóa...",
+
+  // Regions
+  region: "Vùng miền",
+  northRegion: "Miền Bắc",
+  centralRegion: "Miền Trung",
+  southRegion: "Miền Nam",
+
+  // Price
+  priceRange: "Khoảng giá",
+  all: "Tất cả",
+
+  // Rating
+  rating: "Đánh giá",
+  andUp: "trở lên",
+
+  // Tour Types
+  tourType: "Loại hình",
+  culturalTour: "Du lịch văn hóa",
+  beachIsland: "Biển đảo",
+  mountains: "Núi non",
+  cityTour: "Thành phố",
+  foodTour: "Ẩm thực",
+  resort: "Nghỉ dưỡng",
+  adventure: "Phiêu lưu",
+  spiritual: "Tâm linh",
+
+  // Buttons
+  applyFilters: "Áp dụng bộ lọc",
+  clearAll: "Xóa tất cả",
+  exploreTours: "Khám Phá Tour Du Lịch",
+  totalTours: "Hơn",
+  toursWaiting: "tour tuyệt vời đang chờ bạn",
+  found: "Tìm thấy",
+  toursA: "tour",
+  gridView: "Xem dạng lưới",
+  listView: "Xem dạng danh sách",
+
+  // Sort options
+  highestRating: "Đánh giá cao nhất",
+  lowestRating: "Đánh giá thấp nhất",
+  priceLowHigh: "Giá thấp → cao",
+  priceHighLow: "Giá cao → thấp",
+  mostReviews: "Nhiều review nhất",
+
+  // Messages
+  noToursFound: "Không tìm thấy tour phù hợp",
+  adjustFilters: "Thử điều chỉnh bộ lọc để xem thêm tour",
+
+  // Sections
+  topRatedDestinations: "Địa Điểm Được Đánh Giá Cao",
+  weatherSuggestions: "Gợi Ý Theo Thời Tiết Hôm Nay",
+  activePromotions: "Khuyến Mãi Đang Diễn Ra",
+  relatedPromotions: "Khuyến Mãi Liên Quan",
+
+  // Promotion details
+  discount: "Giảm",
+  code: "Mã",
+  validUntil: "HSD",
+  viewDetails: "Xem chi tiết",
+  applyFor: "Áp dụng cho",
+
+  tourOverview: "Tổng quan",
+  tourItinerary: "Lịch trình",
+  tourIncluded: "Bao gồm",
+  tourLocation: "Địa điểm",
+  aboutTrip: "Về chuyến đi này",
+  tourHighlights: "Điểm nổi bật",
+  tourIncludedItems: "Bao gồm",
+  tourExcludedItems: "Không bao gồm",
+  tourLocationHotel: "Địa điểm Tour & Khách sạn",
+  customerReviews: "Đánh giá từ khách hàng",
+  viewAllReviews: "Xem tất cả đánh giá",
+  contactProvider: "Liên hệ nhà cung cấp Tour",
+  contactProviderDesc:
+    "Có câu hỏi về tour này? Đội ngũ của chúng tôi sẵn sàng giúp bạn lên kế hoạch cho chuyến đi hoàn hảo.",
+  callPhone: "Gọi điện",
+  liveChat: "Chat trực tiếp",
+  tip: "Mẹo",
+  bookingTip:
+    "Đặt trước ít nhất 2 tuần để có lựa chọn tốt nhất về chỗ trống và giá cả. Đội ngũ của chúng tôi có thể tùy chỉnh tour này theo sở thích của bạn!",
+  // Địa điểm
+  hanoi: "Hà Nội",
+  hcm: "TP Hồ Chí Minh",
+  danang: "Đà Nẵng",
+  halong: "Vịnh Hạ Long",
+  phuquoc: "Phú Quốc",
+  nhatrang: "Nha Trang",
+  dalat: "Đà Lạt",
+  hoian: "Hội An",
+  hue: "Huế",
+  perPerson: "/ người",
+  basePriceNote: "Giá khởi điểm - tùy chỉnh chuyến đi bên dưới",
+  guests: "Số lượng khách",
+  chooseGuests: "Chọn số khách",
+  adults: "Người lớn",
+  rooms: "Số phòng khách sạn",
+  chooseRooms: "Chọn số phòng",
+  roomUnit: "phòng",
+  departureDate: "Ngày đi",
+  chooseDeparture: "Chọn ngày đi",
+  returnDate: "Ngày về",
+  chooseReturn: "Chọn ngày về",
+  attractions: "Chọn điểm tham quan",
+  baseTour: "Tour cơ bản",
+  hotel: "Khách sạn",
+  attractionFee: "Điểm tham quan",
+  total: "Tổng cộng",
+  bookNow: "Đặt ngay",
+  freeCancel: "Miễn phí hủy trước 24 giờ khởi hành",
+
+  // Tên điểm tham quan
+  halongCruise: "Du thuyền Vịnh Hạ Long",
+  hanoiOldQuarter: "Tour Phố Cổ Hà Nội",
+  templeOfLiterature: "Văn Miếu Quốc Tử Giám",
+  waterPuppetShow: "Múa rối nước",
+
+  // BookingPanel
+  panelBookTour: "Đặt Tour",
+  panelCustomizeAndBook: "Tùy chỉnh và đặt ngay",
+  panelCustomize: "Tùy chỉnh",
+  panelChooseDate: "Chọn ngày",
+  panelGuests: "Số khách",
+  panelRooms: "Số phòng",
+  panelDepartureDate: "Ngày khởi hành",
+  panelReturnDate: "Ngày về",
+  panelFeaturedAttractions: "Điểm tham quan nổi bật",
+  panelAdditionalServices: "Dịch vụ bổ sung",
+  panelRemovableServices: "Dịch vụ có thể bỏ",
+  panelTotal: "Tổng cộng",
+  panelPriceIncludesTax: "Giá đã bao gồm thuế và phí dịch vụ",
+
+  // Services
+  service_photo: "Chụp ảnh chuyên nghiệp",
+  service_cooking: "Lớp học nấu ăn",
+  service_spa: "Spa & Massage",
+  service_bike: "Tour xe đạp",
+
+  // Attractions
+  halongCruise: "Du thuyền Vịnh Hạ Long",
+  hanoiOldQuarter: "Phố cổ Hà Nội",
+  templeOfLiterature: "Văn Miếu Quốc Tử Giám",
+  waterPuppetShow: "Múa rối nước",
+
+  // Removable services
+  removeHotelUpgrade: "Bỏ nâng cấp khách sạn",
+  removeCruiseMeal: "Bỏ bữa ăn trên du thuyền",
+  removeEntranceFees: "Bỏ phí vào cổng",
+
+  // Common
+  from: "Từ",
+  bookNow: "Đặt ngay",
+
+  reviewHelpful: "Hữu ích",
 
   // Footer
   footerDescription:

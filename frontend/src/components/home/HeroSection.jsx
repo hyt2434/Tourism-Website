@@ -53,7 +53,7 @@ export default function HeroSection({ children }) {
             />
             <ServiceTab
               icon={MapPin}
-              label={translations.tours}
+              label={translations.toursLabel}
               active={activeService === "pickup"}
               onClick={() => setActiveService("pickup")}
             />
