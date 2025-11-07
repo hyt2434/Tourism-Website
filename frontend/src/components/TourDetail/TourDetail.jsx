@@ -20,35 +20,36 @@ import {
   Phone,
   Mail,
   MessageCircle,
-  ChevronLeft,
-  ChevronRight,
   Star,
   MapPin,
   Share2,
   Heart,
+  MessageSquare,
+  ShoppingCart,
 } from "lucide-react";
 import { ReviewCard } from "./ReviewCard";
 import { toursData } from "./tourData";
+// THÊM IMPORT NÀY
+import TourMap from "./TourMap";
 
 // Map tour ID từ URL sang tourId trong data
 const tourIdMapping = {
-  "1": "halong-hanoi",
-  "2": "danang-hoian",
-  "3": "danang-hoian",
-  "4": "phuquoc",
-  "5": "nhatrang",
+  1: "halong-hanoi",
+  2: "danang-hoian",
+  3: "danang-hoian",
+  4: "phuquoc",
+  5: "nhatrang",
   "halong-hanoi": "halong-hanoi",
   "danang-hoian": "danang-hoian",
   "saigon-mekong": "saigon-mekong",
   "sapa-hagiang": "sapa-hagiang",
-  "phuquoc": "phuquoc",
-  "nhatrang": "nhatrang",
+  phuquoc: "phuquoc",
+  nhatrang: "nhatrang",
 };
 
 export default function TourDetail() {
   const { translations } = useLanguage();
   const { id } = useParams();
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
   const [isBookingPanelOpen, setIsBookingPanelOpen] = useState(false);
 
@@ -58,16 +59,6 @@ export default function TourDetail() {
   // Lấy dữ liệu tour theo ID
   const tourData = toursData[mappedTourId] || toursData["halong-hanoi"];
   const tourImages = tourData.images;
-
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % tourImages.length);
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex(
-      (prev) => (prev - 1 + tourImages.length) % tourImages.length
-    );
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
@@ -82,9 +73,12 @@ export default function TourDetail() {
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-1 text-lg font-semibold">
                   <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  <span className="text-gray-900 dark:text-white">{tourData.rating}</span>
+                  <span className="text-gray-900 dark:text-white">
+                    {tourData.rating}
+                  </span>
                   <span className="text-gray-600 dark:text-gray-400 font-normal">
-                    ({tourData.reviewCount} {translations.reviews || "đánh giá"})
+                    ({tourData.reviewCount} {translations.reviews || "đánh giá"}
+                    )
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-medium">
@@ -95,16 +89,17 @@ export default function TourDetail() {
             </div>
             <div className="flex gap-2">
               <Button
-                onClick={() => setIsBookingPanelOpen(true)}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
-                size="lg"
+                variant="outline"
+                size="icon"
+                className="rounded-full border-gray-300 dark:border-gray-600"
               >
-                {translations.bookNow || "Đặt Tour Ngay"}
-              </Button>
-              <Button variant="outline" size="icon" className="rounded-full border-gray-300 dark:border-gray-600">
                 <Share2 className="w-5 h-5 text-gray-700 dark:text-gray-300" />
               </Button>
-              <Button variant="outline" size="icon" className="rounded-full border-gray-300 dark:border-gray-600">
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full border-gray-300 dark:border-gray-600"
+              >
                 <Heart className="w-5 h-5 text-gray-700 dark:text-gray-300" />
               </Button>
             </div>
@@ -134,7 +129,6 @@ export default function TourDetail() {
                       src={image}
                       alt={`Tour image ${index + 1}`}
                       className="w-full h-64 md:h-96 object-cover object-center"
-
                     />
                   </SwiperSlide>
                 ))}
@@ -166,16 +160,28 @@ export default function TourDetail() {
             {/* Tabs nội dung */}
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="w-full justify-start bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <TabsTrigger value="overview" className="data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-gray-700">
+                <TabsTrigger
+                  value="overview"
+                  className="data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-gray-700"
+                >
                   {translations.tourOverview || "Tổng quan"}
                 </TabsTrigger>
-                <TabsTrigger value="itinerary" className="data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-gray-700">
+                <TabsTrigger
+                  value="itinerary"
+                  className="data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-gray-700"
+                >
                   {translations.tourItinerary || "Lịch trình"}
                 </TabsTrigger>
-                <TabsTrigger value="included" className="data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-gray-700">
+                <TabsTrigger
+                  value="included"
+                  className="data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-gray-700"
+                >
                   {translations.tourIncluded || "Bao gồm"}
                 </TabsTrigger>
-                <TabsTrigger value="location" className="data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-gray-700">
+                <TabsTrigger
+                  value="location"
+                  className="data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-gray-700"
+                >
                   {translations.tourLocation || "Địa điểm"}
                 </TabsTrigger>
               </TabsList>
@@ -193,7 +199,11 @@ export default function TourDetail() {
                   </p>
                   <div className="flex flex-wrap gap-2 mt-4">
                     {tourData.tags.map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
+                      >
                         {tag}
                       </Badge>
                     ))}
@@ -208,7 +218,9 @@ export default function TourDetail() {
                     {tourData.highlights.map((highlight, index) => (
                       <li key={index} className="flex items-start gap-3">
                         <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700 dark:text-gray-300">{highlight}</span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {highlight}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -225,7 +237,9 @@ export default function TourDetail() {
                         </div>
                       </div>
                       <div className="flex-1">
-                        <h4 className="mb-2 text-gray-900 dark:text-white">{day.title}</h4>
+                        <h4 className="mb-2 text-gray-900 dark:text-white">
+                          {day.title}
+                        </h4>
                         <p className="text-gray-600 dark:text-gray-400">
                           {day.description}
                         </p>
@@ -278,20 +292,27 @@ export default function TourDetail() {
               <TabsContent value="location" className="mt-6">
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                   <h3 className="mb-4 text-gray-900 dark:text-white">
-                    {translations.tourLocationHotel || "Địa điểm Tour & Khách sạn"}
+                    {translations.tourLocationHotel ||
+                      "Địa điểm Tour & Khách sạn"}
                   </h3>
-                  <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mb-4">
-                    <iframe
-                      src={tourData.hotel.mapUrl}
-                      width="100%"
-                      height="400"
-                      style={{ border: 0 }}
-                      allowFullScreen
-                      loading="lazy"
-                    ></iframe>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-gray-900 dark:text-white">{tourData.hotel.name}</h4>
+
+                  {/* THAY THẾ iframe bằng TourMap component */}
+                  <TourMap
+                    locations={tourData.tourLocations || []}
+                    centerCoords={tourData.centerCoordinates}
+                    hotelInfo={{
+                      name: tourData.hotel.name,
+                      description: tourData.hotel.description,
+                      address: tourData.hotel.address,
+                      coordinates: tourData.hotel.coordinates,
+                    }}
+                  />
+
+                  {/* Thông tin khách sạn bên dưới map */}
+                  <div className="mt-6 space-y-2">
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {tourData.hotel.name}
+                    </h4>
                     <p className="text-gray-600 dark:text-gray-400">
                       {tourData.hotel.description}
                     </p>
@@ -300,6 +321,43 @@ export default function TourDetail() {
                       <span>{tourData.hotel.address}</span>
                     </div>
                   </div>
+
+                  {/* Danh sách địa điểm trong tour */}
+                  {tourData.tourLocations &&
+                    tourData.tourLocations.length > 0 && (
+                      <div className="mt-8">
+                        <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                          Các địa điểm tham quan
+                        </h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          {tourData.tourLocations.map((location, index) => (
+                            <div
+                              key={index}
+                              className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                                  <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="flex-1">
+                                  <h5 className="font-semibold text-gray-900 dark:text-white mb-1">
+                                    {location.name}
+                                  </h5>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                    {location.description}
+                                  </p>
+                                  {location.visitDay && (
+                                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                      Ngày {location.visitDay}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                 </div>
               </TabsContent>
             </Tabs>
@@ -311,21 +369,25 @@ export default function TourDetail() {
                   {translations.customerReviews || "Đánh giá từ khách hàng"}
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-gray-900 dark:text-white">{tourData.rating}</span>
+                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {tourData.rating}
+                  </span>
                   <div>
                     <div className="flex gap-1">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
-                          className={`w-4 h-4 ${i < Math.floor(tourData.rating)
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "fill-gray-300 text-gray-300 dark:fill-gray-600 dark:text-gray-600"
-                            }`}
+                          className={`w-4 h-4 ${
+                            i < Math.floor(tourData.rating)
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "fill-gray-300 text-gray-300 dark:fill-gray-600 dark:text-gray-600"
+                          }`}
                         />
                       ))}
                     </div>
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {tourData.reviewCount} {translations.reviews || "đánh giá"}
+                      {tourData.reviewCount}{" "}
+                      {translations.reviews || "đánh giá"}
                     </span>
                   </div>
                 </div>
@@ -346,7 +408,10 @@ export default function TourDetail() {
 
               <Separator className="my-6 bg-gray-200 dark:bg-gray-700" />
 
-              <Button variant="outline" className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <Button
+                variant="outline"
+                className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
                 {translations.viewAllReviews || "Xem tất cả đánh giá"}
               </Button>
             </div>
@@ -357,19 +422,29 @@ export default function TourDetail() {
                 {translations.contactProvider || "Liên hệ nhà cung cấp Tour"}
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                {translations.contactProviderDesc || "Có câu hỏi về tour này? Đội ngũ của chúng tôi sẵn sàng giúp bạn lên kế hoạch cho chuyến đi hoàn hảo."}
+                {translations.contactProviderDesc ||
+                  "Có câu hỏi về tour này? Đội ngũ của chúng tôi sẵn sàng giúp bạn lên kế hoạch cho chuyến đi hoàn hảo."}
               </p>
 
               <div className="grid md:grid-cols-3 gap-4">
-                <Button variant="outline" className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
                   <Phone className="w-4 h-4" />
                   {translations.callPhone || "Gọi điện"}
                 </Button>
-                <Button variant="outline" className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
                   <Mail className="w-4 h-4" />
                   Email
                 </Button>
-                <Button variant="outline" className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
                   <MessageCircle className="w-4 h-4" />
                   {translations.liveChat || "Chat trực tiếp"}
                 </Button>
@@ -377,13 +452,32 @@ export default function TourDetail() {
 
               <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  💡 <span className="font-medium">{translations.tip || "Mẹo"}:</span> {translations.bookingTip || "Đặt trước ít nhất 2 tuần để có lựa chọn tốt nhất về chỗ trống và giá cả. Đội ngũ của chúng tôi có thể tùy chỉnh tour này theo sở thích của bạn!"}
+                  💡{" "}
+                  <span className="font-medium">
+                    {translations.tip || "Mẹo"}:
+                  </span>{" "}
+                  {translations.bookingTip ||
+                    "Đặt trước ít nhất 2 tuần để có lựa chọn tốt nhất về chỗ trống và giá cả. Đội ngũ của chúng tôi có thể tùy chỉnh tour này theo sở thích của bạn!"}
                 </p>
               </div>
             </div>
           </div>
         </div>
       </div>
+      {/* Fixed Action Button - Đặt tour */}
+      <button
+        onClick={() => setIsBookingPanelOpen(true)}
+        className="fixed bottom-24 right-6 z-[99999] w-20 h-20 
+  bg-gradient-to-r from-blue-600 to-purple-600 text-white 
+  rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 
+  transition-all duration-300 flex items-center justify-center group"
+        aria-label="Đặt tour"
+      >
+        <ShoppingCart className="w-11 h-11" />
+        <span className="absolute right-16 bg-gray-900 text-white text-sm px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          Đặt tour ngay
+        </span>
+      </button>
 
       {/* Floating Booking Panel */}
       <BookingPanel

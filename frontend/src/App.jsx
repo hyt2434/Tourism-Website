@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { LanguageProvider } from "./context/LanguageContext";
-
+import "leaflet/dist/leaflet.css";
+import "./utils/leaflet-setup";
 import PartnerPage from "./components/PartnerPage";
 import NAV from "./components/NAV";
 import Footer from "./components/Footer";
