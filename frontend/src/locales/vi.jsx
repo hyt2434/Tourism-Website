@@ -371,7 +371,7 @@ export default {
   reportPost: "Báo cáo bài viết",
   pending: "Chờ duyệt",
   likes: "lượt thích",
-  bookNow: "Đặt chỗ",
+  bookNow: "Đặt tour ngay",
   viewAllComments: "Xem tất cả {count} bình luận",
 
   trending: "Xu hướng",
