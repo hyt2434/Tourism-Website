@@ -1,16 +1,16 @@
 import React, { useState } from "react";
+
 import {
   Hotel,
   Plane,
   PartyPopper,
   MoreHorizontal,
   MapPin,
+  Calendar as CalIcon,
 } from "lucide-react";
-import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function HeroSection({ children }) {
   const [activeService, setActiveService] = useState("flight");
-  const { translations } = useLanguage(); // 👈 lấy translations
 
   return (
     <section className="pb-24 pt-8 px-4 md:px-8 lg:px-36 transition-colors duration-300">
@@ -32,38 +32,38 @@ export default function HeroSection({ children }) {
         {/* Content */}
         <div className="relative h-full flex flex-col justify-center px-4 md:px-8 lg:px-12 z-10">
           <h2 className="text-white text-center text-2xl md:text-3xl lg:text-4xl font-bold mb-12 leading-tight drop-shadow-lg">
-            {translations.heroTitle}
+            Leading travel app, one touch to go anywhere
           </h2>
 
           {/* Service tabs */}
           <div className="flex flex-wrap justify-center gap-3 mb-8">
             <ServiceTab
               icon={Hotel}
-              label={translations.hotels}
+              label="Hotels"
               active={activeService === "hotel"}
               onClick={() => setActiveService("hotel")}
             />
             <ServiceTab
               icon={Plane}
-              label={translations.flights}
+              label="Flights"
               active={activeService === "flight"}
               onClick={() => setActiveService("flight")}
             />
             <ServiceTab
               icon={MapPin}
-              label={translations.tours}
+              label="Tours"
               active={activeService === "pickup"}
               onClick={() => setActiveService("pickup")}
             />
             <ServiceTab
               icon={PartyPopper}
-              label={translations.activities}
+              label="Activities & Fun"
               active={activeService === "activity"}
               onClick={() => setActiveService("activity")}
             />
             <ServiceTab
               icon={MoreHorizontal}
-              label={translations.more}
+              label="More"
               active={activeService === "other"}
               onClick={() => setActiveService("other")}
             />

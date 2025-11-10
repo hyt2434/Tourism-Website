@@ -9,7 +9,6 @@ import ReportDialog from "./ReportDialog";
 import StoriesSection from "./StoriesSection";
 import BottomNavigation from "./BottomNavigation";
 import { mockPosts } from "./mockData";
-import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function SocialPage() {
   const [activeTab, setActiveTab] = useState("home");
@@ -17,8 +16,6 @@ export default function SocialPage() {
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [reportedPostId, setReportedPostId] = useState(null);
   const [showSubmitSuccess, setShowSubmitSuccess] = useState(false);
-
-  const { translations } = useLanguage(); // 👈 lấy translations
 
   const handleServiceClick = (serviceName) => {
     console.log("Navigate to service:", serviceName);
@@ -42,11 +39,9 @@ export default function SocialPage() {
         <div className="container max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="m-0 text-title dark:text-white">
-                {translations.travelCommunity}
-              </h2>
+              <h2 className="m-0 text-title dark:text-white">Travel Community</h2>
               <p className="text-muted-foreground dark:text-gray-400 mt-1">
-                {translations.shareJourney}
+                Share and discover your journey
               </p>
             </div>
             <CreatePostDialog
@@ -64,7 +59,7 @@ export default function SocialPage() {
           <Alert className="bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
             <Check className="w-4 h-4 text-green-600 dark:text-green-300" />
             <AlertDescription className="text-green-800 dark:text-green-200">
-              {translations.postSubmitted}
+              Post submitted and pending moderation!
             </AlertDescription>
           </Alert>
         </div>
@@ -77,7 +72,7 @@ export default function SocialPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-gray-400" />
             <Input
-              placeholder={translations.searchPlaceholder}
+              placeholder="Search posts, hashtags..."
               className="pl-9 bg-muted/50 dark:bg-gray-800 dark:text-white"
             />
           </div>
@@ -101,7 +96,7 @@ export default function SocialPage() {
         {/* Load More */}
         <div className="text-center py-8">
           <Button variant="outline" className="dark:border-gray-600 dark:text-white">
-            {translations.loadMore}
+            Load More Posts
           </Button>
         </div>
       </div>

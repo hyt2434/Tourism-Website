@@ -1,33 +1,30 @@
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination, Autoplay } from "swiper/modules";
+import { Navigation, Pagination } from "swiper/modules";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import { Autoplay } from "swiper/modules";
 import { Link } from "react-router-dom";
-import { useLanguage } from "../context/LanguageContext"; // 👈 thêm
 
 export default function TourCarousel({ tours }) {
-  const { translations } = useLanguage(); // 👈 lấy translations
-
   return (
     <section className="py-12 bg-white dark:bg-gray-900 transition-colors duration-300">
       <div className="container mx-auto px-36 max-w-container">
-        {/* Tiêu đề */}
         <h2 className="text-3xl md:text-4xl font-bold text-title dark:text-white mb-8">
-          {translations.highlights}
+          Highlights
         </h2>
 
+
         <div className="relative">
-          {/* Nút Previous */}
+          {/* Previous Button */}
           <button
             className="swiper-button-prev-tours absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-10 p-3 rounded-full bg-white dark:bg-gray-700 shadow-lg hover:shadow-xl transition-all focus:outline-none"
-            aria-label={translations.previousTour}
+            aria-label="Previous tour"
           >
             <ChevronLeftIcon className="h-6 w-6 text-gray-700 dark:text-white" />
           </button>
 
-          {/* Swiper */}
           <Swiper
             modules={[Navigation, Pagination, Autoplay]}
             autoplay={{ delay: 3000, disableOnInteraction: false }}
@@ -65,10 +62,10 @@ export default function TourCarousel({ tours }) {
             ))}
           </Swiper>
 
-          {/* Nút Next */}
+          {/* Next Button */}
           <button
             className="swiper-button-next-tours absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 z-10 p-3 rounded-full bg-white dark:bg-gray-700 shadow-lg hover:shadow-xl transition-all focus:outline-none"
-            aria-label={translations.nextTour}
+            aria-label="Next tour"
           >
             <ChevronRightIcon className="h-6 w-6 text-gray-700 dark:text-white" />
           </button>

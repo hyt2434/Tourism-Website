@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { useLanguage } from "../context/LanguageContext"; // 👈 import context
 
 export default function FilterSidebar({ onFilterChange }) {
   const [filters, setFilters] = useState({
@@ -10,17 +9,15 @@ export default function FilterSidebar({ onFilterChange }) {
     startDate: "",
   });
 
-  const { translations } = useLanguage(); // 👈 lấy translations
-
   const destinations = [
-    translations.hanoi,
-    translations.hcm,
-    translations.danang,
-    translations.halong,
-    translations.phuquoc,
-    translations.nhatrang,
-    translations.dalat,
-    translations.hoian,
+    "Hà Nội",
+    "TP Hồ Chí Minh",
+    "Đà Nẵng",
+    "Hạ Long",
+    "Phú Quốc",
+    "Nha Trang",
+    "Đà Lạt",
+    "Hội An",
   ];
 
   const handleChange = (key, value) => {
@@ -33,15 +30,13 @@ export default function FilterSidebar({ onFilterChange }) {
     <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 sticky top-4 transition-colors duration-300">
       <div className="flex items-center gap-2 mb-6">
         <SlidersHorizontal size={20} className="text-gray-600 dark:text-gray-300" />
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-          {translations.filterTitle}
-        </h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Bộ lọc tìm kiếm</h3>
       </div>
 
       {/* Search */}
       <div className="mb-6">
         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          {translations.search}
+          Tìm kiếm
         </label>
         <div className="relative">
           <Search
@@ -50,7 +45,7 @@ export default function FilterSidebar({ onFilterChange }) {
           />
           <input
             type="text"
-            placeholder={translations.searchPlaceholder}
+            placeholder="Tên tour, địa điểm..."
             className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
             onChange={(e) => handleChange("search", e.target.value)}
           />
@@ -60,13 +55,13 @@ export default function FilterSidebar({ onFilterChange }) {
       {/* Destination */}
       <div className="mb-6">
         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          {translations.destination}
+          Điểm đến
         </label>
         <select
           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
           onChange={(e) => handleChange("destination", e.target.value)}
         >
-          <option value="">{translations.allDestinations}</option>
+          <option value="">Tất cả điểm đến</option>
           {destinations.map((dest) => (
             <option key={dest} value={dest}>
               {dest}
@@ -78,7 +73,7 @@ export default function FilterSidebar({ onFilterChange }) {
       {/* Price Range */}
       <div className="mb-6">
         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          {translations.priceRange}
+          Khoảng giá (VNĐ)
         </label>
         <div className="space-y-3">
           <input
@@ -102,7 +97,7 @@ export default function FilterSidebar({ onFilterChange }) {
       {/* Date */}
       <div className="mb-6">
         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          {translations.startDate}
+          Ngày khởi hành
         </label>
         <input
           type="date"
@@ -124,7 +119,7 @@ export default function FilterSidebar({ onFilterChange }) {
         }}
         className="w-full py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-semibold"
       >
-        {translations.resetFilters}
+        Xóa bộ lọc
       </button>
     </div>
   );

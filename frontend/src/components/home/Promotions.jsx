@@ -11,13 +11,11 @@ import {
   XCircleIcon,
   SparklesIcon,
 } from '@heroicons/react/24/solid';
-import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function Promotions() {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
   const [copiedCode, setCopiedCode] = useState(null);
-  const { translations } = useLanguage(); // 👈 lấy translations
 
   const banners = [
     {
@@ -46,6 +44,7 @@ export default function Promotions() {
       terms: 'Terms & Conditions apply.',
     },
   ];
+
   const promoCodes = [
     {
       icon: StarIcon,
@@ -83,6 +82,42 @@ export default function Promotions() {
       code: 'TRAVELNEW',
       active: true,
     },
+    {
+      icon: StarIcon,
+      iconBg: 'bg-purple-100',
+      iconColor: 'text-purple-600',
+      title: 'Get 100,000 VND off domestic flight packages.',
+      subtitle: 'Valid for bookings above 2 million VND.',
+      code: 'FLYNOW100',
+      active: true,
+    },
+    {
+      icon: BuildingOfficeIcon,
+      iconBg: 'bg-green-100',
+      iconColor: 'text-green-600',
+      title: 'Save 15% on luxury hotel stays.',
+      subtitle: 'Valid for 5-star hotels only.',
+      code: 'LUXURY15',
+      active: true,
+    },
+    {
+      icon: SparklesIcon,
+      iconBg: 'bg-orange-100',
+      iconColor: 'text-orange-600',
+      title: 'Weekend special: 20% off resort bookings.',
+      subtitle: 'Valid for Friday-Sunday stays.',
+      code: 'WEEKEND20',
+      active: true,
+    },
+    {
+      icon: StarIcon,
+      iconBg: 'bg-pink-100',
+      iconColor: 'text-pink-600',
+      title: 'Free airport transfer with premium packages.',
+      subtitle: 'Minimum booking 3 nights required.',
+      code: 'PREMIUM3N',
+      active: true,
+    },
   ];
 
   const handleNextBanner = () => {
@@ -106,6 +141,7 @@ export default function Promotions() {
     setCopiedCode(index);
     setTimeout(() => setCopiedCode(null), 2000);
   };
+
   const visibleBanners = [];
   for (let i = 0; i < 4; i++) {
     const index = (currentBannerIndex + i) % banners.length;
@@ -122,41 +158,65 @@ export default function Promotions() {
     <section className="py-12 bg-section dark:bg-gray-900">
       <div className="container mx-auto px-36 md:px-36 max-w-container">
         <h2 className="text-3xl md:text-4xl font-bold text-title dark:text-white mb-8">
-          {translations.activePromotions}
+          Active Promotions
         </h2>
+
         {/* (1) Top Promotional Banner Grid */}
         <div className="mb-16">
           <div className="relative">
-            <button onClick={handlePrevBanner} className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-10 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all focus:outline-none">
+            <button
+              onClick={handlePrevBanner}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-10 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all focus:outline-none"
+              aria-label="Previous banner"
+            >
               <ChevronLeftIcon className="h-6 w-6 text-gray-700 dark:text-white" />
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {visibleBanners.map((banner) => (
-                <div key={banner.originalIndex} className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow aspect-video group">
-                  <img src={banner.image} alt={banner.title} className="w-full h-full object-cover" />
+              {visibleBanners.map((banner, index) => (
+                <div
+                  key={banner.originalIndex}
+                  className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow aspect-video group"
+                >
+                  <img
+                    src={banner.image}
+                    alt={banner.title}
+                    className="w-full h-full object-cover"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-transparent to-black/30 dark:from-black/60 dark:to-black/40"></div>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/80 to-teal-500/80 rounded-bl-[100px] opacity-90"></div>
                   <div className="absolute inset-0 p-4 flex flex-col justify-between">
                     <div>
-                      <h3 className="text-white font-bold text-lg md:text-xl mb-1 drop-shadow-lg">{banner.title}</h3>
-                      <p className="text-white font-semibold text-sm md:text-base drop-shadow-md">{banner.subtitle}</p>
+                      <h3 className="text-white font-bold text-lg md:text-xl mb-1 drop-shadow-lg">
+                        {banner.title}
+                      </h3>
+                      <p className="text-white font-semibold text-sm md:text-base drop-shadow-md">
+                        {banner.subtitle}
+                      </p>
                       {banner.highlight && (
                         <div className="mt-2 inline-block bg-yellow-400 text-gray-900 font-bold text-xs px-3 py-1 rounded-full">
                           {banner.highlight}
                         </div>
                       )}
                     </div>
-                    <p className="text-white/90 text-[10px] md:text-xs">{banner.terms}</p>
+                    <p className="text-white/90 text-[10px] md:text-xs">
+                      {banner.terms}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <button onClick={handleNextBanner} className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 z-10 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all focus:outline-none">
+            <button
+              onClick={handleNextBanner}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 z-10 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all focus:outline-none"
+              aria-label="Next banner"
+            >
               <ChevronRightIcon className="h-6 w-6 text-gray-700 dark:text-white" />
             </button>
           </div>
         </div>
+
         {/* (2) New User Discount Codes */}
         <div>
           <div className="flex items-center gap-3 mb-6">
@@ -164,30 +224,31 @@ export default function Promotions() {
               <ClipboardDocumentIcon className="h-6 w-6 text-blue-600 dark:text-blue-300" />
             </div>
             <h2 className="text-2xl md:text-3xl font-bold text-title dark:text-white">
-              {translations.newUserPromoCodes}
+              New User Promo Codes
             </h2>
           </div>
 
           <div className="relative">
-            <button onClick={handlePrevPromo} className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-10 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all focus:outline-none">
+            <button
+              onClick={handlePrevPromo}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-10 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all focus:outline-none"
+              aria-label="Previous promo codes"
+            >
               <ChevronLeftIcon className="h-6 w-6 text-gray-700 dark:text-white" />
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
-              {visiblePromos.map((promo) => {
+              {visiblePromos.map((promo, index) => {
                 const Icon = promo.icon;
                 const globalIndex = promo.originalIndex;
                 return (
                   <div
                     key={globalIndex}
-                    className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col ${!promo.active ? "opacity-60" : ""
+                    className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col ${!promo.active ? 'opacity-60' : ''
                       }`}
                   >
                     <div className="flex gap-3 mb-4 flex-grow">
-                      <div
-                        className={`${promo.iconBg} rounded-full p-2 h-10 w-10 flex items-center justify-center flex-shrink-0`}
-                      >
+                      <div className={`${promo.iconBg} rounded-full p-2 h-10 w-10 flex items-center justify-center flex-shrink-0`}>
                         <Icon className={`h-5 w-5 ${promo.iconColor}`} />
                       </div>
                       <div className="flex-grow">
@@ -211,14 +272,14 @@ export default function Promotions() {
                         onClick={() => handleCopyCode(promo.code, globalIndex)}
                         disabled={!promo.active}
                         className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${promo.active
-                          ? "bg-blue-600 text-white hover:bg-blue-700"
-                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           }`}
                       >
                         {copiedCode === globalIndex ? (
                           <CheckIcon className="h-5 w-5" />
                         ) : (
-                          translations.copy
+                          'Copy'
                         )}
                       </button>
                     </div>

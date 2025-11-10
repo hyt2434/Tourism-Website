@@ -20,11 +20,8 @@ import {
 import { Switch } from "../ui/switch";
 import { Separator } from "../ui/separator";
 import { Edit } from "lucide-react";
-import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function ServiceDialog({ service, type }) {
-  const { translations } = useLanguage(); // 👈 lấy translations
-
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -34,32 +31,32 @@ export default function ServiceDialog({ service, type }) {
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 text-black dark:text-white">
         <DialogHeader>
-          <DialogTitle className="dark:text-white">
-            {translations.edit} {type}
-          </DialogTitle>
+          <DialogTitle className="dark:text-white">Chỉnh sửa {type}</DialogTitle>
           <DialogDescription className="text-muted-foreground dark:text-gray-400">
-            {translations.updateInfo} {type.toLowerCase()}
+            Cập nhật thông tin và trạng thái của {type.toLowerCase()}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>{translations.name} {type}</Label>
+              <Label>Tên {type}</Label>
               <Input
                 defaultValue={service.name}
                 className="bg-white dark:bg-gray-800 text-black dark:text-white"
               />
             </div>
             <div className="space-y-2">
-              <Label>{translations.status}</Label>
+              <Label>Trạng thái</Label>
               <Select defaultValue={service.status}>
                 <SelectTrigger className="bg-white dark:bg-gray-800 text-black dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white rounded-lg shadow-sm border border-gray-200">
-                  <SelectItem value="pending">{translations.pendingApproval}</SelectItem>
-                  <SelectItem value="approved">{translations.approved}</SelectItem>
-                  <SelectItem value="hidden">{translations.hidden}</SelectItem>
+                <SelectContent
+                  className="bg-white rounded-lg shadow-sm border border-gray-200"
+                >
+                  <SelectItem value="pending">Chờ duyệt</SelectItem>
+                  <SelectItem value="approved">Đã duyệt</SelectItem>
+                  <SelectItem value="hidden">Ẩn</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -69,14 +66,14 @@ export default function ServiceDialog({ service, type }) {
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>{translations.price}</Label>
+                  <Label>Giá</Label>
                   <Input
                     defaultValue={service.price}
                     className="bg-white dark:bg-gray-800 text-black dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{translations.startDate}</Label>
+                  <Label>Ngày khởi hành</Label>
                   <Input
                     type="date"
                     defaultValue={service.startDate}
@@ -85,7 +82,7 @@ export default function ServiceDialog({ service, type }) {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>{translations.provider}</Label>
+                <Label>Nhà cung cấp</Label>
                 <Input
                   defaultValue={service.provider}
                   className="bg-white dark:bg-gray-800 text-black dark:text-white"
@@ -95,9 +92,9 @@ export default function ServiceDialog({ service, type }) {
           )}
 
           <div className="space-y-2">
-            <Label>{translations.description}</Label>
+            <Label>Mô tả</Label>
             <Textarea
-              placeholder={translations.descriptionPlaceholder}
+              placeholder="Nhập mô tả chi tiết..."
               rows={5}
               className="bg-white dark:bg-gray-800 text-black dark:text-white"
             />
@@ -108,21 +105,21 @@ export default function ServiceDialog({ service, type }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Switch id="featured" />
-              <Label htmlFor="featured">{translations.featured}</Label>
+              <Label htmlFor="featured">Nổi bật</Label>
             </div>
             <div className="flex items-center space-x-2">
               <Switch id="notifications" defaultChecked />
-              <Label htmlFor="notifications">{translations.notifyOnBooking}</Label>
+              <Label htmlFor="notifications">Thông báo khi có đặt chỗ</Label>
             </div>
           </div>
         </div>
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" className="dark:border-gray-600 dark:text-white">
-            {translations.cancel}
+            Hủy
           </Button>
           <Button className="dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700">
-            {translations.saveChanges}
+            Lưu thay đổi
           </Button>
         </div>
       </DialogContent>

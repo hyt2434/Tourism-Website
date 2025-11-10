@@ -19,12 +19,10 @@ import {
   Flag,
 } from "lucide-react";
 import ImageWithFallback from "../../figma/ImageWithFallback.jsx";
-import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function SocialPost({ post, onServiceClick, onReport }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
-  const { translations } = useLanguage(); // 👈 lấy translations
 
   return (
     <Card className="mb-4 overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
@@ -37,9 +35,7 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="leading-none text-black dark:text-white">
-              {post.user.username}
-            </p>
+            <p className="leading-none text-black dark:text-white">{post.user.username}</p>
             {post.location && (
               <p className="text-muted-foreground dark:text-gray-400 flex items-center gap-1 mt-0.5">
                 <MapPin className="w-3 h-3" />
@@ -54,17 +50,14 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
               <MoreHorizontal className="w-4 h-4 text-black dark:text-white" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="bg-white dark:bg-gray-800 text-black dark:text-white"
-          >
+          <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 text-black dark:text-white">
             <DropdownMenuItem onClick={() => onServiceClick(post.linkedService)}>
               <MapPin className="w-4 h-4 mr-2" />
-              {translations.viewLinkedService}
+              Xem dịch vụ liên kết
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onReport(post.id)}>
               <Flag className="w-4 h-4 mr-2" />
-              {translations.reportPost}
+              Báo cáo bài viết
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -83,7 +76,7 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
               variant="secondary"
               className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-600"
             >
-              {translations.pending}
+              Chờ duyệt
             </Badge>
           </div>
         )}
@@ -100,24 +93,14 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
               onClick={() => setLiked(!liked)}
             >
               <Heart
-                className={`w-6 h-6 ${liked
-                    ? "fill-red-500 text-red-500"
-                    : "text-black dark:text-white"
+                className={`w-6 h-6 ${liked ? "fill-red-500 text-red-500" : "text-black dark:text-white"
                   }`}
               />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-auto p-0 hover:bg-transparent"
-            >
+            <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent">
               <MessageCircle className="w-6 h-6 text-black dark:text-white" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-auto p-0 hover:bg-transparent"
-            >
+            <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent">
               <Send className="w-6 h-6 text-black dark:text-white" />
             </Button>
           </div>
@@ -127,18 +110,13 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
             className="h-auto p-0 hover:bg-transparent"
             onClick={() => setSaved(!saved)}
           >
-            <Bookmark
-              className={`w-6 h-6 ${saved
-                  ? "fill-current text-black dark:text-white"
-                  : "text-black dark:text-white"
-                }`}
-            />
+            <Bookmark className={`w-6 h-6 ${saved ? "fill-current text-black dark:text-white" : "text-black dark:text-white"}`} />
           </Button>
         </div>
 
         {/* Likes count */}
         <p className="mb-2 text-black dark:text-white">
-          {(post.likes + (liked ? 1 : 0)).toLocaleString()} {translations.likes}
+          {(post.likes + (liked ? 1 : 0)).toLocaleString()} lượt thích
         </p>
 
         {/* Caption */}
@@ -168,7 +146,7 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
             onClick={() => onServiceClick(post.linkedService)}
           >
             <MapPin className="w-4 h-4 mr-2" />
-            {translations.bookNow}: {post.linkedService}
+            Đặt chỗ: {post.linkedService}
           </Button>
         )}
 
@@ -179,14 +157,12 @@ export default function SocialPost({ post, onServiceClick, onReport }) {
             size="sm"
             className="p-0 h-auto text-muted-foreground dark:text-gray-400 hover:bg-transparent mt-2"
           >
-            {translations.viewAllComments.replace("{count}", post.comments)}
+            Xem tất cả {post.comments} bình luận
           </Button>
         )}
 
         {/* Timestamp */}
-        <p className="text-muted-foreground dark:text-gray-400 mt-2">
-          {post.timestamp}
-        </p>
+        <p className="text-muted-foreground dark:text-gray-400 mt-2">{post.timestamp}</p>
       </div>
     </Card>
   );
