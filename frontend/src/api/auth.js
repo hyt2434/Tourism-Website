@@ -1,30 +1,40 @@
-// src/api.js
 const BASE_URL = "http://127.0.0.1:5000/api/auth";
 
+// Email/Password
 export async function registerUser(userData) {
   try {
-    const response = await fetch(`${BASE_URL}/register`, {
+    const res = await fetch(`${BASE_URL}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),
     });
-    return await response.json();
-  } catch (error) {
-    console.error("Register Error:", error);
+    return await res.json();
+  } catch (err) {
+    console.error("Register Error:", err);
     return { error: "Network error" };
   }
 }
 
 export async function loginUser(userData) {
   try {
-    const response = await fetch(`${BASE_URL}/login`, {
+    const res = await fetch(`${BASE_URL}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),
     });
-    return await response.json();
-  } catch (error) {
-    console.error("Login Error:", error);
+    return await res.json();
+  } catch (err) {
+    console.error("Login Error:", err);
     return { error: "Network error" };
   }
+}
+
+// Google login
+export function loginWithGoogle() {
+  window.location.href = `${BASE_URL}/google`;
+}
+
+// Facebook login
+export function loginWithFacebook() {
+  window.location.href = `${BASE_URL}/facebook`;
 }
