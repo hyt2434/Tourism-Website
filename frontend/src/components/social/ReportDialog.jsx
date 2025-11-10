@@ -7,19 +7,16 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
+
+const reportReasons = [
+  "Nội dung không phù hợp",
+  "Spam hoặc lừa đảo",
+  "Thông tin sai sự thật",
+  "Vi phạm bản quyền",
+  "Khác",
+];
 
 export default function ReportDialog({ open, onOpenChange, postId }) {
-  const { translations } = useLanguage(); // 👈 lấy translations
-
-  const reportReasons = [
-    translations.reasonInappropriate,
-    translations.reasonSpam,
-    translations.reasonFalseInfo,
-    translations.reasonCopyright,
-    translations.reasonOther,
-  ];
-
   const handleReport = (reason) => {
     console.log("Report reason:", reason, "Post ID:", postId);
     onOpenChange(false);
@@ -30,10 +27,10 @@ export default function ReportDialog({ open, onOpenChange, postId }) {
       <DialogContent className="bg-white dark:bg-gray-900 text-black dark:text-white">
         <DialogHeader>
           <DialogTitle className="text-title dark:text-white">
-            {translations.reportPost}
+            Báo cáo bài viết
           </DialogTitle>
           <DialogDescription className="text-muted-foreground dark:text-gray-400">
-            {translations.chooseReason}
+            Vui lòng chọn lý do báo cáo
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2 py-4">

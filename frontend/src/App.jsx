@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { LanguageProvider } from "./context/LanguageContext";
 
+import PartnerPage from "./components/PartnerPage";
 import NAV from "./components/NAV";
 import Footer from "./components/Footer";
 import TourCarousel from "./components/TourCarousel";
@@ -17,8 +17,6 @@ import FlightSearchForm from "./components/home/FlightSearchForm";
 import Promotions from "./components/home/Promotions";
 import FlightDeals from "./components/home/FlightDeals";
 import Reviews from "./components/home/Reviews";
-import PartnerPage from "./components/Partner/PartnerPage";
-import PartnerDetail from "./components/Partner/PartnerDetail";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -28,7 +26,8 @@ export default function App() {
     {
       id: 1,
       name: "Ha Long Bay Cruise",
-      image: "...",
+      image:
+        "https://images.unsplash.com/photo-1713551584340-7b7817f39a62?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoYWxvbmclMjBiYXklMjB2aWV0bmFtJTIwdG91cnxlbnwxfHx8fDE3NjA5NzkzMzd8MA&ixlib=rb-4.1.0&q=80&w=1080",
       price: "$299",
       duration: "2 Days",
       description: "Explore the stunning limestone karsts and emerald waters",
@@ -36,7 +35,8 @@ export default function App() {
     {
       id: 2,
       name: "Da Nang Beach Tour",
-      image: "...",
+      image:
+        "https://images.unsplash.com/flagged/photo-1583863374731-4224cbbc8c36?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkYW5hbmclMjB2aWV0bmFtJTIwYmVhY2h8ZW58MXx8fHwxNzYwOTc5MzM3fDA&ixlib=rb-4.1.0&q=80&w=1080",
       price: "$199",
       duration: "1 Day",
       description: "Relax on pristine beaches and enjoy water activities",
@@ -44,7 +44,8 @@ export default function App() {
     {
       id: 3,
       name: "Hoi An Ancient Town",
-      image: "...",
+      image:
+        "https://images.unsplash.com/photo-1664650440553-ab53804814b3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob2klMjBhbiUyMGFuY2llbnQlMjB0b3dufGVufDF8fHx8MTc2MDk3OTMzOHww&ixlib=rb-4.1.0&q=80&w=1080",
       price: "$149",
       duration: "1 Day",
       description: "Walk through lantern-lit streets and historic architecture",
@@ -52,7 +53,8 @@ export default function App() {
     {
       id: 4,
       name: "Phu Quoc Island",
-      image: "...",
+      image:
+        "https://images.unsplash.com/photo-1668570496303-e22d19a17f65?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwaHUlMjBxdW9jJTIwaXNsYW5kfGVufDF8fHx8MTc2MDk3OTMzOHww&ixlib=rb-4.1.0&q=80&w=1080",
       price: "$399",
       duration: "3 Days",
       description: "Paradise beaches and tropical island adventures",
@@ -60,7 +62,8 @@ export default function App() {
     {
       id: 5,
       name: "Nha Trang Bay",
-      image: "...",
+      image:
+        "https://images.unsplash.com/photo-1533002832-1721d16b4bb9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuaGElMjB0cmFuZyUyMGJlYWNofGVufDF8fHx8MTc2MDg2MjU2NXww&ixlib=rb-4.1.0&q=80&w=1080",
       price: "$249",
       duration: "2 Days",
       description: "Crystal waters, island hopping, and vibrant nightlife",
@@ -94,18 +97,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/aboutus"
-            element={
-              <h1 className="text-center text-3xl font-bold text-gray-900 dark:text-white mb-6">
-                {" "}
-                Cao Triết nè
-              </h1>
-            }
-          />
           <Route path="/social" element={<SocialPage />} />
           <Route path="/partner" element={<PartnerPage />} />
-          <Route path="/partner/:id" element={<PartnerDetail />} />
           <Route path="/profile" element={<Profile />} />
         </Routes>
         <Footer />

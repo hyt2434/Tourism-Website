@@ -1,53 +1,45 @@
 import { Star, ThumbsUp } from "lucide-react";
-import { Card, CardContent } from "../ui/card";
-import { Button } from "../ui/button";
-import { useLanguage } from "../../context/LanguageContext"; // 👈 lấy translations
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
-export function ReviewCard({ name, rating, date, review, helpful }) {
-  const { translations } = useLanguage(); // 👈 dùng context
-
+export function ReviewCard({ name, avatar, rating, date, review, helpful }) {
   return (
-    <Card className="bg-white dark:bg-gray-800">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h4 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-              {name}
-            </h4>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${i < rating
+    <div className="border rounded-xl p-6 bg-white">
+      <div className="flex items-start gap-4">
+        <Avatar className="w-12 h-12">
+          <AvatarImage src={avatar} />
+          <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+        </Avatar>
+
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h4 className="text-primary">{name}</h4>
+              <p className="text-sm text-muted-foreground">{date}</p>
+            </div>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={`w-4 h-4 ${
+                    i < rating
                       ? "fill-yellow-400 text-yellow-400"
-                      : "text-gray-300 dark:text-gray-600"
-                      }`}
-                  />
-                ))}
-              </div>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {date}
-              </span>
+                      : "fill-gray-200 text-gray-200"
+                  }`}
+                />
+              ))}
             </div>
           </div>
-        </div>
 
-        <p className="text-gray-700 dark:text-gray-300 mb-4">{review}</p>
+          <p className="text-foreground mb-3">{review}</p>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-2 text-gray-700 dark:text-gray-200"
-          >
-            <ThumbsUp className="w-4 h-4" />
-            <span className="text-sm">
-              {translations.reviewHelpful} ({helpful})
-            </span>
-          </Button>
+          {helpful && (
+            <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+              <ThumbsUp className="w-4 h-4" />
+              <span>Hữu ích ({helpful})</span>
+            </button>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-from backend.src.database import get_connection
+from database import get_connection
 
 conn = get_connection()
 if conn:

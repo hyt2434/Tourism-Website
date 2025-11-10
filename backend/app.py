@@ -1,30 +1,31 @@
 from flask import Flask
 from flask_cors import CORS
-from src.routes.auth_routes import auth_routes
-from src.routes.filter_routes import filter_routes
-from src.routes.tour_routes import tour_routes
-from src.routes.suggestion_routes import suggestion_routes
-from src.routes.promotion_routes import promotion_routes
-from src.models.models import create_table
+from routes.auth_routes import auth_routes
+from models import create_table
 from flask_bcrypt import Bcrypt
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 
 bcrypt = Bcrypt(app)
 app.bcrypt = bcrypt
 
+app.secret_key = os.getenv("SECRET_KEY")
+
 create_table()
 
+# Đăng ký routes chính
 app.register_blueprint(auth_routes, url_prefix="/api/auth")
-app.register_blueprint(filter_routes, url_prefix="/api/filter")
-app.register_blueprint(tour_routes, url_prefix="/api/tour")
-app.register_blueprint(suggestion_routes, url_prefix="/api/suggestions")
-app.register_blueprint(promotion_routes, url_prefix="/api/promotions")
+
 
 @app.route("/test")
 def test():
     return "API is working!"
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

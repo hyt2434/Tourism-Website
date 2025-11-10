@@ -8,7 +8,6 @@ import {
   EyeSlashIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useLanguage } from "../context/LanguageContext"; // 👈 import context
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -17,7 +16,6 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { translations } = useLanguage(); // 👈 lấy translations
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -25,19 +23,21 @@ export default function Login() {
 
     try {
       const result = await loginUser({ email, password });
+
       setIsLoading(false);
 
       if (result.message) {
         const currentUser = { email, username: result.user, isLoggedIn: true };
         localStorage.setItem("user", JSON.stringify(currentUser));
         window.dispatchEvent(new Event("storage"));
+
         navigate("/");
       } else {
-        alert(result.error || translations.loginError);
+        alert(result.error || "Incorrect email or password!");
       }
     } catch (error) {
       setIsLoading(false);
-      alert(translations.networkError);
+      alert("Network error. Please try again.");
       console.error(error);
     }
   };
@@ -61,10 +61,10 @@ export default function Login() {
             </div>
           </div>
           <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">
-            {translations.loginTitle}
+            Welcome Back!
           </h2>
           <p className="text-gray-600 dark:text-gray-300">
-            {translations.loginSubtitle}
+            Sign in to continue your journey
           </p>
         </div>
 
@@ -80,7 +80,7 @@ export default function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={translations.emailPlaceholder}
+              placeholder="Email Address"
               required
               className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none bg-white/50 dark:bg-gray-700 text-gray-800 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
@@ -93,7 +93,7 @@ export default function Login() {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={translations.passwordPlaceholder}
+              placeholder="Password"
               required
               className="w-full pl-10 pr-12 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none bg-white/50 dark:bg-gray-700 text-gray-800 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
@@ -120,14 +120,14 @@ export default function Login() {
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
               <span className="ml-2 text-gray-600 dark:text-gray-300">
-                {translations.rememberMe}
+                Remember me
               </span>
             </label>
             <a
               href="#"
               className="text-blue-600 hover:underline dark:text-blue-400"
             >
-              {translations.forgotPassword}
+              Forgot password?
             </a>
           </div>
 
@@ -137,19 +137,19 @@ export default function Login() {
             disabled={isLoading}
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50"
           >
-            {isLoading ? translations.signingIn : translations.signIn}
+            {isLoading ? "Signing in..." : "Sign In"}
           </button>
 
           {/* Register */}
           <div className="text-center">
             <p className="text-gray-600 dark:text-gray-300">
-              {translations.noAccount}{" "}
+              Don't have an account?{" "}
               <button
                 type="button"
                 onClick={() => navigate("/register")}
                 className="text-blue-600 hover:underline dark:text-blue-400 font-semibold"
               >
-                {translations.signUp}
+                Sign up
               </button>
             </p>
           </div>
