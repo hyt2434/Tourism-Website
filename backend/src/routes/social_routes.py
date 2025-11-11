@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app, url_for
-from database import get_connection
+from src.database import get_connection
 from datetime import datetime
 import re
 import os
@@ -247,7 +247,7 @@ def upload_image():
         return jsonify({"error": "Unsupported file type."}), 400
 
     # Ensure uploads directory exists inside the Flask static folder
-    uploads_dir = os.path.join(current_app.root_path, 'static', 'uploads')
+    uploads_dir = os.path.join(current_app.static_folder, 'uploads')
     os.makedirs(uploads_dir, exist_ok=True)
 
     # Make filename unique
