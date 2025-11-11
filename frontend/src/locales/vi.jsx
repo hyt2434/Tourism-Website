@@ -40,6 +40,14 @@ export default {
     cookies: "Chính sách Cookie",
     accessibility: "Khả năng truy cập",
 
+    // Social Search
+    hashtagResults: "Kết quả hashtag",
+    searchForTag: "Tìm kiếm",
+    posts: "bài viết",
+    noResults: "Không tìm thấy kết quả",
+    comments: "Bình luận",
+    addComment: "Thêm bình luận...",
+    
     // Login
     loginTitle: "Chào mừng trở lại!",
     loginSubtitle: "Đăng nhập để tiếp tục hành trình của bạn",

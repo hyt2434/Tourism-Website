@@ -40,6 +40,14 @@ export default {
     cookies: "Cookie Policy",
     accessibility: "Accessibility",
 
+    // Social Search
+    hashtagResults: "Hashtag Results",
+    searchForTag: "Search for",
+    posts: "posts",
+    noResults: "No results found",
+    comments: "Comments",
+    addComment: "Add a comment...",
+    
     // Login
     loginTitle: "Welcome Back!",
     loginSubtitle: "Sign in to continue your journey",

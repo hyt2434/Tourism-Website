@@ -1,28 +1,13 @@
 import React from "react";
-import { useLanguage } from "../context/LanguageContext"; // 👈 import context
 
 export default function Footer() {
-  const { translations } = useLanguage();
-
-  const popularProvinces = [
-    translations.hanoi,
-    translations.danang,
-    translations.hcm,
-    translations.hue,
-  ];
-
-  const moreDestinations = [
-    translations.hoian,
-    translations.phuquoc,
-    translations.nhatrang,
-    translations.halong,
-  ];
-
+  const popularProvinces = ["Hanoi", "Da Nang", "Ho Chi Minh", "Hue"];
+  const moreDestinations = ["Hoi An", "Phu Quoc", "Nha Trang", "Ha Long Bay"];
   const legal = [
-    translations.terms,
-    translations.privacy,
-    translations.cookies,
-    translations.accessibility,
+    "Terms of Service",
+    "Privacy Policy",
+    "Cookie Policy",
+    "Accessibility",
   ];
 
   return (
@@ -35,26 +20,29 @@ export default function Footer() {
               MagicViet
             </h3>
             <p className="text-sm text-body dark:text-gray-300 mb-4 leading-relaxed">
-              {translations.footerDescription}
+              Discover the beauty of Vietnam with our premium travel services.
             </p>
             <div className="flex gap-4 justify-center lg:justify-start">
-              {["facebook", "instagram", "twitter", "youtube"].map((platform) => (
-                <a
-                  key={platform}
-                  href={`#${platform}`}
-                  className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white transition-colors"
-                  aria-label={platform}
-                >
-                  {/* SVG icons giữ nguyên */}
-                </a>
-              ))}
+              {/* Social Icons */}
+              {["facebook", "instagram", "twitter", "youtube"].map(
+                (platform) => (
+                  <a
+                    key={platform}
+                    href={`#${platform}`}
+                    className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white transition-colors"
+                    aria-label={platform}
+                  >
+                    {/* You can keep your SVGs here as-is */}
+                  </a>
+                )
+              )}
             </div>
           </div>
 
           {/* Column 2 - Popular Provinces */}
           <div>
             <h3 className="text-lg font-bold text-title dark:text-white mb-3">
-              {translations.popularProvinces}
+              Popular Provinces
             </h3>
             <ul className="space-y-2">
               {popularProvinces.map((province) => (
@@ -73,7 +61,7 @@ export default function Footer() {
           {/* Column 3 - More Destinations */}
           <div>
             <h3 className="text-lg font-bold text-title dark:text-white mb-3">
-              {translations.moreDestinations}
+              More Destinations
             </h3>
             <ul className="space-y-2">
               {moreDestinations.map((destination) => (
@@ -92,7 +80,7 @@ export default function Footer() {
           {/* Column 4 - Legal */}
           <div>
             <h3 className="text-lg font-bold text-title dark:text-white mb-3">
-              {translations.legal}
+              Legal
             </h3>
             <ul className="space-y-2">
               {legal.map((item) => (
