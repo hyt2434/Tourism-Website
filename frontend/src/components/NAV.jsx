@@ -28,15 +28,25 @@ export default function NAV() {
     { name: translations.admin, path: "/admin" },
   ];
 
-  // ✅ Kiểm tra đăng nhập
+  // ✅ Kiểm tra đăng nhập khi mount và khi storage thay đổi
   useEffect(() => {
     const checkAuth = () => {
       const user = localStorage.getItem("currentUser");
-      setIsLoggedIn(!!user);
+      if (user) {
+        const userData = JSON.parse(user);
+        setIsLoggedIn(userData.isLoggedIn);
+      } else {
+        setIsLoggedIn(false);
+      }
     };
+    
+    // Kiểm tra ngay khi component mount
     checkAuth();
 
+    // Lắng nghe sự thay đổi của localStorage
     window.addEventListener("storage", checkAuth);
+    
+    // Cleanup listener khi unmount
     return () => window.removeEventListener("storage", checkAuth);
   }, []);
 

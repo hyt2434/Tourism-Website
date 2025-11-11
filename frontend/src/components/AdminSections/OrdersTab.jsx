@@ -104,6 +104,9 @@ export default function OrdersTab() {
                           <DialogTitle>
                             Chi tiết đơn hàng {order.id}
                           </DialogTitle>
+                          <DialogDescription>
+                            {translations.orderDetailDescription || "View detailed information about this order"}
+                          </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                           <div>

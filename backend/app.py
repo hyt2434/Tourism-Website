@@ -1,31 +1,45 @@
 from flask import Flask
 from flask_cors import CORS
-from routes.auth_routes import auth_routes
-from models import create_table
 from flask_bcrypt import Bcrypt
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="src/static", static_url_path="/static")
 CORS(app, supports_credentials=True)
 
 bcrypt = Bcrypt(app)
 app.bcrypt = bcrypt
+app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 
-app.secret_key = os.getenv("SECRET_KEY")
+from src.routes.auth_routes import auth_routes
+from src.routes.filter_routes import filter_routes
+from src.routes.promotion_routes import promotion_routes
+from src.routes.social_routes import social_routes
+from src.routes.suggestion_routes import suggestion_routes
+from src.routes.tour_routes import tour_routes
 
-create_table()
+try:
+    from src.models.models import create_table
+    create_table()
+    print("✅ Database tables checked/created successfully.")
+except Exception as e:
+    print(f"⚠️ Warning: Could not initialize database tables: {e}")
 
 # Đăng ký routes chính
 app.register_blueprint(auth_routes, url_prefix="/api/auth")
-
+app.register_blueprint(filter_routes, url_prefix="/api/filters")
+app.register_blueprint(promotion_routes, url_prefix="/api/promotions")
+app.register_blueprint(social_routes, url_prefix="/api/social")
+app.register_blueprint(suggestion_routes, url_prefix="/api/suggestions")
+app.register_blueprint(tour_routes, url_prefix="/api/tours")
 
 @app.route("/test")
 def test():
-    return "API is working!"
+    return {"message": "API is working!", "status": "OK"}, 200
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    port = int(os.getenv("PORT", 5000))
+    app.run(debug=True, port=port)

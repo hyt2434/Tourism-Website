@@ -28,7 +28,7 @@ export default function Login() {
 
       if (result.message) {
         const currentUser = { email, username: result.user, isLoggedIn: true };
-        localStorage.setItem("user", JSON.stringify(currentUser));
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
         window.dispatchEvent(new Event("storage"));
 
         navigate("/");

@@ -136,7 +136,10 @@ export default function PartnerPage() {
 
             <DialogContent className="max-w-lg bg-white">
               <DialogHeader>
-                <DialogTitle>Đăng ký hợp tác</DialogTitle>
+                <DialogTitle>{translations.partnerRegisterTitle}</DialogTitle>
+                <DialogDescription>
+                  {translations.partnerRegisterDescription || "Fill in the details to register as a partner"}
+                </DialogDescription>
               </DialogHeader>
 
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">

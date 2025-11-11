@@ -16,20 +16,65 @@ import { Separator } from "../ui/separator";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Plus, Camera, MapPin, X, AlertCircle } from "lucide-react";
 import { suggestedHashtags } from "./mockData";
+import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
+import { uploadImage } from "../../api/social";
 
 export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
   const [selectedImages, setSelectedImages] = useState([]);
   const [caption, setCaption] = useState("");
   const [selectedHashtags, setSelectedHashtags] = useState([]);
 
-  const handleImageUpload = (e) => {
+  const { translations } = useLanguage(); // 👈 lấy translations
+
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
-    console.log("Upload images:", files);
+    if (files.length === 0) return;
+    const uploaded = [];
+    for (const f of files) {
+      try {
+        // optimistic preview while uploading
+        const preview = URL.createObjectURL(f);
+        setSelectedImages((prev) => [...prev, { file: f, preview, url: null, uploading: true }]);
+
+        const res = await uploadImage(f);
+        const url = res?.url || null;
+
+        // replace the last uploading item with final url
+        setSelectedImages((prev) => {
+          const copy = [...prev];
+          const idx = copy.findIndex((p) => p.preview === preview && p.uploading);
+          if (idx !== -1) {
+            copy[idx] = { file: f, preview, url, uploading: false };
+          } else {
+            copy.push({ file: f, preview, url, uploading: false });
+          }
+          return copy;
+        });
+        uploaded.push(url);
+      } catch (err) {
+        console.error('Image upload failed', err);
+        // mark uploading as false and include error flag
+        setSelectedImages((prev) => {
+          const copy = [...prev];
+          const idx = copy.findIndex((p) => p.uploading);
+          if (idx !== -1) {
+            copy[idx] = { ...copy[idx], uploading: false, error: true };
+          }
+          return copy;
+        });
+      }
+    }
   };
 
   const handleSubmit = () => {
-    console.log("Submit post:", { caption, selectedHashtags });
-    onSubmit();
+    const postData = {
+      content: caption,
+      image_url: selectedImages[0]?.url || null
+    };
+
+    onSubmit(postData);
+    
+    // Reset form
     setSelectedImages([]);
     setCaption("");
     setSelectedHashtags([]);
@@ -78,25 +123,33 @@ export default function CreatePostDialog({ open, onOpenChange, onSubmit }) {
                 <p className="text-muted-foreground dark:text-gray-400">Tối đa 10 tệp</p>
               </label>
             </div>
+            {/* Image previews */}
             {selectedImages.length > 0 && (
-              <div className="grid grid-cols-4 gap-2">
-                {selectedImages.map((img, index) => (
-                  <div
-                    key={index}
-                    className="relative aspect-square bg-muted dark:bg-gray-700 rounded-lg"
-                  >
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-1 right-1 h-6 w-6 p-0 rounded-full"
-                      onClick={() => {
-                        setSelectedImages(
-                          selectedImages.filter((_, i) => i !== index)
-                        );
-                      }}
+              <div className="mt-3 grid grid-cols-4 gap-2">
+                {selectedImages.map((img, i) => (
+                  <div key={i} className="relative">
+                    <img
+                      src={img.url || img.preview}
+                      alt={`preview-${i}`}
+                      className="w-full h-24 object-cover rounded"
+                    />
+                    {img.uploading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 text-white text-xs">
+                        Uploading...
+                      </div>
+                    )}
+                    {img.error && (
+                      <div className="absolute top-1 right-1 text-red-500">
+                        !
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      className="absolute top-1 left-1 bg-white/80 rounded-full p-1"
+                      onClick={() => setSelectedImages(selectedImages.filter((_, idx) => idx !== i))}
                     >
-                      <X className="w-3 h-3" />
-                    </Button>
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
               </div>
