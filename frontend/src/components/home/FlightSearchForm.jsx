@@ -264,7 +264,7 @@ export default function FlightSearchForm() {
       <div className="flex grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
         {/* From */}
         <div className="lg:col-span-3">
-          <label className="block text-xs text-gray-600 dark:text-gray-300 mb-2 font-medium">
+          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium">
             {translations.from}
           </label>
           <div className="relative">
@@ -273,7 +273,7 @@ export default function FlightSearchForm() {
               type="text"
               value={fromLocation}
               onChange={(e) => setFromLocation(e.target.value)}
-              className="w-full pl-10 h-12 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full pl-10 h-12 border-2 border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
@@ -290,7 +290,7 @@ export default function FlightSearchForm() {
 
         {/* To */}
         <div className="lg:col-span-3">
-          <label className="block text-xs text-gray-600 dark:text-gray-300 mb-2 font-medium">
+          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium">
             {translations.to}
           </label>
           <div className="relative">
@@ -299,13 +299,13 @@ export default function FlightSearchForm() {
               type="text"
               value={toLocation}
               onChange={(e) => setToLocation(e.target.value)}
-              className="w-full pl-10 h-12 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full pl-10 h-12 border-2 border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
         {/* Departure date */}
         <div className="lg:col-span-2">
-          <label className="block text-xs text-gray-600 dark:text-gray-300 mb-2 font-medium">
+          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium">
             {translations.departureDate}
           </label>
           <Popover open={openDeparture} onOpenChange={setOpenDeparture}>
@@ -315,19 +315,19 @@ export default function FlightSearchForm() {
                 <input
                   readOnly
                   value={formatDate(departureDate)}
-                  className={`w-full h-12 pl-10 rounded-lg cursor-pointer
+                  className={`w-full h-12 pl-10 rounded-lg cursor-pointer font-medium
             bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-            border ${
+            border-2 ${
               openDeparture
-                ? "ring-2 ring-blue-400 border-blue-400"
-                : "border-gray-200 dark:border-gray-600"
+                ? "ring-2 ring-blue-500 border-blue-500"
+                : "border-gray-400 dark:border-gray-600"
             }
             focus:outline-none`}
                 />
               </div>
             </PopoverTrigger>
             <PopoverContent
-              className="w-auto p-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600"
+              className="w-auto p-0 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-500"
               align="start"
             >
               <Calendar
@@ -347,7 +347,7 @@ export default function FlightSearchForm() {
 
         {/* Return date */}
         <div className="lg:col-span-2">
-          <label className="block text-xs text-gray-600 dark:text-gray-300 mb-2 font-medium">
+          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium">
             {translations.returnDate}
           </label>
           <Popover open={openReturn} onOpenChange={setOpenReturn}>
@@ -357,19 +357,19 @@ export default function FlightSearchForm() {
                 <input
                   readOnly
                   value={formatDate(returnDate)}
-                  className={`w-full h-12 pl-10 rounded-lg cursor-pointer
+                  className={`w-full h-12 pl-10 rounded-lg cursor-pointer font-medium
             bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-            border ${
+            border-2 ${
               openReturn
-                ? "ring-2 ring-blue-400 border-blue-400"
-                : "border-gray-200 dark:border-gray-600"
+                ? "ring-2 ring-blue-500 border-blue-500"
+                : "border-gray-400 dark:border-gray-600"
             }
             focus:outline-none`}
                 />
               </div>
             </PopoverTrigger>
             <PopoverContent
-              className="w-auto p-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600"
+              className="w-auto p-0 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-500"
               align="start"
             >
               <Calendar
@@ -389,27 +389,30 @@ export default function FlightSearchForm() {
 
         {/* Passengers */}
         <div className="lg:col-span-1">
-          <label className="block text-xs text-gray-600 dark:text-gray-300 mb-2 font-medium">
+          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium">
             {translations.passengers}
           </label>
           <Popover open={openPassengers} onOpenChange={setOpenPassengers}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className={`w-full justify-start h-12 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg
-                  border ${
+                className={`w-full justify-start h-12 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg font-medium
+                  border-2 ${
                     openPassengers
-                      ? "ring-2 ring-blue-400 border-blue-400"
-                      : "border-gray-200 dark:border-gray-600"
+                      ? "ring-2 ring-blue-500 border-blue-500"
+                      : "border-gray-400 dark:border-gray-600"
                   }`}
               >
                 <Users className="mr-1 h-4 w-4" />
                 <span className="text-sm">
-                  {adults},{children},{infants}
+                  {adults + children + infants}
                 </span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-72 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600">
+            <PopoverContent 
+              className="w-72 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
               <div className="space-y-4">
                 <PassengerControl
                   label={translations.adults}
@@ -447,7 +450,9 @@ function PassengerControl({ label, value, onDecrease, onIncrease }) {
       </span>
       <div className="flex items-center gap-3">
         <button
+          type="button"
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             onDecrease();
           }}
@@ -460,8 +465,9 @@ function PassengerControl({ label, value, onDecrease, onIncrease }) {
           {value}
         </span>
         <button
+          type="button"
           onClick={(e) => {
-            console.log("increase");
+            e.preventDefault();
             e.stopPropagation();
             onIncrease();
           }}

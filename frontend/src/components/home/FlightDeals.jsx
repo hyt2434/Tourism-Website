@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Plane } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Badge } from "../ui/badge";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
@@ -61,8 +62,8 @@ export default function FlightDeals() {
   const deals = flightDeals(translations);
 
   return (
-    <section className="py-12 bg-section dark:bg-gray-900 transition-colors duration-300">
-      <div className="container mx-auto px-36 max-w-container">
+    <section className="py-12 px-4 md:px-8 lg:px-36 bg-section dark:bg-gray-900 transition-colors duration-300">
+      <div>
         {/* Title */}
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -94,21 +95,33 @@ export default function FlightDeals() {
         </div>
 
         {/* Swiper Carousel */}
-        <Swiper
-          modules={[Navigation, Autoplay]}
-          navigation
-          autoplay={{ delay: 4000 }}
-          spaceBetween={24}
-          slidesPerView={1}
-          loop={true}
-          breakpoints={{
-            640: { slidesPerView: 1 },
-            768: { slidesPerView: 2 },
-            1024: { slidesPerView: 3 },
-            1280: { slidesPerView: 4 },
-          }}
-          className="pb-10"
-        >
+        <div className="relative pb-12">
+          {/* Nút Previous */}
+          <button
+            className="swiper-button-prev-deals absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-10 p-3 rounded-full bg-white dark:bg-gray-700 shadow-lg hover:shadow-xl transition-all focus:outline-none hover:bg-gray-50 dark:hover:bg-gray-600"
+            aria-label="Previous deal"
+          >
+            <ChevronLeftIcon className="h-6 w-6 text-gray-700 dark:text-white" />
+          </button>
+
+          <Swiper
+            modules={[Navigation, Autoplay]}
+            navigation={{
+              prevEl: ".swiper-button-prev-deals",
+              nextEl: ".swiper-button-next-deals",
+            }}
+            autoplay={{ delay: 4000 }}
+            spaceBetween={24}
+            slidesPerView={1}
+            loop={true}
+            breakpoints={{
+              640: { slidesPerView: 1 },
+              768: { slidesPerView: 2 },
+              1024: { slidesPerView: 3 },
+              1280: { slidesPerView: 4 },
+            }}
+            className="pb-10"
+          >
           {deals.map((deal) => (
             <SwiperSlide key={deal.id}>
               <div className="w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer">
@@ -136,7 +149,16 @@ export default function FlightDeals() {
               </div>
             </SwiperSlide>
           ))}
-        </Swiper>
+                  </Swiper>
+
+          {/* Nút Next */}
+          <button
+            className="swiper-button-next-deals absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 z-10 p-3 rounded-full bg-white dark:bg-gray-700 shadow-lg hover:shadow-xl transition-all focus:outline-none hover:bg-gray-50 dark:hover:bg-gray-600"
+            aria-label="Next deal"
+          >
+            <ChevronRightIcon className="h-6 w-6 text-gray-700 dark:text-white" />
+          </button>
+        </div>
       </div>
     </section>
   );

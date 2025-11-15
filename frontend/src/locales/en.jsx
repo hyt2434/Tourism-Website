@@ -339,6 +339,7 @@ export default {
   infants: "Infants",
 
   heroTitle: "Leading travel app, one touch to go anywhere",
+  heroSubtitle: "Discover amazing destinations and create unforgettable memories",
   hotels: "Hotels",
   flights: "Flights",
   toursLabel: "Tours",

@@ -341,6 +341,7 @@ export default {
   infants: "Em bé",
 
   heroTitle: "Ứng dụng du lịch hàng đầu, chạm một lần đi muôn nơi",
+  heroSubtitle: "Cùng khám phá và tạo nên những kỷ niệm thật khó quên",
   hotels: "Khách sạn",
   flights: "Vé máy bay",
   toursLabel: "Tour du lịch",
