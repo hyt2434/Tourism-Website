@@ -47,7 +47,6 @@ export default {
   all: "All",
 
   // Rating
-  rating: "Rating",
   andUp: "and up",
 
   // Tour Types
@@ -58,11 +57,9 @@ export default {
   cityTour: "City Tour",
   foodTour: "Food Tour",
   resort: "Resort",
-  adventure: "Adventure",
   spiritual: "Spiritual",
 
   // Buttons
-  applyFilters: "Apply Filters",
   clearAll: "Clear All",
   exploreTours: "Explore Tours",
   totalTours: "Over",
@@ -86,13 +83,10 @@ export default {
   // Sections
   topRatedDestinations: "Top Rated Destinations",
   weatherSuggestions: "Today's Weather Suggestions",
-  activePromotions: "Active Promotions",
   relatedPromotions: "Related Promotions",
 
   // Promotion details
-  discount: "Off",
   code: "Code",
-  validUntil: "Valid until",
   viewDetails: "View details",
   applyFor: "Apply for",
 
@@ -133,26 +127,16 @@ export default {
   guests: "Guests",
   chooseGuests: "Choose number of guests",
   adults: "Adults",
-  rooms: "Hotel rooms",
-  chooseRooms: "Choose number of rooms",
   roomUnit: "room(s)",
-  departureDate: "Departure date",
   chooseDeparture: "Choose departure date",
-  returnDate: "Return date",
-  chooseReturn: "Choose return date",
   attractions: "Select attractions",
   baseTour: "Base tour",
-  hotel: "Hotel",
   attractionFee: "Attraction fee",
-  total: "Total",
-  bookNow: "Book now",
-  freeCancel: "Free cancellation up to 24h before departure",
 
   // Attraction names
   halongCruise: "Ha Long Bay Cruise",
   hanoiOldQuarter: "Hanoi Old Quarter Tour",
   templeOfLiterature: "Temple of Literature",
-  waterPuppetShow: "Water Puppet Show",
 
   // BookingPanel
   panelBookTour: "Book Tour",
@@ -176,19 +160,12 @@ export default {
   service_bike: "Bike Tour",
 
   // Attractions
-  halongCruise: "Halong Bay Cruise",
-  hanoiOldQuarter: "Hanoi Old Quarter",
-  templeOfLiterature: "Temple of Literature",
   waterPuppetShow: "Water Puppet Show",
 
   // Removable services
   removeHotelUpgrade: "Remove Hotel Upgrade",
   removeCruiseMeal: "Remove Cruise Meal",
   removeEntranceFees: "Remove Entrance Fees",
-
-  // Common
-  from: "From",
-  bookNow: "Book Now",
 
   reviewHelpful: "Helpful",
 
@@ -198,24 +175,18 @@ export default {
   popularProvinces: "Popular Provinces",
   moreDestinations: "More Destinations",
   legal: "Legal",
-  terms: "Terms of Service",
-  privacy: "Privacy Policy",
   cookies: "Cookie Policy",
   accessibility: "Accessibility",
 
   // Login
   loginTitle: "Welcome Back!",
   loginSubtitle: "Sign in to continue your journey",
-  emailPlaceholder: "Email Address",
-  passwordPlaceholder: "Password",
   rememberMe: "Remember me",
   forgotPassword: "Forgot password?",
-  signIn: "Sign In",
   signingIn: "Signing in...",
   noAccount: "Don't have an account?",
   signUp: "Sign up",
   loginError: "Incorrect email or password!",
-  networkError: "Network error. Please try again.",
 
   // Partner Page
   partnerTitle: "Our Partners",
@@ -228,10 +199,7 @@ export default {
   partnerRegisterSuccess:
     "✅ Registration successful! Admin will review your info.",
   tourName: "Tour Name",
-  location: "Location",
-  provider: "Provider",
   price: "Price (VND)",
-  endDate: "End Date",
   shortDescription: "Short Description",
   shortDescriptionPlaceholder: "Briefly introduce your tour or company...",
   confirmRegister: "Confirm Registration",
@@ -260,7 +228,6 @@ export default {
   editProfile: "Edit Profile",
   editProfileTitle: "Edit Profile",
   avatar: "Avatar",
-  cancel: "Cancel",
   saveChanges: "Save Changes",
 
   registerTitle: "Create Account",
@@ -281,7 +248,6 @@ export default {
 
   slotsLeft: "slots left",
   reviews: "reviews",
-  from: "From",
   bookNow: "Book Now",
 
   highlights: "Highlights",
@@ -294,25 +260,14 @@ export default {
   mostPopular: "Most Popular",
   lowestPrice: "Lowest Price",
   highestPrice: "Highest Price",
-  highestRating: "Highest Rating",
   noTours: "No matching tours found. Try adjusting your filters!",
 
-  perPerson: "/ person",
-  basePriceNote: "Starting price - customize your trip below",
-  guests: "Number of guests",
-  chooseGuests: "Choose guests",
-  rooms: "Hotel rooms",
+  rooms: "Rooms",
   chooseRooms: "Choose rooms",
-  departureDate: "Departure date",
-  chooseDeparture: "Choose departure date",
   returnDate: "Return date",
   chooseReturn: "Choose return date",
-  attractions: "Select attractions",
-  baseTour: "Base tour",
   hotel: "Hotel",
-  attractionFee: "Attractions",
   total: "Total",
-  bookNow: "Book now",
   freeCancel: "Free cancellation up to 24h before departure",
 
   helpful: "Helpful",
@@ -322,18 +277,15 @@ export default {
   shareExperience: "Share your travel experience with the community",
   moderationNotice:
     "Your post will be reviewed before being published. Please do not post sensitive or prohibited content.",
-  media: "Photo/Video",
   uploadMedia: "Click to upload photo or video",
   maxFiles: "Up to 10 files",
   caption: "Caption",
   captionPlaceholder: "Share your story...",
   hashtags: "Service Hashtags",
   hashtagsHint: "Attach hashtags to link with tours, hotels, restaurants...",
-  location: "Location",
   addLocation: "Add location...",
   privacyNotice:
     "Privacy: Your profile only shows your name and avatar. Other personal information will be hidden.",
-  cancel: "Cancel",
   post: "Post",
 
   reportPost: "Report Post",
@@ -346,15 +298,11 @@ export default {
 
   travelCommunity: "Travel Community",
   shareJourney: "Share and discover your journey",
-  searchPlaceholder: "Search posts, hashtags...",
   postSubmitted: "Post submitted and pending moderation!",
   loadMore: "Load More Posts",
 
   viewLinkedService: "View linked service",
-  reportPost: "Report post",
-  pending: "Pending",
   likes: "likes",
-  bookNow: "Book now",
   viewAllComments: "View all {count} comments",
 
   trending: "Trending",
@@ -378,9 +326,7 @@ export default {
   oneWay: "ONE WAY",
   bestPriceFrom: "Best price from",
 
-  searchPlaceholder: "Search tours, destination",
   search: "Search",
-  location: "Location",
   keywords: "Keywords",
   applyFilters: "Apply Filters",
   roundTrip: "Round Trip",
@@ -388,9 +334,7 @@ export default {
   from: "From",
   to: "To",
   departureDate: "Departure Date",
-  returnDate: "Return Date",
   passengers: "Passengers",
-  adults: "Adults",
   children: "Children",
   infants: "Infants",
 
@@ -401,9 +345,7 @@ export default {
   activities: "Activities & Fun",
   more: "More",
 
-  activePromotions: "Active Promotions",
   newUserPromoCodes: "New User Promo Codes",
-  copy: "Copy",
 
   reviewsTitle: "Reviews / Ratings",
   review1: "Amazing experience! The tour was well-organized and stress-free.",
@@ -419,11 +361,7 @@ export default {
   name: "Name",
   location: "Location",
   rating: "Rating",
-  rooms: "Rooms",
-  roomUnit: "rooms",
   status: "Status",
-  actions: "Actions",
-  accommodation: "Accommodation",
 
   adminDashboard: "Admin Dashboard",
   adminSubtitle: "Manage services, promotions and orders",
@@ -434,10 +372,8 @@ export default {
   monthlyRevenue: "Monthly Revenue",
   toursAdmin: "Tours",
   accommodation: "Accommodation",
-  transport: "Transport",
   promotions: "Promotions",
   orders: "Orders",
-  social: "Social",
 
   orderManagement: "Order Management",
   orderDescription: "Search and process bookings",
@@ -451,8 +387,6 @@ export default {
   service: "Service",
   amount: "Amount",
   orderDate: "Order Date",
-  status: "Status",
-  actions: "Actions",
   orderDetail: "Order Detail",
   refundRequest: "Customer requested a refund. Please review and process.",
   reschedule: "Reschedule",
@@ -470,35 +404,23 @@ export default {
   fixed: "Fixed amount",
   discountValue: "Discount Value",
   maxUses: "Maximum Uses",
-  startDate: "Start Date",
-  endDate: "End Date",
   conditions: "Conditions",
   conditionsPlaceholder: "E.g.: Apply for orders from 1,000,000 VND",
   autoApply: "Auto Apply",
   showHomepage: "Show on Homepage",
-  cancel: "Cancel",
   discount: "Discount",
   uses: "Uses",
-  validUntil: "Valid Until",
-  status: "Status",
-  actions: "Actions",
 
   edit: "Edit",
   updateInfo: "Update information and status of",
-  name: "Name",
-  status: "Status",
-  pendingApproval: "Pending",
   approved: "Approved",
   hidden: "Hidden",
-  price: "Price",
-  startDate: "Start Date",
   provider: "Provider",
   description: "Description",
   descriptionPlaceholder: "Enter detailed description...",
   featured: "Featured",
   notifyOnBooking: "Notify on booking",
   cancel: "Cancel",
-  saveChanges: "Save Changes",
 
   socialModeration: "Social Moderation",
   socialDescription: "Review posts and handle reports",
@@ -515,11 +437,7 @@ export default {
   tourDescription: "Create, edit, approve and hide tours",
   addTour: "Add New Tour",
   searchTour: "Search tours...",
-  tourName: "Tour Name",
-  provider: "Provider",
-  price: "Price",
   startDate: "Start Date",
-  status: "Status",
   actions: "Actions",
 
   transportManagement: "Transport Management",
@@ -531,8 +449,6 @@ export default {
   vehicleType: "Vehicle Type",
   seats: "Seats",
   seatUnit: "seats",
-  status: "Status",
-  actions: "Actions",
   transport: "Transport",
 
   tours: {
