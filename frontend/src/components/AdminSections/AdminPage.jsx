@@ -119,7 +119,7 @@ export default function AdminPage() {
               className="flex items-center gap-2 text-black dark:text-white"
             >
               <PackageIcon className="w-4 h-4" />
-              {translations.tours}
+              {translations.toursAdmin}
             </TabsTrigger>
             <TabsTrigger
               value="accommodation"

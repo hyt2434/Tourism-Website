@@ -2,8 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "leaflet/dist/leaflet.css";
 @layer base {
   body {
     font-family: "Inter", sans-serif;
   }
+}
+/* Giảm z-index của các lớp leaflet */
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 1 !important;
+}
+
+/* Đảm bảo header/nav nằm trên map */
+header,
+nav,
+.navbar,
+.topbar {
+  position: relative;
+  z-index: 9999 !important;
+}
+
+/* Đảm bảo Floating Button nằm trên tất cả */
+.fixed-button {
+  z-index: 99999 !important;
 }

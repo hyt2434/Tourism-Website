@@ -4,24 +4,24 @@ import { Input } from "../ui/input";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Search, Check } from "lucide-react";
 import SocialPost from "./SocialPost";
-import CreatePostDialog from "./CreatePostDialog";
+import CreatePostSection from "./CreatePostSection";
 import ReportDialog from "./ReportDialog";
-import StoriesSection from "./StoriesSection";
+
 import BottomNavigation from "./BottomNavigation";
 import { mockPosts } from "./mockData";
-import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function SocialPage() {
   const [activeTab, setActiveTab] = useState("home");
-  const [showCreatePost, setShowCreatePost] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [reportedPostId, setReportedPostId] = useState(null);
   const [showSubmitSuccess, setShowSubmitSuccess] = useState(false);
 
-  const { translations } = useLanguage(); // 👈 lấy translations
+  const { translations } = useLanguage();
 
   const handleServiceClick = (serviceName) => {
     console.log("Navigate to service:", serviceName);
+    // 👈 BẠN SẼ XỬ LÝ ROUTING Ở ĐÂY - navigate to tour detail page
   };
 
   const handleReport = (postId) => {
@@ -30,9 +30,13 @@ export default function SocialPage() {
   };
 
   const handleSubmitPost = () => {
-    setShowCreatePost(false);
     setShowSubmitSuccess(true);
     setTimeout(() => setShowSubmitSuccess(false), 3000);
+  };
+
+  // 👈 Function lọc posts theo user ID
+  const getUserPosts = (userId) => {
+    return mockPosts.filter((p) => p?.user?.id === userId);
   };
 
   return (
@@ -49,11 +53,6 @@ export default function SocialPage() {
                 {translations.shareJourney}
               </p>
             </div>
-            <CreatePostDialog
-              open={showCreatePost}
-              onOpenChange={setShowCreatePost}
-              onSubmit={handleSubmitPost}
-            />
           </div>
         </div>
       </div>
@@ -83,8 +82,8 @@ export default function SocialPage() {
           </div>
         </div>
 
-        {/* Stories Section */}
-        <StoriesSection />
+        {/* Create Post Section - 👈 THÊM Ở ĐÂY */}
+        <CreatePostSection onSubmit={handleSubmitPost} />
 
         {/* Posts Feed */}
         <div className="space-y-6">
@@ -94,24 +93,24 @@ export default function SocialPage() {
               post={post}
               onServiceClick={handleServiceClick}
               onReport={handleReport}
+              getUserPosts={getUserPosts}
             />
           ))}
         </div>
 
         {/* Load More */}
         <div className="text-center py-8">
-          <Button variant="outline" className="dark:border-gray-600 dark:text-white">
+          <Button
+            variant="outline"
+            className="dark:border-gray-600 dark:text-white"
+          >
             {translations.loadMore}
           </Button>
         </div>
       </div>
 
       {/* Bottom Navigation (Mobile) */}
-      <BottomNavigation
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onCreatePost={() => setShowCreatePost(true)}
-      />
+      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Report Dialog */}
       <ReportDialog
