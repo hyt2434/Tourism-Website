@@ -15,7 +15,7 @@ export default function HeroSection({ children }) {
   const { translations } = useLanguage(); // 👈 lấy translations
 
   return (
-    <section className="pb-16 pt-12 px-4 md:px-8 lg:px-36 transition-colors duration-300">
+    <section className="pb-16 pt-12 px-4 md:px-8 lg:px-36 bg-white dark:bg-gray-950 transition-colors duration-300">
       <div className="relative w-full h-[600px] md:h-[700px] lg:h-[800px] rounded-3xl overflow-visible">
         {/* Background image */}
         <div

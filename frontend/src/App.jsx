@@ -75,8 +75,16 @@ export default function App() {
         <Routes>
           <Route
             path="/"
-            element={
-              <div>
+            element={(
+              <div className="relative min-h-screen">
+                {/* Animated gradient background */}
+                <div className="fixed inset-0 -z-10 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20" />
+                  <div className="absolute top-0 -left-1/4 w-1/2 h-1/2 bg-gradient-to-br from-blue-200/30 to-purple-200/30 dark:from-blue-500/10 dark:to-purple-500/10 rounded-full blur-3xl animate-blob" />
+                  <div className="absolute top-1/3 -right-1/4 w-1/2 h-1/2 bg-gradient-to-br from-purple-200/30 to-pink-200/30 dark:from-purple-500/10 dark:to-pink-500/10 rounded-full blur-3xl animate-blob animation-delay-2000" />
+                  <div className="absolute -bottom-1/4 left-1/3 w-1/2 h-1/2 bg-gradient-to-br from-pink-200/30 to-blue-200/30 dark:from-pink-500/10 dark:to-blue-500/10 rounded-full blur-3xl animate-blob animation-delay-4000" />
+                </div>
+                
                 <HeroSection>
                   <FlightSearchForm />
                 </HeroSection>
@@ -86,7 +94,7 @@ export default function App() {
                 <FlightDeals />
                 <WeatherBanner />
               </div>
-            }
+            )}
           />
           {/* ✅ Thêm route chi tiết tour */}
           <Route path="/tours/:id" element={<TourDetail tours={tours} />} />

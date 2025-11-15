@@ -264,7 +264,7 @@ export default function FlightSearchForm() {
       <div className="flex grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
         {/* From */}
         <div className="lg:col-span-3">
-          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium">
+          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium whitespace-nowrap">
             {translations.from}
           </label>
           <div className="relative">
@@ -279,18 +279,18 @@ export default function FlightSearchForm() {
         </div>
 
         {/* Swap button */}
-        <div className="hidden lg:flex items-end justify-center pb-1">
+        <div className="hidden lg:flex items-center justify-center pt-6">
           <button
             onClick={swapLocations}
-            className="p-2 rounded-full hover:bg-blue-50 dark:hover:bg-gray-700 transition transform hover:rotate-180 duration-300"
+            className="p-2 rounded-full hover:bg-white/20 dark:hover:bg-gray-700 transition transform hover:rotate-180 duration-300"
           >
-            <ArrowLeftRight className="w-5 h-5 text-blue-500" />
+            <ArrowLeftRight className="w-5 h-5 text-white dark:text-blue-400" />
           </button>
         </div>
 
         {/* To */}
         <div className="lg:col-span-3">
-          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium">
+          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium whitespace-nowrap">
             {translations.to}
           </label>
           <div className="relative">
@@ -305,7 +305,7 @@ export default function FlightSearchForm() {
         </div>
         {/* Departure date */}
         <div className="lg:col-span-2">
-          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium">
+          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium whitespace-nowrap">
             {translations.departureDate}
           </label>
           <Popover open={openDeparture} onOpenChange={setOpenDeparture}>
@@ -347,7 +347,7 @@ export default function FlightSearchForm() {
 
         {/* Return date */}
         <div className="lg:col-span-2">
-          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium">
+          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium whitespace-nowrap">
             {translations.returnDate}
           </label>
           <Popover open={openReturn} onOpenChange={setOpenReturn}>
@@ -389,52 +389,46 @@ export default function FlightSearchForm() {
 
         {/* Passengers */}
         <div className="lg:col-span-1">
-          <label className="block text-xs text-white dark:text-gray-300 mb-2 font-medium">
-            {translations.passengers}
-          </label>
-          <Popover open={openPassengers} onOpenChange={setOpenPassengers}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={`w-full justify-start h-12 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg font-medium
-                  border-2 ${
-                    openPassengers
-                      ? "ring-2 ring-blue-500 border-blue-500"
-                      : "border-gray-400 dark:border-gray-600"
-                  }`}
+          <div className="flex items-center justify-between mb-2 h-4">
+            <label className="text-xs text-white dark:text-gray-300 font-medium whitespace-nowrap">
+              {translations.passengers}
+            </label>
+            <div className="flex items-center gap-1.5 ml-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const total = adults + children + infants;
+                  if (total > 1) {
+                    if (infants > 0) setInfants(infants - 1);
+                    else if (children > 0) setChildren(children - 1);
+                    else if (adults > 1) setAdults(adults - 1);
+                  }
+                }}
+                className="w-5 h-5 rounded-full bg-white/20 dark:bg-gray-700 border border-white/30 dark:border-gray-600 
+                           hover:bg-blue-500 hover:border-blue-500 hover:text-white dark:hover:bg-blue-600
+                           transition-all flex items-center justify-center font-bold text-white text-xs
+                           active:scale-95"
               >
-                <Users className="mr-1 h-4 w-4" />
-                <span className="text-sm">
-                  {adults + children + infants}
-                </span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent 
-              className="w-72 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600"
-              onOpenAutoFocus={(e) => e.preventDefault()}
-            >
-              <div className="space-y-4">
-                <PassengerControl
-                  label={translations.adults}
-                  value={adults}
-                  onDecrease={() => setAdults(Math.max(1, adults - 1))}
-                  onIncrease={() => setAdults(adults + 1)}
-                />
-                <PassengerControl
-                  label={translations.children}
-                  value={children}
-                  onDecrease={() => setChildren(Math.max(0, children - 1))}
-                  onIncrease={() => setChildren(children + 1)}
-                />
-                <PassengerControl
-                  label={translations.infants}
-                  value={infants}
-                  onDecrease={() => setInfants(Math.max(0, infants - 1))}
-                  onIncrease={() => setInfants(infants + 1)}
-                />
-              </div>
-            </PopoverContent>
-          </Popover>
+                −
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdults(adults + 1)}
+                className="w-5 h-5 rounded-full bg-white/20 dark:bg-gray-700 border border-white/30 dark:border-gray-600 
+                           hover:bg-blue-500 hover:border-blue-500 hover:text-white dark:hover:bg-blue-600
+                           transition-all flex items-center justify-center font-bold text-white text-xs
+                           active:scale-95"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          <div className="w-full h-12 bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-400 dark:border-gray-600 flex items-center px-4 hover:border-blue-500 transition-colors">
+            <Users className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-2" />
+            <span className="text-sm font-medium text-gray-900 dark:text-white">
+              {adults + children + infants}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -443,6 +437,18 @@ export default function FlightSearchForm() {
 
 // PassengerControl component
 function PassengerControl({ label, value, onDecrease, onIncrease }) {
+  const handleDecrease = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDecrease();
+  };
+
+  const handleIncrease = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onIncrease();
+  };
+
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm font-medium text-gray-900 dark:text-white">
@@ -451,28 +457,24 @@ function PassengerControl({ label, value, onDecrease, onIncrease }) {
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onDecrease();
-          }}
+          onClick={handleDecrease}
+          onMouseDown={(e) => e.stopPropagation()}
           className="w-8 h-8 rounded-full border-2 border-gray-300 dark:border-gray-600 
-                     hover:border-blue-500 hover:text-blue-500 transition"
+                     hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20
+                     transition-all flex items-center justify-center font-bold text-gray-700 dark:text-gray-200"
         >
-          -
+          −
         </button>
-        <span className="w-6 text-center font-medium text-gray-900 dark:text-white">
+        <span className="w-8 text-center font-medium text-gray-900 dark:text-white">
           {value}
         </span>
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onIncrease();
-          }}
+          onClick={handleIncrease}
+          onMouseDown={(e) => e.stopPropagation()}
           className="w-8 h-8 rounded-full border-2 border-gray-300 dark:border-gray-600 
-                     hover:border-blue-500 hover:text-blue-500 transition"
+                     hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20
+                     transition-all flex items-center justify-center font-bold text-gray-700 dark:text-gray-200"
         >
           +
         </button>

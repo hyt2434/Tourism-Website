@@ -323,6 +323,7 @@ export default {
     "Giảm đến 6% cho lần đặt vé tham quan/hoạt động đầu tiên.",
   discountActivityDesc:
     "Áp dụng cho tất cả các lần đặt vé tham quan/hoạt động đầu tiên ứng dụng Traveloka.",
+  copy: "Sao chép",
 
   bestFlightDeals: "Ưu đãi vé máy bay tốt nhất",
   hotDeal: "Khuyến mãi hot",

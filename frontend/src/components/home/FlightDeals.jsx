@@ -124,7 +124,7 @@ export default function FlightDeals() {
           >
           {deals.map((deal) => (
             <SwiperSlide key={deal.id}>
-              <div className="w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer">
+              <div className="w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer shine-effect">
                 <div className="relative h-48">
                   <img
                     src={deal.image}

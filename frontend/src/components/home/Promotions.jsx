@@ -114,7 +114,7 @@ export default function Promotions() {
         >
           {banners.map((banner, i) => (
             <SwiperSlide key={i}>
-              <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow aspect-video group">
+              <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow aspect-video group shine-effect">
                 <img
                   src={banner.image}
                   alt={banner.title}
@@ -171,7 +171,7 @@ export default function Promotions() {
             return (
               <SwiperSlide key={index}>
                 <div
-                  className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col h-full min-h-[180px] ${
+                  className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col h-full min-h-[180px] shine-effect ${
                     !promo.active ? "opacity-60" : ""
                   }`}
                 >
