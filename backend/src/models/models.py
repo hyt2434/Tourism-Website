@@ -98,9 +98,13 @@ class Tour:
 
 def create_tables():
     """Create necessary tables: users + social tables (posts, comments, likes, stories).
-
+    
+    Also creates a default admin user if none exists.
     This mirrors the project's existing simple SQL approach using psycopg2.
     """
+    import os
+    from flask import current_app
+    
     conn = get_connection()
     if conn is None:
         print("❌ Cannot create tables: Database connection failed.")
@@ -188,3 +192,63 @@ def create_tables():
     cur.close()
     conn.close()
     print("✅ Tables checked/created successfully.")
+    
+    # Create default admin user if none exists
+    _create_default_admin()
+
+
+def _create_default_admin():
+    """
+    Ensure at least one admin user exists in the system.
+    Creates a default admin if none exists.
+    """
+    import os
+    from flask import current_app
+    
+    conn = get_connection()
+    if not conn:
+        print("❌ Cannot check for admin user: Database connection failed.")
+        return
+    
+    cur = conn.cursor()
+    
+    try:
+        # Check if any admin exists
+        cur.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+        admin_count = cur.fetchone()[0]
+        
+        if admin_count == 0:
+            # Create default admin
+            default_admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@example.com")
+            default_admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD", "Admin@123456")
+            default_admin_username = os.getenv("DEFAULT_ADMIN_USERNAME", "Administrator")
+            
+            try:
+                bcrypt = current_app.bcrypt
+                hashed_pw = bcrypt.generate_password_hash(default_admin_password).decode('utf-8')
+            except RuntimeError:
+                # If running outside Flask app context, use a simple hash
+                # Note: This should ideally match the bcrypt format
+                print("⚠️  Running outside Flask context. Using fallback password hashing.")
+                import hashlib
+                hashed_pw = hashlib.sha256(default_admin_password.encode()).hexdigest()
+            
+            cur.execute("""
+                INSERT INTO users (username, email, password, role)
+                VALUES (%s, %s, %s, 'admin')
+            """, (default_admin_username, default_admin_email, hashed_pw))
+            
+            conn.commit()
+            print(f"✅ Default admin user created: {default_admin_email}")
+            print(f"⚠️  Default password: {default_admin_password}")
+            print(f"⚠️  Please change the default admin password immediately!")
+        else:
+            print(f"✅ Admin user(s) already exist ({admin_count} admin(s) found)")
+    
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Error ensuring default admin: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
