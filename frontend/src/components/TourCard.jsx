@@ -110,10 +110,10 @@ export default function TourCard({ tour, viewMode = "grid" }) {
   return (
     <Link
       to={`/tours/${tour.id}`}
-      className="group bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700"
+      className="group bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 flex flex-col"
     >
       {/* Image */}
-      <div className="relative h-64 overflow-hidden">
+      <div className="relative h-64 overflow-hidden flex-shrink-0">
         <img
           src={tour.image}
           alt={tour.name}
@@ -147,12 +147,12 @@ export default function TourCard({ tour, viewMode = "grid" }) {
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+      <div className="p-4 flex flex-col h-full">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 min-h-[3.5rem] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
           {tour.name}
         </h3>
 
-        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
+        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4 flex-grow">
           <div className="flex items-center gap-2">
             <MapPin size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
             <span className="line-clamp-1">{tour.destination}</span>
@@ -184,7 +184,7 @@ export default function TourCard({ tour, viewMode = "grid" }) {
         )}
 
         {/* Price */}
-        <div className="flex items-end justify-between pt-3 border-t border-gray-100 dark:border-gray-700 transition-colors">
+        <div className="flex items-end justify-between pt-3 border-t border-gray-100 dark:border-gray-700 transition-colors mt-auto">
           <div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {translations.from}

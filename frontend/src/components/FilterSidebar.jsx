@@ -106,19 +106,21 @@ export default function FilterSidebar({ onFilterChange }) {
     (filters.maxPrice < 10000000 ? 1 : 0);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal size={20} className="text-blue-600 dark:text-blue-400" />
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-            {translations.filterTitle || "Bộ lọc tìm kiếm"}
-          </h3>
-          {activeFilterCount > 0 && (
-            <Badge variant="default" className="ml-2">{activeFilterCount}</Badge>
-          )}
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 sticky top-4 max-h-[calc(100vh-2rem)] flex flex-col">
+      {/* Scrollable content */}
+      <div className="overflow-y-auto flex-1 p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal size={20} className="text-blue-600 dark:text-blue-400" />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              {translations.filterTitle || "Bộ lọc tìm kiếm"}
+            </h3>
+            {activeFilterCount > 0 && (
+              <Badge variant="default" className="ml-2">{activeFilterCount}</Badge>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* Từ khóa phổ biến */}
       <div className="mb-6">
@@ -171,10 +173,10 @@ export default function FilterSidebar({ onFilterChange }) {
       <div className="mb-6 border-t border-gray-200 dark:border-gray-700 pt-4">
         <button
           onClick={() => toggleSection("region")}
-          className="flex items-center justify-between w-full text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3"
+          className="flex items-center justify-between w-full text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 gap-3"
         >
-          <span>{translations.region || "Vùng miền"}</span>
-          {expandedSections.region ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          <span className="flex-1 text-left pr-2">{translations.region || "Vùng miền"}</span>
+          <span className="flex-shrink-0 w-4 h-4">{expandedSections.region ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
         </button>
         {expandedSections.region && (
           <div className="space-y-3">
@@ -218,10 +220,10 @@ export default function FilterSidebar({ onFilterChange }) {
       <div className="mb-6 border-t border-gray-200 dark:border-gray-700 pt-4">
         <button
           onClick={() => toggleSection("price")}
-          className="flex items-center justify-between w-full text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3"
+          className="flex items-center justify-between w-full text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 gap-3"
         >
-          <span>{translations.priceRange || "Khoảng giá"}</span>
-          {expandedSections.price ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          <span className="flex-1 text-left pr-2">{translations.priceRange || "Khoảng giá"}</span>
+          <span className="flex-shrink-0 w-4 h-4">{expandedSections.price ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
         </button>
         {expandedSections.price && (
           <div className="space-y-3">
@@ -261,10 +263,10 @@ export default function FilterSidebar({ onFilterChange }) {
       <div className="mb-6 border-t border-gray-200 dark:border-gray-700 pt-4">
         <button
           onClick={() => toggleSection("rating")}
-          className="flex items-center justify-between w-full text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3"
+          className="flex items-center justify-between w-full text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 gap-3"
         >
-          <span>{translations.rating || "Đánh giá"}</span>
-          {expandedSections.rating ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          <span className="flex-1 text-left pr-2">{translations.rating || "Đánh giá"}</span>
+          <span className="flex-shrink-0 w-4 h-4">{expandedSections.rating ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
         </button>
         {expandedSections.rating && (
           <div className="space-y-2">
@@ -292,10 +294,10 @@ export default function FilterSidebar({ onFilterChange }) {
       <div className="mb-6 border-t border-gray-200 dark:border-gray-700 pt-4">
         <button
           onClick={() => toggleSection("type")}
-          className="flex items-center justify-between w-full text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3"
+          className="flex items-center justify-between w-full text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 gap-3"
         >
-          <span>{translations.tourType || "Loại hình"}</span>
-          {expandedSections.type ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          <span className="flex-1 text-left pr-2">{translations.tourType || "Loại hình"}</span>
+          <span className="flex-shrink-0 w-4 h-4">{expandedSections.type ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
         </button>
         {expandedSections.type && (
           <div className="space-y-2">
@@ -326,9 +328,10 @@ export default function FilterSidebar({ onFilterChange }) {
           onChange={(e) => handleChange("startDate", e.target.value)}
         />
       </div>
+      </div>
 
-      {/* Action Buttons */}
-      <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800 pb-2">
+      {/* Action Buttons - Fixed at bottom */}
+      <div className="space-y-3 p-6 pt-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <Button
           onClick={applyFilters}
           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-md"
