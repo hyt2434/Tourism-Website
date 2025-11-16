@@ -388,9 +388,9 @@ export default function PartnerPage() {
                   </Button>
                 </DialogTrigger>
 
-                <DialogContent className="max-w-[98vw] w-[98vw] max-h-[98vh] my-2 overflow-y-auto bg-white dark:bg-gray-800 backdrop-blur-2xl border-gray-200 dark:border-gray-700 rounded-3xl shadow-2xl p-10">
-                  <DialogHeader>
-                    <DialogTitle className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent text-center mb-4">
+                <DialogContent className="!max-w-6xl w-[95vw] sm:w-[90vw] lg:w-[85vw] max-h-[80vh] !top-[52%] overflow-y-auto bg-white dark:bg-gray-800 backdrop-blur-2xl border-gray-200 dark:border-gray-700 rounded-3xl shadow-2xl p-10">
+                  <DialogHeader className="pb-2">
+                    <DialogTitle className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent text-center mb-4 leading-tight pb-1">
                       {t.partnerRegisterTitle}
                     </DialogTitle>
                     <p className="text-gray-600 dark:text-gray-300 text-center text-lg md:text-xl">
