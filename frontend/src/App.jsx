@@ -19,6 +19,7 @@ import FlightDeals from "./components/home/FlightDeals";
 import Reviews from "./components/home/Reviews";
 import PartnerPage from "./components/Partner/PartnerPage";
 import PartnerDetail from "./components/Partner/PartnerDetail";
+import AboutUs from "./components/AboutUs";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -102,15 +103,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/aboutus"
-            element={
-              <h1 className="text-center text-3xl font-bold text-gray-900 dark:text-white mb-6">
-                {" "}
-                Cao Triết nè
-              </h1>
-            }
-          />
+          <Route path="/aboutus" element={<AboutUs />} />
           <Route path="/social" element={<SocialPage />} />
           <Route path="/partner" element={<PartnerPage />} />
           <Route path="/partner/:id" element={<PartnerDetail />} />

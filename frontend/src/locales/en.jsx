@@ -680,4 +680,69 @@ export default {
     "3d2n": "3 days 2 nights",
     "4d3n": "4 days 3 nights",
   },
+
+  // About Us Page
+  aboutUs: {
+    leadingPlatform: "Leading Travel Platform",
+    heroTitle: "Discover Vietnam with",
+    heroTitleHighlight: "Passion & Purpose",
+    heroDescription: "We're on a mission to make travel accessible, authentic, and unforgettable. Join us in exploring the beauty of Vietnam and creating memories that last a lifetime.",
+    
+    // Stats
+    happyTravelers: "Happy Travelers",
+    destinations: "Destinations",
+    activePartners: "Active Partners",
+    averageRating: "Average Rating",
+    
+    // Our Story
+    ourStory: "Our Story",
+    storyParagraph1: "Founded in 2025, our journey began with a bold vision: to revolutionize travel in Vietnam through technology and authentic experiences. We started as a passionate team of travel innovators who believed that exploring Vietnam should be seamless, sustainable, and inspiring.",
+    storyParagraph2: "In just months, we've rapidly grown into one of Vietnam's most innovative travel platforms, connecting travelers with curated experiences across the country. Our success is built on cutting-edge technology, trusted partnerships, and an unwavering commitment to exceptional service quality.",
+    storyParagraph3: "We collaborate with local experts, eco-friendly accommodations, and sustainable tour operators to ensure every journey creates positive impact while delivering unforgettable experiences that celebrate Vietnam's rich culture and natural beauty.",
+    halongBay: "Ha Long Bay",
+    popularDestination: "One of our most popular destinations",
+    verifiedPartners: "100% Verified",
+    allPartnersVerified: "All partners & tours",
+    
+    // Core Values
+    coreValues: "Our Core Values",
+    coreValuesDesc: "The principles that guide everything we do",
+    
+    passionTitle: "Passion for Travel",
+    passionDesc: "We believe travel transforms lives. Our passion drives us to create unforgettable experiences that inspire and connect people.",
+    
+    trustTitle: "Trust & Safety",
+    trustDesc: "Your safety is our priority. We work only with verified partners and maintain the highest standards of service quality.",
+    
+    expertiseTitle: "Local Expertise",
+    expertiseDesc: "Deep local knowledge meets global standards. We connect you with authentic experiences guided by local experts.",
+    
+    innovationTitle: "Innovation",
+    innovationDesc: "Leveraging cutting-edge technology to make travel planning seamless, from booking to experiencing your journey.",
+    
+    // Journey Timeline
+    ourJourney: "Our Journey",
+    journeyDesc: "Key milestones in our growth story",
+    
+    milestone2025Q1: "Platform Launch",
+    milestone2025Q1Desc: "Launched with innovative technology and vision to transform Vietnam tourism",
+    
+    milestone2025Q2: "Partner Network",
+    milestone2025Q2Desc: "Built partnerships with 100+ verified tour operators and hotels",
+    
+    milestone2025Q3: "Rapid Growth",
+    milestone2025Q3Desc: "Reached 10,000+ successful bookings in first quarter",
+    
+    milestone2025Q4: "Platform Expansion",
+    milestone2025Q4Desc: "Expanded services to all major Vietnamese destinations",
+    
+    milestone2026: "Regional Vision",
+    milestone2026Desc: "Planning expansion to Southeast Asia markets",
+    
+    // CTA
+    readyToStart: "Ready to Start Your Journey?",
+    ctaDescription: "Join thousands of travelers who trust us to create their perfect Vietnamese adventure",
+    exploreTours: "Explore Tours",
+    becomePartner: "Become a Partner",
+  },
 };

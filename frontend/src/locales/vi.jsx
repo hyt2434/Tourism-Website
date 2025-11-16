@@ -654,4 +654,69 @@ export default {
   seats: "Số ghế",
   seatUnit: "ghế",
   transport: "Nhà xe",
+
+  // About Us Page
+  aboutUs: {
+    leadingPlatform: "Nền tảng Du lịch Hàng đầu",
+    heroTitle: "Khám phá Việt Nam cùng với tinh thần",
+    heroTitleHighlight: "Đam mê khám phá & Tình yêu tổ quốc",
+    heroDescription: "Chúng tôi có sứ mệnh làm cho du lịch trở nên dễ tiếp cận, chân thực và đáng nhớ. Hãy cùng chúng tôi khám phá vẻ đẹp Việt Nam và tạo nên những kỷ niệm trọn đời.",
+    
+    // Stats
+    happyTravelers: "Du khách hài lòng",
+    destinations: "Điểm đến",
+    activePartners: "Đối tác hoạt động",
+    averageRating: "Đánh giá trung bình",
+    
+    // Our Story
+    ourStory: "Câu chuyện của chúng tôi",
+    storyParagraph1: "Được thành lập vào năm 2025, hành trình của chúng tôi bắt đầu với một tầm nhìn táo bạo: cách mạng hóa du lịch Việt Nam thông qua công nghệ và trải nghiệm chân thực. Chúng tôi khởi đầu với một đội ngũ đầy đam mê đổi mới du lịch, tin rằng việc khám phá Việt Nam nên liền mạch, bền vững và truyền cảm hứng.",
+    storyParagraph2: "Chỉ trong vài tháng, chúng tôi đã nhanh chóng trở thành một trong những nền tảng du lịch sáng tạo nhất Việt Nam, kết nối du khách với những trải nghiệm được tuyển chọn khắp đất nước. Thành công của chúng tôi được xây dựng trên công nghệ tiên tiến, đối tác đáng tin cậy và cam kết không ngừng về chất lượng dịch vụ xuất sắc.",
+    storyParagraph3: "Chúng tôi hợp tác với các chuyên gia địa phương, cơ sở lưu trú thân thiện với môi trường và các nhà tổ chức tour bền vững để đảm bảo mỗi hành trình tạo ra tác động tích cực đồng thời mang đến những trải nghiệm khó quên tôn vinh nền văn hóa phong phú và vẻ đẹp thiên nhiên của Việt Nam.",
+    halongBay: "Vịnh Hạ Long",
+    popularDestination: "Một trong những điểm đến phổ biến nhất",
+    verifiedPartners: "100% Xác minh",
+    allPartnersVerified: "Tất cả đối tác & tour",
+    
+    // Core Values
+    coreValues: "Giá trị cốt lõi",
+    coreValuesDesc: "Những nguyên tắc định hướng mọi việc chúng tôi làm",
+    
+    passionTitle: "Đam mê Du lịch",
+    passionDesc: "Chúng tôi tin rằng du lịch thay đổi cuộc sống. Niềm đam mê của chúng tôi thúc đẩy việc tạo ra những trải nghiệm khó quên, truyền cảm hứng và kết nối mọi người.",
+    
+    trustTitle: "Tin cậy & An toàn",
+    trustDesc: "An toàn của bạn là ưu tiên hàng đầu. Chúng tôi chỉ làm việc với các đối tác đã xác minh và duy trì tiêu chuẩn chất lượng dịch vụ cao nhất.",
+    
+    expertiseTitle: "Chuyên môn Địa phương",
+    expertiseDesc: "Kiến thức địa phương sâu sắc kết hợp với tiêu chuẩn toàn cầu. Chúng tôi kết nối bạn với những trải nghiệm chân thực được hướng dẫn bởi các chuyên gia địa phương.",
+    
+    innovationTitle: "Đổi mới",
+    innovationDesc: "Tận dụng công nghệ tiên tiến để làm cho việc lên kế hoạch du lịch liền mạch, từ đặt chỗ đến trải nghiệm hành trình của bạn.",
+    
+    // Journey Timeline
+    ourJourney: "Hành trình của chúng tôi",
+    journeyDesc: "Các cột mốc quan trọng trong câu chuyện phát triển",
+    
+    milestone2025Q1: "Ra mắt Nền tảng",
+    milestone2025Q1Desc: "Ra mắt với công nghệ sáng tạo và tầm nhìn biến đổi du lịch Việt Nam",
+    
+    milestone2025Q2: "Mạng lưới Đối tác",
+    milestone2025Q2Desc: "Xây dựng đối tác với hơn 100 nhà tổ chức tour và khách sạn đã xác minh",
+    
+    milestone2025Q3: "Tăng trưởng Nhanh",
+    milestone2025Q3Desc: "Đạt hơn 10,000 lượt đặt chỗ thành công trong quý đầu tiên",
+    
+    milestone2025Q4: "Mở rộng Nền tảng",
+    milestone2025Q4Desc: "Mở rộng dịch vụ đến tất cả các điểm đến lớn của Việt Nam",
+    
+    milestone2026: "Tầm nhìn Khu vực",
+    milestone2026Desc: "Lập kế hoạch mở rộng ra các thị trường Đông Nam Á",
+    
+    // CTA
+    readyToStart: "Sẵn sàng Bắt đầu Hành trình?",
+    ctaDescription: "Tham gia cùng hàng nghìn du khách tin tưởng chúng tôi tạo nên cuộc phiêu lưu hoàn hảo tại Việt Nam",
+    exploreTours: "Khám phá Tour",
+    becomePartner: "Trở thành Đối tác",
+  },
 };
