@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Download,
   TrendingUp,
+  UserCheck,
 } from "lucide-react";
 import ToursTab from "./ToursTab";
 import AccommodationTab from "./AccommodationTab";
@@ -19,6 +20,7 @@ import TransportTab from "./TransportTab";
 import PromotionsTab from "./PromotionsTab";
 import OrdersTab from "./OrdersTab";
 import SocialModerationTab from "./SocialModerationTab";
+import PartnerApprovalTab from "./PartnerApprovalTab";
 import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
 
 export default function AdminPage() {
@@ -113,7 +115,7 @@ export default function AdminPage() {
           onValueChange={setActiveTab}
           className="space-y-4"
         >
-          <TabsList className="grid w-full grid-cols-6 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+          <TabsList className="grid w-full grid-cols-7 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <TabsTrigger
               value="tours"
               className="flex items-center gap-2 text-black dark:text-white"
@@ -156,6 +158,13 @@ export default function AdminPage() {
               <MessageSquare className="w-4 h-4" />
               {translations.social}
             </TabsTrigger>
+            <TabsTrigger
+              value="partners"
+              className="flex items-center gap-2 text-black dark:text-white"
+            >
+              <UserCheck className="w-4 h-4" />
+              Partners
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="tours">
@@ -180,6 +189,10 @@ export default function AdminPage() {
 
           <TabsContent value="social">
             <SocialModerationTab />
+          </TabsContent>
+
+          <TabsContent value="partners">
+            <PartnerApprovalTab />
           </TabsContent>
         </Tabs>
       </div>

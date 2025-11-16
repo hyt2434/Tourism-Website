@@ -198,6 +198,71 @@ def create_tables():
         );
     """)
 
+    # partner_registrations table for pending partner applications
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS partner_registrations (
+            id SERIAL PRIMARY KEY,
+            partner_type VARCHAR(50) NOT NULL CHECK (partner_type IN ('accommodation', 'transportation', 'restaurant')),
+            business_name VARCHAR(200) NOT NULL,
+            email VARCHAR(100) NOT NULL,
+            phone VARCHAR(50) NOT NULL,
+            description TEXT,
+            
+            -- Accommodation specific fields
+            star_rating INTEGER,
+            price_range VARCHAR(10),
+            amenities TEXT[],
+            room_types TEXT[],
+            
+            -- Transportation specific fields
+            vehicle_types TEXT[],
+            capacity VARCHAR(100),
+            routes TEXT[],
+            features TEXT[],
+            
+            -- Restaurant specific fields
+            cuisine_type VARCHAR(100),
+            specialties TEXT[],
+            opening_hours VARCHAR(100),
+            
+            -- Branch/location information (stored as JSON)
+            branches JSONB,
+            
+            -- Status and metadata
+            status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+            rejection_reason TEXT,
+            created_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            processed_at TIMESTAMP,
+            processed_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+        );
+    """)
+
+    # Update users table to support 'partner' role
+    cur.execute("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint 
+                WHERE conname = 'users_role_check'
+            ) THEN
+                ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+                ALTER TABLE users ADD CONSTRAINT users_role_check 
+                CHECK (role IN ('admin', 'client', 'partner'));
+            ELSE
+                -- Try to update existing constraint
+                BEGIN
+                    ALTER TABLE users DROP CONSTRAINT users_role_check;
+                    ALTER TABLE users ADD CONSTRAINT users_role_check 
+                    CHECK (role IN ('admin', 'client', 'partner'));
+                EXCEPTION WHEN OTHERS THEN
+                    -- Constraint might be different, just continue
+                    NULL;
+                END;
+            END IF;
+        END $$;
+    """)
+
     conn.commit()
     cur.close()
     conn.close()

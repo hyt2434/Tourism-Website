@@ -6,6 +6,7 @@ import { Textarea } from "../ui/textarea";
 import { ArrowLeft, CheckCircle2, Plus, X, Shield, Star } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
 import { getCities } from "../../api/cities";
+import { submitPartnerRegistration } from "../../api/partnerRegistrations";
 
 export default function AccommodationRegistration({ onBack, onSubmit }) {
   const { translations: t } = useLanguage();
@@ -95,21 +96,33 @@ export default function AccommodationRegistration({ onBack, onSubmit }) {
     setFormData({ ...formData, amenities: newAmenities });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const registrationData = {
-      type: "accommodation",
-      ...formData,
-      status: "pending",
-      submittedAt: new Date().toISOString(),
-    };
+    try {
+      const registrationData = {
+        partnerType: "accommodation",
+        businessName: formData.businessName,
+        email: formData.email,
+        phone: formData.phone,
+        description: formData.description,
+        starRating: parseInt(formData.starRating),
+        priceRange: formData.priceRange,
+        amenities: formData.amenities,
+        roomTypes: formData.roomTypes,
+        branches: formData.branches.map(branch => ({
+          city: branch.city,
+          address: branch.address
+        }))
+      };
 
-    const existing = JSON.parse(localStorage.getItem("partnerRegistrations") || "[]");
-    localStorage.setItem("partnerRegistrations", JSON.stringify([...existing, registrationData]));
-
-    if (onSubmit) onSubmit(registrationData);
-    alert(t.partnerRegisterSuccess);
+      const result = await submitPartnerRegistration(registrationData);
+      
+      if (onSubmit) onSubmit(registrationData);
+      alert(t.partnerRegisterSuccess || "Registration submitted successfully! Please wait for admin approval.");
+    } catch (error) {
+      alert(`Failed to submit registration: ${error.message}`);
+    }
   };
 
   return (
