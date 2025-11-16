@@ -123,12 +123,12 @@ export default function Login() {
                 {translations.rememberMe}
               </span>
             </label>
-            <a
-              href="#"
+            <Link
+              to="/forgot-password"
               className="text-blue-600 hover:underline dark:text-blue-400"
             >
               {translations.forgotPassword}
-            </a>
+            </Link>
           </div>
 
           {/* Submit */}

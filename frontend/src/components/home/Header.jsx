@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Globe, ChevronDown, User } from "lucide-react";
 
 export default function Header() {
+  const [activeSection, setActiveSection] = useState("Khách sạn");
+
   return (
     <header className="bg-gradient-to-r from-blue-900 to-blue-700 text-white dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       <div className="container mx-auto px-4">
@@ -16,7 +18,7 @@ export default function Header() {
                   x="0"
                   y="18"
                   fill="white"
-                  className="tracking-wide"
+                  className="tracking-wide drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]"
                   style={{ fontSize: "20px", fontFamily: "Arial, sans-serif" }}
                 >
                   traveloka
@@ -37,31 +39,31 @@ export default function Header() {
                 alt="VN"
                 className="w-5 h-3"
               />
-              <span className="text-sm text-white">VND | VI</span>
+              <span className="text-sm text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]">VND | VI</span>
               <ChevronDown className="w-4 h-4 text-white" />
             </button>
 
             <button className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-blue-600 dark:hover:bg-blue-500 transition">
               <Globe className="w-4 h-4 text-white" />
-              <span className="text-sm text-white">Khuyến mãi</span>
+              <span className="text-sm text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]">Khuyến mãi</span>
             </button>
 
             <button className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-blue-600 dark:hover:bg-blue-500 transition">
-              <span className="text-sm text-white">Hỗ trợ</span>
+              <span className="text-sm text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]">Hỗ trợ</span>
               <ChevronDown className="w-4 h-4 text-white" />
             </button>
 
             <button className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-blue-600 dark:hover:bg-blue-500 transition">
-              <span className="text-sm text-white">Hợp tác với chúng tôi</span>
+              <span className="text-sm text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]">Hợp tác với chúng tôi</span>
             </button>
 
             <button className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-blue-600 dark:hover:bg-blue-500 transition">
-              <span className="text-sm text-white">Đặt chỗ của tôi</span>
+              <span className="text-sm text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]">Đặt chỗ của tôi</span>
             </button>
 
             <Button
               variant="outline"
-              className="bg-transparent border-white text-white hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white"
+              className="bg-transparent border-white text-white hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.6)] hover:drop-shadow-[0_0_15px_rgba(255,255,255,1)] transition-all"
             >
               <User className="w-4 h-4 mr-2" />
               Đăng Nhập
@@ -86,14 +88,22 @@ export default function Header() {
             <a
               key={item}
               href="#"
-              className="text-sm text-white hover:text-blue-200 dark:hover:text-blue-300 transition"
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveSection(item);
+              }}
+              className={`text-sm text-white transition ${
+                activeSection === item
+                  ? "font-bold drop-shadow-[0_0_12px_rgba(255,255,255,0.9)]"
+                  : "font-normal drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.8)]"
+              } hover:text-blue-200 dark:hover:text-blue-300`}
             >
               {item}
             </a>
           ))}
           <a
             href="#"
-            className="flex items-center gap-1 text-sm text-white hover:text-blue-200 dark:hover:text-blue-300 transition"
+            className="flex items-center gap-1 text-sm text-white hover:text-blue-200 dark:hover:text-blue-300 transition drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.8)]"
           >
             More
             <ChevronDown className="w-4 h-4 text-white" />

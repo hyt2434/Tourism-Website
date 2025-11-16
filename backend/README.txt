@@ -1,6 +1,28 @@
-.env theo format sau: nếu muốn kiểm tra dữ liệu, mọi người tự tạo bảng portgresSQL của riêng mình rồi ghi kết nối vào
+### Environment Setup
+
+Create a `.env` file in the `backend/` folder with the following structure:
+
+# Database configuration
 DB_HOST=""
 DB_NAME=""
 DB_USER=""
 DB_PASSWORD=""
-DB_PORT=5432
+DB_PORT=""
+
+# Secret key for session management
+SECRET_KEY=MagicTourismSecretKey
+
+# Google OAuth
+GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE
+GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET_HERE
+
+# Facebook OAuth
+FACEBOOK_CLIENT_ID=YOUR_FACEBOOK_CLIENT_ID_HERE
+FACEBOOK_CLIENT_SECRET=YOUR_FACEBOOK_CLIENT_SECRET_HERE
+
+# Redirect URLs
+FRONTEND_URL=http://localhost:5173
+BACKEND_URL=http://127.0.0.1:5000
+
+> ⚠️ Each developer should create their own `.env` file locally.  
+> Do **not** commit `.env` to GitHub. OAuth credentials must remain private.

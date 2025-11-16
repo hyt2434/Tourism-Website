@@ -19,175 +19,227 @@ import {
   Flag,
 } from "lucide-react";
 import ImageWithFallback from "../../figma/ImageWithFallback.jsx";
-import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
+import { useLanguage } from "../../context/LanguageContext";
+import CommentDialog from "./CommentDialog";
+import UserProfileDialog from "./UserProfileDialog"; // 👈 import
+import { Link } from "react-router-dom";
 
-export default function SocialPost({ post, onServiceClick, onReport }) {
+export default function SocialPost({
+  post,
+  onServiceClick,
+  onReport,
+  getUserPosts,
+}) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
-  const { translations } = useLanguage(); // 👈 lấy translations
+  const [showComments, setShowComments] = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false); // 👈 thêm state
+  const { translations } = useLanguage();
+
+  // 👈 Lấy tất cả posts của user này
+  const userPosts = getUserPosts ? getUserPosts(post?.user?.id) : [post];
 
   return (
-    <Card className="mb-4 overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
-      {/* Post Header */}
-      <div className="p-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Avatar className="w-8 h-8">
-            <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white">
-              {post.user.displayName[0]}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="leading-none text-black dark:text-white">
-              {post.user.username}
-            </p>
-            {post.location && (
-              <p className="text-muted-foreground dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                <MapPin className="w-3 h-3" />
-                {post.location}
-              </p>
-            )}
-          </div>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <MoreHorizontal className="w-4 h-4 text-black dark:text-white" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="bg-white dark:bg-gray-800 text-black dark:text-white"
+    <>
+      <Card className="mb-0 sm:mb-4 overflow-hidden border-0 sm:border border-gray-200 dark:border-gray-800 bg-white dark:bg-black shadow-none sm:shadow-sm rounded-none sm:rounded-lg">
+        {/* Post Header */}
+        <div className="p-3 flex items-center justify-between">
+          <div
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => setShowUserProfile(true)}
           >
-            <DropdownMenuItem onClick={() => onServiceClick(post.linkedService)}>
-              <MapPin className="w-4 h-4 mr-2" />
-              {translations.viewLinkedService}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onReport(post.id)}>
-              <Flag className="w-4 h-4 mr-2" />
-              {translations.reportPost}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Post Image */}
-      <div className="relative w-full aspect-square bg-muted dark:bg-gray-800">
-        <ImageWithFallback
-          src={post.image}
-          alt={post.caption}
-          className="w-full h-full object-cover"
-        />
-        {post.status === "pending" && (
-          <div className="absolute top-2 right-2">
-            <Badge
-              variant="secondary"
-              className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-600"
-            >
-              {translations.pending}
-            </Badge>
+            <div className="relative">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 p-0.5">
+                <Avatar className="w-full h-full border-2 border-white dark:border-black">
+                  <AvatarFallback className="bg-gray-200 dark:bg-gray-700 text-black dark:text-white text-sm font-semibold">
+                    {post?.user?.displayName?.[0] || "U"}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+            </div>
+            <div>
+              <p className="leading-none font-semibold text-sm text-black dark:text-white group-hover:opacity-60 transition-opacity">
+                {post?.user?.username || "Unknown"}
+              </p>
+              {post.location && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                  {post.location}
+                </p>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-900">
+                <MoreHorizontal className="w-5 h-5 text-black dark:text-white" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="bg-white dark:bg-gray-800 text-black dark:text-white border-gray-200 dark:border-gray-700"
+            >
+              <DropdownMenuItem
+                onClick={() => onServiceClick(post.linkedService)}
+                className="cursor-pointer"
+              >
+                <MapPin className="w-4 h-4 mr-2" />
+                {translations.viewLinkedService}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onReport(post.id)}
+                className="cursor-pointer text-red-600 dark:text-red-400"
+              >
+                <Flag className="w-4 h-4 mr-2" />
+                {translations.reportPost}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-      {/* Post Actions */}
-      <div className="p-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-4">
+        {/* Post Image */}
+        <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-900">
+          <ImageWithFallback
+            src={post.image}
+            alt={post.caption}
+            className="w-full h-full object-cover"
+          />
+          {post.status === "pending" && (
+            <div className="absolute top-3 right-3">
+              <Badge
+                variant="secondary"
+                className="bg-yellow-100/90 dark:bg-yellow-900/90 text-yellow-800 dark:text-yellow-300 border-0 backdrop-blur-sm"
+              >
+                {translations.pending}
+              </Badge>
+            </div>
+          )}
+        </div>
+
+        {/* Post Actions */}
+        <div className="p-3">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 hover:bg-transparent hover:scale-110 transition-transform"
+                onClick={() => setLiked(!liked)}
+              >
+                <Heart
+                  className={`w-7 h-7 transition-all ${
+                    liked
+                      ? "fill-red-500 text-red-500 scale-110"
+                      : "text-black dark:text-white"
+                  }`}
+                />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 hover:bg-transparent hover:scale-110 transition-transform"
+                onClick={() => setShowComments(true)}
+              >
+                <MessageCircle className="w-7 h-7 text-black dark:text-white" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 hover:bg-transparent hover:scale-110 transition-transform"
+              >
+                <Send className="w-7 h-7 text-black dark:text-white" />
+              </Button>
+            </div>
             <Button
               variant="ghost"
               size="sm"
-              className="h-auto p-0 hover:bg-transparent"
-              onClick={() => setLiked(!liked)}
+              className="h-auto p-0 hover:bg-transparent hover:scale-110 transition-transform"
+              onClick={() => setSaved(!saved)}
             >
-              <Heart
-                className={`w-6 h-6 ${liked
-                    ? "fill-red-500 text-red-500"
+              <Bookmark
+                className={`w-7 h-7 transition-all ${
+                  saved
+                    ? "fill-current text-black dark:text-white scale-110"
                     : "text-black dark:text-white"
-                  }`}
+                }`}
               />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-auto p-0 hover:bg-transparent"
-            >
-              <MessageCircle className="w-6 h-6 text-black dark:text-white" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-auto p-0 hover:bg-transparent"
-            >
-              <Send className="w-6 h-6 text-black dark:text-white" />
-            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-auto p-0 hover:bg-transparent"
-            onClick={() => setSaved(!saved)}
-          >
-            <Bookmark
-              className={`w-6 h-6 ${saved
-                  ? "fill-current text-black dark:text-white"
-                  : "text-black dark:text-white"
-                }`}
-            />
-          </Button>
-        </div>
 
-        {/* Likes count */}
-        <p className="mb-2 text-black dark:text-white">
-          {(post.likes + (liked ? 1 : 0)).toLocaleString()} {translations.likes}
-        </p>
+          {/* Likes count */}
+          <p className="mb-2 text-sm font-semibold text-black dark:text-white">
+            {(post.likes + (liked ? 1 : 0)).toLocaleString()}{" "}
+            {translations.likes}
+          </p>
 
-        {/* Caption */}
-        <div className="mb-2 text-black dark:text-white">
-          <span className="mr-2 font-semibold">{post.user.username}</span>
-          <span>{post.caption}</span>
-        </div>
-
-        {/* Hashtags */}
-        <div className="flex flex-wrap gap-1 mb-2">
-          {post.hashtags.map((tag, index) => (
-            <span
-              key={index}
-              className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
-            >
-              {tag}
+          {/* Caption */}
+          <div className="mb-2 text-sm text-black dark:text-white">
+            <span className="font-semibold mr-2">
+              {post?.user?.username || "Unknown"}
             </span>
-          ))}
+            <span className="text-gray-800 dark:text-gray-200">{post.caption}</span>
+          </div>
+
+          {/* Hashtags */}
+          <div className="flex flex-wrap gap-1 mb-2">
+            {post.hashtags.map((tag, index) => (
+              <span
+                key={index}
+                className="text-sm text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          {/* Comments preview */}
+          {post.comments > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-0 h-auto text-gray-500 dark:text-gray-400 hover:bg-transparent text-sm mb-1"
+              onClick={() => setShowComments(true)}
+            >
+              {translations.viewAllComments.replace("{count}", post.comments)}
+            </Button>
+          )}
+
+          {/* Timestamp */}
+          <p className="text-xs text-gray-400 dark:text-gray-500 uppercase">
+            {post.timestamp}
+          </p>
+
+          {/* Linked Service */}
+          {post.linkedService && (
+            <Link to="/login" className="block mt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-gray-300 dark:border-gray-700 text-black dark:text-white hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                onClick={() => onServiceClick(post.linkedService)}
+              >
+                <MapPin className="w-4 h-4 mr-2" />
+                {translations.bookNow}: {post.linkedService}
+              </Button>
+            </Link>
+          )}
         </div>
+      </Card>
 
-        {/* Linked Service */}
-        {post.linkedService && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full mt-2 dark:border-gray-600 dark:text-white"
-            onClick={() => onServiceClick(post.linkedService)}
-          >
-            <MapPin className="w-4 h-4 mr-2" />
-            {translations.bookNow}: {post.linkedService}
-          </Button>
-        )}
+      {/* Comment Dialog */}
 
-        {/* Comments preview */}
-        {post.comments > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-0 h-auto text-muted-foreground dark:text-gray-400 hover:bg-transparent mt-2"
-          >
-            {translations.viewAllComments.replace("{count}", post.comments)}
-          </Button>
-        )}
+      <CommentDialog
+        open={showComments}
+        onOpenChange={setShowComments}
+        post={post}
+      />
 
-        {/* Timestamp */}
-        <p className="text-muted-foreground dark:text-gray-400 mt-2">
-          {post.timestamp}
-        </p>
-      </div>
-    </Card>
+      {/* User Profile Dialog */}
+      <UserProfileDialog
+        open={showUserProfile}
+        onOpenChange={setShowUserProfile}
+        user={post?.user}
+        userPosts={userPosts}
+      />
+    </>
   );
 }

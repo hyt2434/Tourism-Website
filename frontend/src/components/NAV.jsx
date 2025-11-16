@@ -35,7 +35,6 @@ export default function NAV() {
       setIsLoggedIn(!!user);
     };
     checkAuth();
-
     window.addEventListener("storage", checkAuth);
     return () => window.removeEventListener("storage", checkAuth);
   }, []);
@@ -70,8 +69,8 @@ export default function NAV() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
-      <div className="container mx-auto px-24">
+    <header className="sticky top-0 z-[80] bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
+      <div className=" container mx-auto px-24">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div
@@ -81,7 +80,7 @@ export default function NAV() {
             MagicViet
           </div>
           {/* Desktop Navigation */}
-          <div className="hidden md:grid grid-cols-[auto_repeat(6,minmax(100px,1fr))_auto_auto_auto] items-center gap-1">
+          <div className="hidden md:grid grid-cols-[repeat(6,minmax(110px,1fr))_auto_auto_auto] items-center gap-1">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -107,7 +106,7 @@ export default function NAV() {
             {/* Language */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors whitespace-nowrap justify-self-center"
+              className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors whitespace-nowrap justify-center"
             >
               <GlobeAltIcon className="h-5 w-5 text-title dark:text-white" />
               <span className="text-sm font-medium text-title dark:text-white">
@@ -118,14 +117,14 @@ export default function NAV() {
             <div className="w-28 flex-shrink-0">
               {/* Login / User Section */}
               {isLoggedIn ? (
-                <div className="relative user-menu justify-self-end">
+                <div className="relative user-menu justify-self-center">
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black/20"
                     title="User Menu"
                   >
                     <AccountCircleIcon
-                      className="text-title dark:text-white"
+                      className="text-title dark:text-white "
                       fontSize="medium"
                     />
                   </button>
