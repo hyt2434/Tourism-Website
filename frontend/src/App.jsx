@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 import TourCarousel from "./components/TourCarousel";
 import Login from "./components/Login";
 import Register from "./components/Register";
+import ForgotPassword from "./components/ForgotPassword";
 import Profile from "./components/Profile";
 import SocialPage from "./components/social/SocialPage";
 import ToursPage from "./components/ToursPage";
@@ -19,6 +20,7 @@ import FlightDeals from "./components/home/FlightDeals";
 import Reviews from "./components/home/Reviews";
 import PartnerPage from "./components/Partner/PartnerPage";
 import PartnerDetail from "./components/Partner/PartnerDetail";
+import AboutUs from "./components/AboutUs";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -100,17 +102,10 @@ export default function App() {
           <Route path="/tours/:id" element={<TourDetail tours={tours} />} />
           <Route path="/tour" element={<ToursPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/aboutus"
-            element={
-              <h1 className="text-center text-3xl font-bold text-gray-900 dark:text-white mb-6">
-                {" "}
-                Cao Triết nè
-              </h1>
-            }
-          />
+          <Route path="/aboutus" element={<AboutUs />} />
           <Route path="/social" element={<SocialPage />} />
           <Route path="/partner" element={<PartnerPage />} />
           <Route path="/partner/:id" element={<PartnerDetail />} />

@@ -34,6 +34,16 @@
     }
   }
 
+  /* Infinite scroll animation */
+  @keyframes infinite-scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
   .animate-blob {
     animation: blob 20s ease-in-out infinite;
   }
@@ -44,6 +54,14 @@
 
   .animation-delay-4000 {
     animation-delay: 4s;
+  }
+
+  .animate-infinite-scroll {
+    animation: infinite-scroll 40s linear infinite;
+  }
+
+  .pause-animation:hover {
+    animation-play-state: paused;
   }
 
   .shine-effect {

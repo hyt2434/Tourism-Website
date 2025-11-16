@@ -188,6 +188,81 @@ def create_tables():
         );
     """)
 
+    # cities table for Vietnam provinces/cities
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS cities (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            code VARCHAR(10),
+            region VARCHAR(50)
+        );
+    """)
+
+    # partner_registrations table for pending partner applications
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS partner_registrations (
+            id SERIAL PRIMARY KEY,
+            partner_type VARCHAR(50) NOT NULL CHECK (partner_type IN ('accommodation', 'transportation', 'restaurant')),
+            business_name VARCHAR(200) NOT NULL,
+            email VARCHAR(100) NOT NULL,
+            phone VARCHAR(50) NOT NULL,
+            description TEXT,
+            
+            -- Accommodation specific fields
+            star_rating INTEGER,
+            price_range VARCHAR(10),
+            amenities TEXT[],
+            room_types TEXT[],
+            
+            -- Transportation specific fields
+            vehicle_types TEXT[],
+            capacity VARCHAR(100),
+            routes TEXT[],
+            features TEXT[],
+            
+            -- Restaurant specific fields
+            cuisine_type VARCHAR(100),
+            specialties TEXT[],
+            opening_hours VARCHAR(100),
+            
+            -- Branch/location information (stored as JSON)
+            branches JSONB,
+            
+            -- Status and metadata
+            status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+            rejection_reason TEXT,
+            created_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            processed_at TIMESTAMP,
+            processed_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+        );
+    """)
+
+    # Update users table to support 'partner' role
+    cur.execute("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint 
+                WHERE conname = 'users_role_check'
+            ) THEN
+                ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+                ALTER TABLE users ADD CONSTRAINT users_role_check 
+                CHECK (role IN ('admin', 'client', 'partner'));
+            ELSE
+                -- Try to update existing constraint
+                BEGIN
+                    ALTER TABLE users DROP CONSTRAINT users_role_check;
+                    ALTER TABLE users ADD CONSTRAINT users_role_check 
+                    CHECK (role IN ('admin', 'client', 'partner'));
+                EXCEPTION WHEN OTHERS THEN
+                    -- Constraint might be different, just continue
+                    NULL;
+                END;
+            END IF;
+        END $$;
+    """)
+
     conn.commit()
     cur.close()
     conn.close()
@@ -226,12 +301,12 @@ def _create_default_admin():
             try:
                 bcrypt = current_app.bcrypt
                 hashed_pw = bcrypt.generate_password_hash(default_admin_password).decode('utf-8')
-            except RuntimeError:
-                # If running outside Flask app context, use a simple hash
-                # Note: This should ideally match the bcrypt format
-                print("⚠️  Running outside Flask context. Using fallback password hashing.")
-                import hashlib
-                hashed_pw = hashlib.sha256(default_admin_password.encode()).hexdigest()
+            except (RuntimeError, AttributeError):
+                # If running outside Flask app context, use bcrypt directly
+                from flask_bcrypt import Bcrypt
+                bcrypt = Bcrypt()
+                hashed_pw = bcrypt.generate_password_hash(default_admin_password).decode('utf-8')
+                print("⚠️  Running outside Flask context. Using standalone bcrypt.")
             
             cur.execute("""
                 INSERT INTO users (username, email, password, role)

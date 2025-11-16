@@ -28,3 +28,31 @@ export async function loginUser(userData) {
     return { error: "Network error" };
   }
 }
+
+export async function requestPasswordReset(email) {
+  try {
+    const response = await fetch(`${BASE_URL}/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Password Reset Request Error:", error);
+    return { error: "Network error" };
+  }
+}
+
+export async function resetPassword(data) {
+  try {
+    const response = await fetch(`${BASE_URL}/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Password Reset Error:", error);
+    return { error: "Network error" };
+  }
+}

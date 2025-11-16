@@ -4,183 +4,157 @@ import { Card, CardHeader, CardDescription, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import {
-  PackageIcon,
-  Building,
-  Bus,
-  Tag,
-  ShoppingCart,
+  Users,
+  UserCheck,
   MessageSquare,
   Download,
   TrendingUp,
+  Clock,
+  Shield,
+  Bell,
 } from "lucide-react";
-import ToursTab from "./ToursTab";
-import AccommodationTab from "./AccommodationTab";
-import TransportTab from "./TransportTab";
-import PromotionsTab from "./PromotionsTab";
-import OrdersTab from "./OrdersTab";
+import UserManagementTab from "./UserManagementTab";
+import PartnerManagementTab from "./PartnerManagementTab";
 import SocialModerationTab from "./SocialModerationTab";
-import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState("tours");
-  const { translations } = useLanguage(); // 👈 lấy translations
+  const [activeTab, setActiveTab] = useState("users");
+  const { translations } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-black dark:text-white">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-title dark:text-white">
-                {translations.adminDashboard}
-              </h1>
-              <p className="text-muted-foreground dark:text-gray-400">
-                {translations.adminSubtitle}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+      {/* Enhanced Stats Cards */}
+      <div className="container mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="relative overflow-hidden bg-white dark:bg-gray-900 border-2 border-blue-100 dark:border-blue-900 hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-transparent rounded-bl-full" />
+            <CardHeader className="pb-3 relative">
+              <CardDescription className="text-blue-700 dark:text-blue-300 font-semibold flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                {translations.totalUsers}
+              </CardDescription>
+              <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
+                <span>1,248</span>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+              </CardTitle>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" />
+                +12% {translations.fromLastMonth}
               </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="dark:border-gray-600 dark:text-white"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                {translations.exportReport}
-              </Button>
-              <Avatar>
-                <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white">
-                  AD
-                </AvatarFallback>
-              </Avatar>
-            </div>
-          </div>
-        </div>
-      </div>
+            </CardHeader>
+          </Card>
 
-      {/* Stats Cards */}
-      <div className="container mx-auto px-6 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-            <CardHeader className="pb-3">
-              <CardDescription className="text-muted-foreground dark:text-gray-400">
-                {translations.pendingApproval}
+          <Card className="relative overflow-hidden bg-white dark:bg-gray-900 border-2 border-purple-100 dark:border-purple-900 hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-transparent rounded-bl-full" />
+            <CardHeader className="pb-3 relative">
+              <CardDescription className="text-purple-700 dark:text-purple-300 font-semibold flex items-center gap-2">
+                <UserCheck className="w-4 h-4" />
+                {translations.activePartners}
               </CardDescription>
-              <CardTitle className="flex items-center justify-between">
-                <span>8</span>
-                <PackageIcon className="w-5 h-5 text-muted-foreground dark:text-gray-400" />
+              <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
+                <span>156</span>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <UserCheck className="w-6 h-6 text-white" />
+                </div>
               </CardTitle>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" />
+                +8% {translations.fromLastMonth}
+              </p>
             </CardHeader>
           </Card>
-          <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-            <CardHeader className="pb-3">
-              <CardDescription className="text-muted-foreground dark:text-gray-400">
-                {translations.newOrders}
+
+          <Card className="relative overflow-hidden bg-white dark:bg-gray-900 border-2 border-orange-100 dark:border-orange-900 hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/20 to-transparent rounded-bl-full" />
+            <CardHeader className="pb-3 relative">
+              <CardDescription className="text-orange-700 dark:text-orange-300 font-semibold flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                {translations.pendingApprovals}
               </CardDescription>
-              <CardTitle className="flex items-center justify-between">
-                <span>24</span>
-                <ShoppingCart className="w-5 h-5 text-muted-foreground dark:text-gray-400" />
+              <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
+                <span>23</span>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
               </CardTitle>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
+                {translations.requiresAttention}
+              </p>
             </CardHeader>
           </Card>
-          <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-            <CardHeader className="pb-3">
-              <CardDescription className="text-muted-foreground dark:text-gray-400">
-                {translations.activePromotions}
+
+          <Card className="relative overflow-hidden bg-white dark:bg-gray-900 border-2 border-green-100 dark:border-green-900 hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/20 to-transparent rounded-bl-full" />
+            <CardHeader className="pb-3 relative">
+              <CardDescription className="text-green-700 dark:text-green-300 font-semibold flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" />
+                {translations.socialPosts}
               </CardDescription>
-              <CardTitle className="flex items-center justify-between">
-                <span>12</span>
-                <Tag className="w-5 h-5 text-muted-foreground dark:text-gray-400" />
+              <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
+                <span>892</span>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <MessageSquare className="w-6 h-6 text-white" />
+                </div>
               </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-            <CardHeader className="pb-3">
-              <CardDescription className="text-muted-foreground dark:text-gray-400">
-                {translations.monthlyRevenue}
-              </CardDescription>
-              <CardTitle className="flex items-center justify-between">
-                <span>125M</span>
-                <TrendingUp className="w-5 h-5 text-muted-foreground dark:text-gray-400" />
-              </CardTitle>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" />
+                +24% {translations.engagementIncrease}
+              </p>
             </CardHeader>
           </Card>
         </div>
 
-        {/* Main Content */}
+        {/* Main Content Tabs */}
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
-          className="space-y-4"
+          className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-6 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-            <TabsTrigger
-              value="tours"
-              className="flex items-center gap-2 text-black dark:text-white"
-            >
-              <PackageIcon className="w-4 h-4" />
-              {translations.toursAdmin}
-            </TabsTrigger>
-            <TabsTrigger
-              value="accommodation"
-              className="flex items-center gap-2 text-black dark:text-white"
-            >
-              <Building className="w-4 h-4" />
-              {translations.accommodation}
-            </TabsTrigger>
-            <TabsTrigger
-              value="transport"
-              className="flex items-center gap-2 text-black dark:text-white"
-            >
-              <Bus className="w-4 h-4" />
-              {translations.transport}
-            </TabsTrigger>
-            <TabsTrigger
-              value="promotions"
-              className="flex items-center gap-2 text-black dark:text-white"
-            >
-              <Tag className="w-4 h-4" />
-              {translations.promotions}
-            </TabsTrigger>
-            <TabsTrigger
-              value="orders"
-              className="flex items-center gap-2 text-black dark:text-white"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              {translations.orders}
-            </TabsTrigger>
-            <TabsTrigger
-              value="social"
-              className="flex items-center gap-2 text-black dark:text-white"
-            >
-              <MessageSquare className="w-4 h-4" />
-              {translations.social}
-            </TabsTrigger>
-          </TabsList>
+          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700 p-2">
+            <TabsList className="grid w-full grid-cols-3 bg-gray-100 dark:bg-gray-800 rounded-xl p-1.5 h-auto gap-2">
+              <TabsTrigger
+                value="users"
+                className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+              >
+                <Users className="w-5 h-5" />
+                <span className="hidden sm:inline">{translations.userManagement}</span>
+                <span className="sm:hidden">{translations.totalUsers}</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="partners"
+                className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+              >
+                <UserCheck className="w-5 h-5" />
+                <span className="hidden sm:inline">{translations.partnerManagement}</span>
+                <span className="sm:hidden">{translations.partner}s</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="social"
+                className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+              >
+                <MessageSquare className="w-5 h-5" />
+                <span className="hidden sm:inline">{translations.socialModeration}</span>
+                <span className="sm:hidden">{translations.social}</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="tours">
-            <ToursTab />
-          </TabsContent>
+          <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700 p-6">
+            <TabsContent value="users" className="mt-0">
+              <UserManagementTab />
+            </TabsContent>
 
-          <TabsContent value="accommodation">
-            <AccommodationTab />
-          </TabsContent>
+            <TabsContent value="partners" className="mt-0">
+              <PartnerManagementTab />
+            </TabsContent>
 
-          <TabsContent value="transport">
-            <TransportTab />
-          </TabsContent>
-
-          <TabsContent value="promotions">
-            <PromotionsTab />
-          </TabsContent>
-
-          <TabsContent value="orders">
-            <OrdersTab />
-          </TabsContent>
-
-          <TabsContent value="social">
-            <SocialModerationTab />
-          </TabsContent>
+            <TabsContent value="social" className="mt-0">
+              <SocialModerationTab />
+            </TabsContent>
+          </div>
         </Tabs>
       </div>
     </div>

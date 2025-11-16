@@ -2,6 +2,9 @@ from flask import Blueprint, redirect, request, jsonify, session, current_app
 from requests_oauthlib import OAuth2Session
 from functools import wraps
 import os
+import random
+import string
+from datetime import datetime, timedelta
 from src.database import get_connection
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
@@ -431,3 +434,144 @@ def create_or_get_user(user_info):
     conn.close()
     
     return user_data
+
+
+# ---------------- PASSWORD RESET FUNCTIONALITY ----------------
+
+# Store reset codes in memory (in production, use Redis or database)
+reset_codes = {}
+
+def generate_reset_code():
+    """Generate a random 6-digit reset code."""
+    return ''.join(random.choices(string.digits, k=6))
+
+
+@auth_routes.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    """
+    Step 1: Request password reset.
+    Sends a reset code to the user's email.
+    """
+    data = request.get_json()
+    email = data.get("email")
+    
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        # Check if user exists
+        cur.execute("SELECT id, username, email FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        
+        if not user:
+            # For security, don't reveal if email exists or not
+            return jsonify({
+                "message": "If an account with this email exists, a reset code has been sent."
+            }), 200
+        
+        # Generate reset code
+        reset_code = generate_reset_code()
+        
+        # Store reset code with expiration (15 minutes)
+        reset_codes[email] = {
+            'code': reset_code,
+            'expires_at': datetime.now() + timedelta(minutes=15),
+            'user_id': user[0]
+        }
+        
+        # In production, send email here
+        # For now, we'll just log it (or you can integrate an email service)
+        print(f"🔐 Password reset code for {email}: {reset_code}")
+        print(f"   Expires at: {reset_codes[email]['expires_at']}")
+        
+        # TODO: Send email with reset code
+        # send_reset_email(email, reset_code)
+        
+        return jsonify({
+            "message": "Reset code sent to your email. Please check your inbox.",
+            "reset_code": reset_code  # Remove this in production!
+        }), 200
+    
+    except Exception as e:
+        return jsonify({"error": f"Failed to process request: {str(e)}"}), 500
+    
+    finally:
+        cur.close()
+        conn.close()
+
+
+@auth_routes.route('/reset-password', methods=['POST'])
+def reset_password():
+    """
+    Step 2: Reset password with code.
+    Verifies the reset code and updates the password.
+    """
+    data = request.get_json()
+    email = data.get("email")
+    reset_code = data.get("reset_code")
+    new_password = data.get("new_password")
+    
+    if not email or not reset_code or not new_password:
+        return jsonify({"error": "Email, reset code, and new password are required"}), 400
+    
+    # Validate password strength
+    if len(new_password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters long"}), 400
+    
+    # Check if reset code exists and is valid
+    if email not in reset_codes:
+        return jsonify({"error": "Invalid or expired reset code"}), 400
+    
+    stored_data = reset_codes[email]
+    
+    # Check if code matches
+    if stored_data['code'] != reset_code:
+        return jsonify({"error": "Invalid reset code"}), 400
+    
+    # Check if code has expired
+    if datetime.now() > stored_data['expires_at']:
+        del reset_codes[email]
+        return jsonify({"error": "Reset code has expired. Please request a new one."}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        # Hash the new password
+        bcrypt = current_app.bcrypt
+        hashed_pw = bcrypt.generate_password_hash(new_password).decode('utf-8')
+        
+        # Update password
+        cur.execute("""
+            UPDATE users 
+            SET password = %s 
+            WHERE email = %s
+        """, (hashed_pw, email))
+        
+        conn.commit()
+        
+        # Remove used reset code
+        del reset_codes[email]
+        
+        print(f"✅ Password reset successful for {email}")
+        
+        return jsonify({
+            "message": "Password reset successful! You can now login with your new password."
+        }), 200
+    
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": f"Failed to reset password: {str(e)}"}), 500
+    
+    finally:
+        cur.close()
+        conn.close()
