@@ -27,8 +27,10 @@ import {
   Clock
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "../ui/dialog";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function SocialModerationTab() {
+  const { translations: t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState("pending");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPost, setSelectedPost] = useState(null);
@@ -110,11 +112,11 @@ export default function SocialModerationTab() {
   const getStatusBadge = (status) => {
     switch(status) {
       case "pending":
-        return { color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300", icon: <AlertTriangle className="w-3 h-3" />, text: "Pending Review" };
+        return { color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300", icon: <AlertTriangle className="w-3 h-3" />, text: t.pendingReview };
       case "approved":
-        return { color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300", icon: <CheckCircle2 className="w-3 h-3" />, text: "Approved" };
+        return { color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300", icon: <CheckCircle2 className="w-3 h-3" />, text: t.approved };
       case "rejected":
-        return { color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300", icon: <XCircle className="w-3 h-3" />, text: "Rejected" };
+        return { color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300", icon: <XCircle className="w-3 h-3" />, text: t.reject };
       default:
         return { color: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300", icon: null, text: status };
     }
@@ -134,7 +136,7 @@ export default function SocialModerationTab() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <Input
-            placeholder="Search posts by content or user..."
+            placeholder={t.searchPosts}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-green-500 dark:focus:border-green-400"
@@ -147,7 +149,7 @@ export default function SocialModerationTab() {
             onClick={() => setFilterStatus("all")}
             className="h-12"
           >
-            All Posts
+            {t.allPosts}
           </Button>
           <Button
             variant={filterStatus === "pending" ? "default" : "outline"}
@@ -155,7 +157,7 @@ export default function SocialModerationTab() {
             className="h-12 bg-orange-600 hover:bg-orange-700 data-[state=active]:bg-orange-600"
           >
             <Clock className="w-4 h-4 mr-2" />
-            Pending
+            {t.pending}
           </Button>
           <Button
             variant={filterStatus === "approved" ? "default" : "outline"}
@@ -163,7 +165,7 @@ export default function SocialModerationTab() {
             className="h-12"
           >
             <CheckCircle2 className="w-4 h-4 mr-2" />
-            Approved
+            {t.approved}
           </Button>
         </div>
       </div>
@@ -173,10 +175,10 @@ export default function SocialModerationTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
             <MessageSquare className="w-6 h-6 text-green-600 dark:text-green-400" />
-            Social Post Moderation
+            {t.socialModeration}
           </CardTitle>
           <CardDescription>
-            Review and moderate user-generated social media content
+            {t.socialModerationDesc}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -268,67 +270,82 @@ export default function SocialModerationTab() {
                                 onClick={() => setSelectedPost(post)}
                               >
                                 <Eye className="w-4 h-4 mr-2" />
-                                View Details
+                                {t.viewDetails}
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                            <DialogContent className="max-w-2xl max-h-[80vh] !top-[52%] overflow-y-auto bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700">
                               <DialogHeader>
-                                <DialogTitle>Post Details</DialogTitle>
-                                <DialogDescription>
-                                  Review complete post information
+                                <DialogTitle className="text-2xl text-gray-900 dark:text-white">{t.postDetails}</DialogTitle>
+                                <DialogDescription className="text-gray-600 dark:text-gray-400">
+                                  {t.reviewComplete}
                                 </DialogDescription>
                               </DialogHeader>
                               
-                              <div className="space-y-4 mt-4">
-                                <div className="flex items-center gap-3">
-                                  <Avatar className="w-12 h-12">
-                                    <AvatarFallback className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+                              <div className="space-y-6 mt-4">
+                                <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <Avatar className="w-12 h-12 ring-2 ring-green-500">
+                                    <AvatarFallback className="bg-gradient-to-br from-green-500 to-green-600 text-white font-bold">
                                       {selectedPost?.userAvatar}
                                     </AvatarFallback>
                                   </Avatar>
                                   <div>
-                                    <p className="font-bold">{selectedPost?.user}</p>
-                                    <p className="text-sm text-gray-500">{selectedPost?.date}</p>
+                                    <p className="font-bold text-gray-900 dark:text-white">{selectedPost?.user}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{selectedPost?.date}</p>
                                   </div>
                                 </div>
                                 
-                                <div>
-                                  <h4 className="font-semibold mb-2">Content</h4>
-                                  <p className="text-gray-700 dark:text-gray-300">{selectedPost?.content}</p>
+                                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                                    <MessageSquare className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                    {t.content}
+                                  </h4>
+                                  <p className="text-gray-800 dark:text-gray-200 leading-relaxed">{selectedPost?.content}</p>
                                 </div>
                                 
                                 {selectedPost?.location && (
-                                  <div>
-                                    <h4 className="font-semibold mb-2">Location</h4>
-                                    <p className="text-gray-700 dark:text-gray-300">📍 {selectedPost?.location}</p>
+                                  <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{t.location}</h4>
+                                    <p className="text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                      📍 {selectedPost?.location}
+                                    </p>
                                   </div>
                                 )}
                                 
-                                <div>
-                                  <h4 className="font-semibold mb-2">Engagement</h4>
+                                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                                  <h4 className="font-semibold text-gray-900 dark:text-white mb-4">{t.engagementMetrics}</h4>
                                   <div className="grid grid-cols-3 gap-4">
-                                    <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
-                                      <p className="text-sm text-gray-600 dark:text-gray-400">Likes</p>
-                                      <p className="text-2xl font-bold">{selectedPost?.likes}</p>
+                                    <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 text-center">
+                                      <div className="flex items-center justify-center gap-2 mb-2">
+                                        <ThumbsUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.likes}</p>
+                                      </div>
+                                      <p className="text-3xl font-bold text-gray-900 dark:text-white">{selectedPost?.likes}</p>
                                     </div>
-                                    <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
-                                      <p className="text-sm text-gray-600 dark:text-gray-400">Comments</p>
-                                      <p className="text-2xl font-bold">{selectedPost?.comments}</p>
+                                    <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 text-center">
+                                      <div className="flex items-center justify-center gap-2 mb-2">
+                                        <MessageCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.comments}</p>
+                                      </div>
+                                      <p className="text-3xl font-bold text-gray-900 dark:text-white">{selectedPost?.comments}</p>
                                     </div>
-                                    <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
-                                      <p className="text-sm text-gray-600 dark:text-gray-400">Shares</p>
-                                      <p className="text-2xl font-bold">{selectedPost?.shares}</p>
+                                    <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 text-center">
+                                      <div className="flex items-center justify-center gap-2 mb-2">
+                                        <Share2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t.shares}</p>
+                                      </div>
+                                      <p className="text-3xl font-bold text-gray-900 dark:text-white">{selectedPost?.shares}</p>
                                     </div>
                                   </div>
                                 </div>
 
                                 {selectedPost?.reports > 0 && (
-                                  <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-700 rounded-lg p-4">
-                                    <h4 className="font-semibold text-red-800 dark:text-red-300 mb-2">
-                                      ⚠️ This post has been reported {selectedPost?.reports} times
+                                  <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-xl p-5">
+                                    <h4 className="font-bold text-red-900 dark:text-red-200 mb-2 flex items-center gap-2 text-lg">
+                                      <Flag className="w-5 h-5" />
+                                      ⚠️ {t.reportedTimes} {selectedPost?.reports} {t.times}
                                     </h4>
-                                    <p className="text-sm text-red-600 dark:text-red-400">
-                                      Please review carefully for policy violations
+                                    <p className="text-sm text-red-800 dark:text-red-300 font-medium">
+                                      {t.reviewCarefully}
                                     </p>
                                   </div>
                                 )}
@@ -343,14 +360,14 @@ export default function SocialModerationTab() {
                                 className="bg-green-600 hover:bg-green-700 text-white"
                               >
                                 <CheckCircle2 className="w-4 h-4 mr-2" />
-                                Approve
+                                {t.approve}
                               </Button>
                               <Button
                                 size="sm"
                                 variant="destructive"
                               >
                                 <XCircle className="w-4 h-4 mr-2" />
-                                Reject
+                                {t.reject}
                               </Button>
                             </>
                           )}
@@ -366,7 +383,7 @@ export default function SocialModerationTab() {
           {filteredPosts.length === 0 && (
             <div className="text-center py-12">
               <MessageSquare className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">No posts found</p>
+              <p className="text-gray-500 dark:text-gray-400">{t.noPostsFound}</p>
             </div>
           )}
         </CardContent>

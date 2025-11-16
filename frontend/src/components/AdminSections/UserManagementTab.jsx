@@ -21,8 +21,10 @@ import {
   Filter
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "../ui/dialog";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function UserManagementTab() {
+  const { translations: t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [filterRole, setFilterRole] = useState("all");
@@ -112,7 +114,7 @@ export default function UserManagementTab() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <Input
-            placeholder="Search users by name or email..."
+            placeholder={t.searchUsers}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400"
@@ -125,7 +127,7 @@ export default function UserManagementTab() {
             onClick={() => setFilterRole("all")}
             className="h-12"
           >
-            All Users
+            {t.allUsers}
           </Button>
           <Button
             variant={filterRole === "client" ? "default" : "outline"}
@@ -133,7 +135,7 @@ export default function UserManagementTab() {
             className="h-12"
           >
             <User className="w-4 h-4 mr-2" />
-            Clients
+            {t.clients}
           </Button>
           <Button
             variant={filterRole === "partner" ? "default" : "outline"}
@@ -141,7 +143,7 @@ export default function UserManagementTab() {
             className="h-12"
           >
             <UserCheck className="w-4 h-4 mr-2" />
-            Partners
+            {t.partners}
           </Button>
           <Button
             variant={filterRole === "admin" ? "default" : "outline"}
@@ -149,7 +151,7 @@ export default function UserManagementTab() {
             className="h-12"
           >
             <Shield className="w-4 h-4 mr-2" />
-            Admins
+            {t.admins}
           </Button>
         </div>
       </div>
@@ -159,10 +161,10 @@ export default function UserManagementTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
             <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            User Management
+            {t.userManagement}
           </CardTitle>
           <CardDescription>
-            Manage user accounts, roles, and permissions
+            {t.userManagementDesc}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -170,13 +172,13 @@ export default function UserManagementTab() {
             <table className="w-full">
               <thead>
                 <tr className="border-b-2 border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">User</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">Role</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">Status</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">Joined</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">Last Login</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">Bookings</th>
-                  <th className="text-right py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">Actions</th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.username}</th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.role}</th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.status}</th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.joined}</th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.lastLogin}</th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.bookings}</th>
+                  <th className="text-right py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -239,39 +241,39 @@ export default function UserManagementTab() {
                               onClick={() => setSelectedUser(user)}
                             >
                               <Edit className="w-4 h-4 mr-1" />
-                              Edit
+                              {t.edit}
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-md">
                             <DialogHeader>
-                              <DialogTitle>Edit User: {selectedUser?.username}</DialogTitle>
+                              <DialogTitle>{t.editUser}: {selectedUser?.username}</DialogTitle>
                               <DialogDescription>
-                                Update user information and settings
+                                {t.updateUserInfo}
                               </DialogDescription>
                             </DialogHeader>
                             
                             <div className="space-y-4 mt-4">
                               <div>
-                                <Label>Username</Label>
+                                <Label>{t.username}</Label>
                                 <Input defaultValue={selectedUser?.username} className="mt-1" />
                               </div>
                               <div>
-                                <Label>Email</Label>
+                                <Label>{t.email}</Label>
                                 <Input type="email" defaultValue={selectedUser?.email} className="mt-1" />
                               </div>
                               <div>
-                                <Label>Role</Label>
+                                <Label>{t.role}</Label>
                                 <select className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800">
-                                  <option value="client" selected={selectedUser?.role === "client"}>Client</option>
-                                  <option value="partner" selected={selectedUser?.role === "partner"}>Partner</option>
-                                  <option value="admin" selected={selectedUser?.role === "admin"}>Admin</option>
+                                  <option value="client" selected={selectedUser?.role === "client"}>{t.client}</option>
+                                  <option value="partner" selected={selectedUser?.role === "partner"}>{t.partner}</option>
+                                  <option value="admin" selected={selectedUser?.role === "admin"}>{t.adminRole}</option>
                                 </select>
                               </div>
                             </div>
                             
                             <DialogFooter className="mt-6">
-                              <Button variant="outline">Cancel</Button>
-                              <Button className="bg-blue-600 hover:bg-blue-700">Save Changes</Button>
+                              <Button variant="outline">{t.cancel}</Button>
+                              <Button className="bg-blue-600 hover:bg-blue-700">{t.saveChanges}</Button>
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
@@ -312,7 +314,7 @@ export default function UserManagementTab() {
           {filteredUsers.length === 0 && (
             <div className="text-center py-12">
               <User className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">No users found</p>
+              <p className="text-gray-500 dark:text-gray-400">{t.noUsersFound}</p>
             </div>
           )}
         </CardContent>

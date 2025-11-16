@@ -117,7 +117,7 @@ export default function PartnerApprovalTab() {
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
           <CardHeader className="pb-3">
             <CardDescription className="text-blue-700 dark:text-blue-300 font-medium">
-              Pending Approvals
+              {t.pendingPartnerApprovals}
             </CardDescription>
             <CardTitle className="text-3xl text-blue-900 dark:text-blue-100">
               {pendingPartners.length}
@@ -128,7 +128,7 @@ export default function PartnerApprovalTab() {
         <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
           <CardHeader className="pb-3">
             <CardDescription className="text-green-700 dark:text-green-300 font-medium">
-              Approved This Month
+              {t.approvedThisMonth}
             </CardDescription>
             <CardTitle className="text-3xl text-green-900 dark:text-green-100">
               24
@@ -139,7 +139,7 @@ export default function PartnerApprovalTab() {
         <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-700">
           <CardHeader className="pb-3">
             <CardDescription className="text-red-700 dark:text-red-300 font-medium">
-              Rejected This Month
+              {t.rejectedThisMonth}
             </CardDescription>
             <CardTitle className="text-3xl text-red-900 dark:text-red-100">
               3
@@ -153,10 +153,10 @@ export default function PartnerApprovalTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-orange-500" />
-            Pending Partner Registrations
+            {t.pendingPartnerRegs}
           </CardTitle>
           <CardDescription>
-            Review and approve or reject partner registration applications
+            {t.pendingPartnerRegsDesc}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -165,7 +165,7 @@ export default function PartnerApprovalTab() {
           ) : pendingPartners.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Clock className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-              <p>No pending partner registrations</p>
+              <p>{t.noPendingRegistrations}</p>
             </div>
           ) : (
             <div className="space-y-4">

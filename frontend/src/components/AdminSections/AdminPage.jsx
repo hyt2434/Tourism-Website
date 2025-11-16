@@ -32,7 +32,7 @@ export default function AdminPage() {
             <CardHeader className="pb-3 relative">
               <CardDescription className="text-blue-700 dark:text-blue-300 font-semibold flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                Total Users
+                {translations.totalUsers}
               </CardDescription>
               <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
                 <span>1,248</span>
@@ -42,7 +42,7 @@ export default function AdminPage() {
               </CardTitle>
               <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
-                +12% from last month
+                +12% {translations.fromLastMonth}
               </p>
             </CardHeader>
           </Card>
@@ -52,7 +52,7 @@ export default function AdminPage() {
             <CardHeader className="pb-3 relative">
               <CardDescription className="text-purple-700 dark:text-purple-300 font-semibold flex items-center gap-2">
                 <UserCheck className="w-4 h-4" />
-                Active Partners
+                {translations.activePartners}
               </CardDescription>
               <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
                 <span>156</span>
@@ -62,7 +62,7 @@ export default function AdminPage() {
               </CardTitle>
               <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
-                +8% from last month
+                +8% {translations.fromLastMonth}
               </p>
             </CardHeader>
           </Card>
@@ -72,7 +72,7 @@ export default function AdminPage() {
             <CardHeader className="pb-3 relative">
               <CardDescription className="text-orange-700 dark:text-orange-300 font-semibold flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                Pending Approvals
+                {translations.pendingApprovals}
               </CardDescription>
               <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
                 <span>23</span>
@@ -81,7 +81,7 @@ export default function AdminPage() {
                 </div>
               </CardTitle>
               <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
-                Requires attention
+                {translations.requiresAttention}
               </p>
             </CardHeader>
           </Card>
@@ -91,7 +91,7 @@ export default function AdminPage() {
             <CardHeader className="pb-3 relative">
               <CardDescription className="text-green-700 dark:text-green-300 font-semibold flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
-                Social Posts
+                {translations.socialPosts}
               </CardDescription>
               <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
                 <span>892</span>
@@ -101,7 +101,7 @@ export default function AdminPage() {
               </CardTitle>
               <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
-                +24% engagement
+                +24% {translations.engagementIncrease}
               </p>
             </CardHeader>
           </Card>
@@ -120,24 +120,24 @@ export default function AdminPage() {
                 className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
               >
                 <Users className="w-5 h-5" />
-                <span className="hidden sm:inline">User Management</span>
-                <span className="sm:hidden">Users</span>
+                <span className="hidden sm:inline">{translations.userManagement}</span>
+                <span className="sm:hidden">{translations.totalUsers}</span>
               </TabsTrigger>
               <TabsTrigger
                 value="partners"
                 className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
               >
                 <UserCheck className="w-5 h-5" />
-                <span className="hidden sm:inline">Partner Management</span>
-                <span className="sm:hidden">Partners</span>
+                <span className="hidden sm:inline">{translations.partnerManagement}</span>
+                <span className="sm:hidden">{translations.partner}s</span>
               </TabsTrigger>
               <TabsTrigger
                 value="social"
                 className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
               >
                 <MessageSquare className="w-5 h-5" />
-                <span className="hidden sm:inline">Social Moderation</span>
-                <span className="sm:hidden">Social</span>
+                <span className="hidden sm:inline">{translations.socialModeration}</span>
+                <span className="sm:hidden">{translations.social}</span>
               </TabsTrigger>
             </TabsList>
           </div>
