@@ -33,8 +33,8 @@ export default function Reviews() {
   ];
 
   return (
-    <section className="py-12 bg-white dark:bg-gray-900">
-      <div className="container mx-auto px-36 max-w-container">
+    <section className="py-12 px-4 md:px-8 lg:px-36 bg-white dark:bg-gray-800 transition-colors duration-300">
+      <div>
         <h2 className="text-3xl md:text-4xl font-bold text-title dark:text-white mb-8">
           {translations.reviewsTitle}
         </h2>
@@ -42,7 +42,7 @@ export default function Reviews() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {reviews.map((review, index) => (
             <Card key={index} hover={false}>
-              <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800">
+              <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shine-effect">
                 <p className="text-body dark:text-gray-300 mb-4 leading-relaxed">
                   "{review.quote}"
                 </p>

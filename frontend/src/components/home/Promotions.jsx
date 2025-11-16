@@ -92,8 +92,8 @@ export default function Promotions() {
   };
 
   return (
-    <section className="py-12 bg-section dark:bg-gray-900">
-      <div className="container mx-auto px-8 md:px-20 max-w-container">
+    <section className="py-12 px-4 md:px-8 lg:px-36 bg-section dark:bg-gray-900">
+      <div>
         <h2 className="text-3xl md:text-4xl font-bold text-title dark:text-white mb-8">
           {translations.activePromotions}
         </h2>
@@ -114,7 +114,7 @@ export default function Promotions() {
         >
           {banners.map((banner, i) => (
             <SwiperSlide key={i}>
-              <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow aspect-video group">
+              <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow aspect-video group shine-effect">
                 <img
                   src={banner.image}
                   alt={banner.title}
@@ -171,21 +171,21 @@ export default function Promotions() {
             return (
               <SwiperSlide key={index}>
                 <div
-                  className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col ${
+                  className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col h-full min-h-[180px] shine-effect ${
                     !promo.active ? "opacity-60" : ""
                   }`}
                 >
-                  <div className="flex gap-3 mb-4 flex-grow">
+                  <div className="flex gap-3 mb-4 flex-1">
                     <div
                       className={`${promo.iconBg} rounded-full p-2 h-10 w-10 flex items-center justify-center flex-shrink-0`}
                     >
                       <Icon className={`h-5 w-5 ${promo.iconColor}`} />
                     </div>
-                    <div className="flex-grow">
-                      <h3 className="text-sm font-bold text-title dark:text-white mb-1 leading-tight">
+                    <div className="flex-grow min-h-0">
+                      <h3 className="text-sm font-bold text-title dark:text-white mb-1 leading-tight line-clamp-2">
                         {promo.title}
                       </h3>
-                      <p className="text-xs text-body dark:text-gray-300">
+                      <p className="text-xs text-body dark:text-gray-300 line-clamp-2">
                         {promo.subtitle}
                       </p>
                     </div>

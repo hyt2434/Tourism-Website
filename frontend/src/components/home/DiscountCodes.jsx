@@ -47,7 +47,7 @@ export default function DiscountCodes() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-12 transition-colors duration-300">
+    <div className="container mx-auto px-4 py-12 bg-section dark:bg-gray-900 transition-colors duration-300">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <Gift className="w-6 h-6 text-blue-700 dark:text-blue-400" />

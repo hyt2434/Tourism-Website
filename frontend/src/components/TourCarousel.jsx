@@ -11,14 +11,14 @@ export default function TourCarousel({ tours }) {
   const { translations } = useLanguage();
 
   return (
-    <section className="py-12 bg-white dark:bg-gray-900 transition-colors duration-300">
-      <div className="container mx-auto px-36 max-w-container">
+    <section className="py-8 px-4 md:px-8 lg:px-36 bg-white dark:bg-gray-900 transition-colors duration-300">
+      <div>
         {/* Tiêu đề */}
         <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8">
           {translations.highlights}
         </h2>
 
-        <div className="relative">
+        <div className="relative pb-12">
           {/* Nút Previous */}
           <button
             className="swiper-button-prev-tours absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-10 p-3 rounded-full bg-white dark:bg-gray-700 shadow-lg hover:shadow-xl transition-all focus:outline-none hover:bg-gray-50 dark:hover:bg-gray-600"
@@ -32,7 +32,7 @@ export default function TourCarousel({ tours }) {
             modules={[Navigation, Pagination, Autoplay]}
             autoplay={{ delay: 3000, disableOnInteraction: false }}
             spaceBetween={30}
-            slidesPerView={3}
+            slidesPerView={4}
             navigation={{
               prevEl: ".swiper-button-prev-tours",
               nextEl: ".swiper-button-next-tours",
@@ -41,13 +41,14 @@ export default function TourCarousel({ tours }) {
             breakpoints={{
               0: { slidesPerView: 1 },
               768: { slidesPerView: 2 },
-              1024: { slidesPerView: 3 },
+              1024: { slidesPerView: 4 },
             }}
+            className="pb-10"
           >
             {tours.map((tour) => (
               <SwiperSlide key={tour.id}>
                 <Link to={`/tour/${tour.id}`}>
-                  <div className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                  <div className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shine-effect">
                     <img
                       src={tour.image}
                       alt={tour.name}

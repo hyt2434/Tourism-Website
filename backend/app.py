@@ -13,7 +13,7 @@ bcrypt = Bcrypt(app)
 app.bcrypt = bcrypt
 app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 
-from src.routes.auth_routes import auth_routes
+from src.routes.user.auth_routes import auth_routes, ensure_default_admin
 from src.routes.filter_routes import filter_routes
 from src.routes.promotion_routes import promotion_routes
 from src.routes.social_routes import social_routes
@@ -21,9 +21,12 @@ from src.routes.suggestion_routes import suggestion_routes
 from src.routes.tour_routes import tour_routes
 
 try:
-    from src.models.models import create_table
-    create_table()
+    from src.models.models import create_tables
+    create_tables()
     print("✅ Database tables checked/created successfully.")
+    
+    # Ensure default admin exists
+    ensure_default_admin()
 except Exception as e:
     print(f"⚠️ Warning: Could not initialize database tables: {e}")
 
