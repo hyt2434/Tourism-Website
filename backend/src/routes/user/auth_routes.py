@@ -332,6 +332,65 @@ def list_all_users():
         conn.close()
 
 
+# ---------------- ADMIN ONLY: DELETE USER ----------------
+@auth_routes.route('/users/<int:user_id>', methods=['DELETE'])
+# @admin_required
+def delete_user(user_id):
+    """
+    Admin-only endpoint to delete a user by ID.
+    Prevents deletion of the last admin user.
+    """
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        # Check if user exists
+        cur.execute("SELECT id, username, email, role FROM users WHERE id = %s", (user_id,))
+        user = cur.fetchone()
+        
+        if not user:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "User not found"}), 404
+        
+        user_role = user[3]
+        
+        # If trying to delete an admin, check if they're the last admin
+        if user_role == 'admin':
+            cur.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+            admin_count = cur.fetchone()[0]
+            
+            if admin_count <= 1:
+                cur.close()
+                conn.close()
+                return jsonify({"error": "Cannot delete the last admin user"}), 400
+        
+        # Delete the user
+        cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        conn.commit()
+        
+        return jsonify({
+            "message": "User deleted successfully",
+            "deleted_user": {
+                "id": user[0],
+                "username": user[1],
+                "email": user[2],
+                "role": user[3]
+            }
+        }), 200
+    
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": f"Failed to delete user: {str(e)}"}), 500
+    
+    finally:
+        cur.close()
+        conn.close()
+
+
 # ---------------- HELPER FUNCTION ----------------
 def create_or_get_user(user_info):
     """
