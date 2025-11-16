@@ -47,7 +47,7 @@ export default function TourCarousel({ tours }) {
           >
             {tours.map((tour) => (
               <SwiperSlide key={tour.id}>
-                <Link to={`/tour/${tour.id}`}>
+                <Link to={`/tours/${tour.id}`}>
                   <div className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shine-effect">
                     <img
                       src={tour.image}
