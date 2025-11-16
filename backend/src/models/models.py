@@ -184,6 +184,16 @@ def create_tables():
         );
     """)
 
+    # cities table for Vietnam provinces/cities
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS cities (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            code VARCHAR(10),
+            region VARCHAR(50)
+        );
+    """)
+
     conn.commit()
     cur.close()
     conn.close()

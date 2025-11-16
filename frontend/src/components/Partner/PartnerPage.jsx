@@ -8,51 +8,36 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { PlusCircle, Star, Users, Globe, Award, TrendingUp, Shield, CheckCircle2, ArrowRight, Calendar, Mail, Phone } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
+import PartnerTypeSelection from "./PartnerTypeSelection";
+import TransportationRegistration from "./TransportationRegistration";
+import RestaurantRegistration from "./RestaurantRegistration";
+import AccommodationRegistration from "./AccommodationRegistration";
 
 
 export default function PartnerPage() {
   const { translations: t } = useLanguage();
   const [partners] = useState([...mockPartners]);
   const [selectedPartner, setSelectedPartner] = useState(null);
-  const [formData, setFormData] = useState({
-    tourName: "",
-    location: "",
-    provider: "",
-    price: "",
-    startDate: "",
-    endDate: "",
-    description: "",
-  });
+  const [registrationStep, setRegistrationStep] = useState("selection"); // "selection", "transportation", "restaurant", "accommodation"
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSelectType = (type) => {
+    setRegistrationStep(type);
+  };
 
-    const newTour = {
-      id: Date.now(),
-      name: formData.tourName,
-      location: formData.location,
-      provider: formData.provider,
-      price: formData.price,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      description: formData.description,
-      status: "pending",
-    };
+  const handleBackToSelection = () => {
+    setRegistrationStep("selection");
+  };
 
-    const existing = JSON.parse(localStorage.getItem("pendingTours") || "[]");
-    localStorage.setItem("pendingTours", JSON.stringify([...existing, newTour]));
+  const handleRegistrationSubmit = (data) => {
+    console.log("Registration submitted:", data);
+    setIsRegistrationOpen(false);
+    setRegistrationStep("selection");
+  };
 
-    alert(t.partnerRegisterSuccess);
-
-    setFormData({
-      tourName: "",
-      location: "",
-      provider: "",
-      price: "",
-      startDate: "",
-      endDate: "",
-      description: "",
-    });
+  const handleOpenRegistration = () => {
+    setIsRegistrationOpen(true);
+    setRegistrationStep("selection");
   };
 
   return (
@@ -390,10 +375,11 @@ export default function PartnerPage() {
                 ))}
               </div>
 
-              <Dialog>
+              <Dialog open={isRegistrationOpen} onOpenChange={setIsRegistrationOpen}>
                 <DialogTrigger asChild>
                   <Button 
                     size="lg" 
+                    onClick={handleOpenRegistration}
                     className="h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500 dark:hover:from-blue-600 dark:hover:to-purple-600 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
                   >
                     <PlusCircle className="w-5 h-5 md:w-6 md:h-6 mr-2" />
@@ -402,119 +388,39 @@ export default function PartnerPage() {
                   </Button>
                 </DialogTrigger>
 
-                <DialogContent className="max-w-lg max-h-[85vh] my-8 overflow-y-auto bg-white dark:bg-gray-800 backdrop-blur-2xl border-gray-200 dark:border-gray-700 rounded-3xl shadow-2xl">
+                <DialogContent className="max-w-[98vw] w-[98vw] max-h-[98vh] my-2 overflow-y-auto bg-white dark:bg-gray-800 backdrop-blur-2xl border-gray-200 dark:border-gray-700 rounded-3xl shadow-2xl p-10">
                   <DialogHeader>
-                    <DialogTitle className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent text-center mb-2">
+                    <DialogTitle className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent text-center mb-4">
                       {t.partnerRegisterTitle}
                     </DialogTitle>
-                    <p className="text-gray-600 dark:text-gray-300 text-center text-sm md:text-base">
+                    <p className="text-gray-600 dark:text-gray-300 text-center text-lg md:text-xl">
                       {t.partnerRegisterSubtitle}
                     </p>
                   </DialogHeader>
 
-                  <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5 mt-6">
-                    <div className="grid md:grid-cols-2 gap-4 md:gap-5">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.partnerFormTourName} *</Label>
-                        <Input
-                          required
-                          value={formData.tourName}
-                          onChange={(e) => setFormData({ ...formData, tourName: e.target.value })}
-                          className="h-10 md:h-11 bg-gray-50 dark:bg-gray-900/60 backdrop-blur-sm border-gray-200 dark:border-gray-700/20 focus:ring-2 focus:ring-blue-500 dark:text-white"
-                          placeholder={t.partnerFormTourNamePlaceholder}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.partnerFormLocation} *</Label>
-                        <Input
-                          required
-                          value={formData.location}
-                          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                          className="h-10 md:h-11 bg-gray-50 dark:bg-gray-900/60 backdrop-blur-sm border-gray-200 dark:border-gray-700/20 focus:ring-2 focus:ring-blue-500 dark:text-white"
-                          placeholder={t.partnerFormLocationPlaceholder}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.partnerFormProvider} *</Label>
-                      <Input
-                        required
-                        value={formData.provider}
-                        onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
-                        className="h-10 md:h-11 bg-gray-50 dark:bg-gray-900/60 backdrop-blur-sm border-gray-200 dark:border-gray-700/20 focus:ring-2 focus:ring-blue-500 dark:text-white"
-                        placeholder={t.partnerFormProviderPlaceholder}
+                  <div className="mt-6">
+                    {registrationStep === "selection" && (
+                      <PartnerTypeSelection onSelectType={handleSelectType} />
+                    )}
+                    {registrationStep === "transportation" && (
+                      <TransportationRegistration 
+                        onBack={handleBackToSelection} 
+                        onSubmit={handleRegistrationSubmit}
                       />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.partnerFormPrice} *</Label>
-                      <Input
-                        type="number"
-                        required
-                        value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        className="h-10 md:h-11 bg-gray-50 dark:bg-gray-900/60 backdrop-blur-sm border-gray-200 dark:border-gray-700/20 focus:ring-2 focus:ring-blue-500 dark:text-white"
-                        placeholder={t.partnerFormPricePlaceholder}
+                    )}
+                    {registrationStep === "restaurant" && (
+                      <RestaurantRegistration 
+                        onBack={handleBackToSelection} 
+                        onSubmit={handleRegistrationSubmit}
                       />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 md:gap-5">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.partnerFormStartDate} *</Label>
-                        <Input
-                          type="date"
-                          required
-                          value={formData.startDate}
-                          onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                          className="h-10 md:h-11 bg-gray-50 dark:bg-gray-900/60 backdrop-blur-sm border-gray-200 dark:border-gray-700/20 focus:ring-2 focus:ring-blue-500 dark:text-white"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.partnerFormEndDate} *</Label>
-                        <Input
-                          type="date"
-                          required
-                          value={formData.endDate}
-                          onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                          className="h-10 md:h-11 bg-gray-50 dark:bg-gray-900/60 backdrop-blur-sm border-gray-200 dark:border-gray-700/20 focus:ring-2 focus:ring-blue-500 dark:text-white"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.partnerFormDescription}</Label>
-                      <Textarea
-                        placeholder={t.partnerFormDescriptionPlaceholder}
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        className="min-h-[100px] md:min-h-[120px] bg-gray-50 dark:bg-gray-900/60 backdrop-blur-sm border-gray-200 dark:border-gray-700/20 focus:ring-2 focus:ring-blue-500 dark:text-white"
+                    )}
+                    {registrationStep === "accommodation" && (
+                      <AccommodationRegistration 
+                        onBack={handleBackToSelection} 
+                        onSubmit={handleRegistrationSubmit}
                       />
-                    </div>
-
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/30 rounded-xl p-3 md:p-4 flex items-start gap-3">
-                      <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-blue-500 p-1.5 flex-shrink-0">
-                        <Shield className="w-full h-full text-white" />
-                      </div>
-                      <div className="text-xs md:text-sm text-blue-800 dark:text-blue-300">
-                        <p className="font-semibold mb-1">{t.partnerSecurityNotice}</p>
-                        <p className="text-blue-700 dark:text-blue-400">
-                          {t.partnerSecurityText}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3 pt-4">
-                      <Button 
-                        type="submit"
-                        className="flex-1 h-11 md:h-12 font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500 dark:hover:from-blue-600 dark:hover:to-purple-600 shadow-lg hover:shadow-xl transition-all duration-300"
-                      >
-                        <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 mr-2" />
-                        {t.confirmRegister}
-                      </Button>
-                    </div>
-                  </form>
+                    )}
+                  </div>
                 </DialogContent>
               </Dialog>
 
