@@ -301,12 +301,12 @@ def _create_default_admin():
             try:
                 bcrypt = current_app.bcrypt
                 hashed_pw = bcrypt.generate_password_hash(default_admin_password).decode('utf-8')
-            except RuntimeError:
-                # If running outside Flask app context, use a simple hash
-                # Note: This should ideally match the bcrypt format
-                print("⚠️  Running outside Flask context. Using fallback password hashing.")
-                import hashlib
-                hashed_pw = hashlib.sha256(default_admin_password.encode()).hexdigest()
+            except (RuntimeError, AttributeError):
+                # If running outside Flask app context, use bcrypt directly
+                from flask_bcrypt import Bcrypt
+                bcrypt = Bcrypt()
+                hashed_pw = bcrypt.generate_password_hash(default_admin_password).decode('utf-8')
+                print("⚠️  Running outside Flask context. Using standalone bcrypt.")
             
             cur.execute("""
                 INSERT INTO users (username, email, password, role)
