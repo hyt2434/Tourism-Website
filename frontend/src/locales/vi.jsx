@@ -333,6 +333,8 @@ export default {
   bestPriceFrom: "Giá tốt nhất từ",
 
   search: "Tìm kiếm",
+  create: "Tạo",
+  collapse: "Thu gọn",
   keywords: "Từ khóa",
   roundTrip: "Khứ hồi",
   multiCity: "Nhiều chặng",

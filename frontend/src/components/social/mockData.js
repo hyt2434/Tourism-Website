@@ -95,6 +95,126 @@ export const mockPosts = [
     location: "Phú Quốc, Kiên Giang",
     status: "approved",
   },
+  {
+    id: 5,
+    user: {
+      username: "tuan_adventurer",
+      avatar: "",
+      displayName: "Minh Tuấn",
+    },
+    image:
+      "https://images.unsplash.com/photo-1583417319070-4a69db38a482?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob2klYW4lMjB2aWV0bmFtfGVufDF8fHx8MTc2MTI5MDE3MHww&ixlib=rb-4.1.0&q=80&w=1080",
+    caption:
+      "Phố cổ Hội An về đêm thật lung linh! Đèn lồng rực rỡ khắp con phố 🏮✨",
+    hashtags: ["#HoiAn", "#AncientTown", "#LanternNight", "#VietnamCulture"],
+    linkedService: "Tour Hội An 1 ngày",
+    serviceType: "tour",
+    likes: 1876,
+    comments: 112,
+    timestamp: "3 ngày trước",
+    location: "Hội An, Quảng Nam",
+    status: "approved",
+  },
+  {
+    id: 6,
+    user: {
+      username: "nga_wanderlust",
+      avatar: "",
+      displayName: "Thu Nga",
+    },
+    image:
+      "https://images.unsplash.com/photo-1528127269322-539801943592?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkYWxhdCUyMHZpZXRuYW18ZW58MXx8fHwxNzYxMjkwMTcwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    caption:
+      "Đà Lạt mùa hoa dã quỳ nở vàng rực cả một vùng! Đẹp đến nao lòng 🌻💛",
+    hashtags: ["#DaLat", "#WildSunflower", "#FlowerCity", "#DaLatTour"],
+    linkedService: "Tour Đà Lạt 2N1Đ",
+    serviceType: "tour",
+    likes: 2543,
+    comments: 178,
+    timestamp: "4 ngày trước",
+    location: "Đà Lạt, Lâm Đồng",
+    status: "approved",
+  },
+  {
+    id: 7,
+    user: {
+      username: "khoa_photographer",
+      avatar: "",
+      displayName: "Đức Khoa",
+    },
+    image:
+      "https://images.unsplash.com/photo-1528127269322-539801943592?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwyfHxkYWxhdCUyMHZpZXRuYW18ZW58MXx8fHwxNzYxMjkwMTcwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    caption:
+      "Chợ nổi Cái Răng buổi sáng sớm - Nét văn hóa đặc trưng miền Tây 🚤🥭",
+    hashtags: ["#MekongDelta", "#FloatingMarket", "#CanTho", "#SouthernVietnam"],
+    linkedService: "Tour miền Tây 3N2Đ",
+    serviceType: "tour",
+    likes: 1432,
+    comments: 95,
+    timestamp: "5 ngày trước",
+    location: "Cần Thơ",
+    status: "approved",
+  },
+  {
+    id: 8,
+    user: {
+      username: "lan_explorer",
+      avatar: "",
+      displayName: "Phương Lan",
+    },
+    image:
+      "https://images.unsplash.com/photo-1609137144813-7d9921338f24?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuaW5oJTIwYmluaCUyMHZpZXRuYW18ZW58MXx8fHwxNzYxMjkwMTcwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    caption:
+      "Tràng An - Ninh Bình: Vịnh Hạ Long trên cạn với cảnh đẹp hùng vĩ 🏞️⛰️",
+    hashtags: ["#NinhBinh", "#TrangAn", "#HaLongOnLand", "#UNESCO"],
+    linkedService: "Tour Ninh Bình 1 ngày",
+    serviceType: "tour",
+    likes: 2987,
+    comments: 203,
+    timestamp: "6 ngày trước",
+    location: "Ninh Bình",
+    status: "approved",
+  },
+  {
+    id: 9,
+    user: {
+      username: "duc_backpacker",
+      avatar: "",
+      displayName: "Văn Đức",
+    },
+    image:
+      "https://images.unsplash.com/photo-1583417319070-4a69db38a482?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwyfHxob2klYW4lMjB2aWV0bmFtfGVufDF8fHx8MTc2MTI5MDE3MHww&ixlib=rb-4.1.0&q=80&w=1080",
+    caption:
+      "Cầu Vàng Đà Nẵng - Kiệt tác kiến trúc độc đáo giữa đại ngàn 🌉✋",
+    hashtags: ["#GoldenBridge", "#DaNang", "#BaNaHills", "#VietnamArchitecture"],
+    linkedService: "Tour Đà Nẵng - Bà Nà Hills",
+    serviceType: "tour",
+    likes: 4123,
+    comments: 267,
+    timestamp: "1 tuần trước",
+    location: "Đà Nẵng",
+    status: "approved",
+  },
+  {
+    id: 10,
+    user: {
+      username: "mai_foodlover",
+      avatar: "",
+      displayName: "Thu Mai",
+    },
+    image:
+      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmb29kJTIwdmlldG5hbXxlbnwxfHx8fDE3NjEyOTAxNzB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    caption:
+      "Bánh mì Sài Gòn - Món ăn đường phố được cả thế giới yêu thích! 🥖❤️",
+    hashtags: ["#BanhMi", "#SaigonFood", "#StreetFood", "#VietnameseCuisine"],
+    linkedService: "Food Tour Sài Gòn",
+    serviceType: "tour",
+    likes: 1654,
+    comments: 89,
+    timestamp: "1 tuần trước",
+    location: "Hồ Chí Minh",
+    status: "approved",
+  },
 ];
 
 export const suggestedHashtags = [
