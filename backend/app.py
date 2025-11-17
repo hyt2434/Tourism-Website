@@ -37,7 +37,7 @@ try:
     ensure_default_admin()
     
     # Initialize cities
-    from src.controllers.city_init import init_cities
+    from src.models.city_init import init_cities
     init_cities()
 except Exception as e:
     print(f"⚠️ Warning: Could not initialize database tables: {e}")
