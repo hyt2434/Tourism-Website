@@ -31,12 +31,13 @@ export default function Login() {
         // Store user info including role
         const currentUser = { 
           email: result.user.email,
-          username: result.user.username, 
+          username: result.user.username,
+          name: result.user.username, // Add name field
           role: result.user.role,
           id: result.user.id,
           isLoggedIn: true 
         };
-        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        localStorage.setItem("user", JSON.stringify(currentUser));
         window.dispatchEvent(new Event("storage"));
         
         // Redirect based on role

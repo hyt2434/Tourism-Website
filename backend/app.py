@@ -12,7 +12,7 @@ app = Flask(__name__, static_folder="src/static", static_url_path="/static")
 CORS(app, 
      resources={r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}},
      supports_credentials=True,
-     allow_headers=["Content-Type", "Authorization"],
+     allow_headers=["Content-Type", "Authorization", "X-User-Email"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 bcrypt = Bcrypt(app)

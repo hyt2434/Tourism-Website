@@ -11,7 +11,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     // Check if user is a client
-    const currentUser = localStorage.getItem("currentUser");
+    const currentUser = localStorage.getItem("user");
     if (currentUser) {
       const user = JSON.parse(currentUser);
       setUserRole(user.role);

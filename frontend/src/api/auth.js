@@ -56,3 +56,74 @@ export async function resetPassword(data) {
     return { error: "Network error" };
   }
 }
+
+export async function getUserProfile(email) {
+  try {
+    const response = await fetch(`${BASE_URL}/profile`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-Email": email,
+      },
+      credentials: "include",
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Get Profile Error:", error);
+    return { error: "Network error" };
+  }
+}
+
+export async function updateUserProfile(email, profileData) {
+  try {
+    const response = await fetch(`${BASE_URL}/profile`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-Email": email,
+      },
+      credentials: "include",
+      body: JSON.stringify(profileData),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Update Profile Error:", error);
+    return { error: "Network error" };
+  }
+}
+
+export async function changeUserPassword(email, passwordData) {
+  try {
+    const response = await fetch(`${BASE_URL}/change-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-Email": email,
+      },
+      credentials: "include",
+      body: JSON.stringify(passwordData),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Change Password Error:", error);
+    return { error: "Network error" };
+  }
+}
+
+export async function uploadUserAvatar(email, avatarData) {
+  try {
+    const response = await fetch(`${BASE_URL}/upload-avatar`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-Email": email,
+      },
+      credentials: "include",
+      body: JSON.stringify({ avatar: avatarData }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Upload Avatar Error:", error);
+    return { error: "Network error" };
+  }
+}

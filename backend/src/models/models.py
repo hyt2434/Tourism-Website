@@ -119,6 +119,8 @@ def create_tables():
             username VARCHAR(100) NOT NULL,
             email VARCHAR(100) UNIQUE NOT NULL,
             password VARCHAR(255),
+            phone VARCHAR(20),
+            avatar_url TEXT,
             role VARCHAR(20) DEFAULT 'client' CHECK (role IN ('admin', 'client')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );

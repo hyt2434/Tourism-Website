@@ -55,7 +55,7 @@ export default function TourDetail() {
 
   // Check user role from localStorage
   useEffect(() => {
-    const currentUser = localStorage.getItem("currentUser");
+    const currentUser = localStorage.getItem("user");
     if (currentUser) {
       const user = JSON.parse(currentUser);
       setUserRole(user.role);

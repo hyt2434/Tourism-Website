@@ -32,7 +32,7 @@ export default function PartnerManagePage() {
 
   useEffect(() => {
     // Check if user is a partner
-    const currentUser = localStorage.getItem("currentUser");
+    const currentUser = localStorage.getItem("user");
     if (currentUser) {
       const user = JSON.parse(currentUser);
       setUserRole(user.role);

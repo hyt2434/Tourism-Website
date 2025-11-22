@@ -436,6 +436,241 @@ def create_or_get_user(user_info):
     return user_data
 
 
+# ---------------- PROFILE MANAGEMENT ----------------
+@auth_routes.route('/profile', methods=['GET'])
+def get_profile():
+    """Get current user's profile information."""
+    # Get user email from session or header
+    email = session.get('user_email') or request.headers.get('X-User-Email')
+    
+    if not email:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        cur.execute("""
+            SELECT id, username, email, phone, avatar_url, role, created_at
+            FROM users
+            WHERE email = %s
+        """, (email,))
+        
+        user = cur.fetchone()
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        return jsonify({
+            "id": user[0],
+            "name": user[1],
+            "email": user[2],
+            "phone": user[3] or "",
+            "avatar": user[4] or "",
+            "role": user[5],
+            "created_at": user[6].isoformat() if user[6] else None
+        }), 200
+    
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch profile: {str(e)}"}), 500
+    
+    finally:
+        cur.close()
+        conn.close()
+
+
+@auth_routes.route('/profile', methods=['PUT'])
+def update_profile():
+    """Update current user's profile information."""
+    # Get user email from session or header
+    current_email = session.get('user_email') or request.headers.get('X-User-Email')
+    
+    if not current_email:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    data = request.get_json()
+    name = data.get("name")
+    new_email = data.get("email")
+    phone = data.get("phone")
+    avatar = data.get("avatar")
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        # If email is being changed, check if new email already exists
+        if new_email and new_email != current_email:
+            cur.execute("SELECT id FROM users WHERE email = %s", (new_email,))
+            if cur.fetchone():
+                return jsonify({"error": "Email already in use"}), 400
+        
+        # Update user profile
+        if new_email and new_email != current_email:
+            # Update with new email
+            cur.execute("""
+                UPDATE users
+                SET username = %s, email = %s, phone = %s, avatar_url = %s
+                WHERE email = %s
+                RETURNING id, username, email, phone, avatar_url, role
+            """, (name, new_email, phone, avatar, current_email))
+            
+            # Update session with new email
+            session['user_email'] = new_email
+        else:
+            # Update without changing email
+            cur.execute("""
+                UPDATE users
+                SET username = %s, phone = %s, avatar_url = %s
+                WHERE email = %s
+                RETURNING id, username, email, phone, avatar_url, role
+            """, (name, phone, avatar, current_email))
+        
+        user = cur.fetchone()
+        conn.commit()
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        return jsonify({
+            "message": "Profile updated successfully",
+            "user": {
+                "id": user[0],
+                "name": user[1],
+                "email": user[2],
+                "phone": user[3] or "",
+                "avatar": user[4] or "",
+                "role": user[5]
+            }
+        }), 200
+    
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": f"Failed to update profile: {str(e)}"}), 500
+    
+    finally:
+        cur.close()
+        conn.close()
+
+
+@auth_routes.route('/change-password', methods=['POST'])
+def change_password():
+    """Change current user's password."""
+    # Get user email from session or header
+    email = session.get('user_email') or request.headers.get('X-User-Email')
+    
+    if not email:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    data = request.get_json()
+    current_password = data.get("current_password")
+    new_password = data.get("new_password")
+    
+    if not current_password or not new_password:
+        return jsonify({"error": "Current password and new password are required"}), 400
+    
+    if len(new_password) < 6:
+        return jsonify({"error": "New password must be at least 6 characters long"}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        # Get current password hash
+        cur.execute("SELECT password FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        
+        if not user or not user[0]:
+            return jsonify({"error": "Cannot change password for OAuth users"}), 400
+        
+        # Verify current password
+        bcrypt = current_app.bcrypt
+        if not bcrypt.check_password_hash(user[0], current_password):
+            return jsonify({"error": "Current password is incorrect"}), 401
+        
+        # Hash new password
+        hashed_pw = bcrypt.generate_password_hash(new_password).decode('utf-8')
+        
+        # Update password
+        cur.execute("""
+            UPDATE users
+            SET password = %s
+            WHERE email = %s
+        """, (hashed_pw, email))
+        
+        conn.commit()
+        
+        return jsonify({"message": "Password changed successfully"}), 200
+    
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": f"Failed to change password: {str(e)}"}), 500
+    
+    finally:
+        cur.close()
+        conn.close()
+
+
+@auth_routes.route('/upload-avatar', methods=['POST'])
+def upload_avatar():
+    """Upload avatar image (base64 format)."""
+    # Get user email from session or header
+    email = session.get('user_email') or request.headers.get('X-User-Email')
+    
+    if not email:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    data = request.get_json()
+    avatar_data = data.get("avatar")
+    
+    if not avatar_data:
+        return jsonify({"error": "Avatar data is required"}), 400
+    
+    # For now, we'll store the base64 data directly
+    # In production, you might want to upload to a file storage service (S3, Cloudinary, etc.)
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        cur.execute("""
+            UPDATE users
+            SET avatar_url = %s
+            WHERE email = %s
+            RETURNING avatar_url
+        """, (avatar_data, email))
+        
+        result = cur.fetchone()
+        conn.commit()
+        
+        if not result:
+            return jsonify({"error": "User not found"}), 404
+        
+        return jsonify({
+            "message": "Avatar uploaded successfully",
+            "avatar": result[0]
+        }), 200
+    
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": f"Failed to upload avatar: {str(e)}"}), 500
+    
+    finally:
+        cur.close()
+        conn.close()
+
+
 # ---------------- PASSWORD RESET FUNCTIONALITY ----------------
 
 # Store reset codes in memory (in production, use Redis or database)

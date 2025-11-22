@@ -41,7 +41,7 @@ export default function NAV() {
   // ✅ Kiểm tra đăng nhập và role
   useEffect(() => {
     const checkAuth = () => {
-      const userStr = localStorage.getItem("currentUser");
+      const userStr = localStorage.getItem("user");
       if (userStr) {
         const user = JSON.parse(userStr);
         setIsLoggedIn(true);
@@ -73,7 +73,7 @@ export default function NAV() {
 
   // ✅ Đăng xuất
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
+    localStorage.removeItem("user");
     setIsLoggedIn(false);
     setUserMenuOpen(false);
     navigate("/");
