@@ -33,7 +33,7 @@ export default function AccountPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300 text-lg">Loading...</p>
+          <p className="text-gray-600 dark:text-gray-300 text-lg">{translations.loading}</p>
         </div>
       </div>
     );
@@ -44,9 +44,9 @@ export default function AccountPage() {
   }
 
   const tabs = [
-    { id: "bookings", name: "My Bookings", icon: Calendar },
-    { id: "favorites", name: "Favorites", icon: Heart },
-    { id: "settings", name: "Settings", icon: Settings },
+    { id: "bookings", name: translations.accountPage.myBookings, icon: Calendar },
+    { id: "favorites", name: translations.accountPage.favorites, icon: Heart },
+    { id: "settings", name: translations.accountPage.settings, icon: Settings },
   ];
 
   return (
@@ -55,10 +55,10 @@ export default function AccountPage() {
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            My Account
+            {translations.accountPage.title}
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            Manage your bookings, favorites, and preferences
+            {translations.accountPage.subtitle}
           </p>
         </div>
 
@@ -93,7 +93,7 @@ export default function AccountPage() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <Package className="text-indigo-600" size={28} />
-                    My Bookings
+                    {translations.accountPage.myBookings}
                   </h2>
                 </div>
                 <div className="space-y-4">
@@ -107,11 +107,11 @@ export default function AccountPage() {
                           </h3>
                           <span className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1">
                             <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></span>
-                            Confirmed
+                            {translations.accountPage.confirmed}
                           </span>
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                          Booking ID: #HLB-12345
+                          {translations.accountPage.bookingId}: #HLB-12345
                         </p>
                       </div>
                     </div>
@@ -119,31 +119,31 @@ export default function AccountPage() {
                       <div className="flex items-center gap-3 bg-white dark:bg-gray-600 p-3 rounded-lg">
                         <Calendar className="text-indigo-600 dark:text-indigo-400" size={20} />
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Date</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{translations.accountPage.date}</p>
                           <p className="font-semibold text-gray-900 dark:text-white">Dec 25, 2025</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 bg-white dark:bg-gray-600 p-3 rounded-lg">
                         <Clock className="text-purple-600 dark:text-purple-400" size={20} />
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Duration</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">3 Days</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{translations.accountPage.duration}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">3 {translations.accountPage.days}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 bg-white dark:bg-gray-600 p-3 rounded-lg">
                         <MapPin className="text-rose-600 dark:text-rose-400" size={20} />
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Guests</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">2 Adults</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{translations.guests}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">2 {translations.adults}</p>
                         </div>
                       </div>
                     </div>
                     <div className="flex gap-3">
                       <button className="flex-1 bg-indigo-600 text-white py-2.5 px-4 rounded-lg hover:bg-indigo-700 transition-colors font-medium">
-                        View Details
+                        {translations.accountPage.viewDetails}
                       </button>
                       <button className="flex-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 py-2.5 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors font-medium">
-                        Cancel Booking
+                        {translations.accountPage.cancelBooking}
                       </button>
                     </div>
                   </div>
@@ -152,13 +152,13 @@ export default function AccountPage() {
                   <div className="text-center py-16 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                     <Package className="mx-auto text-gray-400 dark:text-gray-500 mb-4" size={64} />
                     <p className="text-gray-500 dark:text-gray-400 text-lg">
-                      No other bookings found
+                      {translations.accountPage.noOtherBookings}
                     </p>
                     <button
                       onClick={() => navigate("/")}
                       className="mt-4 bg-indigo-600 text-white px-6 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
                     >
-                      Explore Tours
+                      {translations.exploreTours}
                     </button>
                   </div>
                 </div>
@@ -170,22 +170,22 @@ export default function AccountPage() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <Heart className="text-rose-600" size={28} />
-                    Favorite Tours
+                    {translations.accountPage.favoriteTours}
                   </h2>
                 </div>
                 <div className="text-center py-20 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-gray-700/50 dark:to-gray-800/50 rounded-xl">
                   <Heart className="mx-auto text-rose-400 dark:text-rose-500 mb-4" size={64} />
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                    No favorites yet
+                    {translations.accountPage.noFavorites}
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400 mb-6">
-                    Start exploring and save your favorite tours!
+                    {translations.accountPage.startExploring}
                   </p>
                   <button
                     onClick={() => navigate("/")}
                     className="bg-gradient-to-r from-rose-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all font-medium"
                   >
-                    Discover Tours
+                    {translations.accountPage.discoverTours}
                   </button>
                 </div>
               </div>
@@ -196,7 +196,7 @@ export default function AccountPage() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <Settings className="text-gray-600 dark:text-gray-400" size={28} />
-                    Account Settings
+                    {translations.accountPage.accountSettings}
                   </h2>
                 </div>
 
@@ -206,10 +206,10 @@ export default function AccountPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1">
-                          Email Notifications
+                          {translations.accountPage.emailNotifications}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Receive booking confirmations and updates
+                          {translations.accountPage.emailNotificationsDesc}
                         </p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -224,10 +224,10 @@ export default function AccountPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1">
-                          Marketing Emails
+                          {translations.accountPage.marketingEmails}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Receive special offers and promotions
+                          {translations.accountPage.marketingEmailsDesc}
                         </p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -242,10 +242,10 @@ export default function AccountPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1">
-                          SMS Notifications
+                          {translations.accountPage.smsNotifications}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Get text updates about your bookings
+                          {translations.accountPage.smsNotificationsDesc}
                         </p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -258,13 +258,13 @@ export default function AccountPage() {
                   {/* Danger Zone */}
                   <div className="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 rounded-xl p-6 border-2 border-red-200 dark:border-red-800 mt-8">
                     <h3 className="font-bold text-red-900 dark:text-red-400 text-lg mb-2">
-                      Danger Zone
+                      {translations.accountPage.dangerZone}
                     </h3>
                     <p className="text-sm text-red-700 dark:text-red-300 mb-4">
-                      Once you delete your account, there is no going back. Please be certain.
+                      {translations.accountPage.dangerZoneDesc}
                     </p>
                     <button className="bg-red-600 text-white py-2.5 px-6 rounded-lg hover:bg-red-700 transition-colors font-medium">
-                      Delete Account
+                      {translations.accountPage.deleteAccount}
                     </button>
                   </div>
                 </div>

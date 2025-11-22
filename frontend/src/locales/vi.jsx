@@ -7,6 +7,7 @@ export default {
   profile: "Hồ sơ",
   logout: "Đăng xuất",
   login: "Đăng nhập",
+  myAccount: "Tài khoản của tôi",
 
   northernVietnam: "Miền Bắc Việt Nam",
   centralVietnam: "Miền Trung Việt Nam",
@@ -784,5 +785,44 @@ export default {
     ctaDescription: "Tham gia cùng hàng nghìn du khách tin tưởng chúng tôi tạo nên cuộc phiêu lưu hoàn hảo tại Việt Nam",
     exploreTours: "Khám phá Tour",
     becomePartner: "Trở thành Đối tác",
+  },
+
+  // Account Page
+  accountPage: {
+    title: "Tài khoản của tôi",
+    subtitle: "Quản lý đặt chỗ, yêu thích và tùy chọn của bạn",
+    myBookings: "Đơn đặt của tôi",
+    favorites: "Yêu thích",
+    settings: "Cài đặt",
+    
+    // Bookings Tab
+    bookingId: "Mã đặt chỗ",
+    confirmed: "Đã xác nhận",
+    date: "Ngày",
+    duration: "Thời lượng",
+    days: "Ngày",
+    viewDetails: "Xem chi tiết",
+    cancelBooking: "Hủy đặt chỗ",
+    noOtherBookings: "Không có đơn đặt chỗ nào khác",
+    
+    // Favorites Tab
+    favoriteTours: "Tour yêu thích",
+    noFavorites: "Chưa có mục yêu thích",
+    startExploring: "Bắt đầu khám phá và lưu các tour yêu thích của bạn!",
+    discoverTours: "Khám phá Tour",
+    
+    // Settings Tab
+    accountSettings: "Cài đặt tài khoản",
+    emailNotifications: "Thông báo Email",
+    emailNotificationsDesc: "Nhận xác nhận đặt chỗ và cập nhật",
+    marketingEmails: "Email tiếp thị",
+    marketingEmailsDesc: "Nhận ưu đãi đặc biệt và khuyến mãi",
+    smsNotifications: "Thông báo SMS",
+    smsNotificationsDesc: "Nhận cập nhật qua tin nhắn về đặt chỗ của bạn",
+    
+    // Danger Zone
+    dangerZone: "Vùng nguy hiểm",
+    dangerZoneDesc: "Khi bạn xóa tài khoản, sẽ không thể khôi phục. Vui lòng cân nhắc kỹ.",
+    deleteAccount: "Xóa tài khoản",
   },
 };

@@ -29,7 +29,7 @@ export default function NAV() {
     { name: translations.about, path: "/aboutus", roles: ["admin", "partner", "client"] },
     { name: "Admin", path: "/admin", roles: ["admin"] },
     { name: translations.partnerManagePage || "Partner Manage", path: "/partner-manage", roles: ["partner"] },
-    { name: "My Account", path: "/account", roles: ["client"] },
+    { name: translations.myAccount, path: "/account", roles: ["client"] },
   ];
 
   // Filter navigation items based on user role

@@ -8,6 +8,7 @@ export default {
   profile: "Profile",
   logout: "Logout",
   login: "Login",
+  myAccount: "My Account",
 
   // Regions & Cities for Flight Search
   northernVietnam: "Northern Vietnam",
@@ -809,5 +810,44 @@ export default {
     ctaDescription: "Join thousands of travelers who trust us to create their perfect Vietnamese adventure",
     exploreTours: "Explore Tours",
     becomePartner: "Become a Partner",
+  },
+
+  // Account Page
+  accountPage: {
+    title: "My Account",
+    subtitle: "Manage your bookings, favorites, and preferences",
+    myBookings: "My Bookings",
+    favorites: "Favorites",
+    settings: "Settings",
+    
+    // Bookings Tab
+    bookingId: "Booking ID",
+    confirmed: "Confirmed",
+    date: "Date",
+    duration: "Duration",
+    days: "Days",
+    viewDetails: "View Details",
+    cancelBooking: "Cancel Booking",
+    noOtherBookings: "No other bookings found",
+    
+    // Favorites Tab
+    favoriteTours: "Favorite Tours",
+    noFavorites: "No favorites yet",
+    startExploring: "Start exploring and save your favorite tours!",
+    discoverTours: "Discover Tours",
+    
+    // Settings Tab
+    accountSettings: "Account Settings",
+    emailNotifications: "Email Notifications",
+    emailNotificationsDesc: "Receive booking confirmations and updates",
+    marketingEmails: "Marketing Emails",
+    marketingEmailsDesc: "Receive special offers and promotions",
+    smsNotifications: "SMS Notifications",
+    smsNotificationsDesc: "Get text updates about your bookings",
+    
+    // Danger Zone
+    dangerZone: "Danger Zone",
+    dangerZoneDesc: "Once you delete your account, there is no going back. Please be certain.",
+    deleteAccount: "Delete Account",
   },
 };
