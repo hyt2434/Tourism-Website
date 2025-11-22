@@ -27,11 +27,26 @@ export default function Login() {
       const result = await loginUser({ email, password });
       setIsLoading(false);
 
-      if (result.message) {
-        const currentUser = { email, username: result.user, isLoggedIn: true };
-        localStorage.setItem("user", JSON.stringify(currentUser));
+      if (result.message && result.user) {
+        // Store user info including role
+        const currentUser = { 
+          email: result.user.email,
+          username: result.user.username, 
+          role: result.user.role,
+          id: result.user.id,
+          isLoggedIn: true 
+        };
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
         window.dispatchEvent(new Event("storage"));
-        navigate("/");
+        
+        // Redirect based on role
+        if (result.user.role === "admin") {
+          navigate("/admin");
+        } else if (result.user.role === "partner") {
+          navigate("/partner-manage");
+        } else {
+          navigate("/"); // client goes to home
+        }
       } else {
         alert(result.error || translations.loginError);
       }

@@ -16,23 +16,40 @@ export default function NAV() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const navigate = useNavigate();
   const { language, toggleLanguage, translations } = useLanguage();
 
-  const navItems = [
-    { name: translations.home, path: "/" },
-    { name: translations.tour, path: "/tour" },
-    { name: translations.social, path: "/social" },
-    { name: translations.partner, path: "/partner" },
-    { name: translations.about, path: "/aboutus" },
-    { name: translations.admin, path: "/admin" },
+  // All navigation items with role restrictions
+  const allNavItems = [
+    { name: translations.home, path: "/", roles: ["admin", "partner", "client"] },
+    { name: translations.tour, path: "/tour", roles: ["admin", "partner", "client"] },
+    { name: translations.social, path: "/social", roles: ["admin", "partner", "client"] },
+    { name: translations.partner, path: "/partner", roles: ["admin", "partner", "client"] },
+    { name: translations.about, path: "/aboutus", roles: ["admin", "partner", "client"] },
+    { name: "Admin", path: "/admin", roles: ["admin"] },
+    { name: "Partner Manage", path: "/partner-manage", roles: ["partner"] },
+    { name: "My Account", path: "/account", roles: ["client"] },
   ];
 
-  // ✅ Kiểm tra đăng nhập
+  // Filter navigation items based on user role
+  const navItems = allNavItems.filter(item => {
+    if (!userRole) return !item.roles || item.roles.length === 0; // Show public items when not logged in
+    return item.roles.includes(userRole);
+  });
+
+  // ✅ Kiểm tra đăng nhập và role
   useEffect(() => {
     const checkAuth = () => {
-      const user = localStorage.getItem("currentUser");
-      setIsLoggedIn(!!user);
+      const userStr = localStorage.getItem("currentUser");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        setIsLoggedIn(true);
+        setUserRole(user.role);
+      } else {
+        setIsLoggedIn(false);
+        setUserRole(null);
+      }
     };
     checkAuth();
     window.addEventListener("storage", checkAuth);
@@ -80,12 +97,12 @@ export default function NAV() {
             MagicViet
           </div>
           {/* Desktop Navigation */}
-          <div className="hidden md:grid grid-cols-[repeat(6,minmax(110px,1fr))_auto_auto_auto] items-center gap-1">
+          <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
-                className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white hover:font-bold transition-all whitespace-nowrap text-center py-2"
+                className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white hover:font-bold transition-all whitespace-nowrap text-center py-2 px-3"
               >
                 {item.name}
               </Link>
