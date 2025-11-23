@@ -3,6 +3,7 @@ import "leaflet/dist/leaflet.css";
 import "./utils/leaflet-setup";
 import NAV from "./components/NAV";
 import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
 import TourCarousel from "./components/TourCarousel";
 import Login from "./components/Login";
 import Register from "./components/Register";
@@ -73,6 +74,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       {/* 👇 Bọc toàn bộ app trong div hỗ trợ dark mode */}
       <div className="bg-white text-black dark:bg-gray-900 dark:text-white min-h-screen transition-colors duration-300">
         <NAV />
