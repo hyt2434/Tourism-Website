@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
+import { Alert, AlertDescription } from "../ui/alert";
 import { 
   Search, 
   Edit, 
@@ -21,67 +22,121 @@ import {
   Filter
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "../ui/dialog";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import { useLanguage } from "../../context/LanguageContext";
+import { getAllUsers, updateUser, updateUserStatus, resetUserPassword, deleteUser } from "../../api/admin";
 
 export default function UserManagementTab() {
   const { translations: t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [filterRole, setFilterRole] = useState("all");
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [resetPasswordInfo, setResetPasswordInfo] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: "", description: "", onConfirm: () => {} });
+  
+  // Form state for edit dialog
+  const [editForm, setEditForm] = useState({ username: "", email: "", role: "" });
 
-  // Mock data
-  const users = [
-    {
-      id: 1,
-      username: "John Doe",
-      email: "john.doe@example.com",
-      role: "client",
-      status: "active",
-      createdAt: "2024-01-15",
-      lastLogin: "2025-11-15",
-      totalBookings: 12
-    },
-    {
-      id: 2,
-      username: "Jane Smith",
-      email: "jane.smith@example.com",
-      role: "partner",
-      status: "active",
-      createdAt: "2024-03-20",
-      lastLogin: "2025-11-14",
-      totalBookings: 0
-    },
-    {
-      id: 3,
-      username: "Mike Johnson",
-      email: "mike.j@example.com",
-      role: "client",
-      status: "banned",
-      createdAt: "2024-06-10",
-      lastLogin: "2025-10-20",
-      totalBookings: 5
-    },
-    {
-      id: 4,
-      username: "Sarah Wilson",
-      email: "sarah.w@example.com",
-      role: "admin",
-      status: "active",
-      createdAt: "2023-12-01",
-      lastLogin: "2025-11-16",
-      totalBookings: 0
-    },
-    {
-      id: 5,
-      username: "David Brown",
-      email: "david.brown@example.com",
-      role: "client",
-      status: "active",
-      createdAt: "2024-09-05",
-      lastLogin: "2025-11-13",
-      totalBookings: 28
+  // Fetch users on component mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getAllUsers();
+      setUsers(data.users || []);
+    } catch (err) {
+      setError(err.message);
+      console.error("Failed to fetch users:", err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
+  };
+
+  // Handle user role update
+  const handleUpdateUser = async (userId, username, email, role) => {
+    try {
+      console.log("[DEBUG Frontend] Updating user:", { userId, username, email, role });
+      await updateUser(userId, { username, email, role });
+      await fetchUsers(); // Refresh the list
+      setEditDialogOpen(false);
+      showToast("User updated successfully", "success");
+    } catch (err) {
+      showToast(`Failed to update user: ${err.message}`, "error");
+    }
+  };
+
+  // Handle user status toggle (ban/unban)
+  const handleToggleStatus = async (userId, currentStatus) => {
+    const newStatus = currentStatus === "active" ? "banned" : "active";
+    const action = newStatus === "banned" ? "ban" : "unban";
+    
+    setConfirmDialog({
+      open: true,
+      title: `${action.charAt(0).toUpperCase() + action.slice(1)} User`,
+      description: `Are you sure you want to ${action} this user?`,
+      onConfirm: async () => {
+        try {
+          await updateUserStatus(userId, newStatus);
+          await fetchUsers();
+          showToast(`User ${action}ned successfully`, "success");
+        } catch (err) {
+          showToast(`Failed to ${action} user: ${err.message}`, "error");
+        }
+      }
+    });
+  };
+
+  // Handle password reset
+  const handleResetPassword = async (userId) => {
+    setConfirmDialog({
+      open: true,
+      title: "Reset Password",
+      description: "Are you sure you want to reset this user's password?",
+      onConfirm: async () => {
+        try {
+          const result = await resetUserPassword(userId);
+          setResetPasswordInfo(result);
+          setResetPasswordDialogOpen(true);
+          await fetchUsers();
+        } catch (err) {
+          showToast(`Failed to reset password: ${err.message}`, "error");
+        }
+      }
+    });
+  };
+
+  // Handle user deletion
+  const handleDeleteUser = async (userId) => {
+    setConfirmDialog({
+      open: true,
+      title: "Delete User",
+      description: "Are you sure you want to delete this user? This action cannot be undone.",
+      onConfirm: async () => {
+        try {
+          await deleteUser(userId);
+          await fetchUsers();
+          showToast("User deleted successfully", "success");
+        } catch (err) {
+          showToast(`Failed to delete user: ${err.message}`, "error");
+        }
+      }
+    });
+  };
 
   const getRoleBadgeColor = (role) => {
     switch(role) {
@@ -109,6 +164,46 @@ export default function UserManagementTab() {
 
   return (
     <div className="space-y-6">
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className="fixed top-4 right-4 z-[100] animate-in slide-in-from-top-5 duration-300">
+          <div className={`min-w-[300px] max-w-md rounded-lg shadow-2xl border-l-4 p-4 backdrop-blur-sm ${
+            toast.type === "success" 
+              ? "bg-white/95 dark:bg-gray-800/95 border-green-500" 
+              : "bg-white/95 dark:bg-gray-800/95 border-red-500"
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className={`p-1 rounded-full ${
+                toast.type === "success" 
+                  ? "bg-green-100 dark:bg-green-900/30" 
+                  : "bg-red-100 dark:bg-red-900/30"
+              }`}>
+                {toast.type === "success" ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                ) : (
+                  <Ban className="w-5 h-5 text-red-600 dark:text-red-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {toast.type === "success" ? "Success" : "Error"}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{toast.message}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        onConfirm={confirmDialog.onConfirm}
+      />
+
       {/* Search and Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -157,7 +252,7 @@ export default function UserManagementTab() {
       </div>
 
       {/* User Table */}
-      <Card className="bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700">
+      <Card className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
             <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -168,24 +263,36 @@ export default function UserManagementTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.username}</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.role}</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.status}</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.joined}</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.lastLogin}</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.bookings}</th>
-                  <th className="text-right py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">{t.actions}</th>
-                </tr>
-              </thead>
-              <tbody>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-600 dark:text-gray-300 mt-4">Loading users...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-red-600 dark:text-red-400 font-semibold">Error: {error}</p>
+              <Button onClick={fetchUsers} className="mt-4 bg-blue-600 hover:bg-blue-700">Retry</Button>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-700/50">
+                    <tr className="border-b-2 border-gray-200 dark:border-gray-600">
+                      <th className="text-left py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.username}</th>
+                      <th className="text-left py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.role}</th>
+                      <th className="text-left py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.status}</th>
+                      <th className="text-left py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.joined}</th>
+                      <th className="text-left py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.lastLogin}</th>
+                      <th className="text-left py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.bookings}</th>
+                      <th className="text-right py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.actions}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                 {filteredUsers.map((user) => (
                   <tr 
                     key={user.id} 
-                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
                   >
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
@@ -216,13 +323,13 @@ export default function UserManagementTab() {
                         {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
                       </Badge>
                     </td>
-                    <td className="py-4 px-4 text-gray-700 dark:text-gray-300">
+                    <td className="py-4 px-4 text-gray-800 dark:text-gray-200">
                       <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-gray-400" />
+                        <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                         {user.createdAt}
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-gray-700 dark:text-gray-300 text-sm">
+                    <td className="py-4 px-4 text-gray-800 dark:text-gray-200 text-sm">
                       {user.lastLogin}
                     </td>
                     <td className="py-4 px-4">
@@ -232,48 +339,77 @@ export default function UserManagementTab() {
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center justify-end gap-2">
-                        <Dialog>
+                        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
                           <DialogTrigger asChild>
                             <Button 
                               size="sm" 
                               variant="outline"
-                              className="hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                              onClick={() => setSelectedUser(user)}
+                              className="hover:bg-blue-50 dark:hover:bg-blue-900/20 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setEditForm({ username: user.username, email: user.email, role: user.role });
+                              }}
                             >
                               <Edit className="w-4 h-4 mr-1" />
                               {t.edit}
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-md">
+                          <DialogContent className="max-w-md bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700">
                             <DialogHeader>
-                              <DialogTitle>{t.editUser}: {selectedUser?.username}</DialogTitle>
-                              <DialogDescription>
+                              <DialogTitle className="text-gray-900 dark:text-white">{t.editUser}: {selectedUser?.username}</DialogTitle>
+                              <DialogDescription className="text-gray-600 dark:text-gray-300">
                                 {t.updateUserInfo}
                               </DialogDescription>
                             </DialogHeader>
                             
                             <div className="space-y-4 mt-4">
                               <div>
-                                <Label>{t.username}</Label>
-                                <Input defaultValue={selectedUser?.username} className="mt-1" />
+                                <Label className="text-gray-700 dark:text-gray-200">{t.username}</Label>
+                                <Input 
+                                  value={editForm.username}
+                                  onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100" 
+                                />
                               </div>
                               <div>
-                                <Label>{t.email}</Label>
-                                <Input type="email" defaultValue={selectedUser?.email} className="mt-1" />
+                                <Label className="text-gray-700 dark:text-gray-200">{t.email}</Label>
+                                <Input 
+                                  type="email" 
+                                  value={editForm.email}
+                                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                                  className="mt-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100" 
+                                />
                               </div>
                               <div>
-                                <Label>{t.role}</Label>
-                                <select className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800">
-                                  <option value="client" selected={selectedUser?.role === "client"}>{t.client}</option>
-                                  <option value="partner" selected={selectedUser?.role === "partner"}>{t.partner}</option>
-                                  <option value="admin" selected={selectedUser?.role === "admin"}>{t.adminRole}</option>
+                                <Label className="text-gray-700 dark:text-gray-200">{t.role}</Label>
+                                <select 
+                                  className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                  value={editForm.role}
+                                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                                >
+                                  <option value="client">{t.client}</option>
+                                  <option value="partner">{t.partner}</option>
+                                  <option value="admin">{t.adminRole}</option>
                                 </select>
                               </div>
                             </div>
                             
                             <DialogFooter className="mt-6">
-                              <Button variant="outline">{t.cancel}</Button>
-                              <Button className="bg-blue-600 hover:bg-blue-700">{t.saveChanges}</Button>
+                              <Button 
+                                variant="outline" 
+                                onClick={() => setEditDialogOpen(false)}
+                                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
+                                {t.cancel}
+                              </Button>
+                              <Button 
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                onClick={() => {
+                                  handleUpdateUser(selectedUser.id, editForm.username, editForm.email, editForm.role);
+                                }}
+                              >
+                                {t.saveChanges}
+                              </Button>
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
@@ -282,6 +418,8 @@ export default function UserManagementTab() {
                           size="sm" 
                           variant="outline"
                           className="hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400"
+                          onClick={() => handleResetPassword(user.id)}
+                          title="Reset Password"
                         >
                           <Key className="w-4 h-4" />
                         </Button>
@@ -291,6 +429,8 @@ export default function UserManagementTab() {
                             size="sm" 
                             variant="outline"
                             className="hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
+                            onClick={() => handleToggleStatus(user.id, user.status)}
+                            title="Ban User"
                           >
                             <Ban className="w-4 h-4" />
                           </Button>
@@ -299,6 +439,8 @@ export default function UserManagementTab() {
                             size="sm" 
                             variant="outline"
                             className="hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400"
+                            onClick={() => handleToggleStatus(user.id, user.status)}
+                            title="Unban User"
                           >
                             <CheckCircle2 className="w-4 h-4" />
                           </Button>
@@ -317,8 +459,65 @@ export default function UserManagementTab() {
               <p className="text-gray-500 dark:text-gray-400">{t.noUsersFound}</p>
             </div>
           )}
+            </>
+          )}
         </CardContent>
       </Card>
+
+      {/* Password Reset Dialog */}
+      <Dialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+        <DialogContent className="max-w-md bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-green-600 dark:text-green-400">Password Reset Successful</DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-300">
+              The user's password has been reset successfully.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {resetPasswordInfo && (
+            <div className="space-y-4 mt-4 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+              <div>
+                <Label className="text-sm text-gray-600 dark:text-gray-400">User</Label>
+                <p className="font-semibold text-gray-900 dark:text-white">{resetPasswordInfo.user?.username}</p>
+              </div>
+              <div>
+                <Label className="text-sm text-gray-600 dark:text-gray-400">Email</Label>
+                <p className="font-semibold text-gray-900 dark:text-white">{resetPasswordInfo.user?.email}</p>
+              </div>
+              <div className="border-t pt-4 border-gray-200 dark:border-gray-600">
+                <Label className="text-sm text-gray-600 dark:text-gray-400">New Password</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="flex-1 bg-white dark:bg-gray-900 px-3 py-2 rounded border border-gray-300 dark:border-gray-600 font-mono text-lg text-gray-900 dark:text-white">
+                    {resetPasswordInfo.new_password}
+                  </code>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(resetPasswordInfo.new_password);
+                      showToast("Password copied to clipboard!", "success");
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Copy
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Please share this password with the user securely.
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="mt-6">
+            <Button 
+              onClick={() => setResetPasswordDialogOpen(false)}
+              className="bg-gray-600 hover:bg-gray-700 text-white"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

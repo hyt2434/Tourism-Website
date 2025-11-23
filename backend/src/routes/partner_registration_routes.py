@@ -3,6 +3,7 @@ from src.database import get_connection
 import secrets
 import string
 from datetime import datetime
+import re
 
 partner_registration_bp = Blueprint('partner_registration', __name__, url_prefix='/api/partner-registrations')
 
@@ -11,6 +12,25 @@ def generate_random_password(length=12):
     characters = string.ascii_letters + string.digits + string.punctuation
     password = ''.join(secrets.choice(characters) for _ in range(length))
     return password
+
+
+def generate_friendly_password(business_name, email, phone, seed=None):
+    """Generate a friendly password that's easy to remember.
+
+    Pattern: <cleaned-partner-name>@123
+    - cleaned-partner-name: alphanumeric lowercase from business name with spaces removed
+    - suffix: @123
+    
+    Example: "Cozy Hotel" -> "cozyhotel@123"
+    """
+    # cleaned business name - remove all non-alphanumeric characters and convert to lowercase
+    cleaned = re.sub(r'[^A-Za-z0-9]', '', (business_name or '')).lower()
+    
+    # fallback if business name is empty
+    if not cleaned:
+        cleaned = 'partner'
+    
+    return f"{cleaned}@123"
 
 
 @partner_registration_bp.route('/', methods=['POST'])
@@ -219,13 +239,13 @@ def approve_registration(registration_id):
         
         cur = conn.cursor()
         
-        # Get registration details
+        # Get registration details (include phone so we can build a friendly password)
         cur.execute("""
-            SELECT business_name, email, partner_type, status
+            SELECT business_name, email, partner_type, status, phone
             FROM partner_registrations
             WHERE id = %s
         """, (registration_id,))
-        
+
         registration = cur.fetchone()
         
         if not registration:
@@ -241,6 +261,7 @@ def approve_registration(registration_id):
         business_name = registration[0]
         email = registration[1]
         partner_type = registration[2]
+        phone = registration[4]
         
         # Check if user already exists with this email
         cur.execute("SELECT id FROM users WHERE email = %s", (email,))
@@ -251,8 +272,8 @@ def approve_registration(registration_id):
             conn.close()
             return jsonify({'error': 'User with this email already exists'}), 400
         
-        # Generate random password
-        random_password = generate_random_password()
+        # Generate friendly password: <cleaned-business-name>@123
+        random_password = generate_friendly_password(business_name, email, phone)
         
         # Hash password
         bcrypt = current_app.bcrypt
@@ -260,10 +281,10 @@ def approve_registration(registration_id):
         
         # Create user account with 'partner' role
         cur.execute("""
-            INSERT INTO users (username, email, password, role)
-            VALUES (%s, %s, %s, 'partner')
+            INSERT INTO users (username, email, password, role, partner_type)
+            VALUES (%s, %s, %s, 'partner', %s)
             RETURNING id
-        """, (business_name, email, hashed_password))
+        """, (business_name, email, hashed_password, partner_type))
         
         user_id = cur.fetchone()[0]
         

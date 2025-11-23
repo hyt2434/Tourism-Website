@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from dotenv import load_dotenv
@@ -7,12 +7,13 @@ import os
 load_dotenv()
 
 app = Flask(__name__, static_folder="src/static", static_url_path="/static")
+app.url_map.strict_slashes = False
 
 # Configure CORS to allow frontend requests
 CORS(app, 
      resources={r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}},
      supports_credentials=True,
-     allow_headers=["Content-Type", "Authorization"],
+     allow_headers=["Content-Type", "Authorization", "X-User-Email", "X-User-ID"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 bcrypt = Bcrypt(app)
@@ -27,20 +28,23 @@ from src.routes.suggestion_routes import suggestion_routes
 from src.routes.tour_routes import tour_routes
 from src.routes.city_routes import city_bp
 from src.routes.partner_registration_routes import partner_registration_bp
+from src.routes.accommodation_routes import accommodation_bp
+from src.routes.restaurant_routes import restaurant_bp
+from src.routes.transportation_routes import transportation_bp
 
 try:
     from src.models.models import create_tables
     create_tables()
-    print("✅ Database tables checked/created successfully.")
+    print("[OK] Database tables checked/created successfully.")
     
     # Ensure default admin exists
     ensure_default_admin()
     
     # Initialize cities
-    from src.controllers.city_init import init_cities
+    from src.models.city_init import init_cities
     init_cities()
 except Exception as e:
-    print(f"⚠️ Warning: Could not initialize database tables: {e}")
+    print(f"[WARNING] Could not initialize database tables: {e}")
 
 # Đăng ký routes chính
 app.register_blueprint(auth_routes, url_prefix="/api/auth")
@@ -51,10 +55,30 @@ app.register_blueprint(suggestion_routes, url_prefix="/api/suggestions")
 app.register_blueprint(tour_routes, url_prefix="/api/tours")
 app.register_blueprint(city_bp, url_prefix="/api")
 app.register_blueprint(partner_registration_bp)
+# Partner service management routes
+app.register_blueprint(accommodation_bp)
+app.register_blueprint(restaurant_bp)
+app.register_blueprint(transportation_bp)
+
+# Print registered routes for debugging
+print("\n[OK] Registered Partner Service Routes:")
+print("   - /api/partner/accommodations")
+print("   - /api/partner/restaurants")
+print("   - /api/partner/transportation")
 
 @app.route("/test")
 def test():
     return {"message": "API is working!", "status": "OK"}, 200
+
+@app.route("/api/test-partner")
+def test_partner():
+    """Test endpoint for partner routes"""
+    partner_id = request.headers.get('X-User-ID')
+    return {
+        "message": "Partner endpoint working",
+        "partner_id": partner_id,
+        "status": "OK"
+    }, 200
 
 
 if __name__ == "__main__":
