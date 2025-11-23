@@ -121,7 +121,8 @@ def create_tables():
             password VARCHAR(255),
             phone VARCHAR(20),
             avatar_url TEXT,
-            role VARCHAR(20) DEFAULT 'client' CHECK (role IN ('admin', 'client')),
+            role VARCHAR(20) DEFAULT 'client' CHECK (role IN ('admin', 'client', 'partner')),
+            partner_type VARCHAR(50) CHECK (partner_type IN ('accommodation', 'transportation', 'restaurant') OR partner_type IS NULL),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)

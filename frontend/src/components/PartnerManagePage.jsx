@@ -5,13 +5,18 @@ import {
   Briefcase, Calendar, DollarSign, Star, TrendingUp, 
   Package, Clock, CheckCircle, AlertCircle, ArrowUpRight, Headphones
 } from "lucide-react";
+import AccommodationManagement from "./AccommodationManagement";
+import RestaurantManagement from "./RestaurantManagement";
+import TransportationManagement from "./TransportationManagement";
 
 export default function PartnerManagePage() {
   const navigate = useNavigate();
   const { translations: t } = useLanguage();
   const [userRole, setUserRole] = useState(null);
+  const [partnerType, setPartnerType] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
+  const [currentView, setCurrentView] = useState('dashboard'); // dashboard, accommodations, restaurants, transportation
 
   // Mock statistics - in production, fetch from API
   const [stats, setStats] = useState({
@@ -37,6 +42,7 @@ export default function PartnerManagePage() {
       const user = JSON.parse(currentUser);
       setUserRole(user.role);
       setUserName(user.username || "Partner");
+      setPartnerType(user.partnerType || null);
       
       if (user.role !== "partner") {
         // Redirect to home if not partner
@@ -49,6 +55,35 @@ export default function PartnerManagePage() {
     setLoading(false);
   }, [navigate]);
 
+  // Helper function to check if a service type is allowed for this partner
+  const canManageServiceType = (serviceType) => {
+    if (!partnerType) return false; // If no partner type, don't allow any service
+    
+    // Map service types to partner types
+    const serviceMapping = {
+      'accommodation': 'accommodation',
+      'transportation': 'transportation',
+      'restaurant': 'restaurant',
+      'tours': 'all', // All partners can manage tours
+      'bookings': 'all', // All partners can view bookings
+      'revenue': 'all', // All partners can view revenue
+      'reviews': 'all' // All partners can view reviews
+    };
+    
+    const requiredType = serviceMapping[serviceType];
+    return requiredType === 'all' || requiredType === partnerType;
+  };
+
+  // Get partner type display name
+  const getPartnerTypeDisplay = () => {
+    const typeMap = {
+      'accommodation': t.partnerTypeAccommodation || 'Accommodation',
+      'transportation': t.partnerTypeTransportation || 'Transportation',
+      'restaurant': t.partnerTypeRestaurant || 'Restaurant'
+    };
+    return typeMap[partnerType] || partnerType;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -59,6 +94,34 @@ export default function PartnerManagePage() {
 
   if (userRole !== "partner") {
     return null;
+  }
+
+  // Render service management component based on current view
+  if (currentView !== 'dashboard') {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 p-4">
+          <div className="max-w-7xl mx-auto flex items-center gap-4">
+            <button
+              onClick={() => setCurrentView('dashboard')}
+              className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+            >
+              ← {t.partnerBackToDashboard || "Back to Dashboard"}
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {currentView === 'accommodations' && (t.serviceManagement?.accommodations || "Accommodations")}
+              {currentView === 'restaurants' && (t.serviceManagement?.restaurants || "Restaurants")}
+              {currentView === 'transportation' && (t.serviceManagement?.transportation || "Transportation")}
+            </h1>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto">
+          {currentView === 'accommodations' && <AccommodationManagement />}
+          {currentView === 'restaurants' && <RestaurantManagement />}
+          {currentView === 'transportation' && <TransportationManagement />}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -83,6 +146,11 @@ export default function PartnerManagePage() {
                     <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
                       {t.partnerWelcome || "Welcome back"}, {userName}!
                     </h1>
+                    {partnerType && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {t.partnerTypeLabel || "Partner Type"}: <span className="font-semibold text-blue-600 dark:text-blue-400">{getPartnerTypeDisplay()}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 text-lg ml-15">
@@ -185,29 +253,83 @@ export default function PartnerManagePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {/* Management Cards - 2 columns */}
             <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 auto-rows-fr">
-              {/* Services Card */}
-              <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <Briefcase className="w-7 h-7 text-white" />
+              {/* Services Card - Conditionally show based on partner type */}
+              {canManageServiceType('accommodation') && (
+                <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <Briefcase className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                        {t.partnerMyAccommodations || "My Accommodations"}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{stats.totalServices} {t.partnerTotal || "total"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                      {t.partnerMyServices || "My Services"}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{stats.totalServices} {t.partnerTotal || "total"}</p>
-                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 min-h-[40px]">
+                    {t.partnerAccommodationsDesc || "Manage your hotels, resorts, and accommodation services"}
+                  </p>
+                  <button 
+                    onClick={() => setCurrentView('accommodations')}
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
+                    <span>{t.partnerManageAccommodations || "Manage Accommodations"}</span>
+                    <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                  </button>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 min-h-[40px]">
-                  {t.partnerMyServicesDesc || "Manage your tours, accommodations, and transport services"}
-                </p>
-                <button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
-                  <span>{t.partnerManageServices || "Manage Services"}</span>
-                  <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                </button>
-              </div>
+              )}
 
-              {/* Bookings Card */}
+              {canManageServiceType('transportation') && (
+                <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <Briefcase className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                        {t.partnerMyTransportation || "My Transportation"}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{stats.totalServices} {t.partnerTotal || "total"}</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 min-h-[40px]">
+                    {t.partnerTransportationDesc || "Manage your vehicle fleet and transportation services"}
+                  </p>
+                  <button 
+                    onClick={() => setCurrentView('transportation')}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
+                    <span>{t.partnerManageTransportation || "Manage Transportation"}</span>
+                    <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                  </button>
+                </div>
+              )}
+
+              {canManageServiceType('restaurant') && (
+                <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <Briefcase className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                        {t.partnerMyRestaurants || "My Restaurants"}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{stats.totalServices} {t.partnerTotal || "total"}</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 min-h-[40px]">
+                    {t.partnerRestaurantsDesc || "Manage your restaurants and dining services"}
+                  </p>
+                  <button 
+                    onClick={() => setCurrentView('restaurants')}
+                    className="w-full bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
+                    <span>{t.partnerManageRestaurants || "Manage Restaurants"}</span>
+                    <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                  </button>
+                </div>
+              )}
+
+              {/* Bookings Card - Available to all partners */}
               <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -229,7 +351,7 @@ export default function PartnerManagePage() {
                 </button>
               </div>
 
-              {/* Revenue Card */}
+              {/* Revenue Card - Available to all partners */}
               <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -251,7 +373,7 @@ export default function PartnerManagePage() {
                 </button>
               </div>
 
-              {/* Reviews Card */}
+              {/* Reviews Card - Available to all partners */}
               <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">

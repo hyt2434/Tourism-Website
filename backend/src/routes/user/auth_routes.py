@@ -260,7 +260,7 @@ def login():
     cur = conn.cursor()
     
     # Include role and status in the query
-    cur.execute("SELECT id, username, email, password, role, status FROM users WHERE email = %s", (email,))
+    cur.execute("SELECT id, username, email, password, role, status, partner_type FROM users WHERE email = %s", (email,))
     row = cur.fetchone()
     cur.close()
     conn.close()
@@ -268,7 +268,7 @@ def login():
     if not row:
         return jsonify({"error": "Invalid email or password."}), 401
 
-    user_id, username, email, hashed_pw, role, status = row
+    user_id, username, email, hashed_pw, role, status, partner_type = row
     
     # Check if user is banned
     if status == 'banned':
@@ -280,15 +280,21 @@ def login():
         # Store user email in session for role-based access
         session['user_email'] = email
         
-        # Return user info including role
+        # Return user info including role and partner_type
+        user_data = {
+            "id": user_id,
+            "username": username,
+            "email": email,
+            "role": role
+        }
+        
+        # Only include partner_type if user is a partner
+        if role == 'partner' and partner_type:
+            user_data["partnerType"] = partner_type
+        
         return jsonify({
             "message": "Successfully logged in.",
-            "user": {
-                "id": user_id,
-                "username": username,
-                "email": email,
-                "role": role
-            }
+            "user": user_data
         }), 200
     else:
         return jsonify({"error": "Invalid password."}), 401
@@ -585,7 +591,7 @@ def get_profile():
     
     try:
         cur.execute("""
-            SELECT id, username, email, phone, avatar_url, role, created_at
+            SELECT id, username, email, phone, avatar_url, role, created_at, partner_type
             FROM users
             WHERE email = %s
         """, (email,))
@@ -595,7 +601,7 @@ def get_profile():
         if not user:
             return jsonify({"error": "User not found"}), 404
         
-        return jsonify({
+        profile_data = {
             "id": user[0],
             "name": user[1],
             "email": user[2],
@@ -603,7 +609,13 @@ def get_profile():
             "avatar": user[4] or "",
             "role": user[5],
             "created_at": user[6].isoformat() if user[6] else None
-        }), 200
+        }
+        
+        # Include partner_type if user is a partner
+        if user[5] == 'partner' and user[7]:
+            profile_data["partnerType"] = user[7]
+        
+        return jsonify(profile_data), 200
     
     except Exception as e:
         return jsonify({"error": f"Failed to fetch profile: {str(e)}"}), 500

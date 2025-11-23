@@ -281,10 +281,10 @@ def approve_registration(registration_id):
         
         # Create user account with 'partner' role
         cur.execute("""
-            INSERT INTO users (username, email, password, role)
-            VALUES (%s, %s, %s, 'partner')
+            INSERT INTO users (username, email, password, role, partner_type)
+            VALUES (%s, %s, %s, 'partner', %s)
             RETURNING id
-        """, (business_name, email, hashed_password))
+        """, (business_name, email, hashed_password, partner_type))
         
         user_id = cur.fetchone()[0]
         

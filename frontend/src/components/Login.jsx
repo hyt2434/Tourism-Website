@@ -28,7 +28,7 @@ export default function Login() {
       setIsLoading(false);
 
       if (result.message && result.user) {
-        // Store user info including role
+        // Store user info including role and partnerType (if partner)
         const currentUser = { 
           email: result.user.email,
           username: result.user.username,
@@ -37,6 +37,12 @@ export default function Login() {
           id: result.user.id,
           isLoggedIn: true 
         };
+        
+        // Add partnerType if user is a partner
+        if (result.user.role === "partner" && result.user.partnerType) {
+          currentUser.partnerType = result.user.partnerType;
+        }
+        
         localStorage.setItem("user", JSON.stringify(currentUser));
         window.dispatchEvent(new Event("storage"));
         
