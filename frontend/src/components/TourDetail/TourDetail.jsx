@@ -50,7 +50,17 @@ export default function TourDetail() {
   const [showStickyButton, setShowStickyButton] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [userRole, setUserRole] = useState(null);
   const headerButtonRef = useRef(null);
+
+  // Check user role from localStorage
+  useEffect(() => {
+    const currentUser = localStorage.getItem("user");
+    if (currentUser) {
+      const user = JSON.parse(currentUser);
+      setUserRole(user.role);
+    }
+  }, []);
 
   // Map ID từ URL sang tourId trong data
   const mappedTourId = tourIdMapping[id] || "halong-hanoi";
@@ -145,14 +155,16 @@ export default function TourDetail() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button
-                ref={headerButtonRef}
-                onClick={() => setIsBookingPanelOpen(true)}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
-                size="lg"
-              >
-                {translations.bookNow || "Đặt Tour Ngay"}
-              </Button>
+              {userRole !== "partner" && (
+                <Button
+                  ref={headerButtonRef}
+                  onClick={() => setIsBookingPanelOpen(true)}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+                  size="lg"
+                >
+                  {translations.bookNow || "Đặt Tour Ngay"}
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="icon"
@@ -605,7 +617,7 @@ export default function TourDetail() {
       </div>
 
       {/* Sticky Booking Button - Bottom Mobile */}
-      {showStickyButton && (
+      {showStickyButton && userRole !== "partner" && (
         <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-50 md:hidden">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex flex-col">
@@ -627,7 +639,7 @@ export default function TourDetail() {
       )}
 
       {/* Sticky Booking Button - Side Desktop */}
-      {showStickyButton && (
+      {showStickyButton && userRole !== "partner" && (
         <div className="hidden md:block fixed bottom-8 right-8 z-50">
           <Button
             onClick={() => setIsBookingPanelOpen(true)}
@@ -640,11 +652,13 @@ export default function TourDetail() {
       )}
 
       {/* Floating Booking Panel */}
-      <BookingPanel
-        basePrice={tourData.basePrice}
-        isOpen={isBookingPanelOpen}
-        onClose={() => setIsBookingPanelOpen(false)}
-      />
+      {userRole !== "partner" && (
+        <BookingPanel
+          basePrice={tourData.basePrice}
+          isOpen={isBookingPanelOpen}
+          onClose={() => setIsBookingPanelOpen(false)}
+        />
+      )}
     </div>
   );
 }

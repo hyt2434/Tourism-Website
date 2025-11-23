@@ -16,8 +16,8 @@ def get_connection():
             password=os.getenv("DB_PASSWORD"),
             port=os.getenv("DB_PORT")
         )
-        print("✅ Database connected successfully!")
+        print("[OK] Database connected successfully!")
         return conn
     except Exception as e:
-        print("❌ Database connection failed:", e)
+        print("[ERROR] Database connection failed:", e)
         return None

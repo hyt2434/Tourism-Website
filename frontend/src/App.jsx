@@ -3,6 +3,7 @@ import "leaflet/dist/leaflet.css";
 import "./utils/leaflet-setup";
 import NAV from "./components/NAV";
 import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
 import TourCarousel from "./components/TourCarousel";
 import Login from "./components/Login";
 import Register from "./components/Register";
@@ -11,6 +12,8 @@ import Profile from "./components/Profile";
 import SocialPage from "./components/social/SocialPage";
 import ToursPage from "./components/ToursPage";
 import AdminPage from "./components/AdminSections/AdminPage";
+import PartnerManagePage from "./components/PartnerManagePage";
+import AccountPage from "./components/AccountPage";
 import WeatherBanner from "./components/home/WeatherBanner";
 import TourDetail from "./components/TourDetail/TourDetail";
 import HeroSection from "./components/home/HeroSection";
@@ -71,6 +74,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       {/* 👇 Bọc toàn bộ app trong div hỗ trợ dark mode */}
       <div className="bg-white text-black dark:bg-gray-900 dark:text-white min-h-screen transition-colors duration-300">
         <NAV />
@@ -104,6 +108,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/partner-manage" element={<PartnerManagePage />} />
+          <Route path="/account" element={<AccountPage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/aboutus" element={<AboutUs />} />
           <Route path="/social" element={<SocialPage />} />

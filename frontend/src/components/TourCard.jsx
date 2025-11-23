@@ -1,11 +1,21 @@
 import { Heart, MapPin, Calendar, Users } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext"; // 👈 thêm
 
 export default function TourCard({ tour, viewMode = "grid" }) {
   const [isFavorite, setIsFavorite] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const { translations } = useLanguage(); // 👈 lấy translations
+
+  // Check user role from localStorage
+  useEffect(() => {
+    const currentUser = localStorage.getItem("user");
+    if (currentUser) {
+      const user = JSON.parse(currentUser);
+      setUserRole(user.role);
+    }
+  }, []);
 
   // List view layout
   if (viewMode === "list") {
@@ -97,9 +107,11 @@ export default function TourCard({ tour, viewMode = "grid" }) {
                 {tour.price.toLocaleString("vi-VN")} đ
               </p>
             </div>
-            <button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm">
-              {translations.bookNow}
-            </button>
+            {userRole !== "partner" && (
+              <button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm">
+                {translations.bookNow}
+              </button>
+            )}
           </div>
         </div>
       </Link>
@@ -193,9 +205,11 @@ export default function TourCard({ tour, viewMode = "grid" }) {
               {tour.price.toLocaleString("vi-VN")} đ
             </p>
           </div>
-          <button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
-            {translations.bookNow}
-          </button>
+          {userRole !== "partner" && (
+            <button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
+              {translations.bookNow}
+            </button>
+          )}
         </div>
       </div>
     </Link>

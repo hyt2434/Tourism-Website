@@ -16,23 +16,40 @@ export default function NAV() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const navigate = useNavigate();
   const { language, toggleLanguage, translations } = useLanguage();
 
-  const navItems = [
-    { name: translations.home, path: "/" },
-    { name: translations.tour, path: "/tour" },
-    { name: translations.social, path: "/social" },
-    { name: translations.partner, path: "/partner" },
-    { name: translations.about, path: "/aboutus" },
-    { name: translations.admin, path: "/admin" },
+  // All navigation items with role restrictions
+  const allNavItems = [
+    { name: translations.home, path: "/", roles: ["admin", "partner", "client"], public: true },
+    { name: translations.tour, path: "/tour", roles: ["admin", "partner", "client"], public: true },
+    { name: translations.social, path: "/social", roles: ["admin", "partner", "client"], public: true },
+    { name: translations.partner, path: "/partner", roles: ["admin", "partner", "client"], public: true },
+    { name: translations.about, path: "/aboutus", roles: ["admin", "partner", "client"], public: true },
+    { name: "Admin", path: "/admin", roles: ["admin"], public: false },
+    { name: translations.partnerManagePage || "Partner Manage", path: "/partner-manage", roles: ["partner"], public: false },
+    { name: translations.myAccount, path: "/account", roles: ["client"], public: false },
   ];
 
-  // ✅ Kiểm tra đăng nhập
+  // Filter navigation items based on user role
+  const navItems = allNavItems.filter(item => {
+    if (!userRole) return item.public; // Show only public items when not logged in
+    return item.roles.includes(userRole);
+  });
+
+  // ✅ Kiểm tra đăng nhập và role
   useEffect(() => {
     const checkAuth = () => {
-      const user = localStorage.getItem("currentUser");
-      setIsLoggedIn(!!user);
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        setIsLoggedIn(true);
+        setUserRole(user.role);
+      } else {
+        setIsLoggedIn(false);
+        setUserRole(null);
+      }
     };
     checkAuth();
     window.addEventListener("storage", checkAuth);
@@ -56,8 +73,9 @@ export default function NAV() {
 
   // ✅ Đăng xuất
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
+    localStorage.removeItem("user");
     setIsLoggedIn(false);
+    setUserRole(null);
     setUserMenuOpen(false);
     navigate("/");
   };
@@ -80,12 +98,12 @@ export default function NAV() {
             MagicViet
           </div>
           {/* Desktop Navigation */}
-          <div className="hidden md:grid grid-cols-[repeat(6,minmax(110px,1fr))_auto_auto_auto] items-center gap-1">
+          <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
-                className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white hover:font-bold transition-all whitespace-nowrap text-center py-2"
+                className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white hover:font-bold transition-all whitespace-nowrap text-center py-2 px-3"
               >
                 {item.name}
               </Link>
