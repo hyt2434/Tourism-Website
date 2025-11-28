@@ -32,6 +32,7 @@ from src.routes.partner.partner_registration_routes import partner_registration_
 from src.routes.partner.accommodation_routes import accommodation_bp
 from src.routes.partner.restaurant_routes import restaurant_bp
 from src.routes.partner.transportation_routes import transportation_bp
+from src.routes.admin.tour_admin_routes import tour_admin_bp
 
 try:
     from src.models.models import create_tables
@@ -65,6 +66,14 @@ try:
     #Initialize transportation schema fix
     from src.migration.migrate_transportation_schema_fix import migrate
     migrate()
+    
+    # Initialize tour tables
+    from src.migration.migrate_tour_tables import migrate_tour_tables
+    migrate_tour_tables()
+
+    # Initialize cities in transportation services
+    from src.migration.migrate_add_cities_to_transportation import apply_migration
+    apply_migration()
 
 
 except Exception as e:
@@ -83,12 +92,16 @@ app.register_blueprint(partner_registration_bp)
 app.register_blueprint(accommodation_bp)
 app.register_blueprint(restaurant_bp)
 app.register_blueprint(transportation_bp)
+# Admin routes
+app.register_blueprint(tour_admin_bp)
 
 # Print registered routes for debugging
 print("\n[OK] Registered Partner Service Routes:")
 print("   - /api/partner/accommodations")
 print("   - /api/partner/restaurants")
 print("   - /api/partner/transportation")
+print("\n[OK] Registered Admin Routes:")
+print("   - /api/admin/tours")
 
 @app.route("/test")
 def test():

@@ -12,10 +12,12 @@ import {
   Clock,
   Shield,
   Bell,
+  Map,
 } from "lucide-react";
 import UserManagementTab from "./UserManagementTab";
 import PartnerManagementTab from "./PartnerManagementTab";
 import SocialModerationTab from "./SocialModerationTab";
+import TourManagementTab from "./TourManagementTab";
 import { useLanguage } from "../../context/LanguageContext";
 
 export default function AdminPage() {
@@ -114,7 +116,7 @@ export default function AdminPage() {
           className="space-y-6"
         >
           <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700 p-2">
-            <TabsList className="grid w-full grid-cols-3 bg-gray-100 dark:bg-gray-800 rounded-xl p-1.5 h-auto gap-2">
+            <TabsList className="grid w-full grid-cols-4 bg-gray-100 dark:bg-gray-800 rounded-xl p-1.5 h-auto gap-2">
               <TabsTrigger
                 value="users"
                 className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
@@ -130,6 +132,14 @@ export default function AdminPage() {
                 <UserCheck className="w-5 h-5" />
                 <span className="hidden sm:inline">{translations.partnerManagement}</span>
                 <span className="sm:hidden">{translations.partner}s</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="tours"
+                className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+              >
+                <Map className="w-5 h-5" />
+                <span className="hidden sm:inline">Tour Management</span>
+                <span className="sm:hidden">Tours</span>
               </TabsTrigger>
               <TabsTrigger
                 value="social"
@@ -149,6 +159,10 @@ export default function AdminPage() {
 
             <TabsContent value="partners" className="mt-0">
               <PartnerManagementTab />
+            </TabsContent>
+
+            <TabsContent value="tours" className="mt-0">
+              <TourManagementTab />
             </TabsContent>
 
             <TabsContent value="social" className="mt-0">
