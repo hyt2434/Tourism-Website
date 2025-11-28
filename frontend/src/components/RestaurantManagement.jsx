@@ -6,9 +6,11 @@ import { processImages } from '../utils/imageUpload';
 const RestaurantManagement = () => {
   const { translations: t } = useLanguage();
   const [restaurants, setRestaurants] = useState([]);
+  const [cities, setCities] = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showMenuForm, setShowMenuForm] = useState(false);
+  const [selectedMenuItem, setSelectedMenuItem] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -17,9 +19,10 @@ const RestaurantManagement = () => {
     name: '',
     description: '',
     address: '',
-    city: '',
+    cityId: '',
     cuisineType: 'vietnamese',
-    operatingHours: '',
+    openingTime: '10:00',
+    closingTime: '22:00',
     phone: '',
     images: [],
   });
@@ -31,14 +34,28 @@ const RestaurantManagement = () => {
     price: 0,
     isAvailable: true,
     isVegetarian: false,
-    isVegan: false,
-    isGlutenFree: false,
     allergens: [],
+    mealTypes: {
+      breakfast: false,
+      lunch: false,
+      dinner: false,
+    },
+    images: [],
   });
 
   useEffect(() => {
     loadRestaurants();
+    loadCities();
   }, []);
+
+  const loadCities = async () => {
+    try {
+      const data = await restaurantAPI.getCities();
+      setCities(data);
+    } catch (err) {
+      console.error('Failed to load cities:', err);
+    }
+  };
 
   const loadRestaurants = async () => {
     try {
@@ -99,9 +116,10 @@ const RestaurantManagement = () => {
       name: restaurant.name,
       description: restaurant.description || '',
       address: restaurant.address || '',
-      city: restaurant.city || '',
+      cityId: restaurant.cityId || '',
       cuisineType: restaurant.cuisineType || 'vietnamese',
-      operatingHours: restaurant.operatingHours || '',
+      openingTime: restaurant.openingTime || '10:00',
+      closingTime: restaurant.closingTime || '22:00',
       phone: restaurant.phone || '',
       images: [],
     });
@@ -114,9 +132,10 @@ const RestaurantManagement = () => {
       name: '',
       description: '',
       address: '',
-      city: '',
+      cityId: '',
       cuisineType: 'vietnamese',
-      operatingHours: '',
+      openingTime: '10:00',
+      closingTime: '22:00',
       phone: '',
       images: [],
     });
@@ -135,8 +154,17 @@ const RestaurantManagement = () => {
     e.preventDefault();
     try {
       if (!selectedRestaurant) return;
-      await restaurantAPI.menu.create(selectedRestaurant.id, menuFormData);
+      
+      if (selectedMenuItem) {
+        // Update existing menu item
+        await restaurantAPI.menu.update(selectedRestaurant.id, selectedMenuItem.id, menuFormData);
+      } else {
+        // Create new menu item
+        await restaurantAPI.menu.create(selectedRestaurant.id, menuFormData);
+      }
+      
       setShowMenuForm(false);
+      setSelectedMenuItem(null);
       resetMenuForm();
       loadMenuItems(selectedRestaurant.id);
       alert(t.serviceManagement.saveSuccess);
@@ -156,7 +184,28 @@ const RestaurantManagement = () => {
     }
   };
 
+  const handleMenuEdit = (item) => {
+    setSelectedMenuItem(item);
+    setMenuFormData({
+      name: item.name,
+      description: item.description || '',
+      category: item.category || 'main_course',
+      price: item.price || 0,
+      isAvailable: item.isAvailable !== undefined ? item.isAvailable : true,
+      isVegetarian: item.isVegetarian || false,
+      allergens: item.allergens || [],
+      mealTypes: item.mealTypes || {
+        breakfast: false,
+        lunch: false,
+        dinner: false,
+      },
+      images: [],
+    });
+    setShowMenuForm(true);
+  };
+
   const resetMenuForm = () => {
+    setSelectedMenuItem(null);
     setMenuFormData({
       name: '',
       description: '',
@@ -164,10 +213,29 @@ const RestaurantManagement = () => {
       price: 0,
       isAvailable: true,
       isVegetarian: false,
-      isVegan: false,
-      isGlutenFree: false,
       allergens: [],
+      mealTypes: {
+        breakfast: false,
+        lunch: false,
+        dinner: false,
+      },
+      images: [],
     });
+  };
+
+  const handleMenuImageUpload = async (e) => {
+    try {
+      const files = e.target.files;
+      const base64Images = await processImages(files);
+      setMenuFormData({ ...menuFormData, images: [...menuFormData.images, ...base64Images] });
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const removeMenuImage = (index) => {
+    const updatedImages = menuFormData.images.filter((_, i) => i !== index);
+    setMenuFormData({ ...menuFormData, images: updatedImages });
   };
 
   const cuisineTypes = ['vietnamese', 'chinese', 'japanese', 'korean', 'italian', 'french', 'thai', 'indian', 'western', 'seafood'];
@@ -204,8 +272,14 @@ const RestaurantManagement = () => {
               )}
               <h3 className="font-bold text-lg mb-2">{restaurant.name}</h3>
               <p className="text-gray-600 text-sm mb-2">{t.serviceManagement[restaurant.cuisineType] || restaurant.cuisineType}</p>
-              <p className="text-gray-500 text-xs mb-2">{restaurant.city}</p>
-              <p className="text-sm text-gray-600">{restaurant.operatingHours}</p>
+              <p className="text-gray-500 text-xs mb-2">
+                {cities.find(c => c.id === restaurant.cityId)?.name || restaurant.cityId}
+              </p>
+              <p className="text-sm text-gray-600">
+                {restaurant.openingTime && restaurant.closingTime
+                  ? `${restaurant.openingTime} - ${restaurant.closingTime}`
+                  : restaurant.openingHours || ''}
+              </p>
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={() => handleEdit(restaurant)}
@@ -254,12 +328,18 @@ const RestaurantManagement = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">{t.serviceManagement.city}</label>
-                <input
-                  type="text"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                <select
+                  value={formData.cityId}
+                  onChange={(e) => setFormData({ ...formData, cityId: e.target.value })}
                   className="w-full border rounded px-3 py-2"
-                />
+                >
+                  <option value="">{t.serviceManagement.selectCity || 'Select City'}</option>
+                  {cities.map((city) => (
+                    <option key={city.id} value={city.id}>
+                      {city.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium mb-1">{t.serviceManagement.address}</label>
@@ -300,14 +380,22 @@ const RestaurantManagement = () => {
                   className="w-full border rounded px-3 py-2"
                 />
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.operatingHours}</label>
+              <div>
+                <label className="block text-sm font-medium mb-1">{t.serviceManagement.openingTime || 'Opening Time'}</label>
                 <input
-                  type="text"
-                  value={formData.operatingHours}
-                  onChange={(e) => setFormData({ ...formData, operatingHours: e.target.value })}
+                  type="time"
+                  value={formData.openingTime}
+                  onChange={(e) => setFormData({ ...formData, openingTime: e.target.value })}
                   className="w-full border rounded px-3 py-2"
-                  placeholder="e.g., 10:00 - 22:00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{t.serviceManagement.closingTime || 'Closing Time'}</label>
+                <input
+                  type="time"
+                  value={formData.closingTime}
+                  onChange={(e) => setFormData({ ...formData, closingTime: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
                 />
               </div>
               <div className="md:col-span-2">
@@ -369,6 +457,16 @@ const RestaurantManagement = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {menuItems.map((item) => (
                 <div key={item.id} className="border rounded p-4">
+                  {/* Display menu item images */}
+                  {item.images && item.images.length > 0 && (
+                    <div className="mb-3">
+                      <img
+                        src={item.images[0].url}
+                        alt={item.name}
+                        className="w-full h-32 object-cover rounded"
+                      />
+                    </div>
+                  )}
                   <h4 className="font-bold">{item.name}</h4>
                   <p className="text-xs text-gray-500">{t.serviceManagement[item.category] || item.category}</p>
                   <p className="text-sm text-gray-600 mt-1">{item.description}</p>
@@ -384,18 +482,40 @@ const RestaurantManagement = () => {
                         {t.serviceManagement.isVegan}
                       </span>
                     )}
-                    {item.isGlutenFree && (
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                        {t.serviceManagement.isGlutenFree}
-                      </span>
+                    {item.mealTypes && (
+                      <>
+                        {item.mealTypes.breakfast && (
+                          <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                            {t.serviceManagement.breakfast}
+                          </span>
+                        )}
+                        {item.mealTypes.lunch && (
+                          <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                            {t.serviceManagement.lunch}
+                          </span>
+                        )}
+                        {item.mealTypes.dinner && (
+                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                            {t.serviceManagement.dinner}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleMenuDelete(item.id)}
-                    className="mt-3 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 w-full"
-                  >
-                    {t.serviceManagement.delete}
-                  </button>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => handleMenuEdit(item)}
+                      className="flex-1 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                    >
+                      {t.serviceManagement.edit}
+                    </button>
+                    <button
+                      onClick={() => handleMenuDelete(item.id)}
+                      className="flex-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                    >
+                      {t.serviceManagement.delete}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -403,7 +523,9 @@ const RestaurantManagement = () => {
             {/* Menu Item Form */}
             {showMenuForm && (
               <div className="mt-6 border-t pt-4">
-                <h4 className="font-bold mb-3">{t.serviceManagement.addMenuItem}</h4>
+                <h4 className="font-bold mb-3">
+                  {selectedMenuItem ? t.serviceManagement.editMenuItem : t.serviceManagement.addMenuItem}
+                </h4>
                 <form onSubmit={handleMenuSubmit}>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -448,6 +570,44 @@ const RestaurantManagement = () => {
                       />
                     </div>
                     <div className="col-span-2">
+                      <label className="block text-sm font-medium mb-2">{t.serviceManagement.mealTypes || 'Meal Types'}</label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={menuFormData.mealTypes.breakfast}
+                            onChange={(e) => setMenuFormData({ 
+                              ...menuFormData, 
+                              mealTypes: { ...menuFormData.mealTypes, breakfast: e.target.checked }
+                            })}
+                          />
+                          <span className="text-sm">{t.serviceManagement.breakfast || 'Breakfast'}</span>
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={menuFormData.mealTypes.lunch}
+                            onChange={(e) => setMenuFormData({ 
+                              ...menuFormData, 
+                              mealTypes: { ...menuFormData.mealTypes, lunch: e.target.checked }
+                            })}
+                          />
+                          <span className="text-sm">{t.serviceManagement.lunch || 'Lunch'}</span>
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={menuFormData.mealTypes.dinner}
+                            onChange={(e) => setMenuFormData({ 
+                              ...menuFormData, 
+                              mealTypes: { ...menuFormData.mealTypes, dinner: e.target.checked }
+                            })}
+                          />
+                          <span className="text-sm">{t.serviceManagement.dinner || 'Dinner'}</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="col-span-2">
                       <div className="flex gap-4">
                         <label className="flex items-center gap-2">
                           <input
@@ -457,23 +617,40 @@ const RestaurantManagement = () => {
                           />
                           <span className="text-sm">{t.serviceManagement.isVegetarian}</span>
                         </label>
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={menuFormData.isVegan}
-                            onChange={(e) => setMenuFormData({ ...menuFormData, isVegan: e.target.checked })}
-                          />
-                          <span className="text-sm">{t.serviceManagement.isVegan}</span>
-                        </label>
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={menuFormData.isGlutenFree}
-                            onChange={(e) => setMenuFormData({ ...menuFormData, isGlutenFree: e.target.checked })}
-                          />
-                          <span className="text-sm">{t.serviceManagement.isGlutenFree}</span>
-                        </label>
                       </div>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium mb-1">{t.serviceManagement.uploadImages || 'Upload Dish Images'}</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleMenuImageUpload}
+                        className="w-full border rounded px-3 py-2"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">{t.serviceManagement.dragDropImages}</p>
+                      
+                      {/* Image Preview */}
+                      {menuFormData.images.length > 0 && (
+                        <div className="mt-3 grid grid-cols-4 gap-2">
+                          {menuFormData.images.map((img, index) => (
+                            <div key={index} className="relative group">
+                              <img 
+                                src={img} 
+                                alt={`Menu item ${index + 1}`} 
+                                className="w-full h-20 object-cover rounded border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeMenuImage(index)}
+                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-2 mt-4">

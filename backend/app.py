@@ -20,6 +20,7 @@ bcrypt = Bcrypt(app)
 app.bcrypt = bcrypt
 app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 
+from src.migration.migrate_partner_type import migrate_add_partner_type
 from src.routes.user.auth_routes import auth_routes, ensure_default_admin
 from src.routes.filter_routes import filter_routes
 from src.routes.promotion_routes import promotion_routes
@@ -27,10 +28,10 @@ from src.routes.social_routes import social_routes
 from src.routes.suggestion_routes import suggestion_routes
 from src.routes.tour_routes import tour_routes
 from src.routes.city_routes import city_bp
-from src.routes.partner_registration_routes import partner_registration_bp
-from src.routes.accommodation_routes import accommodation_bp
-from src.routes.restaurant_routes import restaurant_bp
-from src.routes.transportation_routes import transportation_bp
+from src.routes.partner.partner_registration_routes import partner_registration_bp
+from src.routes.partner.accommodation_routes import accommodation_bp
+from src.routes.partner.restaurant_routes import restaurant_bp
+from src.routes.partner.transportation_routes import transportation_bp
 
 try:
     from src.models.models import create_tables
@@ -43,6 +44,29 @@ try:
     # Initialize cities
     from src.models.city_init import init_cities
     init_cities()
+    # Initialize statuses and roles
+    from src.migration.migrate_add_status import migrate_add_status
+    migrate_add_status()
+    from src.migration.migrate_add_role import migrate_add_role
+    migrate_add_role()
+
+    # Initialize profile columns
+    from src.migration.migrate_profile_columns import migrate_add_profile_columns
+    migrate_add_profile_columns()
+    #Initialize partner types
+    migrate_add_partner_type()
+    from src.models.partner_services_schema import create_partner_service_tables
+    create_partner_service_tables()
+    
+    #Initialize meal types for restaurant menu items
+    from src.migration.migrate_add_meal_types import migrate_add_meal_types
+    migrate_add_meal_types()
+
+    #Initialize transportation schema fix
+    from src.migration.migrate_transportation_schema_fix import migrate
+    migrate()
+
+
 except Exception as e:
     print(f"[WARNING] Could not initialize database tables: {e}")
 

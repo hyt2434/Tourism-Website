@@ -2,7 +2,7 @@
  * API client for partner service management
  */
 
-const API_BASE_URL = 'http://localhost:5000/api/partner';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const getHeaders = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -18,9 +18,18 @@ const getHeaders = () => {
 // =====================================================================
 
 export const accommodationAPI = {
+  // Get cities
+  getCities: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/partner/accommodations/cities`, {
+      headers: getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch cities');
+    return response.json();
+  },
+
   // Get all accommodations
   getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/accommodations`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/accommodations`, {
       headers: getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch accommodations');
@@ -29,7 +38,7 @@ export const accommodationAPI = {
 
   // Get single accommodation
   getById: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/accommodations/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/accommodations/${id}`, {
       headers: getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch accommodation');
@@ -38,7 +47,7 @@ export const accommodationAPI = {
 
   // Create accommodation
   create: async (data) => {
-    const response = await fetch(`${API_BASE_URL}/accommodations`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/accommodations`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -49,7 +58,7 @@ export const accommodationAPI = {
 
   // Update accommodation
   update: async (id, data) => {
-    const response = await fetch(`${API_BASE_URL}/accommodations/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/accommodations/${id}`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -60,7 +69,7 @@ export const accommodationAPI = {
 
   // Delete accommodation
   delete: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/accommodations/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/accommodations/${id}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -71,7 +80,7 @@ export const accommodationAPI = {
   // Room management
   rooms: {
     getAll: async (accommodationId) => {
-      const response = await fetch(`${API_BASE_URL}/accommodations/${accommodationId}/rooms`, {
+      const response = await fetch(`${API_BASE_URL}/api/partner/accommodations/${accommodationId}/rooms`, {
         headers: getHeaders(),
       });
       if (!response.ok) throw new Error('Failed to fetch rooms');
@@ -79,7 +88,7 @@ export const accommodationAPI = {
     },
 
     create: async (accommodationId, data) => {
-      const response = await fetch(`${API_BASE_URL}/accommodations/${accommodationId}/rooms`, {
+      const response = await fetch(`${API_BASE_URL}/api/partner/accommodations/${accommodationId}/rooms`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(data),
@@ -89,7 +98,7 @@ export const accommodationAPI = {
     },
 
     update: async (accommodationId, roomId, data) => {
-      const response = await fetch(`${API_BASE_URL}/accommodations/${accommodationId}/rooms/${roomId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/partner/accommodations/${accommodationId}/rooms/${roomId}`, {
         method: 'PUT',
         headers: getHeaders(),
         body: JSON.stringify(data),
@@ -99,7 +108,7 @@ export const accommodationAPI = {
     },
 
     delete: async (accommodationId, roomId) => {
-      const response = await fetch(`${API_BASE_URL}/accommodations/${accommodationId}/rooms/${roomId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/partner/accommodations/${accommodationId}/rooms/${roomId}`, {
         method: 'DELETE',
         headers: getHeaders(),
       });
@@ -114,9 +123,18 @@ export const accommodationAPI = {
 // =====================================================================
 
 export const restaurantAPI = {
+  // Get cities
+  getCities: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/partner/restaurants/cities`, {
+      headers: getHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch cities');
+    return response.json();
+  },
+
   // Get all restaurants
   getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/restaurants`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/restaurants`, {
       headers: getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch restaurants');
@@ -125,7 +143,7 @@ export const restaurantAPI = {
 
   // Get single restaurant
   getById: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/restaurants/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/restaurants/${id}`, {
       headers: getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch restaurant');
@@ -134,7 +152,7 @@ export const restaurantAPI = {
 
   // Create restaurant
   create: async (data) => {
-    const response = await fetch(`${API_BASE_URL}/restaurants`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/restaurants`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -145,7 +163,7 @@ export const restaurantAPI = {
 
   // Update restaurant
   update: async (id, data) => {
-    const response = await fetch(`${API_BASE_URL}/restaurants/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/restaurants/${id}`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -156,7 +174,7 @@ export const restaurantAPI = {
 
   // Delete restaurant
   delete: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/restaurants/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/restaurants/${id}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -167,7 +185,7 @@ export const restaurantAPI = {
   // Menu management
   menu: {
     getAll: async (restaurantId) => {
-      const response = await fetch(`${API_BASE_URL}/restaurants/${restaurantId}/menu`, {
+      const response = await fetch(`${API_BASE_URL}/api/partner/restaurants/${restaurantId}/menu`, {
         headers: getHeaders(),
       });
       if (!response.ok) throw new Error('Failed to fetch menu items');
@@ -175,7 +193,7 @@ export const restaurantAPI = {
     },
 
     create: async (restaurantId, data) => {
-      const response = await fetch(`${API_BASE_URL}/restaurants/${restaurantId}/menu`, {
+      const response = await fetch(`${API_BASE_URL}/api/partner/restaurants/${restaurantId}/menu`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(data),
@@ -185,7 +203,7 @@ export const restaurantAPI = {
     },
 
     update: async (restaurantId, itemId, data) => {
-      const response = await fetch(`${API_BASE_URL}/restaurants/${restaurantId}/menu/${itemId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/partner/restaurants/${restaurantId}/menu/${itemId}`, {
         method: 'PUT',
         headers: getHeaders(),
         body: JSON.stringify(data),
@@ -195,7 +213,7 @@ export const restaurantAPI = {
     },
 
     delete: async (restaurantId, itemId) => {
-      const response = await fetch(`${API_BASE_URL}/restaurants/${restaurantId}/menu/${itemId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/partner/restaurants/${restaurantId}/menu/${itemId}`, {
         method: 'DELETE',
         headers: getHeaders(),
       });
@@ -212,7 +230,7 @@ export const restaurantAPI = {
 export const transportationAPI = {
   // Get all vehicles
   getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/transportation`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/transportation`, {
       headers: getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch vehicles');
@@ -221,7 +239,7 @@ export const transportationAPI = {
 
   // Get single vehicle
   getById: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/transportation/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/transportation/${id}`, {
       headers: getHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch vehicle');
@@ -230,7 +248,7 @@ export const transportationAPI = {
 
   // Create vehicle
   create: async (data) => {
-    const response = await fetch(`${API_BASE_URL}/transportation`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/transportation`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -241,7 +259,7 @@ export const transportationAPI = {
 
   // Update vehicle
   update: async (id, data) => {
-    const response = await fetch(`${API_BASE_URL}/transportation/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/transportation/${id}`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(data),
@@ -252,7 +270,7 @@ export const transportationAPI = {
 
   // Delete vehicle
   delete: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/transportation/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/partner/transportation/${id}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -264,7 +282,7 @@ export const transportationAPI = {
   availability: {
     get: async (vehicleId, startDate, endDate) => {
       const response = await fetch(
-        `${API_BASE_URL}/transportation/${vehicleId}/availability?start_date=${startDate}&end_date=${endDate}`,
+        `${API_BASE_URL}/api/partner/transportation/${vehicleId}/availability?start_date=${startDate}&end_date=${endDate}`,
         {
           headers: getHeaders(),
         }
@@ -274,7 +292,7 @@ export const transportationAPI = {
     },
 
     set: async (vehicleId, data) => {
-      const response = await fetch(`${API_BASE_URL}/transportation/${vehicleId}/availability`, {
+      const response = await fetch(`${API_BASE_URL}/api/partner/transportation/${vehicleId}/availability`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(data),

@@ -11,6 +11,7 @@ Partners can manage their restaurant services including:
 from flask import Blueprint, request, jsonify
 from src.database import get_connection
 from datetime import datetime
+import json
 
 restaurant_bp = Blueprint('restaurant_services', __name__, url_prefix='/api/partner/restaurants')
 
@@ -18,6 +19,33 @@ restaurant_bp = Blueprint('restaurant_services', __name__, url_prefix='/api/part
 # =====================================================================
 # RESTAURANT SERVICES ENDPOINTS
 # =====================================================================
+
+@restaurant_bp.route('/cities', methods=['GET'])
+def get_cities_for_restaurant():
+    """Get all cities for restaurant dropdown"""
+    try:
+        conn = get_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cur = conn.cursor()
+        cur.execute("SELECT id, name, code, region FROM cities ORDER BY name")
+        rows = cur.fetchall()
+        
+        cities = [{
+            'id': row[0],
+            'name': row[1],
+            'code': row[2],
+            'region': row[3]
+        } for row in rows]
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify(cities), 200
+    except Exception as e:
+        print(f"Error fetching cities: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @restaurant_bp.route('/', methods=['GET'])
 def get_restaurants():
@@ -322,48 +350,86 @@ def update_restaurant(restaurant_id):
             conn.close()
             return jsonify({'error': 'Unauthorized'}), 403
         
-        # Update restaurant
-        cur.execute("""
-            UPDATE restaurant_services SET
-                name = COALESCE(%s, name),
-                description = COALESCE(%s, description),
-                cuisine_type = COALESCE(%s, cuisine_type),
-                address = COALESCE(%s, address),
-                city_id = COALESCE(%s, city_id),
-                phone = COALESCE(%s, phone),
-                email = COALESCE(%s, email),
-                website = COALESCE(%s, website),
-                opening_time = COALESCE(%s, opening_time),
-                closing_time = COALESCE(%s, closing_time),
-                seating_capacity = COALESCE(%s, seating_capacity),
-                features = COALESCE(%s, features),
-                dietary_options = COALESCE(%s, dietary_options),
-                price_range = COALESCE(%s, price_range),
-                average_cost_per_person = COALESCE(%s, average_cost_per_person),
-                delivery_available = COALESCE(%s, delivery_available),
-                takeout_available = COALESCE(%s, takeout_available),
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-        """, (
-            data.get('name'),
-            data.get('description'),
-            data.get('cuisineType'),
-            data.get('address'),
-            data.get('cityId'),
-            data.get('phone'),
-            data.get('email'),
-            data.get('website'),
-            data.get('openingTime'),
-            data.get('closingTime'),
-            data.get('seatingCapacity'),
-            data.get('features'),
-            data.get('dietaryOptions'),
-            data.get('priceRange'),
-            data.get('averageCost'),
-            data.get('deliveryAvailable'),
-            data.get('takeoutAvailable'),
-            restaurant_id
-        ))
+        # Update restaurant - use explicit NULL handling for proper updates
+        update_fields = []
+        update_values = []
+        
+        if 'name' in data:
+            update_fields.append('name = %s')
+            update_values.append(data['name'])
+        if 'description' in data:
+            update_fields.append('description = %s')
+            update_values.append(data['description'])
+        if 'cuisineType' in data:
+            update_fields.append('cuisine_type = %s')
+            update_values.append(data['cuisineType'])
+        if 'address' in data:
+            update_fields.append('address = %s')
+            update_values.append(data['address'])
+        if 'cityId' in data:
+            update_fields.append('city_id = %s')
+            update_values.append(data['cityId'])
+        if 'phone' in data:
+            update_fields.append('phone = %s')
+            update_values.append(data['phone'])
+        if 'email' in data:
+            update_fields.append('email = %s')
+            update_values.append(data['email'])
+        if 'website' in data:
+            update_fields.append('website = %s')
+            update_values.append(data['website'])
+        if 'openingTime' in data:
+            update_fields.append('opening_time = %s')
+            update_values.append(data['openingTime'])
+        if 'closingTime' in data:
+            update_fields.append('closing_time = %s')
+            update_values.append(data['closingTime'])
+        if 'openingHours' in data:
+            update_fields.append('opening_hours = %s')
+            update_values.append(data['openingHours'])
+        if 'seatingCapacity' in data:
+            update_fields.append('seating_capacity = %s')
+            update_values.append(data['seatingCapacity'])
+        if 'features' in data:
+            update_fields.append('features = %s')
+            update_values.append(data['features'])
+        if 'dietaryOptions' in data:
+            update_fields.append('dietary_options = %s')
+            update_values.append(data['dietaryOptions'])
+        if 'priceRange' in data:
+            update_fields.append('price_range = %s')
+            update_values.append(data['priceRange'])
+        if 'averageCost' in data:
+            update_fields.append('average_cost_per_person = %s')
+            update_values.append(data['averageCost'])
+        if 'deliveryAvailable' in data:
+            update_fields.append('delivery_available = %s')
+            update_values.append(data['deliveryAvailable'])
+        if 'takeoutAvailable' in data:
+            update_fields.append('takeout_available = %s')
+            update_values.append(data['takeoutAvailable'])
+        
+        update_fields.append('updated_at = CURRENT_TIMESTAMP')
+        update_values.append(restaurant_id)
+        
+        if len(update_fields) > 1:  # More than just updated_at
+            query = f"UPDATE restaurant_services SET {', '.join(update_fields)} WHERE id = %s"
+            cur.execute(query, update_values)
+        
+        # Handle images if provided (only update if images array is explicitly sent and not empty)
+        if 'images' in data and data['images'] is not None and len(data['images']) > 0:
+            # Delete existing images
+            cur.execute("""
+                DELETE FROM service_images 
+                WHERE service_type = 'restaurant' AND service_id = %s
+            """, (restaurant_id,))
+            
+            # Insert new images
+            for idx, image_url in enumerate(data['images']):
+                cur.execute("""
+                    INSERT INTO service_images (service_type, service_id, image_url, is_primary, display_order)
+                    VALUES ('restaurant', %s, %s, %s, %s)
+                """, (restaurant_id, image_url, idx == 0, idx))
         
         conn.commit()
         cur.close()
@@ -443,7 +509,8 @@ def get_menu_items(restaurant_id):
                 portion_size, preparation_time, calories,
                 is_vegetarian, is_vegan, is_gluten_free, is_spicy,
                 spice_level, allergens, ingredients, is_available,
-                is_popular, is_special, created_at, updated_at
+                is_popular, is_special, meal_types,
+                created_at, updated_at
             FROM restaurant_menu_items
             WHERE restaurant_id = %s
             ORDER BY category, name
@@ -453,14 +520,23 @@ def get_menu_items(restaurant_id):
         
         menu_items = []
         for row in rows:
-            # Get menu item images
+            # Get menu item images from service_images table
             cur.execute("""
-                SELECT image_url FROM service_images
+                SELECT id, image_url, caption, is_primary, display_order
+                FROM service_images
                 WHERE service_type = 'menu_item' AND service_id = %s
                 ORDER BY display_order
             """, (row[0],))
             
-            images = [img[0] for img in cur.fetchall()]
+            images = []
+            for img_row in cur.fetchall():
+                images.append({
+                    'id': img_row[0],
+                    'url': img_row[1],
+                    'caption': img_row[2],
+                    'isPrimary': img_row[3],
+                    'displayOrder': img_row[4]
+                })
             
             menu_items.append({
                 'id': row[0],
@@ -482,9 +558,10 @@ def get_menu_items(restaurant_id):
                 'isAvailable': row[16],
                 'isPopular': row[17],
                 'isSpecial': row[18],
+                'mealTypes': row[19] if row[19] else {'breakfast': False, 'lunch': False, 'dinner': False},
                 'images': images,
-                'createdAt': row[19].isoformat() if row[19] else None,
-                'updatedAt': row[20].isoformat() if row[20] else None
+                'createdAt': row[20].isoformat() if row[20] else None,
+                'updatedAt': row[21].isoformat() if row[21] else None
             })
         
         cur.close()
@@ -529,8 +606,8 @@ def create_menu_item(restaurant_id):
                 restaurant_id, name, description, category, price, currency,
                 portion_size, preparation_time, calories, is_vegetarian,
                 is_vegan, is_gluten_free, is_spicy, spice_level,
-                allergens, ingredients, is_popular, is_special
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                allergens, ingredients, is_popular, is_special, meal_types
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             restaurant_id,
@@ -550,7 +627,8 @@ def create_menu_item(restaurant_id):
             data.get('allergens', []),
             data.get('ingredients', []),
             data.get('isPopular', False),
-            data.get('isSpecial', False)
+            data.get('isSpecial', False),
+            json.dumps(data.get('mealTypes', {'breakfast': False, 'lunch': False, 'dinner': False}))
         ))
         
         menu_item_id = cur.fetchone()[0]
@@ -559,9 +637,9 @@ def create_menu_item(restaurant_id):
         if data.get('images'):
             for idx, image_url in enumerate(data['images']):
                 cur.execute("""
-                    INSERT INTO service_images (service_type, service_id, image_url, display_order)
-                    VALUES ('menu_item', %s, %s, %s)
-                """, (menu_item_id, image_url, idx))
+                    INSERT INTO service_images (service_type, service_id, image_url, is_primary, display_order)
+                    VALUES ('menu_item', %s, %s, %s, %s)
+                """, (menu_item_id, image_url, idx == 0, idx))
         
         conn.commit()
         cur.close()
@@ -622,6 +700,7 @@ def update_menu_item(restaurant_id, menu_item_id):
                 is_available = COALESCE(%s, is_available),
                 is_popular = COALESCE(%s, is_popular),
                 is_special = COALESCE(%s, is_special),
+                meal_types = COALESCE(%s::jsonb, meal_types),
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = %s
         """, (
@@ -633,6 +712,7 @@ def update_menu_item(restaurant_id, menu_item_id):
             data.get('isAvailable'),
             data.get('isPopular'),
             data.get('isSpecial'),
+            json.dumps(data.get('mealTypes')) if data.get('mealTypes') else None,
             menu_item_id
         ))
         

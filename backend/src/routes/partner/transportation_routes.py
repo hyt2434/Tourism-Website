@@ -36,12 +36,10 @@ def get_transportation_services():
         
         cur.execute("""
             SELECT 
-                id, name, description, vehicle_type, brand, model, year,
-                license_plate, color, max_passengers, luggage_capacity,
-                features, accessibility_features, default_pickup_locations,
-                default_dropoff_locations, service_areas, base_price,
-                price_per_km, price_per_hour, minimum_fare, currency,
-                phone, driver_name, is_active, is_verified,
+                id, license_plate, description, vehicle_type, brand,
+                max_passengers, features, default_pickup_locations,
+                default_dropoff_locations, base_price, holiday_price,
+                phone, is_active, is_verified,
                 created_at, updated_at
             FROM transportation_services
             WHERE partner_id = %s
@@ -62,33 +60,22 @@ def get_transportation_services():
             
             services.append({
                 'id': row[0],
-                'name': row[1],
+                'licensePlate': row[1],
                 'description': row[2],
                 'vehicleType': row[3],
                 'brand': row[4],
-                'model': row[5],
-                'year': row[6],
-                'licensePlate': row[7],
-                'color': row[8],
-                'maxPassengers': row[9],
-                'luggageCapacity': row[10],
-                'features': row[11] if row[11] else [],
-                'accessibilityFeatures': row[12] if row[12] else [],
-                'defaultPickupLocations': row[13] if row[13] else [],
-                'defaultDropoffLocations': row[14] if row[14] else [],
-                'serviceAreas': row[15] if row[15] else [],
-                'basePrice': float(row[16]) if row[16] else None,
-                'pricePerKm': float(row[17]) if row[17] else None,
-                'pricePerHour': float(row[18]) if row[18] else None,
-                'minimumFare': float(row[19]) if row[19] else None,
-                'currency': row[20],
-                'phone': row[21],
-                'driverName': row[22],
-                'isActive': row[23],
-                'isVerified': row[24],
+                'maxPassengers': row[5],
+                'features': row[6] if row[6] else [],
+                'defaultPickupLocations': row[7] if row[7] else [],
+                'defaultDropoffLocations': row[8] if row[8] else [],
+                'basePrice': float(row[9]) if row[9] else None,
+                'holidayPrice': float(row[10]) if row[10] else None,
+                'phone': row[11],
+                'isActive': row[12],
+                'isVerified': row[13],
                 'primaryImage': image_row[0] if image_row else None,
-                'createdAt': row[25].isoformat() if row[25] else None,
-                'updatedAt': row[26].isoformat() if row[26] else None
+                'createdAt': row[14].isoformat() if row[14] else None,
+                'updatedAt': row[15].isoformat() if row[15] else None
             })
         
         cur.close()
@@ -113,7 +100,7 @@ def create_transportation_service():
         data = request.get_json()
         
         # Validate required fields
-        required_fields = ['name', 'vehicleType', 'maxPassengers', 'basePrice']
+        required_fields = ['licensePlate', 'vehicleType', 'maxPassengers', 'basePrice']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
@@ -127,48 +114,24 @@ def create_transportation_service():
         # Insert transportation service
         cur.execute("""
             INSERT INTO transportation_services (
-                partner_id, name, description, vehicle_type, brand, model, year,
-                license_plate, color, max_passengers, luggage_capacity,
-                features, accessibility_features, default_pickup_locations,
-                default_dropoff_locations, service_areas, base_price,
-                price_per_km, price_per_hour, minimum_fare, currency,
-                advance_booking_hours, cancellation_hours, max_trip_duration,
-                operating_hours, phone, driver_name, driver_phone,
-                driver_license, cancellation_policy, terms_and_conditions
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                partner_id, license_plate, description, vehicle_type, brand,
+                max_passengers, features, default_pickup_locations,
+                default_dropoff_locations, base_price, holiday_price, phone
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             partner_id,
-            data['name'],
+            data['licensePlate'],
             data.get('description'),
             data['vehicleType'],
             data.get('brand'),
-            data.get('model'),
-            data.get('year'),
-            data.get('licensePlate'),
-            data.get('color'),
             data['maxPassengers'],
-            data.get('luggageCapacity'),
             data.get('features', []),
-            data.get('accessibilityFeatures', []),
             data.get('defaultPickupLocations', []),
             data.get('defaultDropoffLocations', []),
-            data.get('serviceAreas', []),
             data['basePrice'],
-            data.get('pricePerKm'),
-            data.get('pricePerHour'),
-            data.get('minimumFare'),
-            data.get('currency', 'VND'),
-            data.get('advanceBookingHours', 24),
-            data.get('cancellationHours', 12),
-            data.get('maxTripDuration'),
-            data.get('operatingHours'),
-            data.get('phone'),
-            data.get('driverName'),
-            data.get('driverPhone'),
-            data.get('driverLicense'),
-            data.get('cancellationPolicy'),
-            data.get('termsAndConditions')
+            data.get('holidayPrice', 0),
+            data.get('phone')
         ))
         
         service_id = cur.fetchone()[0]
@@ -211,15 +174,10 @@ def get_transportation_service(service_id):
         
         cur.execute("""
             SELECT 
-                id, partner_id, name, description, vehicle_type, brand, model, year,
-                license_plate, color, max_passengers, luggage_capacity,
-                features, accessibility_features, default_pickup_locations,
-                default_dropoff_locations, service_areas, base_price,
-                price_per_km, price_per_hour, minimum_fare, currency,
-                advance_booking_hours, cancellation_hours, max_trip_duration,
-                operating_hours, phone, driver_name, driver_phone,
-                driver_license, cancellation_policy, terms_and_conditions,
-                is_active, is_verified, created_at, updated_at
+                id, partner_id, license_plate, description, vehicle_type, brand,
+                max_passengers, features, default_pickup_locations,
+                default_dropoff_locations, base_price, holiday_price,
+                phone, is_active, is_verified, created_at, updated_at
             FROM transportation_services
             WHERE id = %s
         """, (service_id,))
@@ -258,41 +216,22 @@ def get_transportation_service(service_id):
         service = {
             'id': row[0],
             'partnerId': row[1],
-            'name': row[2],
+            'licensePlate': row[2],
             'description': row[3],
             'vehicleType': row[4],
             'brand': row[5],
-            'model': row[6],
-            'year': row[7],
-            'licensePlate': row[8],
-            'color': row[9],
-            'maxPassengers': row[10],
-            'luggageCapacity': row[11],
-            'features': row[12] if row[12] else [],
-            'accessibilityFeatures': row[13] if row[13] else [],
-            'defaultPickupLocations': row[14] if row[14] else [],
-            'defaultDropoffLocations': row[15] if row[15] else [],
-            'serviceAreas': row[16] if row[16] else [],
-            'basePrice': float(row[17]) if row[17] else None,
-            'pricePerKm': float(row[18]) if row[18] else None,
-            'pricePerHour': float(row[19]) if row[19] else None,
-            'minimumFare': float(row[20]) if row[20] else None,
-            'currency': row[21],
-            'advanceBookingHours': row[22],
-            'cancellationHours': row[23],
-            'maxTripDuration': row[24],
-            'operatingHours': row[25],
-            'phone': row[26],
-            'driverName': row[27],
-            'driverPhone': row[28],
-            'driverLicense': row[29],
-            'cancellationPolicy': row[30],
-            'termsAndConditions': row[31],
-            'isActive': row[32],
-            'isVerified': row[33],
+            'maxPassengers': row[6],
+            'features': row[7] if row[7] else [],
+            'defaultPickupLocations': row[8] if row[8] else [],
+            'defaultDropoffLocations': row[9] if row[9] else [],
+            'basePrice': float(row[10]) if row[10] else None,
+            'holidayPrice': float(row[11]) if row[11] else None,
+            'phone': row[12],
+            'isActive': row[13],
+            'isVerified': row[14],
             'images': images,
-            'createdAt': row[34].isoformat() if row[34] else None,
-            'updatedAt': row[35].isoformat() if row[35] else None
+            'createdAt': row[15].isoformat() if row[15] else None,
+            'updatedAt': row[16].isoformat() if row[16] else None
         }
         
         cur.close()
@@ -336,46 +275,65 @@ def update_transportation_service(service_id):
             conn.close()
             return jsonify({'error': 'Unauthorized'}), 403
         
-        # Update transportation service
-        cur.execute("""
-            UPDATE transportation_services SET
-                name = COALESCE(%s, name),
-                description = COALESCE(%s, description),
-                vehicle_type = COALESCE(%s, vehicle_type),
-                brand = COALESCE(%s, brand),
-                model = COALESCE(%s, model),
-                max_passengers = COALESCE(%s, max_passengers),
-                luggage_capacity = COALESCE(%s, luggage_capacity),
-                features = COALESCE(%s, features),
-                default_pickup_locations = COALESCE(%s, default_pickup_locations),
-                default_dropoff_locations = COALESCE(%s, default_dropoff_locations),
-                service_areas = COALESCE(%s, service_areas),
-                base_price = COALESCE(%s, base_price),
-                price_per_km = COALESCE(%s, price_per_km),
-                price_per_hour = COALESCE(%s, price_per_hour),
-                phone = COALESCE(%s, phone),
-                driver_name = COALESCE(%s, driver_name),
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-        """, (
-            data.get('name'),
-            data.get('description'),
-            data.get('vehicleType'),
-            data.get('brand'),
-            data.get('model'),
-            data.get('maxPassengers'),
-            data.get('luggageCapacity'),
-            data.get('features'),
-            data.get('defaultPickupLocations'),
-            data.get('defaultDropoffLocations'),
-            data.get('serviceAreas'),
-            data.get('basePrice'),
-            data.get('pricePerKm'),
-            data.get('pricePerHour'),
-            data.get('phone'),
-            data.get('driverName'),
-            service_id
-        ))
+        # Build update query dynamically to only update provided fields
+        update_fields = []
+        params = []
+        
+        if 'licensePlate' in data and data['licensePlate']:
+            update_fields.append('license_plate = %s')
+            params.append(data['licensePlate'])
+        if 'description' in data:
+            update_fields.append('description = %s')
+            params.append(data['description'])
+        if 'vehicleType' in data and data['vehicleType']:
+            update_fields.append('vehicle_type = %s')
+            params.append(data['vehicleType'])
+        if 'brand' in data:
+            update_fields.append('brand = %s')
+            params.append(data['brand'])
+        if 'maxPassengers' in data and data['maxPassengers']:
+            update_fields.append('max_passengers = %s')
+            params.append(data['maxPassengers'])
+        if 'features' in data:
+            update_fields.append('features = %s')
+            params.append(data['features'])
+        if 'defaultPickupLocations' in data:
+            update_fields.append('default_pickup_locations = %s')
+            params.append(data['defaultPickupLocations'])
+        if 'defaultDropoffLocations' in data:
+            update_fields.append('default_dropoff_locations = %s')
+            params.append(data['defaultDropoffLocations'])
+        if 'basePrice' in data and data['basePrice'] is not None:
+            update_fields.append('base_price = %s')
+            params.append(data['basePrice'])
+        if 'holidayPrice' in data and data['holidayPrice'] is not None:
+            update_fields.append('holiday_price = %s')
+            params.append(data['holidayPrice'])
+        if 'phone' in data:
+            update_fields.append('phone = %s')
+            params.append(data['phone'])
+        
+        if update_fields:
+            update_fields.append('updated_at = CURRENT_TIMESTAMP')
+            params.append(service_id)
+            
+            query = f"UPDATE transportation_services SET {', '.join(update_fields)} WHERE id = %s"
+            cur.execute(query, params)
+        
+        # Handle image updates if provided
+        if 'images' in data and data['images']:
+            # Delete existing images
+            cur.execute("""
+                DELETE FROM service_images 
+                WHERE service_type = 'transportation' AND service_id = %s
+            """, (service_id,))
+            
+            # Insert new images
+            for idx, image_url in enumerate(data['images']):
+                cur.execute("""
+                    INSERT INTO service_images (service_type, service_id, image_url, is_primary, display_order)
+                    VALUES ('transportation', %s, %s, %s, %s)
+                """, (service_id, image_url, idx == 0, idx))
         
         conn.commit()
         cur.close()
