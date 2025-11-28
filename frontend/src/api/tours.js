@@ -136,12 +136,12 @@ export const getAvailableServices = async (destinationCityId, departureCityId = 
 /**
  * Calculate tour price based on selected services
  */
-export const calculateTourPrice = async (services) => {
+export const calculateTourPrice = async (data) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/admin/tours/calculate-price`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ services })
+      body: JSON.stringify(data)
     });
     if (!response.ok) throw new Error('Failed to calculate tour price');
     return response.json();

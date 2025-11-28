@@ -75,6 +75,14 @@ try:
     from src.migration.migrate_add_cities_to_transportation import apply_migration
     apply_migration()
 
+    # Initialize number_of_members column in tours_admin
+    from src.migration.migrate_add_number_of_members import migrate_add_number_of_members
+    migrate_add_number_of_members()
+
+    # Initialize tour selection
+    from src.migration.migrate_tour_selections import migrate_tour_selections
+    migrate_tour_selections()
+
 
 except Exception as e:
     print(f"[WARNING] Could not initialize database tables: {e}")

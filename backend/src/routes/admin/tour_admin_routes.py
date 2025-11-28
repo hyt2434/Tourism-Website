@@ -35,11 +35,11 @@ def get_service_price(service_type, service_id):
                 WHERE id = %s
             """, (service_id,))
         elif service_type == 'accommodation':
-            # Use minimum price or average of room prices
+            # Use average of room prices (more representative than minimum)
             cur.execute("""
-                SELECT COALESCE(MIN(base_price), 0) as price
+                SELECT COALESCE(AVG(base_price), 0) as price
                 FROM accommodation_rooms
-                WHERE accommodation_id = %s
+                WHERE accommodation_id = %s AND is_available = TRUE
             """, (service_id,))
         elif service_type == 'transportation':
             # Use base price
@@ -83,7 +83,7 @@ def get_all_tours():
                 t.destination_city_id, dc.name as destination_city_name,
                 t.departure_city_id, dpc.name as departure_city_name,
                 t.total_price, t.currency, t.is_active, t.is_published,
-                t.created_at, t.updated_at,
+                t.created_at, t.updated_at, t.number_of_members,
                 (SELECT image_url FROM tour_images WHERE tour_id = t.id AND is_primary = TRUE LIMIT 1) as primary_image
             FROM tours_admin t
             LEFT JOIN cities dc ON t.destination_city_id = dc.id
@@ -108,7 +108,8 @@ def get_all_tours():
                 'is_published': row[11],
                 'created_at': row[12].isoformat() if row[12] else None,
                 'updated_at': row[13].isoformat() if row[13] else None,
-                'primary_image': row[14]
+                'number_of_members': row[14],
+                'primary_image': row[15]
             })
         
         return jsonify(tours), 200
@@ -143,7 +144,7 @@ def get_tour_detail(tour_id):
                 t.destination_city_id, dc.name as destination_city_name,
                 t.departure_city_id, dpc.name as departure_city_name,
                 t.total_price, t.currency, t.is_active, t.is_published,
-                t.created_at, t.updated_at
+                t.created_at, t.updated_at, t.number_of_members
             FROM tours_admin t
             LEFT JOIN cities dc ON t.destination_city_id = dc.id
             LEFT JOIN cities dpc ON t.departure_city_id = dpc.id
@@ -166,7 +167,8 @@ def get_tour_detail(tour_id):
             'is_active': tour_row[10],
             'is_published': tour_row[11],
             'created_at': tour_row[12].isoformat() if tour_row[12] else None,
-            'updated_at': tour_row[13].isoformat() if tour_row[13] else None
+            'updated_at': tour_row[13].isoformat() if tour_row[13] else None,
+            'number_of_members': tour_row[14] if tour_row[14] else 1
         }
         
         # Get images
@@ -234,11 +236,12 @@ def get_tour_detail(tour_id):
                 ts.id, ts.service_type, ts.day_number, ts.service_cost, ts.notes,
                 ts.restaurant_id, rs.name as restaurant_name,
                 ts.accommodation_id, acs.name as accommodation_name,
-                ts.transportation_id, trs.name as transportation_name
+                ts.transportation_id, 
+                CONCAT(trans.vehicle_type, ' - ', trans.license_plate) as transportation_name
             FROM tour_services ts
             LEFT JOIN restaurant_services rs ON ts.restaurant_id = rs.id
             LEFT JOIN accommodation_services acs ON ts.accommodation_id = acs.id
-            LEFT JOIN transportation_services trs ON ts.transportation_id = trs.id
+            LEFT JOIN transportation_services trans ON ts.transportation_id = trans.id
             WHERE ts.tour_id = %s
             ORDER BY ts.service_type, ts.day_number
         """, (tour_id,))
@@ -270,6 +273,28 @@ def get_tour_detail(tour_id):
                 service_data['service_id'] = svc_row[9]
                 service_data['service_name'] = svc_row[10]
                 tour_data['services']['transportation'] = service_data
+        
+        # Get selected rooms
+        cur.execute("""
+            SELECT room_id FROM tour_selected_rooms
+            WHERE tour_id = %s
+        """, (tour_id,))
+        tour_data['selectedRooms'] = [row[0] for row in cur.fetchall()]
+        
+        # Get selected menu items
+        cur.execute("""
+            SELECT menu_item_id, day_number FROM tour_selected_menu_items
+            WHERE tour_id = %s
+            ORDER BY day_number
+        """, (tour_id,))
+        
+        selected_menu_items = {}
+        for row in cur.fetchall():
+            day_key = str(row[1])
+            if day_key not in selected_menu_items:
+                selected_menu_items[day_key] = []
+            selected_menu_items[day_key].append(row[0])
+        tour_data['selectedMenuItems'] = selected_menu_items
         
         return jsonify(tour_data), 200
         
@@ -316,13 +341,15 @@ def create_tour():
             INSERT INTO tours_admin (
                 name, duration, description, 
                 destination_city_id, departure_city_id,
+                number_of_members,
                 created_by, is_active, is_published
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             data['name'], data['duration'], data['description'],
             data['destination_city_id'], data['departure_city_id'],
+            data.get('number_of_members', 1),
             user_id, data.get('is_active', True), data.get('is_published', False)
         ))
         
@@ -413,6 +440,25 @@ def create_tour():
                     VALUES (%s, 'transportation', %s, %s, %s)
                 """, (tour_id, trans['service_id'], price, trans.get('notes')))
         
+        # Save selected rooms if provided
+        if 'selectedRooms' in data and data['selectedRooms']:
+            for room_id in data['selectedRooms']:
+                cur.execute("""
+                    INSERT INTO tour_selected_rooms (tour_id, room_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT (tour_id, room_id) DO NOTHING
+                """, (tour_id, room_id))
+        
+        # Save selected menu items if provided
+        if 'selectedMenuItems' in data and data['selectedMenuItems']:
+            for day_number, item_ids in data['selectedMenuItems'].items():
+                for item_id in item_ids:
+                    cur.execute("""
+                        INSERT INTO tour_selected_menu_items (tour_id, menu_item_id, day_number)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (tour_id, menu_item_id, day_number) DO NOTHING
+                    """, (tour_id, item_id, int(day_number)))
+        
         conn.commit()
         
         return jsonify({
@@ -476,6 +522,9 @@ def update_tour(tour_id):
         if 'is_published' in data:
             update_fields.append('is_published = %s')
             update_values.append(data['is_published'])
+        if 'number_of_members' in data:
+            update_fields.append('number_of_members = %s')
+            update_values.append(data['number_of_members'])
         
         if update_fields:
             update_fields.append('updated_at = CURRENT_TIMESTAMP')
@@ -579,6 +628,31 @@ def update_tour(tour_id):
                     )
                     VALUES (%s, 'transportation', %s, %s, %s)
                 """, (tour_id, trans['service_id'], price, trans.get('notes')))
+        
+        # Update selected rooms if provided
+        if 'selectedRooms' in data:
+            # Delete existing selections
+            cur.execute("DELETE FROM tour_selected_rooms WHERE tour_id = %s", (tour_id,))
+            # Add new selections
+            for room_id in data['selectedRooms']:
+                cur.execute("""
+                    INSERT INTO tour_selected_rooms (tour_id, room_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT (tour_id, room_id) DO NOTHING
+                """, (tour_id, room_id))
+        
+        # Update selected menu items if provided
+        if 'selectedMenuItems' in data:
+            # Delete existing selections
+            cur.execute("DELETE FROM tour_selected_menu_items WHERE tour_id = %s", (tour_id,))
+            # Add new selections
+            for day_number, item_ids in data['selectedMenuItems'].items():
+                for item_id in item_ids:
+                    cur.execute("""
+                        INSERT INTO tour_selected_menu_items (tour_id, menu_item_id, day_number)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (tour_id, menu_item_id, day_number) DO NOTHING
+                    """, (tour_id, item_id, int(day_number)))
         
         conn.commit()
         
@@ -703,14 +777,28 @@ def get_available_services():
             
             print(f"Found {len(result['accommodations'])} accommodations for city {destination_city_id}")
         
-        # Get transportation (removed is_verified requirement)
+        # Get transportation (filtered by departure and destination cities)
         if not service_type or service_type == 'transportation':
-            cur.execute("""
-                SELECT id, license_plate, vehicle_type, brand, max_passengers, base_price, features
-                FROM transportation_services
-                WHERE is_active = TRUE
-                ORDER BY license_plate
-            """, ())
+            if departure_city_id and destination_city_id:
+                # Filter by exact departure and destination match
+                cur.execute("""
+                    SELECT id, license_plate, vehicle_type, brand, max_passengers, base_price, features,
+                           departure_city_id, destination_city_id
+                    FROM transportation_services
+                    WHERE is_active = TRUE 
+                      AND departure_city_id = %s 
+                      AND destination_city_id = %s
+                    ORDER BY license_plate
+                """, (departure_city_id, destination_city_id))
+            else:
+                # If no departure/destination specified, get all active transportation
+                cur.execute("""
+                    SELECT id, license_plate, vehicle_type, brand, max_passengers, base_price, features,
+                           departure_city_id, destination_city_id
+                    FROM transportation_services
+                    WHERE is_active = TRUE
+                    ORDER BY license_plate
+                """)
             
             result['transportation'] = []
             for row in cur.fetchall():
@@ -721,10 +809,12 @@ def get_available_services():
                     'brand': row[3],
                     'max_passengers': row[4],
                     'base_price': float(row[5]) if row[5] else 0,
-                    'features': row[6] if row[6] else []
+                    'features': row[6] if row[6] else [],
+                    'pickup_location': f"City {row[7]}" if row[7] else None,
+                    'dropoff_location': f"City {row[8]}" if row[8] else None
                 })
             
-            print(f"Found {len(result['transportation'])} transportation services")
+            print(f"Found {len(result['transportation'])} transportation services for route {departure_city_id} -> {destination_city_id}")
         
         return jsonify(result), 200
         
@@ -743,41 +833,227 @@ def get_available_services():
 @tour_admin_bp.route('/calculate-price', methods=['POST'])
 @admin_required
 def calculate_tour_price():
-    """Calculate total tour price based on selected services."""
+    """Calculate total tour price based on selected services and specific items."""
     data = request.get_json()
     
     if 'services' not in data:
         return jsonify({"error": "services data required"}), 400
     
-    total_price = 0
-    breakdown = {
-        'restaurants': 0,
-        'accommodation': 0,
-        'transportation': 0
-    }
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
     
-    services = data['services']
+    try:
+        cur = conn.cursor()
+        total_price = 0
+        breakdown = {
+            'restaurants': 0,
+            'accommodation': 0,
+            'transportation': 0
+        }
+        
+        services = data['services']
+        selected_rooms = data.get('selectedRooms', [])
+        selected_menu_items = data.get('selectedMenuItems', {})
+        
+        print(f"Calculating price - Selected rooms: {selected_rooms}")
+        print(f"Calculating price - Selected menu items: {selected_menu_items}")
+        
+        # Calculate accommodation cost based on selected rooms
+        if 'accommodation' in services and services['accommodation'] and selected_rooms:
+            print(f"Processing {len(selected_rooms)} rooms...")
+            for room_id in selected_rooms:
+                cur.execute("""
+                    SELECT base_price FROM accommodation_rooms WHERE id = %s
+                """, (room_id,))
+                result = cur.fetchone()
+                if result and result[0]:
+                    room_price = float(result[0])
+                    breakdown['accommodation'] += room_price
+                    print(f"Room {room_id}: {room_price} VND")
+                else:
+                    print(f"Room {room_id}: No price found")
+        
+        # Calculate restaurant costs based on selected menu items
+        if 'restaurants' in services and selected_menu_items:
+            print(f"Processing menu items for {len(selected_menu_items)} days...")
+            for day_number, item_ids in selected_menu_items.items():
+                if item_ids:  # Only process if there are items
+                    for item_id in item_ids:
+                        cur.execute("""
+                            SELECT price FROM restaurant_menu_items WHERE id = %s
+                        """, (item_id,))
+                        result = cur.fetchone()
+                        if result and result[0]:
+                            item_price = float(result[0])
+                            breakdown['restaurants'] += item_price
+                            print(f"Menu item {item_id}: {item_price} VND")
+                        else:
+                            print(f"Menu item {item_id}: No price found")
+        
+        # Calculate transportation cost (double for round trip)
+        if 'transportation' in services and services['transportation']:
+            price = get_service_price('transportation', services['transportation']['service_id'])
+            breakdown['transportation'] = price * 2  # Round trip
+            print(f"Transportation: {price} x 2 = {breakdown['transportation']} VND")
+        
+        total_price = sum(breakdown.values())
+        print(f"Total price: {total_price} VND")
+        print(f"Breakdown: {breakdown}")
+        
+        return jsonify({
+            'total_price': total_price,
+            'breakdown': breakdown,
+            'currency': 'VND'
+        }), 200
+        
+    except Exception as e:
+        print(f"Error calculating price: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+# =====================================================================
+# GET SERVICE DETAILS (Rooms, Menu Items)
+# =====================================================================
+
+@tour_admin_bp.route('/service-details/accommodation/<int:accommodation_id>/rooms', methods=['GET'])
+@admin_required
+def get_accommodation_rooms(accommodation_id):
+    """Get all rooms for an accommodation."""
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
     
-    # Calculate restaurant costs
-    if 'restaurants' in services:
-        for restaurant in services['restaurants']:
-            price = get_service_price('restaurant', restaurant['service_id'])
-            breakdown['restaurants'] += price
+    try:
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT 
+                id, name, room_type, description, max_adults, max_children,
+                total_rooms, room_size, bed_type, view_type, amenities,
+                base_price, weekend_price, holiday_price, currency, is_available,
+                created_at, updated_at
+            FROM accommodation_rooms
+            WHERE accommodation_id = %s
+            ORDER BY base_price
+        """, (accommodation_id,))
+        
+        rows = cur.fetchall()
+        
+        rooms = []
+        for row in rows:
+            # Get room images
+            cur.execute("""
+                SELECT image_url FROM service_images
+                WHERE service_type = 'accommodation_room' AND service_id = %s
+                ORDER BY display_order
+            """, (row[0],))
+            
+            images = [img[0] for img in cur.fetchall()]
+            
+            rooms.append({
+                'id': row[0],
+                'name': row[1],
+                'roomType': row[2],
+                'description': row[3],
+                'maxAdults': row[4],
+                'maxChildren': row[5],
+                'totalRooms': row[6],
+                'roomSize': float(row[7]) if row[7] else None,
+                'bedType': row[8],
+                'viewType': row[9],
+                'amenities': row[10] if row[10] else [],
+                'basePrice': float(row[11]) if row[11] else None,
+                'weekendPrice': float(row[12]) if row[12] else None,
+                'holidayPrice': float(row[13]) if row[13] else None,
+                'currency': row[14],
+                'isAvailable': row[15],
+                'images': images,
+                'createdAt': row[16].isoformat() if row[16] else None,
+                'updatedAt': row[17].isoformat() if row[17] else None
+            })
+        
+        return jsonify(rooms), 200
+        
+    except Exception as e:
+        print(f"Error fetching rooms: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@tour_admin_bp.route('/service-details/restaurant/<int:restaurant_id>/menu', methods=['GET'])
+@admin_required
+def get_restaurant_menu(restaurant_id):
+    """Get all menu items for a restaurant."""
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
     
-    # Calculate accommodation cost
-    if 'accommodation' in services and services['accommodation']:
-        price = get_service_price('accommodation', services['accommodation']['service_id'])
-        breakdown['accommodation'] = price
-    
-    # Calculate transportation cost
-    if 'transportation' in services and services['transportation']:
-        price = get_service_price('transportation', services['transportation']['service_id'])
-        breakdown['transportation'] = price
-    
-    total_price = sum(breakdown.values())
-    
-    return jsonify({
-        'total_price': total_price,
-        'breakdown': breakdown,
-        'currency': 'VND'
-    }), 200
+    try:
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT 
+                id, name, description, category, price, currency,
+                portion_size, preparation_time, calories,
+                is_vegetarian, is_vegan, is_gluten_free, is_spicy,
+                spice_level, allergens, ingredients,
+                is_available, is_popular, is_special,
+                created_at, updated_at
+            FROM restaurant_menu_items
+            WHERE restaurant_id = %s AND is_available = TRUE
+            ORDER BY category, name
+        """, (restaurant_id,))
+        
+        rows = cur.fetchall()
+        
+        menu_items = []
+        for row in rows:
+            # Get menu item images
+            cur.execute("""
+                SELECT image_url FROM service_images
+                WHERE service_type = 'menu_item' AND service_id = %s
+                ORDER BY display_order
+                LIMIT 1
+            """, (row[0],))
+            
+            image_row = cur.fetchone()
+            
+            menu_items.append({
+                'id': row[0],
+                'name': row[1],
+                'description': row[2],
+                'category': row[3],
+                'price': float(row[4]) if row[4] else None,
+                'currency': row[5],
+                'portionSize': row[6],
+                'preparationTime': row[7],
+                'calories': row[8],
+                'isVegetarian': row[9],
+                'isVegan': row[10],
+                'isGlutenFree': row[11],
+                'isSpicy': row[12],
+                'spiceLevel': row[13],
+                'allergens': row[14] if row[14] else [],
+                'ingredients': row[15] if row[15] else [],
+                'isAvailable': row[16],
+                'isPopular': row[17],
+                'isSpecial': row[18],
+                'image': image_row[0] if image_row else None,
+                'createdAt': row[19].isoformat() if row[19] else None,
+                'updatedAt': row[20].isoformat() if row[20] else None
+            })
+        
+        return jsonify(menu_items), 200
+        
+    except Exception as e:
+        print(f"Error fetching menu: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()

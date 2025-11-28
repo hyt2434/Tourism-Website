@@ -14,13 +14,15 @@ import { useState, useEffect } from 'react';
 import { 
   Plus, Edit, Trash2, Eye, Save, X, 
   Calendar, MapPin, DollarSign, Image as ImageIcon,
-  Clock, UtensilsCrossed, Hotel, Car, ChevronDown, ChevronUp
+  Clock, UtensilsCrossed, Hotel, Car, ChevronDown, ChevronUp,
+  Upload, Trash, Info, Users, Utensils
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs.tsx';
 import { 
   getAllTours, 
   getTourDetail, 
@@ -31,6 +33,32 @@ import {
   calculateTourPrice 
 } from '../../api/tours';
 import { getCities } from '../../api/cities';
+
+// Utility function to process images
+const processImages = async (files) => {
+  const processedImages = [];
+  
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    
+    // Convert to base64
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    
+    processedImages.push({
+      url: base64,
+      caption: '',
+      display_order: i,
+      is_primary: i === 0
+    });
+  }
+  
+  return processedImages;
+};
 
 const TIME_PERIODS = ['morning', 'noon', 'evening'];
 
@@ -45,6 +73,14 @@ export default function TourManagementTab() {
     accommodations: [],
     transportation: []
   });
+  
+  const [selectedAccommodationRooms, setSelectedAccommodationRooms] = useState([]);
+  const [selectedRestaurantMenus, setSelectedRestaurantMenus] = useState({}); // dayNumber -> menu items
+  const [loadingServiceDetails, setLoadingServiceDetails] = useState(false);
+  
+  // State for selected items (persists across tab switches)
+  const [selectedRoomIds, setSelectedRoomIds] = useState([]);
+  const [selectedMenuItemIds, setSelectedMenuItemIds] = useState({}); // dayNumber -> array of item IDs
 
   // Form state
   const [formData, setFormData] = useState({
@@ -57,6 +93,7 @@ export default function TourManagementTab() {
     is_published: false,
     images: [],
     itinerary: [],
+    number_of_members: 1,
     services: {
       restaurants: [],
       accommodation: null,
@@ -79,10 +116,32 @@ export default function TourManagementTab() {
   }, [formData.destination_city_id, formData.departure_city_id]);
 
   useEffect(() => {
-    if (formData.services) {
+    console.log('Services changed, triggering price calculation');
+    console.log('Current services:', formData.services);
+    console.log('Selected rooms:', selectedRoomIds);
+    console.log('Selected menu items:', selectedMenuItemIds);
+    
+    // Calculate if we have any services selected OR any room/menu selections
+    const hasAccommodationWithRooms = formData.services?.accommodation && selectedRoomIds.length > 0;
+    const hasRestaurantsWithMenus = formData.services?.restaurants?.length > 0 && 
+      Object.keys(selectedMenuItemIds).some(day => selectedMenuItemIds[day]?.length > 0);
+    const hasTransportation = formData.services?.transportation;
+    
+    // Calculate if ANY service is selected (even without room/menu details)
+    const hasAnyService = hasAccommodationWithRooms || hasRestaurantsWithMenus || hasTransportation;
+    
+    if (hasAnyService) {
       calculatePrice();
+    } else {
+      console.log('No services selected, resetting price to 0');
+      setCalculatedPrice(0);
+      setPriceBreakdown(null);
     }
-  }, [formData.services]);
+  }, [
+    JSON.stringify(formData.services),
+    JSON.stringify(selectedRoomIds),
+    JSON.stringify(selectedMenuItemIds)
+  ]);
 
   const loadTours = async () => {
     setLoading(true);
@@ -117,10 +176,122 @@ export default function TourManagementTab() {
       console.error('Error loading services:', error);
     }
   };
+  
+  const loadAccommodationRooms = async (accommodationId) => {
+    setLoadingServiceDetails(true);
+    try {
+      // Get user email for authentication
+      const userStr = localStorage.getItem('user');
+      const userEmail = userStr ? JSON.parse(userStr).email : null;
+      
+      console.log('Loading rooms for accommodation:', accommodationId);
+      console.log('User email:', userEmail);
+      
+      const url = `/api/admin/tours/service-details/accommodation/${accommodationId}/rooms`;
+      console.log('Fetching URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Email': userEmail || ''
+        },
+        credentials: 'include'
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Error response:', text);
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+        } catch (e) {
+          throw new Error(`Server returned ${response.status}: ${text.substring(0, 200)}`);
+        }
+        throw new Error(errorData.error || 'Failed to load rooms');
+      }
+      
+      const data = await response.json();
+      console.log('Rooms data:', data);
+      setSelectedAccommodationRooms(data || []);
+    } catch (error) {
+      console.error('Error loading accommodation rooms:', error);
+      alert('Failed to load accommodation rooms: ' + error.message);
+    } finally {
+      setLoadingServiceDetails(false);
+    }
+  };
+  
+  const loadRestaurantMenu = async (restaurantId, dayNumber) => {
+    setLoadingServiceDetails(true);
+    try {
+      // Get user email for authentication
+      const userStr = localStorage.getItem('user');
+      const userEmail = userStr ? JSON.parse(userStr).email : null;
+      
+      console.log('Loading menu for restaurant:', restaurantId);
+      console.log('User email:', userEmail);
+      
+      const url = `/api/admin/tours/service-details/restaurant/${restaurantId}/menu`;
+      console.log('Fetching URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Email': userEmail || ''
+        },
+        credentials: 'include'
+      });
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Error response:', text);
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+        } catch (e) {
+          throw new Error(`Server returned ${response.status}: ${text.substring(0, 200)}`);
+        }
+        throw new Error(errorData.error || 'Failed to load menu');
+      }
+      
+      const data = await response.json();
+      console.log('Menu data:', data);
+      setSelectedRestaurantMenus(prev => ({
+        ...prev,
+        [dayNumber]: data || []
+      }));
+    } catch (error) {
+      console.error('Error loading restaurant menu:', error);
+      alert('Failed to load restaurant menu: ' + error.message);
+    } finally {
+      setLoadingServiceDetails(false);
+    }
+  };
 
   const calculatePrice = async () => {
     try {
-      const result = await calculateTourPrice(formData.services);
+      console.log('Calculating price for services:', formData.services);
+      console.log('With selected rooms:', selectedRoomIds);
+      console.log('With selected menu items:', selectedMenuItemIds);
+      
+      // Send all data to the API
+      const requestData = {
+        services: formData.services,
+        selectedRooms: selectedRoomIds,
+        selectedMenuItems: selectedMenuItemIds
+      };
+      
+      console.log('Sending to API:', requestData);
+      
+      const result = await calculateTourPrice(requestData);
+      console.log('Price calculation result:', result);
       setCalculatedPrice(result.total_price);
       setPriceBreakdown(result.breakdown);
     } catch (error) {
@@ -139,6 +310,7 @@ export default function TourManagementTab() {
       is_published: false,
       images: [],
       itinerary: [],
+      number_of_members: 1,
       services: {
         restaurants: [],
         accommodation: null,
@@ -149,6 +321,10 @@ export default function TourManagementTab() {
     setShowForm(false);
     setCalculatedPrice(0);
     setPriceBreakdown(null);
+    setSelectedRoomIds([]);
+    setSelectedMenuItemIds({});
+    setSelectedAccommodationRooms([]);
+    setSelectedRestaurantMenus({});
   };
 
   const handleEdit = async (tour) => {
@@ -161,6 +337,7 @@ export default function TourManagementTab() {
         description: detail.description,
         destination_city_id: detail.destination_city.id,
         departure_city_id: detail.departure_city.id,
+        number_of_members: detail.number_of_members || 1,
         is_active: detail.is_active,
         is_published: detail.is_published,
         images: detail.images || [],
@@ -171,6 +348,23 @@ export default function TourManagementTab() {
           transportation: null
         }
       });
+      
+      // Set selected rooms and menu items
+      setSelectedRoomIds(detail.selectedRooms || []);
+      setSelectedMenuItemIds(detail.selectedMenuItems || {});
+      
+      // Load room details if accommodation is selected
+      if (detail.services?.accommodation?.service_id) {
+        await loadAccommodationRooms(detail.services.accommodation.service_id);
+      }
+      
+      // Load menu details for each restaurant
+      if (detail.services?.restaurants) {
+        for (const restaurant of detail.services.restaurants) {
+          await loadRestaurantMenu(restaurant.service_id, restaurant.day_number);
+        }
+      }
+      
       setShowForm(true);
     } catch (error) {
       console.error('Error loading tour details:', error);
@@ -196,11 +390,18 @@ export default function TourManagementTab() {
     setLoading(true);
 
     try {
+      // Prepare data with selected items
+      const tourData = {
+        ...formData,
+        selectedRooms: selectedRoomIds,
+        selectedMenuItems: selectedMenuItemIds
+      };
+      
       if (editingTour) {
-        await updateTour(editingTour.id, formData);
+        await updateTour(editingTour.id, tourData);
         alert('Tour updated successfully');
       } else {
-        await createTour(formData);
+        await createTour(tourData);
         alert('Tour created successfully');
       }
       
@@ -300,6 +501,22 @@ export default function TourManagementTab() {
           }
         ]
       });
+    }
+  };
+  
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
+    try {
+      const processedImages = await processImages(files);
+      setFormData({
+        ...formData,
+        images: [...formData.images, ...processedImages]
+      });
+    } catch (error) {
+      console.error('Error processing images:', error);
+      alert('Failed to process images');
     }
   };
 
@@ -419,194 +636,268 @@ export default function TourManagementTab() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="name">Tour Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  required
-                  placeholder="e.g., Explore Beautiful Da Nang"
-                />
-              </div>
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="images">Images</TabsTrigger>
+              <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
+              <TabsTrigger value="services">Services</TabsTrigger>
+            </TabsList>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="duration">Duration *</Label>
-                  <Input
-                    id="duration"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({...formData, duration: e.target.value})}
-                    required
-                    placeholder="e.g., 3 days 2 nights"
-                  />
-                </div>
-                <div>
-                  <Label>Calculated Price</Label>
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
-                    <DollarSign className="w-4 h-4 text-green-500" />
-                    <span className="font-semibold">{calculatedPrice.toLocaleString()} VND</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="description">Description *</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  required
-                  rows={4}
-                  placeholder="Describe the tour highlights and key experiences..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="departure_city">Departure City *</Label>
-                  <select
-                    id="departure_city"
-                    value={formData.departure_city_id}
-                    onChange={(e) => setFormData({...formData, departure_city_id: parseInt(e.target.value)})}
-                    required
-                    className="w-full p-2 border rounded"
-                  >
-                    <option value="">Select departure city</option>
-                    {cities.map(city => (
-                      <option key={city.id} value={city.id}>{city.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="destination_city">Destination City *</Label>
-                  <select
-                    id="destination_city"
-                    value={formData.destination_city_id}
-                    onChange={(e) => setFormData({...formData, destination_city_id: parseInt(e.target.value)})}
-                    required
-                    className="w-full p-2 border rounded"
-                  >
-                    <option value="">Select destination city</option>
-                    {cities.map(city => (
-                      <option key={city.id} value={city.id}>{city.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
-                  />
-                  Active
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_published}
-                    onChange={(e) => setFormData({...formData, is_published: e.target.checked})}
-                  />
-                  Published
-                </label>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Images Section */}
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Tour Images</CardTitle>
-                <Button type="button" onClick={addImage} size="sm">
-                  <ImageIcon className="w-4 h-4 mr-2" /> Add Image
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                {formData.images.map((image, idx) => (
-                  <div key={idx} className="relative border rounded p-2">
-                    <img src={image.url} alt="" className="w-full h-32 object-cover rounded" />
+            <TabsContent value="basic" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tour Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Tour Name *</Label>
                     <Input
-                      value={image.caption || ''}
-                      onChange={(e) => {
-                        const updated = [...formData.images];
-                        updated[idx].caption = e.target.value;
-                        setFormData({...formData, images: updated});
-                      }}
-                      placeholder="Caption"
-                      className="mt-2"
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      required
+                      placeholder="e.g., Explore Beautiful Da Nang"
                     />
-                    {image.is_primary && (
-                      <span className="absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                        Primary
-                      </span>
-                    )}
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-1 right-1"
-                      onClick={() => removeImage(idx)}
-                    >
-                      <X className="w-3 h-3" />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="duration">Duration *</Label>
+                      <Input
+                        id="duration"
+                        value={formData.duration}
+                        onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                        required
+                        placeholder="e.g., 3 days 2 nights"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="number_of_members">Number of Members *</Label>
+                      <Input
+                        id="number_of_members"
+                        type="number"
+                        min="1"
+                        value={formData.number_of_members}
+                        onChange={(e) => setFormData({...formData, number_of_members: parseInt(e.target.value) || 1})}
+                        required
+                        placeholder="e.g., 4"
+                      />
+                    </div>
+                    <div>
+                      <Label>Calculated Price (Total)</Label>
+                      <div className="flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200">
+                        <DollarSign className="w-4 h-4 text-green-600" />
+                        <span className="font-semibold text-green-700">{calculatedPrice.toLocaleString()} VND</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="description">Description *</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      required
+                      rows={4}
+                      placeholder="Describe the tour highlights and key experiences..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="departure_city">Departure City *</Label>
+                      <select
+                        id="departure_city"
+                        value={formData.departure_city_id}
+                        onChange={(e) => setFormData({...formData, departure_city_id: parseInt(e.target.value)})}
+                        required
+                        className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select departure city</option>
+                        {cities.map(city => (
+                          <option key={city.id} value={city.id}>{city.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="destination_city">Destination City *</Label>
+                      <select
+                        id="destination_city"
+                        value={formData.destination_city_id}
+                        onChange={(e) => setFormData({...formData, destination_city_id: parseInt(e.target.value)})}
+                        required
+                        className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select destination city</option>
+                        {cities.map(city => (
+                          <option key={city.id} value={city.id}>{city.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.is_active}
+                        onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+                        className="w-4 h-4"
+                      />
+                      <span>Active</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.is_published}
+                        onChange={(e) => setFormData({...formData, is_published: e.target.checked})}
+                        className="w-4 h-4"
+                      />
+                      <span>Published</span>
+                    </label>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="images" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5" />
+                    Tour Images
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Upload Area */}
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <label htmlFor="image-upload" className="cursor-pointer">
+                      <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                      <p className="text-lg font-medium text-gray-700">Click or drag images here</p>
+                      <p className="text-sm text-gray-500 mt-2">Upload multiple images (JPG, PNG, WebP)</p>
+                    </label>
+                  </div>
+
+                  {/* Image Grid */}
+                  {formData.images.length > 0 && (
+                    <div className="grid grid-cols-3 gap-4">
+                      {formData.images.map((image, idx) => (
+                        <div key={idx} className="relative group border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                          <img 
+                            src={image.url} 
+                            alt={image.caption || `Image ${idx + 1}`} 
+                            className="w-full h-48 object-cover"
+                          />
+                          {image.is_primary && (
+                            <span className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                              Primary Image
+                            </span>
+                          )}
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeImage(idx)}
+                          >
+                            <Trash className="w-4 h-4" />
+                          </Button>
+                          <div className="p-3 bg-white">
+                            <Input
+                              value={image.caption || ''}
+                              onChange={(e) => {
+                                const updated = [...formData.images];
+                                updated[idx].caption = e.target.value;
+                                setFormData({...formData, images: updated});
+                              }}
+                              placeholder="Add caption..."
+                              className="text-sm"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="itinerary" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      Daily Itinerary
+                    </CardTitle>
+                    <Button type="button" onClick={addDay} size="sm">
+                      <Plus className="w-4 h-4 mr-2" /> Add Day
                     </Button>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {formData.itinerary.map((day, dayIdx) => (
+                    <DayEditor
+                      key={dayIdx}
+                      day={day}
+                      dayIndex={dayIdx}
+                      onUpdate={updateDay}
+                      onRemove={removeDay}
+                      onAddCheckpoint={addCheckpoint}
+                      onRemoveCheckpoint={removeCheckpoint}
+                      onUpdateCheckpoint={updateCheckpoint}
+                    />
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Itinerary Section */}
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Daily Itinerary</CardTitle>
-                <Button type="button" onClick={addDay} size="sm">
-                  <Calendar className="w-4 h-4 mr-2" /> Add Day
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {formData.itinerary.map((day, dayIdx) => (
-                <DayEditor
-                  key={dayIdx}
-                  day={day}
-                  dayIndex={dayIdx}
-                  onUpdate={updateDay}
-                  onRemove={removeDay}
-                  onAddCheckpoint={addCheckpoint}
-                  onRemoveCheckpoint={removeCheckpoint}
-                  onUpdateCheckpoint={updateCheckpoint}
+            <TabsContent value="services" className="space-y-4">
+              {formData.destination_city_id ? (
+                <ServicesEditor
+                  services={formData.services}
+                  availableServices={availableServices}
+                  itinerary={formData.itinerary}
+                  onChange={(services) => setFormData({...formData, services})}
+                  onLoadAccommodationRooms={loadAccommodationRooms}
+                  onLoadRestaurantMenu={loadRestaurantMenu}
+                  selectedRooms={selectedAccommodationRooms}
+                  selectedMenus={selectedRestaurantMenus}
+                  loadingDetails={loadingServiceDetails}
+                  departureCityId={formData.departure_city_id}
+                  destinationCityId={formData.destination_city_id}
+                  cities={cities}
+                  selectedRoomIds={selectedRoomIds}
+                  setSelectedRoomIds={setSelectedRoomIds}
+                  selectedMenuItemIds={selectedMenuItemIds}
+                  setSelectedMenuItemIds={setSelectedMenuItemIds}
                 />
-              ))}
-            </CardContent>
-          </Card>
+              ) : (
+                <Card>
+                  <CardContent className="p-8 text-center text-gray-500">
+                    <Info className="w-12 h-12 mx-auto mb-4" />
+                    <p>Please select departure and destination cities first</p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          </Tabs>
 
-          {/* Services Section */}
-          {formData.destination_city_id && (
-            <ServicesEditor
-              services={formData.services}
-              availableServices={availableServices}
-              itinerary={formData.itinerary}
-              onChange={(services) => setFormData({...formData, services})}
-            />
-          )}
-
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-end gap-4 sticky bottom-0 bg-white p-4 border-t shadow-lg">
             <Button type="button" variant="outline" onClick={resetForm}>
               <X className="w-4 h-4 mr-2" /> Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="min-w-[150px]">
               <Save className="w-4 h-4 mr-2" /> 
               {loading ? 'Saving...' : editingTour ? 'Update Tour' : 'Create Tour'}
             </Button>
@@ -719,82 +1010,97 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
 }
 
 // Services Editor Component
-function ServicesEditor({ services, availableServices, itinerary, onChange }) {
+function ServicesEditor({ 
+  services, 
+  availableServices, 
+  itinerary, 
+  onChange, 
+  onLoadAccommodationRooms,
+  onLoadRestaurantMenu,
+  selectedRooms,
+  selectedMenus,
+  loadingDetails,
+  departureCityId,
+  destinationCityId,
+  cities,
+  selectedRoomIds,
+  setSelectedRoomIds,
+  selectedMenuItemIds,
+  setSelectedMenuItemIds
+}) {
+  const handleAccommodationChange = async (serviceId) => {
+    onChange({
+      ...services,
+      accommodation: serviceId ? {
+        service_id: parseInt(serviceId),
+        notes: ''
+      } : null
+    });
+    
+    if (serviceId) {
+      await onLoadAccommodationRooms(parseInt(serviceId));
+      setSelectedRoomIds([]);
+    }
+  };
+  
+  const handleRestaurantChange = async (dayNumber, serviceId) => {
+    const updated = services.restaurants.filter(r => r.day_number !== dayNumber);
+    if (serviceId) {
+      updated.push({
+        service_id: parseInt(serviceId),
+        day_number: dayNumber,
+        notes: ''
+      });
+      await onLoadRestaurantMenu(parseInt(serviceId), dayNumber);
+    }
+    onChange({...services, restaurants: updated});
+  };
+  
+  const toggleRoomSelection = (roomId) => {
+    setSelectedRoomIds(prev => 
+      prev.includes(roomId) 
+        ? prev.filter(id => id !== roomId)
+        : [...prev, roomId]
+    );
+  };
+  
+  const toggleMenuItem = (dayNumber, itemId) => {
+    setSelectedMenuItemIds(prev => ({
+      ...prev,
+      [dayNumber]: prev[dayNumber]?.includes(itemId)
+        ? prev[dayNumber].filter(id => id !== itemId)
+        : [...(prev[dayNumber] || []), itemId]
+    }));
+  };
+  
+  const getDepartureCityName = () => {
+    return cities.find(c => c.id === departureCityId)?.name || 'Departure';
+  };
+  
+  const getDestinationCityName = () => {
+    return cities.find(c => c.id === destinationCityId)?.name || 'Destination';
+  };
+  
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Tour Services</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Restaurants (one per day) */}
-        <div>
-          <h4 className="font-semibold mb-3 flex items-center gap-2">
-            <UtensilsCrossed className="w-4 h-4" />
-            Restaurants (one per day)
-          </h4>
-          {itinerary.map((day, idx) => (
-            <div key={idx} className="mb-3">
-              <Label>Day {day.day_number}</Label>
-              <select
-                value={services.restaurants.find(r => r.day_number === day.day_number)?.service_id || ''}
-                onChange={(e) => {
-                  const updated = services.restaurants.filter(r => r.day_number !== day.day_number);
-                  if (e.target.value) {
-                    updated.push({
-                      service_id: parseInt(e.target.value),
-                      day_number: day.day_number,
-                      notes: ''
-                    });
-                  }
-                  onChange({...services, restaurants: updated});
-                }}
-                className="w-full p-2 border rounded"
-              >
-                <option value="">Select restaurant</option>
-                {availableServices.restaurants?.map(r => (
-                  <option key={r.id} value={r.id}>
-                    {r.name} - {r.cuisine_type} ({r.price_range})
-                  </option>
-                ))}
-              </select>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Car className="w-5 h-5 text-blue-500" />
+            Transportation
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center gap-3 text-sm">
+              <MapPin className="w-4 h-4 text-blue-600" />
+              <span className="font-medium">Route:</span>
+              <span className="text-blue-700">{getDepartureCityName()}</span>
+              <span className="text-gray-400">→</span>
+              <span className="text-blue-700">{getDestinationCityName()}</span>
             </div>
-          ))}
-        </div>
-
-        {/* Accommodation */}
-        <div>
-          <h4 className="font-semibold mb-3 flex items-center gap-2">
-            <Hotel className="w-4 h-4" />
-            Accommodation (for entire trip)
-          </h4>
-          <select
-            value={services.accommodation?.service_id || ''}
-            onChange={(e) => {
-              onChange({
-                ...services,
-                accommodation: e.target.value ? {
-                  service_id: parseInt(e.target.value),
-                  notes: ''
-                } : null
-              });
-            }}
-            className="w-full p-2 border rounded"
-          >
-            <option value="">Select accommodation</option>
-            {availableServices.accommodations?.map(a => (
-              <option key={a.id} value={a.id}>
-                {a.name} - {a.star_rating}★ ({a.min_price.toLocaleString()} - {a.max_price.toLocaleString()} VND)
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Transportation */}
-        <div>
-          <h4 className="font-semibold mb-3 flex items-center gap-2">
-            <Car className="w-4 h-4" />
-            Transportation (for entire trip)
-          </h4>
+          </div>
+          
           <select
             value={services.transportation?.service_id || ''}
             onChange={(e) => {
@@ -806,17 +1112,180 @@ function ServicesEditor({ services, availableServices, itinerary, onChange }) {
                 } : null
               });
             }}
-            className="w-full p-2 border rounded"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="">Select transportation</option>
+            <option value="">Select transportation for entire trip</option>
             {availableServices.transportation?.map(t => (
               <option key={t.id} value={t.id}>
-                {t.license_plate} - {t.vehicle_type} {t.brand ? `(${t.brand})` : ''} - {t.max_passengers} pax - {t.base_price.toLocaleString()} VND
+                {t.vehicle_type} {t.brand ? `(${t.brand})` : ''} - 
+                Plate: {t.license_plate} - 
+                {t.max_passengers} passengers - 
+                {t.base_price.toLocaleString()} VND
+                {t.pickup_location && ` - Pickup: ${t.pickup_location}`}
+                {t.dropoff_location && ` - Dropoff: ${t.dropoff_location}`}
               </option>
             ))}
           </select>
-        </div>
-      </CardContent>
-    </Card>
+          
+          {availableServices.transportation?.length === 0 && (
+            <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded">
+              No transportation available for the selected route. Please check departure and destination cities.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Hotel className="w-5 h-5 text-purple-500" />
+            Accommodation
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <select
+            value={services.accommodation?.service_id || ''}
+            onChange={(e) => handleAccommodationChange(e.target.value)}
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+          >
+            <option value="">Select accommodation for entire trip</option>
+            {availableServices.accommodations?.map(a => (
+              <option key={a.id} value={a.id}>
+                {a.name} - {'⭐'.repeat(a.star_rating || 0)} - 
+                {a.min_price.toLocaleString()} - {a.max_price.toLocaleString()} VND/night
+              </option>
+            ))}
+          </select>
+          
+          {/* Room Selection */}
+          {services.accommodation && selectedRooms.length > 0 && (
+            <div className="mt-6 border-t pt-4">
+              <h4 className="font-semibold mb-4 flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Available Rooms - Select rooms for this tour
+              </h4>
+              {loadingDetails ? (
+                <p className="text-center py-4">Loading rooms...</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedRooms.map(room => (
+                    <div 
+                      key={room.id}
+                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                        selectedRoomIds.includes(room.id)
+                          ? 'border-purple-500 bg-purple-50 shadow-md'
+                          : 'border-gray-200 hover:border-purple-300'
+                      }`}
+                      onClick={() => toggleRoomSelection(room.id)}
+                    >
+                      {room.images && room.images.length > 0 && (
+                        <img 
+                          src={room.images[0]} 
+                          alt={room.roomType || room.name}
+                          className="w-full h-32 object-cover rounded mb-3"
+                        />
+                      )}
+                      <h5 className="font-semibold text-lg">{room.roomType || room.name}</h5>
+                      <div className="mt-2 space-y-1 text-sm">
+                        <p className="flex items-center gap-2">
+                          <Users className="w-3 h-3" />
+                          Capacity: {room.maxAdults || 0} adults{room.maxChildren ? ` + ${room.maxChildren} children` : ''}
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <DollarSign className="w-3 h-3" />
+                          {(room.basePrice || 0).toLocaleString()} {room.currency || 'VND'}/night
+                        </p>
+                        {room.bedType && (
+                          <p className="text-gray-600">🛏️ {room.bedType}</p>
+                        )}
+                      </div>
+                      {selectedRoomIds.includes(room.id) && (
+                        <div className="mt-3 bg-purple-100 rounded p-2 text-center text-sm font-medium text-purple-700">
+                          ✓ Selected
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UtensilsCrossed className="w-5 h-5 text-orange-500" />
+            Restaurants (one per day)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {itinerary.map((day, idx) => (
+            <div key={idx} className="border rounded-lg p-4 bg-gray-50">
+              <Label className="font-semibold mb-2 block">Day {day.day_number} - {day.day_title || 'Untitled'}</Label>
+              <select
+                value={services.restaurants.find(r => r.day_number === day.day_number)?.service_id || ''}
+                onChange={(e) => handleRestaurantChange(day.day_number, e.target.value)}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              >
+                <option value="">Select restaurant</option>
+                {availableServices.restaurants?.map(r => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} - {r.cuisine_type} - {r.price_range}
+                  </option>
+                ))}
+              </select>
+              
+              {/* Menu Selection */}
+              {services.restaurants.find(r => r.day_number === day.day_number) && 
+               selectedMenus[day.day_number]?.length > 0 && (
+                <div className="mt-4 border-t pt-4">
+                  <h5 className="font-semibold mb-3 flex items-center gap-2">
+                    <Utensils className="w-4 h-4" />
+                    Menu Items - Select dishes for this day
+                  </h5>
+                  {loadingDetails ? (
+                    <p className="text-center py-4">Loading menu...</p>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-3">
+                      {selectedMenus[day.day_number].map(item => (
+                        <div
+                          key={item.id}
+                          className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                            selectedMenuItemIds[day.day_number]?.includes(item.id)
+                              ? 'border-orange-500 bg-orange-50 shadow-md'
+                              : 'border-gray-200 hover:border-orange-300'
+                          }`}
+                          onClick={() => toggleMenuItem(day.day_number, item.id)}
+                        >
+                          {item.image && (
+                            <img 
+                              src={item.image} 
+                              alt={item.name}
+                              className="w-full h-24 object-cover rounded mb-2"
+                            />
+                          )}
+                          <h6 className="font-medium text-sm">{item.name}</h6>
+                          <p className="text-xs text-gray-600 mt-1">{item.description}</p>
+                          <p className="text-sm font-semibold text-orange-600 mt-2">
+                            {(item.price || 0).toLocaleString()} {item.currency || 'VND'}
+                          </p>
+                          {selectedMenuItemIds[day.day_number]?.includes(item.id) && (
+                            <div className="mt-2 bg-orange-100 rounded p-1 text-center text-xs font-medium text-orange-700">
+                              ✓ Selected
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
