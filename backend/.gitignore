@@ -6,5 +6,6 @@ __pycache__/
 instance/
 *.pyc
 *.env
+.vscode/
 
 __pycache__/

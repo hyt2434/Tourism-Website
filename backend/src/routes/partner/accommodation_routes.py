@@ -20,6 +20,33 @@ accommodation_bp = Blueprint('accommodation_services', __name__, url_prefix='/ap
 # ACCOMMODATION SERVICES ENDPOINTS
 # =====================================================================
 
+@accommodation_bp.route('/cities', methods=['GET'])
+def get_cities_for_accommodation():
+    """Get all cities for accommodation dropdown"""
+    try:
+        conn = get_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cur = conn.cursor()
+        cur.execute("SELECT id, name, code, region FROM cities ORDER BY name")
+        rows = cur.fetchall()
+        
+        cities = [{
+            'id': row[0],
+            'name': row[1],
+            'code': row[2],
+            'region': row[3]
+        } for row in rows]
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify(cities), 200
+    except Exception as e:
+        print(f"Error fetching cities: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @accommodation_bp.route('/', methods=['GET'])
 def get_accommodations():
     """Get all accommodations for the current partner"""
@@ -124,6 +151,15 @@ def create_accommodation():
             return jsonify({'error': 'Database connection failed'}), 500
         
         cur = conn.cursor()
+
+        # Verify ownership of accommodation
+        cur.execute("SELECT partner_id FROM accommodation_services WHERE id = %s", (accommodation_id,))
+        row = cur.fetchone()
+
+        if not row or str(row[0]) != str(partner_id):
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'Unauthorized'}), 403
         
         # Insert accommodation
         cur.execute("""
