@@ -33,6 +33,7 @@ import {
   calculateTourPrice 
 } from '../../api/tours';
 import { getCities } from '../../api/cities';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Utility function to process images
 const processImages = async (files) => {
@@ -63,6 +64,7 @@ const processImages = async (files) => {
 const TIME_PERIODS = ['morning', 'noon', 'evening'];
 
 export default function TourManagementTab() {
+  const { translations } = useLanguage();
   const [tours, setTours] = useState([]);
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -280,12 +282,14 @@ export default function TourManagementTab() {
       console.log('Calculating price for services:', formData.services);
       console.log('With selected rooms:', selectedRoomIds);
       console.log('With selected menu items:', selectedMenuItemIds);
+      console.log('Duration:', formData.duration);
       
-      // Send all data to the API
+      // Send all data to the API including duration for nights calculation
       const requestData = {
         services: formData.services,
         selectedRooms: selectedRoomIds,
-        selectedMenuItems: selectedMenuItemIds
+        selectedMenuItems: selectedMenuItemIds,
+        duration: formData.duration  // Include duration to calculate number of nights
       };
       
       console.log('Sending to API:', requestData);
@@ -373,7 +377,7 @@ export default function TourManagementTab() {
   };
 
   const handleDelete = async (tourId) => {
-    if (!confirm('Are you sure you want to delete this tour?')) return;
+    if (!confirm(translations.confirmDeleteTour || 'Are you sure you want to delete this tour?')) return;
     
     try {
       await deleteTour(tourId);
@@ -549,18 +553,18 @@ export default function TourManagementTab() {
   };
 
   if (loading && !showForm) {
-    return <div className="p-8 text-center">Loading tours...</div>;
+    return <div className="p-8 text-center">{translations.loadingTours || "Loading tours..."}</div>;
   }
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Tour Management</h2>
+        <h2 className="text-2xl font-bold">{translations.tourManagement || "Tour Management"}</h2>
         <Button 
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2"
         >
-          <Plus className="w-4 h-4" /> Create New Tour
+          <Plus className="w-4 h-4" /> {translations.createNewTour || "Create New Tour"}
         </Button>
       </div>
 
@@ -588,11 +592,11 @@ export default function TourManagementTab() {
                     <div className="grid grid-cols-2 gap-4 mt-4">
                       <div className="flex items-center gap-2 text-sm">
                         <MapPin className="w-4 h-4 text-blue-500" />
-                        <span>From: {tour.departure_city.name}</span>
+                        <span>{translations.from || "From"}: {tour.departure_city.name}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <MapPin className="w-4 h-4 text-green-500" />
-                        <span>To: {tour.destination_city.name}</span>
+                        <span>{translations.to || "To"}: {tour.destination_city.name}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <DollarSign className="w-4 h-4 text-yellow-500" />
@@ -602,12 +606,12 @@ export default function TourManagementTab() {
                         <span className={`px-2 py-1 rounded text-xs ${
                           tour.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
-                          {tour.is_active ? 'Active' : 'Inactive'}
+                          {tour.is_active ? (translations.active || 'Active') : (translations.inactive || 'Inactive')}
                         </span>
                         <span className={`px-2 py-1 rounded text-xs ${
                           tour.is_published ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                         }`}>
-                          {tour.is_published ? 'Published' : 'Draft'}
+                          {tour.is_published ? (translations.published || 'Published') : (translations.draft || 'Draft')}
                         </span>
                       </div>
                     </div>
@@ -638,42 +642,42 @@ export default function TourManagementTab() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <Tabs defaultValue="basic" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="basic">Basic Info</TabsTrigger>
-              <TabsTrigger value="images">Images</TabsTrigger>
-              <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
-              <TabsTrigger value="services">Services</TabsTrigger>
+              <TabsTrigger value="basic">{translations.basicInfo || "Basic Info"}</TabsTrigger>
+              <TabsTrigger value="images">{translations.tourImages || "Images"}</TabsTrigger>
+              <TabsTrigger value="itinerary">{translations.dailyItinerary || "Itinerary"}</TabsTrigger>
+              <TabsTrigger value="services">{translations.tourServices || "Services"}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Tour Information</CardTitle>
+                  <CardTitle>{translations.tourInformation || "Tour Information"}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="name">Tour Name *</Label>
+                    <Label htmlFor="name">{translations.tourName || "Tour Name"} *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       required
-                      placeholder="e.g., Explore Beautiful Da Nang"
+                      placeholder={translations.tourNamePlaceholder || "e.g., Explore Beautiful Da Nang"}
                     />
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="duration">Duration *</Label>
+                      <Label htmlFor="duration">{translations.duration || "Duration"} *</Label>
                       <Input
                         id="duration"
                         value={formData.duration}
                         onChange={(e) => setFormData({...formData, duration: e.target.value})}
                         required
-                        placeholder="e.g., 3 days 2 nights"
+                        placeholder={translations.durationPlaceholder || "e.g., 3 days 2 nights"}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="number_of_members">Number of Members *</Label>
+                      <Label htmlFor="number_of_members">{translations.numberOfMembers || "Number of Members"} *</Label>
                       <Input
                         id="number_of_members"
                         type="number"
@@ -681,11 +685,11 @@ export default function TourManagementTab() {
                         value={formData.number_of_members}
                         onChange={(e) => setFormData({...formData, number_of_members: parseInt(e.target.value) || 1})}
                         required
-                        placeholder="e.g., 4"
+                        placeholder={translations.numberOfMembersPlaceholder || "e.g., 4"}
                       />
                     </div>
                     <div>
-                      <Label>Calculated Price (Total)</Label>
+                      <Label>{translations.calculatedPriceTotal || "Calculated Price (Total)"}</Label>
                       <div className="flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200">
                         <DollarSign className="w-4 h-4 text-green-600" />
                         <span className="font-semibold text-green-700">{calculatedPrice.toLocaleString()} VND</span>
@@ -694,20 +698,20 @@ export default function TourManagementTab() {
                   </div>
 
                   <div>
-                    <Label htmlFor="description">Description *</Label>
+                    <Label htmlFor="description">{translations.tourDescriptionLabel || "Description"} *</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                       required
                       rows={4}
-                      placeholder="Describe the tour highlights and key experiences..."
+                      placeholder={translations.tourDescriptionPlaceholder || "Describe the tour highlights and key experiences..."}
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="departure_city">Departure City *</Label>
+                      <Label htmlFor="departure_city">{translations.departureCity || "Departure City"} *</Label>
                       <select
                         id="departure_city"
                         value={formData.departure_city_id}
@@ -715,14 +719,14 @@ export default function TourManagementTab() {
                         required
                         className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">Select departure city</option>
+                        <option value="">{translations.selectDepartureCity || "Select departure city"}</option>
                         {cities.map(city => (
                           <option key={city.id} value={city.id}>{city.name}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <Label htmlFor="destination_city">Destination City *</Label>
+                      <Label htmlFor="destination_city">{translations.destinationCity || "Destination City"} *</Label>
                       <select
                         id="destination_city"
                         value={formData.destination_city_id}
@@ -730,7 +734,7 @@ export default function TourManagementTab() {
                         required
                         className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">Select destination city</option>
+                        <option value="">{translations.selectDestinationCity || "Select destination city"}</option>
                         {cities.map(city => (
                           <option key={city.id} value={city.id}>{city.name}</option>
                         ))}
@@ -746,7 +750,7 @@ export default function TourManagementTab() {
                         onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
                         className="w-4 h-4"
                       />
-                      <span>Active</span>
+                      <span>{translations.active || "Active"}</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -755,7 +759,7 @@ export default function TourManagementTab() {
                         onChange={(e) => setFormData({...formData, is_published: e.target.checked})}
                         className="w-4 h-4"
                       />
-                      <span>Published</span>
+                      <span>{translations.published || "Published"}</span>
                     </label>
                   </div>
                 </CardContent>
@@ -767,7 +771,7 @@ export default function TourManagementTab() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ImageIcon className="w-5 h-5" />
-                    Tour Images
+                    {translations.tourImages || "Tour Images"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -783,8 +787,8 @@ export default function TourManagementTab() {
                     />
                     <label htmlFor="image-upload" className="cursor-pointer">
                       <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                      <p className="text-lg font-medium text-gray-700">Click or drag images here</p>
-                      <p className="text-sm text-gray-500 mt-2">Upload multiple images (JPG, PNG, WebP)</p>
+                      <p className="text-lg font-medium text-gray-700">{translations.clickOrDragImages || "Click or drag images here"}</p>
+                      <p className="text-sm text-gray-500 mt-2">{translations.uploadMultipleImages || "Upload multiple images (JPG, PNG, WebP)"}</p>
                     </label>
                   </div>
 
@@ -800,7 +804,7 @@ export default function TourManagementTab() {
                           />
                           {image.is_primary && (
                             <span className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-3 py-1 rounded-full font-medium">
-                              Primary Image
+                              {translations.primaryImage || "Primary Image"}
                             </span>
                           )}
                           <Button
@@ -838,10 +842,10 @@ export default function TourManagementTab() {
                   <div className="flex justify-between items-center">
                     <CardTitle className="flex items-center gap-2">
                       <Calendar className="w-5 h-5" />
-                      Daily Itinerary
+                      {translations.dailyItinerary || "Daily Itinerary"}
                     </CardTitle>
                     <Button type="button" onClick={addDay} size="sm">
-                      <Plus className="w-4 h-4 mr-2" /> Add Day
+                      <Plus className="w-4 h-4 mr-2" /> {translations.addDay || "Add Day"}
                     </Button>
                   </div>
                 </CardHeader>
@@ -886,7 +890,7 @@ export default function TourManagementTab() {
                 <Card>
                   <CardContent className="p-8 text-center text-gray-500">
                     <Info className="w-12 h-12 mx-auto mb-4" />
-                    <p>Please select departure and destination cities first</p>
+                    <p>{translations.pleaseSelectCities || "Please select departure and destination cities first"}</p>
                   </CardContent>
                 </Card>
               )}
@@ -895,11 +899,11 @@ export default function TourManagementTab() {
 
           <div className="flex justify-end gap-4 sticky bottom-0 bg-white p-4 border-t shadow-lg">
             <Button type="button" variant="outline" onClick={resetForm}>
-              <X className="w-4 h-4 mr-2" /> Cancel
+              <X className="w-4 h-4 mr-2" /> {translations.cancel || "Cancel"}
             </Button>
             <Button type="submit" disabled={loading} className="min-w-[150px]">
               <Save className="w-4 h-4 mr-2" /> 
-              {loading ? 'Saving...' : editingTour ? 'Update Tour' : 'Create Tour'}
+              {loading ? (translations.saving || 'Saving...') : editingTour ? (translations.updateTour || 'Update Tour') : (translations.createTour || 'Create Tour')}
             </Button>
           </div>
         </form>
@@ -910,6 +914,7 @@ export default function TourManagementTab() {
 
 // Day Editor Component
 function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemoveCheckpoint, onUpdateCheckpoint }) {
+  const { translations } = useLanguage();
   const [expanded, setExpanded] = useState(true);
 
   return (
@@ -924,7 +929,7 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
           >
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </Button>
-          <h3 className="font-semibold">Day {day.day_number}</h3>
+          <h3 className="font-semibold">{translations.day || "Day"} {day.day_number}</h3>
         </div>
         <Button
           type="button"
@@ -941,12 +946,12 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
           <Input
             value={day.day_title || ''}
             onChange={(e) => onUpdate(dayIndex, 'day_title', e.target.value)}
-            placeholder="Day title (e.g., Arrival and City Tour)"
+            placeholder={translations.dayTitlePlaceholder || "Day title (e.g., Arrival and City Tour)"}
           />
           <Textarea
             value={day.day_summary || ''}
             onChange={(e) => onUpdate(dayIndex, 'day_summary', e.target.value)}
-            placeholder="Brief day summary"
+            placeholder={translations.daySummaryPlaceholder || "Brief day summary"}
             rows={2}
           />
 
@@ -960,7 +965,7 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
                   variant="outline"
                   onClick={() => onAddCheckpoint(dayIndex, period)}
                 >
-                  <Plus className="w-3 h-3 mr-1" /> Checkpoint
+                  <Plus className="w-3 h-3 mr-1" /> {translations.checkpoint || "Checkpoint"}
                 </Button>
               </div>
 
@@ -976,7 +981,7 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
                     <Input
                       value={checkpoint.activity_title}
                       onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'activity_title', e.target.value)}
-                      placeholder="Activity title"
+                      placeholder={translations.activityTitle || "Activity title"}
                       className="flex-1"
                     />
                     <Button
@@ -991,12 +996,12 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
                   <Input
                     value={checkpoint.location || ''}
                     onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'location', e.target.value)}
-                    placeholder="Location"
+                    placeholder={translations.location || "Location"}
                   />
                   <Textarea
                     value={checkpoint.activity_description || ''}
                     onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'activity_description', e.target.value)}
-                    placeholder="Activity description"
+                    placeholder={translations.activityDescription || "Activity description"}
                     rows={2}
                   />
                 </div>
@@ -1028,6 +1033,7 @@ function ServicesEditor({
   selectedMenuItemIds,
   setSelectedMenuItemIds
 }) {
+  const { translations } = useLanguage();
   const handleAccommodationChange = async (serviceId) => {
     onChange({
       ...services,
@@ -1087,14 +1093,14 @@ function ServicesEditor({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Car className="w-5 h-5 text-blue-500" />
-            Transportation
+            {translations.transportation || "Transportation"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <div className="flex items-center gap-3 text-sm">
               <MapPin className="w-4 h-4 text-blue-600" />
-              <span className="font-medium">Route:</span>
+              <span className="font-medium">{translations.route || "Route"}:</span>
               <span className="text-blue-700">{getDepartureCityName()}</span>
               <span className="text-gray-400">→</span>
               <span className="text-blue-700">{getDestinationCityName()}</span>
@@ -1114,7 +1120,7 @@ function ServicesEditor({
             }}
             className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="">Select transportation for entire trip</option>
+            <option value="">{translations.selectTransportation || "Select transportation for entire trip"}</option>
             {availableServices.transportation?.map(t => (
               <option key={t.id} value={t.id}>
                 {t.vehicle_type} {t.brand ? `(${t.brand})` : ''} - 
@@ -1129,7 +1135,7 @@ function ServicesEditor({
           
           {availableServices.transportation?.length === 0 && (
             <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded">
-              No transportation available for the selected route. Please check departure and destination cities.
+              {translations.noTransportationAvailable || "No transportation available for the selected route. Please check departure and destination cities."}
             </p>
           )}
         </CardContent>
@@ -1139,7 +1145,7 @@ function ServicesEditor({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Hotel className="w-5 h-5 text-purple-500" />
-            Accommodation
+            {translations.accommodation || "Accommodation"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1148,7 +1154,7 @@ function ServicesEditor({
             onChange={(e) => handleAccommodationChange(e.target.value)}
             className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
           >
-            <option value="">Select accommodation for entire trip</option>
+            <option value="">{translations.selectAccommodation || "Select accommodation for entire trip"}</option>
             {availableServices.accommodations?.map(a => (
               <option key={a.id} value={a.id}>
                 {a.name} - {'⭐'.repeat(a.star_rating || 0)} - 
@@ -1162,10 +1168,10 @@ function ServicesEditor({
             <div className="mt-6 border-t pt-4">
               <h4 className="font-semibold mb-4 flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                Available Rooms - Select rooms for this tour
+                {translations.availableRooms || "Available Rooms"} - {translations.selectRoomsForTour || "Select rooms for this tour"}
               </h4>
               {loadingDetails ? (
-                <p className="text-center py-4">Loading rooms...</p>
+                <p className="text-center py-4">{translations.loadingRooms || "Loading rooms..."}</p>
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   {selectedRooms.map(room => (
@@ -1189,11 +1195,11 @@ function ServicesEditor({
                       <div className="mt-2 space-y-1 text-sm">
                         <p className="flex items-center gap-2">
                           <Users className="w-3 h-3" />
-                          Capacity: {room.maxAdults || 0} adults{room.maxChildren ? ` + ${room.maxChildren} children` : ''}
+                          {translations.capacity || "Capacity"}: {room.maxAdults || 0} {translations.adults || "adults"}{room.maxChildren ? ` + ${room.maxChildren} ${translations.children || "children"}` : ''}
                         </p>
                         <p className="flex items-center gap-2">
                           <DollarSign className="w-3 h-3" />
-                          {(room.basePrice || 0).toLocaleString()} {room.currency || 'VND'}/night
+                          {(room.basePrice || 0).toLocaleString()} {room.currency || 'VND'}{translations.perNight || "/night"}
                         </p>
                         {room.bedType && (
                           <p className="text-gray-600">🛏️ {room.bedType}</p>
@@ -1201,7 +1207,7 @@ function ServicesEditor({
                       </div>
                       {selectedRoomIds.includes(room.id) && (
                         <div className="mt-3 bg-purple-100 rounded p-2 text-center text-sm font-medium text-purple-700">
-                          ✓ Selected
+                          ✓ {translations.selected || "Selected"}
                         </div>
                       )}
                     </div>
@@ -1217,19 +1223,19 @@ function ServicesEditor({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UtensilsCrossed className="w-5 h-5 text-orange-500" />
-            Restaurants (one per day)
+            {translations.restaurants || "Restaurants"} {translations.onePerDay || "(one per day)"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {itinerary.map((day, idx) => (
             <div key={idx} className="border rounded-lg p-4 bg-gray-50">
-              <Label className="font-semibold mb-2 block">Day {day.day_number} - {day.day_title || 'Untitled'}</Label>
+              <Label className="font-semibold mb-2 block">{translations.day || "Day"} {day.day_number} - {day.day_title || translations.untitled || 'Untitled'}</Label>
               <select
                 value={services.restaurants.find(r => r.day_number === day.day_number)?.service_id || ''}
                 onChange={(e) => handleRestaurantChange(day.day_number, e.target.value)}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               >
-                <option value="">Select restaurant</option>
+                <option value="">{translations.selectRestaurant || "Select restaurant"}</option>
                 {availableServices.restaurants?.map(r => (
                   <option key={r.id} value={r.id}>
                     {r.name} - {r.cuisine_type} - {r.price_range}
@@ -1243,10 +1249,10 @@ function ServicesEditor({
                 <div className="mt-4 border-t pt-4">
                   <h5 className="font-semibold mb-3 flex items-center gap-2">
                     <Utensils className="w-4 h-4" />
-                    Menu Items - Select dishes for this day
+                    {translations.menuItems || "Menu Items"} - {translations.selectDishesForDay || "Select dishes for this day"}
                   </h5>
                   {loadingDetails ? (
-                    <p className="text-center py-4">Loading menu...</p>
+                    <p className="text-center py-4">{translations.loadingMenu || "Loading menu..."}</p>
                   ) : (
                     <div className="grid grid-cols-3 gap-3">
                       {selectedMenus[day.day_number].map(item => (
@@ -1273,7 +1279,7 @@ function ServicesEditor({
                           </p>
                           {selectedMenuItemIds[day.day_number]?.includes(item.id) && (
                             <div className="mt-2 bg-orange-100 rounded p-1 text-center text-xs font-medium text-orange-700">
-                              ✓ Selected
+                              ✓ {translations.selected || "Selected"}
                             </div>
                           )}
                         </div>

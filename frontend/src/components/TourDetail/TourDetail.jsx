@@ -24,6 +24,9 @@ import {
   Grid,
   ChevronLeft,
   ChevronRight,
+  Hotel,
+  Utensils,
+  Users,
 } from "lucide-react";
 import { ReviewCard } from "./ReviewCard";
 // THÊM IMPORT NÀY
@@ -535,7 +538,128 @@ export default function TourDetail() {
               </TabsContent>
 
               <TabsContent value="included" className="mt-6">
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  {/* Selected Rooms */}
+                  {tourData.selectedRooms && tourData.selectedRooms.length > 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                      <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+                        <Hotel className="w-5 h-5 text-purple-500" />
+                        {translations.selectedRooms || "Phòng đã chọn"}
+                      </h4>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {tourData.selectedRooms.map((room) => (
+                          <div
+                            key={room.id}
+                            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+                          >
+                            {room.image && (
+                              <img
+                                src={room.image}
+                                alt={room.name}
+                                className="w-full h-32 object-cover rounded mb-3"
+                              />
+                            )}
+                            <h5 className="font-semibold text-gray-900 dark:text-white mb-2">
+                              {room.name || room.roomType}
+                            </h5>
+                            <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                              {room.roomType && (
+                                <p>Loại: {room.roomType}</p>
+                              )}
+                              {room.maxAdults && (
+                                <p>
+                                  <Users className="w-4 h-4 inline mr-1" />
+                                  Tối đa: {room.maxAdults} người lớn
+                                  {room.maxChildren ? ` + ${room.maxChildren} trẻ em` : ''}
+                                </p>
+                              )}
+                              {room.bedType && (
+                                <p>🛏️ {room.bedType}</p>
+                              )}
+                              {room.viewType && (
+                                <p>👁️ {room.viewType}</p>
+                              )}
+                              {room.roomSize && (
+                                <p>📐 {room.roomSize}m²</p>
+                              )}
+                              <p className="font-semibold text-blue-600 dark:text-blue-400 mt-2">
+                                {(room.basePrice || 0).toLocaleString("vi-VN")} {room.currency || 'VND'}/đêm
+                              </p>
+                            </div>
+                            {room.amenities && room.amenities.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-1">
+                                {room.amenities.slice(0, 3).map((amenity, idx) => (
+                                  <Badge key={idx} variant="secondary" className="text-xs">
+                                    {amenity}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Selected Menu Items */}
+                  {tourData.selectedMenuItems && Object.keys(tourData.selectedMenuItems).length > 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                      <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+                        <Utensils className="w-5 h-5 text-orange-500" />
+                        {translations.selectedMenuItems || "Món ăn đã chọn"}
+                      </h4>
+                      {Object.entries(tourData.selectedMenuItems).map(([dayNumber, items]) => (
+                        <div key={dayNumber} className="mb-6 last:mb-0">
+                          <h5 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                            {translations.day || "Ngày"} {dayNumber}
+                          </h5>
+                          <div className="grid md:grid-cols-3 gap-3">
+                            {items.map((item) => (
+                              <div
+                                key={item.id}
+                                className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:shadow-md transition-shadow"
+                              >
+                                {item.image && (
+                                  <img
+                                    src={item.image}
+                                    alt={item.name}
+                                    className="w-full h-24 object-cover rounded mb-2"
+                                  />
+                                )}
+                                <h6 className="font-medium text-sm text-gray-900 dark:text-white mb-1">
+                                  {item.name}
+                                </h6>
+                                {item.description && (
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
+                                    {item.description}
+                                  </p>
+                                )}
+                                <div className="flex items-center justify-between mt-2">
+                                  <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                                    {(item.price || 0).toLocaleString("vi-VN")} {item.currency || 'VND'}
+                                  </p>
+                                  <div className="flex gap-1">
+                                    {item.isVegetarian && (
+                                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                                        Chay
+                                      </Badge>
+                                    )}
+                                    {item.isSpicy && (
+                                      <Badge variant="secondary" className="text-xs bg-red-100 text-red-700">
+                                        Cay
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Included Items (if any) */}
                   {tourData.included && tourData.included.length > 0 && (
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                       <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">

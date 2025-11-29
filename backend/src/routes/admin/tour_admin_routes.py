@@ -10,6 +10,7 @@ from src.database import get_connection
 from src.routes.user.auth_routes import admin_required
 from decimal import Decimal
 import json
+import re
 
 tour_admin_bp = Blueprint('tour_admin', __name__, url_prefix='/api/admin/tours')
 
@@ -459,6 +460,48 @@ def create_tour():
                         ON CONFLICT (tour_id, menu_item_id, day_number) DO NOTHING
                     """, (tour_id, item_id, int(day_number)))
         
+        # Calculate and set total_price based on selected rooms and menu items
+        total_price = 0
+        
+        # Extract number of nights from duration (e.g., "3 days 2 nights" -> 2)
+        duration = data.get('duration', '')
+        num_nights = 1  # Default to 1 night
+        if duration:
+            night_match = re.search(r'(\d+)\s*(?:night|đêm)', duration.lower())
+            if night_match:
+                num_nights = int(night_match.group(1))
+        
+        # Calculate accommodation cost from selected rooms (multiply by number of nights)
+        if 'selectedRooms' in data and data['selectedRooms']:
+            for room_id in data['selectedRooms']:
+                cur.execute("""
+                    SELECT base_price FROM accommodation_rooms WHERE id = %s
+                """, (room_id,))
+                result = cur.fetchone()
+                if result and result[0]:
+                    total_price += float(result[0]) * num_nights
+        
+        # Calculate restaurant costs from selected menu items
+        if 'selectedMenuItems' in data and data['selectedMenuItems']:
+            for day_number, item_ids in data['selectedMenuItems'].items():
+                for item_id in item_ids:
+                    cur.execute("""
+                        SELECT price FROM restaurant_menu_items WHERE id = %s
+                    """, (item_id,))
+                    result = cur.fetchone()
+                    if result and result[0]:
+                        total_price += float(result[0])
+        
+        # Add transportation cost (round trip)
+        if 'services' in data and 'transportation' in data['services'] and data['services']['transportation']:
+            trans_price = get_service_price('transportation', data['services']['transportation']['service_id'])
+            total_price += trans_price * 2  # Round trip
+        
+        # Update total_price directly
+        cur.execute("""
+            UPDATE tours_admin SET total_price = %s WHERE id = %s
+        """, (total_price, tour_id))
+        
         conn.commit()
         
         return jsonify({
@@ -653,6 +696,64 @@ def update_tour(tour_id):
                         VALUES (%s, %s, %s)
                         ON CONFLICT (tour_id, menu_item_id, day_number) DO NOTHING
                     """, (tour_id, item_id, int(day_number)))
+        
+        # Calculate and set total_price based on selected rooms and menu items
+        total_price = 0
+        
+        # Get tour duration to calculate number of nights
+        cur.execute("SELECT duration FROM tours_admin WHERE id = %s", (tour_id,))
+        duration_result = cur.fetchone()
+        duration = duration_result[0] if duration_result else ''
+        num_nights = 1  # Default to 1 night
+        if duration:
+            night_match = re.search(r'(\d+)\s*(?:night|đêm)', duration.lower())
+            if night_match:
+                num_nights = int(night_match.group(1))
+        
+        # Get current selected rooms
+        cur.execute("SELECT room_id FROM tour_selected_rooms WHERE tour_id = %s", (tour_id,))
+        selected_room_ids = [row[0] for row in cur.fetchall()]
+        
+        # Calculate accommodation cost from selected rooms (multiply by number of nights)
+        if selected_room_ids:
+            for room_id in selected_room_ids:
+                cur.execute("""
+                    SELECT base_price FROM accommodation_rooms WHERE id = %s
+                """, (room_id,))
+                result = cur.fetchone()
+                if result and result[0]:
+                    total_price += float(result[0]) * num_nights
+        
+        # Get current selected menu items
+        cur.execute("""
+            SELECT menu_item_id FROM tour_selected_menu_items WHERE tour_id = %s
+        """, (tour_id,))
+        selected_menu_item_ids = [row[0] for row in cur.fetchall()]
+        
+        # Calculate restaurant costs from selected menu items
+        if selected_menu_item_ids:
+            for item_id in selected_menu_item_ids:
+                cur.execute("""
+                    SELECT price FROM restaurant_menu_items WHERE id = %s
+                """, (item_id,))
+                result = cur.fetchone()
+                if result and result[0]:
+                    total_price += float(result[0])
+        
+        # Add transportation cost (round trip)
+        cur.execute("""
+            SELECT transportation_id FROM tour_services 
+            WHERE tour_id = %s AND service_type = 'transportation'
+        """, (tour_id,))
+        trans_result = cur.fetchone()
+        if trans_result and trans_result[0]:
+            trans_price = get_service_price('transportation', trans_result[0])
+            total_price += trans_price * 2  # Round trip
+        
+        # Update total_price directly
+        cur.execute("""
+            UPDATE tours_admin SET total_price = %s WHERE id = %s
+        """, (total_price, tour_id))
         
         conn.commit()
         
@@ -859,18 +960,26 @@ def calculate_tour_price():
         print(f"Calculating price - Selected rooms: {selected_rooms}")
         print(f"Calculating price - Selected menu items: {selected_menu_items}")
         
-        # Calculate accommodation cost based on selected rooms
+        # Extract number of nights from duration if provided
+        num_nights = 1  # Default to 1 night
+        if 'duration' in data:
+            duration = data['duration']
+            night_match = re.search(r'(\d+)\s*(?:night|đêm)', duration.lower())
+            if night_match:
+                num_nights = int(night_match.group(1))
+        
+        # Calculate accommodation cost based on selected rooms (multiply by number of nights)
         if 'accommodation' in services and services['accommodation'] and selected_rooms:
-            print(f"Processing {len(selected_rooms)} rooms...")
+            print(f"Processing {len(selected_rooms)} rooms for {num_nights} nights...")
             for room_id in selected_rooms:
                 cur.execute("""
                     SELECT base_price FROM accommodation_rooms WHERE id = %s
                 """, (room_id,))
                 result = cur.fetchone()
                 if result and result[0]:
-                    room_price = float(result[0])
+                    room_price = float(result[0]) * num_nights
                     breakdown['accommodation'] += room_price
-                    print(f"Room {room_id}: {room_price} VND")
+                    print(f"Room {room_id}: {float(result[0])} VND x {num_nights} nights = {room_price} VND")
                 else:
                     print(f"Room {room_id}: No price found")
         

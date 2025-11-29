@@ -138,8 +138,8 @@ export default function AdminPage() {
                 className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
               >
                 <Map className="w-5 h-5" />
-                <span className="hidden sm:inline">Tour Management</span>
-                <span className="sm:hidden">Tours</span>
+                <span className="hidden sm:inline">{translations.tourManagement || "Tour Management"}</span>
+                <span className="sm:hidden">{translations.toursAdmin || "Tours"}</span>
               </TabsTrigger>
               <TabsTrigger
                 value="social"

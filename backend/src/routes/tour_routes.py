@@ -269,6 +269,89 @@ def get_tour_detail(tour_id):
                 service_data['service_name'] = svc_row[10]
                 tour_data['services']['transportation'] = service_data
         
+        # Get selected rooms with details
+        cur.execute("""
+            SELECT 
+                ar.id, ar.name, ar.room_type, ar.description, 
+                ar.max_adults, ar.max_children, ar.room_size, ar.bed_type,
+                ar.base_price, ar.currency, ar.view_type, ar.amenities
+            FROM tour_selected_rooms tsr
+            JOIN accommodation_rooms ar ON tsr.room_id = ar.id
+            WHERE tsr.tour_id = %s
+            ORDER BY ar.base_price
+        """, (tour_id,))
+        
+        tour_data['selectedRooms'] = []
+        for room_row in cur.fetchall():
+            # Get room images
+            cur.execute("""
+                SELECT image_url FROM service_images
+                WHERE service_type = 'accommodation_room' AND service_id = %s
+                ORDER BY display_order
+                LIMIT 1
+            """, (room_row[0],))
+            image_row = cur.fetchone()
+            
+            tour_data['selectedRooms'].append({
+                'id': room_row[0],
+                'name': room_row[1],
+                'roomType': room_row[2],
+                'description': room_row[3],
+                'maxAdults': room_row[4],
+                'maxChildren': room_row[5],
+                'roomSize': float(room_row[6]) if room_row[6] else None,
+                'bedType': room_row[7],
+                'basePrice': float(room_row[8]) if room_row[8] else 0,
+                'currency': room_row[9],
+                'viewType': room_row[10],
+                'amenities': room_row[11] if room_row[11] else [],
+                'image': image_row[0] if image_row else None
+            })
+        
+        # Get selected menu items with details, grouped by day
+        cur.execute("""
+            SELECT 
+                tsmi.day_number, tsmi.menu_item_id,
+                rmi.id, rmi.name, rmi.description, rmi.category,
+                rmi.price, rmi.currency, rmi.portion_size, rmi.is_vegetarian,
+                rmi.is_vegan, rmi.is_gluten_free, rmi.is_spicy, rmi.spice_level
+            FROM tour_selected_menu_items tsmi
+            JOIN restaurant_menu_items rmi ON tsmi.menu_item_id = rmi.id
+            WHERE tsmi.tour_id = %s
+            ORDER BY tsmi.day_number, rmi.category, rmi.name
+        """, (tour_id,))
+        
+        tour_data['selectedMenuItems'] = {}
+        for menu_row in cur.fetchall():
+            day_number = str(menu_row[0])
+            if day_number not in tour_data['selectedMenuItems']:
+                tour_data['selectedMenuItems'][day_number] = []
+            
+            # Get menu item image
+            cur.execute("""
+                SELECT image_url FROM service_images
+                WHERE service_type = 'menu_item' AND service_id = %s
+                ORDER BY display_order
+                LIMIT 1
+            """, (menu_row[2],))
+            image_row = cur.fetchone()
+            
+            tour_data['selectedMenuItems'][day_number].append({
+                'id': menu_row[2],
+                'name': menu_row[3],
+                'description': menu_row[4],
+                'category': menu_row[5],
+                'price': float(menu_row[6]) if menu_row[6] else 0,
+                'currency': menu_row[7],
+                'portionSize': menu_row[8],
+                'isVegetarian': menu_row[9],
+                'isVegan': menu_row[10],
+                'isGlutenFree': menu_row[11],
+                'isSpicy': menu_row[12],
+                'spiceLevel': menu_row[13],
+                'image': image_row[0] if image_row else None
+            })
+        
         return jsonify(tour_data), 200
         
     except Exception as e:
