@@ -132,6 +132,7 @@ export default {
   guests: "Số lượng khách",
   chooseGuests: "Chọn số khách",
   adults: "Người lớn",
+  people: "người",
   rooms: "Số phòng khách sạn",
   roomUnit: "phòng",
   chooseDeparture: "Chọn ngày đi",
@@ -152,6 +153,13 @@ export default {
   panelBookTour: "Đặt Tour",
   panelCustomizeAndBook: "Tùy chỉnh và đặt ngay",
   panelCustomize: "Tùy chỉnh",
+  contactInformation: "Thông tin liên hệ",
+  enterFullName: "Nhập họ và tên",
+  enterEmail: "Nhập email",
+  enterPhone: "Nhập số điện thoại",
+  enterNotes: "Ghi chú thêm (nếu có)",
+  optional: "Tùy chọn",
+  notes: "Ghi chú",
   panelChooseDate: "Chọn ngày",
   panelGuests: "Số khách",
   panelRooms: "Số phòng",
@@ -162,6 +170,11 @@ export default {
   panelRemovableServices: "Dịch vụ có thể bỏ",
   panelTotal: "Tổng cộng",
   panelPriceIncludesTax: "Giá đã bao gồm thuế và phí dịch vụ",
+  paymentMethod: "Phương thức thanh toán",
+  cardPayment: "Thẻ tín dụng/Ghi nợ",
+  cardPaymentDesc: "Visa, Mastercard, JCB",
+  momoPayment: "Ví MoMo",
+  momoPaymentDesc: "Thanh toán qua ví điện tử",
 
   // Services
   service_photo: "Chụp ảnh chuyên nghiệp",
@@ -782,6 +795,8 @@ export default {
   selectedMenuItems: "Món ăn đã chọn",
   untitled: "Chưa có tiêu đề",
   primaryImage: "Ảnh chính",
+  setAsPrimary: "Đặt làm ảnh chính",
+  removeImage: "Xóa ảnh",
   confirmDeleteTour: "Bạn có chắc chắn muốn xóa tour này?",
 
   transportManagement: "Quản lý Nhà xe",
@@ -913,6 +928,8 @@ export default {
     uploadImages: "Tải ảnh lên",
     dragDropImages: "Kéo thả ảnh vào đây, hoặc nhấp để chọn",
     primaryImage: "Ảnh chính",
+    setAsPrimary: "Đặt làm ảnh chính",
+    removeImage: "Xóa ảnh",
     
     // Accommodation
     accommodations: "Chỗ ở",

@@ -15,7 +15,7 @@ import {
   Plus, Edit, Trash2, Eye, Save, X, 
   Calendar, MapPin, DollarSign, Image as ImageIcon,
   Clock, UtensilsCrossed, Hotel, Car, ChevronDown, ChevronUp,
-  Upload, Trash, Info, Users, Utensils
+  Upload, Trash, Info, Users, Utensils, Star
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
@@ -532,6 +532,17 @@ export default function TourManagementTab() {
     });
   };
 
+  const setPrimaryImage = (index) => {
+    const updatedImages = formData.images.map((img, idx) => ({
+      ...img,
+      is_primary: idx === index
+    }));
+    setFormData({
+      ...formData,
+      images: updatedImages
+    });
+  };
+
   const addRestaurant = (dayNumber) => {
     const restaurantId = prompt('Enter restaurant ID:');
     if (restaurantId) {
@@ -639,45 +650,47 @@ export default function TourManagementTab() {
           ))}
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-8">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="basic">{translations.basicInfo || "Basic Info"}</TabsTrigger>
-              <TabsTrigger value="images">{translations.tourImages || "Images"}</TabsTrigger>
-              <TabsTrigger value="itinerary">{translations.dailyItinerary || "Itinerary"}</TabsTrigger>
-              <TabsTrigger value="services">{translations.tourServices || "Services"}</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 gap-2 mb-6">
+              <TabsTrigger value="basic" className="px-4 py-3">{translations.basicInfo || "Basic Info"}</TabsTrigger>
+              <TabsTrigger value="images" className="px-4 py-3">{translations.tourImages || "Images"}</TabsTrigger>
+              <TabsTrigger value="itinerary" className="px-4 py-3">{translations.dailyItinerary || "Itinerary"}</TabsTrigger>
+              <TabsTrigger value="services" className="px-4 py-3">{translations.tourServices || "Services"}</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="basic" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{translations.tourInformation || "Tour Information"}</CardTitle>
+            <TabsContent value="basic" className="space-y-6 mt-6">
+              <Card className="shadow-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl">{translations.tourInformation || "Tour Information"}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">{translations.tourName || "Tour Name"} *</Label>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-medium">{translations.tourName || "Tour Name"} *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       required
+                      className="h-11"
                       placeholder={translations.tourNamePlaceholder || "e.g., Explore Beautiful Da Nang"}
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="duration">{translations.duration || "Duration"} *</Label>
+                  <div className="grid grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="duration" className="text-sm font-medium">{translations.duration || "Duration"} *</Label>
                       <Input
                         id="duration"
                         value={formData.duration}
                         onChange={(e) => setFormData({...formData, duration: e.target.value})}
                         required
+                        className="h-11"
                         placeholder={translations.durationPlaceholder || "e.g., 3 days 2 nights"}
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="number_of_members">{translations.numberOfMembers || "Number of Members"} *</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="number_of_members" className="text-sm font-medium">{translations.numberOfMembers || "Number of Members"} *</Label>
                       <Input
                         id="number_of_members"
                         type="number"
@@ -685,39 +698,41 @@ export default function TourManagementTab() {
                         value={formData.number_of_members}
                         onChange={(e) => setFormData({...formData, number_of_members: parseInt(e.target.value) || 1})}
                         required
+                        className="h-11"
                         placeholder={translations.numberOfMembersPlaceholder || "e.g., 4"}
                       />
                     </div>
-                    <div>
-                      <Label>{translations.calculatedPriceTotal || "Calculated Price (Total)"}</Label>
-                      <div className="flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200">
-                        <DollarSign className="w-4 h-4 text-green-600" />
-                        <span className="font-semibold text-green-700">{calculatedPrice.toLocaleString()} VND</span>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">{translations.calculatedPriceTotal || "Calculated Price (Total)"}</Label>
+                      <div className="flex items-center gap-3 h-11 px-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-md border border-green-200/60 shadow-sm">
+                        <DollarSign className="w-5 h-5 text-green-600" />
+                        <span className="font-semibold text-green-700 text-base">{calculatedPrice.toLocaleString()} VND</span>
                       </div>
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="description">{translations.tourDescriptionLabel || "Description"} *</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="description" className="text-sm font-medium">{translations.tourDescriptionLabel || "Description"} *</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                       required
-                      rows={4}
+                      rows={5}
+                      className="resize-none"
                       placeholder={translations.tourDescriptionPlaceholder || "Describe the tour highlights and key experiences..."}
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="departure_city">{translations.departureCity || "Departure City"} *</Label>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="departure_city" className="text-sm font-medium">{translations.departureCity || "Departure City"} *</Label>
                       <select
                         id="departure_city"
                         value={formData.departure_city_id}
                         onChange={(e) => setFormData({...formData, departure_city_id: parseInt(e.target.value)})}
                         required
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-full h-11 px-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       >
                         <option value="">{translations.selectDepartureCity || "Select departure city"}</option>
                         {cities.map(city => (
@@ -725,14 +740,14 @@ export default function TourManagementTab() {
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <Label htmlFor="destination_city">{translations.destinationCity || "Destination City"} *</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="destination_city" className="text-sm font-medium">{translations.destinationCity || "Destination City"} *</Label>
                       <select
                         id="destination_city"
                         value={formData.destination_city_id}
                         onChange={(e) => setFormData({...formData, destination_city_id: parseInt(e.target.value)})}
                         required
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-full h-11 px-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       >
                         <option value="">{translations.selectDestinationCity || "Select destination city"}</option>
                         {cities.map(city => (
@@ -742,41 +757,41 @@ export default function TourManagementTab() {
                     </div>
                   </div>
 
-                  <div className="flex gap-6">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                  <div className="flex gap-8 pt-2">
+                    <label className="flex items-center gap-3 cursor-pointer group">
                       <input
                         type="checkbox"
                         checked={formData.is_active}
                         onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
-                        className="w-4 h-4"
+                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                       />
-                      <span>{translations.active || "Active"}</span>
+                      <span className="text-sm font-medium group-hover:text-gray-700 transition-colors">{translations.active || "Active"}</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-3 cursor-pointer group">
                       <input
                         type="checkbox"
                         checked={formData.is_published}
                         onChange={(e) => setFormData({...formData, is_published: e.target.checked})}
-                        className="w-4 h-4"
+                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                       />
-                      <span>{translations.published || "Published"}</span>
+                      <span className="text-sm font-medium group-hover:text-gray-700 transition-colors">{translations.published || "Published"}</span>
                     </label>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="images" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+            <TabsContent value="images" className="space-y-6 mt-6">
+              <Card className="shadow-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-xl">
                     <ImageIcon className="w-5 h-5" />
                     {translations.tourImages || "Tour Images"}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   {/* Upload Area */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200">
                     <input
                       type="file"
                       multiple
@@ -785,38 +800,54 @@ export default function TourManagementTab() {
                       className="hidden"
                       id="image-upload"
                     />
-                    <label htmlFor="image-upload" className="cursor-pointer">
-                      <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                      <p className="text-lg font-medium text-gray-700">{translations.clickOrDragImages || "Click or drag images here"}</p>
-                      <p className="text-sm text-gray-500 mt-2">{translations.uploadMultipleImages || "Upload multiple images (JPG, PNG, WebP)"}</p>
+                    <label htmlFor="image-upload" className="cursor-pointer block">
+                      <Upload className="w-14 h-14 mx-auto mb-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                      <p className="text-lg font-semibold text-gray-700 mb-2">{translations.clickOrDragImages || "Click or drag images here"}</p>
+                      <p className="text-sm text-gray-500">{translations.uploadMultipleImages || "Upload multiple images (JPG, PNG, WebP)"}</p>
                     </label>
                   </div>
 
                   {/* Image Grid */}
                   {formData.images.length > 0 && (
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-6">
                       {formData.images.map((image, idx) => (
-                        <div key={idx} className="relative group border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                        <div key={idx} className={`relative group border-2 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-200 ${
+                          image.is_primary ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 hover:border-blue-300'
+                        }`}>
                           <img 
                             src={image.url} 
                             alt={image.caption || `Image ${idx + 1}`} 
-                            className="w-full h-48 object-cover"
+                            className="w-full h-52 object-cover"
                           />
                           {image.is_primary && (
-                            <span className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                            <span className="absolute top-3 left-3 bg-blue-500 text-white text-xs px-3 py-1.5 rounded-full font-semibold shadow-md flex items-center gap-1">
+                              <Star className="w-3 h-3 fill-white" />
                               {translations.primaryImage || "Primary Image"}
                             </span>
                           )}
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => removeImage(idx)}
-                          >
-                            <Trash className="w-4 h-4" />
-                          </Button>
-                          <div className="p-3 bg-white">
+                          <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              type="button"
+                              variant={image.is_primary ? "default" : "secondary"}
+                              size="sm"
+                              className={`shadow-md ${image.is_primary ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'}`}
+                              onClick={() => setPrimaryImage(idx)}
+                              title={translations.setAsPrimary || "Set as primary image"}
+                            >
+                              <Star className={`w-4 h-4 ${image.is_primary ? 'fill-white' : ''}`} />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="shadow-md"
+                              onClick={() => removeImage(idx)}
+                              title={translations.removeImage || "Remove image"}
+                            >
+                              <Trash className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="p-4 bg-white border-t border-gray-100">
                             <Input
                               value={image.caption || ''}
                               onChange={(e) => {
@@ -825,7 +856,7 @@ export default function TourManagementTab() {
                                 setFormData({...formData, images: updated});
                               }}
                               placeholder="Add caption..."
-                              className="text-sm"
+                              className="text-sm h-9"
                             />
                           </div>
                         </div>
@@ -836,20 +867,20 @@ export default function TourManagementTab() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="itinerary" className="space-y-4">
-              <Card>
-                <CardHeader>
+            <TabsContent value="itinerary" className="space-y-6 mt-6">
+              <Card className="shadow-sm">
+                <CardHeader className="pb-4">
                   <div className="flex justify-between items-center">
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-3 text-xl">
                       <Calendar className="w-5 h-5" />
                       {translations.dailyItinerary || "Daily Itinerary"}
                     </CardTitle>
-                    <Button type="button" onClick={addDay} size="sm">
-                      <Plus className="w-4 h-4 mr-2" /> {translations.addDay || "Add Day"}
+                    <Button type="button" onClick={addDay} size="sm" className="gap-2">
+                      <Plus className="w-4 h-4" /> {translations.addDay || "Add Day"}
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   {formData.itinerary.map((day, dayIdx) => (
                     <DayEditor
                       key={dayIdx}
@@ -866,7 +897,7 @@ export default function TourManagementTab() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="services" className="space-y-4">
+            <TabsContent value="services" className="space-y-6 mt-6">
               {formData.destination_city_id ? (
                 <ServicesEditor
                   services={formData.services}
@@ -887,22 +918,22 @@ export default function TourManagementTab() {
                   setSelectedMenuItemIds={setSelectedMenuItemIds}
                 />
               ) : (
-                <Card>
-                  <CardContent className="p-8 text-center text-gray-500">
-                    <Info className="w-12 h-12 mx-auto mb-4" />
-                    <p>{translations.pleaseSelectCities || "Please select departure and destination cities first"}</p>
+                <Card className="shadow-sm">
+                  <CardContent className="p-12 text-center text-gray-500">
+                    <Info className="w-14 h-14 mx-auto mb-4 text-gray-400" />
+                    <p className="text-base">{translations.pleaseSelectCities || "Please select departure and destination cities first"}</p>
                   </CardContent>
                 </Card>
               )}
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-end gap-4 sticky bottom-0 bg-white p-4 border-t shadow-lg">
-            <Button type="button" variant="outline" onClick={resetForm}>
-              <X className="w-4 h-4 mr-2" /> {translations.cancel || "Cancel"}
+          <div className="flex justify-end gap-4 sticky bottom-0 bg-white/95 backdrop-blur-sm p-6 border-t border-gray-200 shadow-lg mt-8">
+            <Button type="button" variant="outline" onClick={resetForm} className="gap-2 min-w-[120px] h-11">
+              <X className="w-4 h-4" /> {translations.cancel || "Cancel"}
             </Button>
-            <Button type="submit" disabled={loading} className="min-w-[150px]">
-              <Save className="w-4 h-4 mr-2" /> 
+            <Button type="submit" disabled={loading} className="min-w-[150px] h-11 gap-2">
+              <Save className="w-4 h-4" /> 
               {loading ? (translations.saving || 'Saving...') : editingTour ? (translations.updateTour || 'Update Tour') : (translations.createTour || 'Create Tour')}
             </Button>
           </div>
@@ -918,77 +949,87 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
   const [expanded, setExpanded] = useState(true);
 
   return (
-    <div className="border rounded-lg p-4 bg-gray-50">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
+    <div className="border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-3">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => setExpanded(!expanded)}
+            className="h-9 w-9"
           >
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </Button>
-          <h3 className="font-semibold">{translations.day || "Day"} {day.day_number}</h3>
+          <h3 className="font-semibold text-lg">{translations.day || "Day"} {day.day_number}</h3>
         </div>
         <Button
           type="button"
           variant="destructive"
           size="sm"
           onClick={() => onRemove(dayIndex)}
+          className="gap-2"
         >
           <Trash2 className="w-4 h-4" />
         </Button>
       </div>
 
       {expanded && (
-        <div className="space-y-4">
-          <Input
-            value={day.day_title || ''}
-            onChange={(e) => onUpdate(dayIndex, 'day_title', e.target.value)}
-            placeholder={translations.dayTitlePlaceholder || "Day title (e.g., Arrival and City Tour)"}
-          />
-          <Textarea
-            value={day.day_summary || ''}
-            onChange={(e) => onUpdate(dayIndex, 'day_summary', e.target.value)}
-            placeholder={translations.daySummaryPlaceholder || "Brief day summary"}
-            rows={2}
-          />
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Input
+              value={day.day_title || ''}
+              onChange={(e) => onUpdate(dayIndex, 'day_title', e.target.value)}
+              className="h-11"
+              placeholder={translations.dayTitlePlaceholder || "Day title (e.g., Arrival and City Tour)"}
+            />
+          </div>
+          <div className="space-y-2">
+            <Textarea
+              value={day.day_summary || ''}
+              onChange={(e) => onUpdate(dayIndex, 'day_summary', e.target.value)}
+              className="resize-none"
+              placeholder={translations.daySummaryPlaceholder || "Brief day summary"}
+              rows={3}
+            />
+          </div>
 
           {TIME_PERIODS.map(period => (
-            <div key={period} className="border-l-4 border-blue-500 pl-4">
-              <div className="flex justify-between items-center mb-2">
-                <h4 className="font-medium capitalize">{period}</h4>
+            <div key={period} className="border-l-4 border-blue-500 pl-5 space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="font-semibold capitalize text-base">{period}</h4>
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   onClick={() => onAddCheckpoint(dayIndex, period)}
+                  className="gap-2"
                 >
-                  <Plus className="w-3 h-3 mr-1" /> {translations.checkpoint || "Checkpoint"}
+                  <Plus className="w-3 h-3" /> {translations.checkpoint || "Checkpoint"}
                 </Button>
               </div>
 
               {day.checkpoints[period].map((checkpoint, cpIdx) => (
-                <div key={cpIdx} className="bg-white p-3 rounded mb-2 space-y-2">
-                  <div className="flex gap-2">
+                <div key={cpIdx} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm space-y-3">
+                  <div className="flex gap-3">
                     <Input
                       type="time"
                       value={checkpoint.checkpoint_time}
                       onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'checkpoint_time', e.target.value)}
-                      className="w-32"
+                      className="w-36 h-10"
                     />
                     <Input
                       value={checkpoint.activity_title}
                       onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'activity_title', e.target.value)}
                       placeholder={translations.activityTitle || "Activity title"}
-                      className="flex-1"
+                      className="flex-1 h-10"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => onRemoveCheckpoint(dayIndex, period, cpIdx)}
+                      className="h-10 w-10"
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -996,11 +1037,13 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
                   <Input
                     value={checkpoint.location || ''}
                     onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'location', e.target.value)}
+                    className="h-10"
                     placeholder={translations.location || "Location"}
                   />
                   <Textarea
                     value={checkpoint.activity_description || ''}
                     onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'activity_description', e.target.value)}
+                    className="resize-none"
                     placeholder={translations.activityDescription || "Activity description"}
                     rows={2}
                   />
@@ -1088,22 +1131,22 @@ function ServicesEditor({
   };
   
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+    <div className="space-y-8">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-xl">
             <Car className="w-5 h-5 text-blue-500" />
             {translations.transportation || "Transportation"}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <CardContent className="space-y-5">
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center gap-3 text-sm">
-              <MapPin className="w-4 h-4 text-blue-600" />
-              <span className="font-medium">{translations.route || "Route"}:</span>
-              <span className="text-blue-700">{getDepartureCityName()}</span>
-              <span className="text-gray-400">→</span>
-              <span className="text-blue-700">{getDestinationCityName()}</span>
+              <MapPin className="w-5 h-5 text-blue-600" />
+              <span className="font-semibold">{translations.route || "Route"}:</span>
+              <span className="text-blue-700 font-medium">{getDepartureCityName()}</span>
+              <span className="text-gray-400 text-lg">→</span>
+              <span className="text-blue-700 font-medium">{getDestinationCityName()}</span>
             </div>
           </div>
           
@@ -1118,7 +1161,7 @@ function ServicesEditor({
                 } : null
               });
             }}
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           >
             <option value="">{translations.selectTransportation || "Select transportation for entire trip"}</option>
             {availableServices.transportation?.map(t => (
@@ -1134,25 +1177,25 @@ function ServicesEditor({
           </select>
           
           {availableServices.transportation?.length === 0 && (
-            <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded">
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 p-4 rounded-lg">
               {translations.noTransportationAvailable || "No transportation available for the selected route. Please check departure and destination cities."}
             </p>
           )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-xl">
             <Hotel className="w-5 h-5 text-purple-500" />
             {translations.accommodation || "Accommodation"}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <select
             value={services.accommodation?.service_id || ''}
             onChange={(e) => handleAccommodationChange(e.target.value)}
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           >
             <option value="">{translations.selectAccommodation || "Select accommodation for entire trip"}</option>
             {availableServices.accommodations?.map(a => (
@@ -1165,22 +1208,22 @@ function ServicesEditor({
           
           {/* Room Selection */}
           {services.accommodation && selectedRooms.length > 0 && (
-            <div className="mt-6 border-t pt-4">
-              <h4 className="font-semibold mb-4 flex items-center gap-2">
-                <Users className="w-4 h-4" />
+            <div className="mt-6 border-t border-gray-200 pt-6">
+              <h4 className="font-semibold text-lg mb-5 flex items-center gap-3">
+                <Users className="w-5 h-5 text-purple-600" />
                 {translations.availableRooms || "Available Rooms"} - {translations.selectRoomsForTour || "Select rooms for this tour"}
               </h4>
               {loadingDetails ? (
-                <p className="text-center py-4">{translations.loadingRooms || "Loading rooms..."}</p>
+                <p className="text-center py-8 text-gray-500">{translations.loadingRooms || "Loading rooms..."}</p>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                   {selectedRooms.map(room => (
                     <div 
                       key={room.id}
-                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                      className={`border-2 rounded-xl p-5 cursor-pointer transition-all ${
                         selectedRoomIds.includes(room.id)
-                          ? 'border-purple-500 bg-purple-50 shadow-md'
-                          : 'border-gray-200 hover:border-purple-300'
+                          ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg'
+                          : 'border-gray-200 hover:border-purple-300 hover:shadow-md'
                       }`}
                       onClick={() => toggleRoomSelection(room.id)}
                     >
@@ -1188,17 +1231,17 @@ function ServicesEditor({
                         <img 
                           src={room.images[0]} 
                           alt={room.roomType || room.name}
-                          className="w-full h-32 object-cover rounded mb-3"
+                          className="w-full h-36 object-cover rounded-lg mb-4"
                         />
                       )}
-                      <h5 className="font-semibold text-lg">{room.roomType || room.name}</h5>
-                      <div className="mt-2 space-y-1 text-sm">
+                      <h5 className="font-semibold text-lg mb-3">{room.roomType || room.name}</h5>
+                      <div className="space-y-2 text-sm">
                         <p className="flex items-center gap-2">
-                          <Users className="w-3 h-3" />
+                          <Users className="w-4 h-4 text-purple-600" />
                           {translations.capacity || "Capacity"}: {room.maxAdults || 0} {translations.adults || "adults"}{room.maxChildren ? ` + ${room.maxChildren} ${translations.children || "children"}` : ''}
                         </p>
                         <p className="flex items-center gap-2">
-                          <DollarSign className="w-3 h-3" />
+                          <DollarSign className="w-4 h-4 text-green-600" />
                           {(room.basePrice || 0).toLocaleString()} {room.currency || 'VND'}{translations.perNight || "/night"}
                         </p>
                         {room.bedType && (
@@ -1206,7 +1249,7 @@ function ServicesEditor({
                         )}
                       </div>
                       {selectedRoomIds.includes(room.id) && (
-                        <div className="mt-3 bg-purple-100 rounded p-2 text-center text-sm font-medium text-purple-700">
+                        <div className="mt-4 bg-purple-100 rounded-lg p-2.5 text-center text-sm font-semibold text-purple-700">
                           ✓ {translations.selected || "Selected"}
                         </div>
                       )}
@@ -1219,21 +1262,21 @@ function ServicesEditor({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-xl">
             <UtensilsCrossed className="w-5 h-5 text-orange-500" />
             {translations.restaurants || "Restaurants"} {translations.onePerDay || "(one per day)"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {itinerary.map((day, idx) => (
-            <div key={idx} className="border rounded-lg p-4 bg-gray-50">
-              <Label className="font-semibold mb-2 block">{translations.day || "Day"} {day.day_number} - {day.day_title || translations.untitled || 'Untitled'}</Label>
+            <div key={idx} className="border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white">
+              <Label className="font-semibold text-base mb-4 block">{translations.day || "Day"} {day.day_number} - {day.day_title || translations.untitled || 'Untitled'}</Label>
               <select
                 value={services.restaurants.find(r => r.day_number === day.day_number)?.service_id || ''}
                 onChange={(e) => handleRestaurantChange(day.day_number, e.target.value)}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
               >
                 <option value="">{translations.selectRestaurant || "Select restaurant"}</option>
                 {availableServices.restaurants?.map(r => (
@@ -1246,22 +1289,22 @@ function ServicesEditor({
               {/* Menu Selection */}
               {services.restaurants.find(r => r.day_number === day.day_number) && 
                selectedMenus[day.day_number]?.length > 0 && (
-                <div className="mt-4 border-t pt-4">
-                  <h5 className="font-semibold mb-3 flex items-center gap-2">
-                    <Utensils className="w-4 h-4" />
+                <div className="mt-6 border-t border-gray-200 pt-6">
+                  <h5 className="font-semibold text-base mb-4 flex items-center gap-3">
+                    <Utensils className="w-5 h-5 text-orange-600" />
                     {translations.menuItems || "Menu Items"} - {translations.selectDishesForDay || "Select dishes for this day"}
                   </h5>
                   {loadingDetails ? (
-                    <p className="text-center py-4">{translations.loadingMenu || "Loading menu..."}</p>
+                    <p className="text-center py-8 text-gray-500">{translations.loadingMenu || "Loading menu..."}</p>
                   ) : (
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 gap-4">
                       {selectedMenus[day.day_number].map(item => (
                         <div
                           key={item.id}
-                          className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                          className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
                             selectedMenuItemIds[day.day_number]?.includes(item.id)
-                              ? 'border-orange-500 bg-orange-50 shadow-md'
-                              : 'border-gray-200 hover:border-orange-300'
+                              ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-amber-50 shadow-lg'
+                              : 'border-gray-200 hover:border-orange-300 hover:shadow-md'
                           }`}
                           onClick={() => toggleMenuItem(day.day_number, item.id)}
                         >
@@ -1269,16 +1312,16 @@ function ServicesEditor({
                             <img 
                               src={item.image} 
                               alt={item.name}
-                              className="w-full h-24 object-cover rounded mb-2"
+                              className="w-full h-28 object-cover rounded-lg mb-3"
                             />
                           )}
-                          <h6 className="font-medium text-sm">{item.name}</h6>
-                          <p className="text-xs text-gray-600 mt-1">{item.description}</p>
-                          <p className="text-sm font-semibold text-orange-600 mt-2">
+                          <h6 className="font-semibold text-sm mb-1">{item.name}</h6>
+                          <p className="text-xs text-gray-600 mb-2 line-clamp-2">{item.description}</p>
+                          <p className="text-sm font-bold text-orange-600">
                             {(item.price || 0).toLocaleString()} {item.currency || 'VND'}
                           </p>
                           {selectedMenuItemIds[day.day_number]?.includes(item.id) && (
-                            <div className="mt-2 bg-orange-100 rounded p-1 text-center text-xs font-medium text-orange-700">
+                            <div className="mt-3 bg-orange-100 rounded-lg p-2 text-center text-xs font-semibold text-orange-700">
                               ✓ {translations.selected || "Selected"}
                             </div>
                           )}

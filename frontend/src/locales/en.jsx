@@ -128,6 +128,7 @@ export default {
   guests: "Guests",
   chooseGuests: "Choose number of guests",
   adults: "Adults",
+  people: "people",
   roomUnit: "room(s)",
   chooseDeparture: "Choose departure date",
   attractions: "Select attractions",
@@ -142,6 +143,13 @@ export default {
   // BookingPanel
   panelBookTour: "Book Tour",
   panelCustomizeAndBook: "Customize and book now",
+  contactInformation: "Contact Information",
+  enterFullName: "Enter full name",
+  enterEmail: "Enter email",
+  enterPhone: "Enter phone number",
+  enterNotes: "Additional notes (optional)",
+  optional: "Optional",
+  notes: "Notes",
   panelCustomize: "Customize",
   panelChooseDate: "Choose date",
   panelGuests: "Guests",
@@ -153,6 +161,11 @@ export default {
   panelRemovableServices: "Removable Services",
   panelTotal: "Total",
   panelPriceIncludesTax: "Price includes tax and service fees",
+  paymentMethod: "Payment Method",
+  cardPayment: "Credit/Debit Card",
+  cardPaymentDesc: "Visa, Mastercard, JCB",
+  momoPayment: "MoMo Wallet",
+  momoPaymentDesc: "Pay via e-wallet",
 
   // Services
   service_photo: "Professional Photography",
@@ -285,7 +298,6 @@ export default {
   addressPlaceholder: "E.g: 123 ABC Street",
   city: "City",
   cityPlaceholder: "E.g: Hanoi",
-  selectCity: "Select City",
   selectedCities: "Selected cities",
   description: "Description",
   submitRegistration: "Submit Registration",
@@ -934,6 +946,8 @@ export default {
     uploadImages: "Upload Images",
     dragDropImages: "Drag and drop images here, or click to select",
     primaryImage: "Primary Image",
+    setAsPrimary: "Set as Primary",
+    removeImage: "Remove Image",
     
     // Accommodation
     accommodations: "Accommodations",

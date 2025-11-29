@@ -1,23 +1,17 @@
 // BookingPanel.jsx — Part 1 (imports, helpers, component start, header, booking tab)
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-import { Separator } from "../ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import {
-    Plus,
-    Minus,
-    CheckCircle,
     X as XIcon,
     Calendar,
-    Users,
-    Hotel,
-    MapPin,
     CreditCard,
-    X,
+    User,
+    Mail,
+    Phone,
+    Wallet,
 } from "lucide-react";
-import { Calendar as CalendarComponent } from "../ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { useLanguage } from "../../context/LanguageContext";
 
 const formatDate = (date, translations) => {
@@ -28,122 +22,62 @@ const formatDate = (date, translations) => {
     return `${day}/${month}/${year}`;
 };
 
-export function BookingPanel({ basePrice, isOpen, onClose }) {
+export function BookingPanel({ basePrice, isOpen, onClose, duration }) {
     if (!isOpen) return null;
 
     const { translations } = useLanguage();
 
-    // Booking states
-    const [guests, setGuests] = useState(2);
-    const [rooms, setRooms] = useState(1);
-    const [startDate, setStartDate] = useState(new Date(2025, 10, 15));
-    const [endDate, setEndDate] = useState(new Date(2025, 10, 20));
-    const [selectedAttractions, setSelectedAttractions] = useState([
-        "halong-bay",
-        "old-quarter",
-    ]);
+    // Booking states - dates and user information
+    const [startDate, setStartDate] = useState(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return today;
+    });
+    const [endDate, setEndDate] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState("card"); // "card" or "momo"
+    const [userInfo, setUserInfo] = useState({
+        fullName: "",
+        email: "",
+        phone: "",
+        notes: "",
+    });
 
-    // Customization states
-    const [additionalServices, setAdditionalServices] = useState([
-        {
-            id: "photo",
-            name: translations.servicePhoto,
-            price: 150,
-            category: "premium",
-            selected: false,
-        },
-        {
-            id: "cooking",
-            name: translations.serviceCooking,
-            price: 80,
-            category: "experience",
-            selected: false,
-        },
-        {
-            id: "spa",
-            name: translations.serviceSpa,
-            price: 120,
-            category: "wellness",
-            selected: false,
-        },
-        {
-            id: "bike",
-            name: translations.serviceBike,
-            price: 60,
-            category: "adventure",
-            selected: false,
-        },
-    ]);
-
-    const attractions = [
-        { id: "halong-bay", name: translations.halongCruise, price: 120 },
-        { id: "old-quarter", name: translations.hanoiOldQuarter, price: 40 },
-        { id: "temple", name: translations.templeOfLiterature, price: 30 },
-        { id: "water-puppet", name: translations.waterPuppetShow, price: 25 },
-    ];
-
-    const [removableServices, setRemovableServices] = useState([
-        {
-            id: "hotel-upgrade",
-            name: translations.removeHotelUpgrade,
-            discount: 100,
-            removed: false,
-        },
-        {
-            id: "cruise-meal",
-            name: translations.removeCruiseMeal,
-            discount: 60,
-            removed: false,
-        },
-        {
-            id: "entrance-fees",
-            name: translations.removeEntranceFees,
-            discount: 40,
-            removed: false,
-        },
-    ]);
-
-    const toggleAdditionalService = (serviceId) => {
-        setAdditionalServices((prev) =>
-            prev.map((service) =>
-                service.id === serviceId ? { ...service, selected: !service.selected } : service
-            )
-        );
+    // Extract number of nights from duration (e.g., "3 ngày 2 đêm" -> 2)
+    const extractNights = (durationStr) => {
+        if (!durationStr) return 1;
+        const match = durationStr.match(/(\d+)\s*(?:night|đêm)/i);
+        return match ? parseInt(match[1]) : 1;
     };
 
-    const toggleRemovableService = (serviceId) => {
-        setRemovableServices((prev) =>
-            prev.map((service) =>
-                service.id === serviceId ? { ...service, removed: !service.removed } : service
-            )
-        );
+    const numNights = extractNights(duration);
+
+    // Auto-calculate end date when start date changes
+    useEffect(() => {
+        if (startDate) {
+            const end = new Date(startDate);
+            end.setDate(end.getDate() + numNights);
+            setEndDate(end);
+        }
+    }, [startDate, numNights]);
+
+    // Helper to check if date is before today (ignoring time)
+    const isDateBeforeToday = (date) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const compareDate = new Date(date);
+        compareDate.setHours(0, 0, 0, 0);
+        return compareDate < today;
     };
 
     const calculateTotal = () => {
-        let total = basePrice * guests;
-        total += rooms * 80;
+        return basePrice;
+    };
 
-        selectedAttractions.forEach((id) => {
-            const attraction = attractions.find((a) => a.id === id);
-            if (attraction) total += attraction.price * guests;
-        });
-
-        const days =
-            startDate && endDate
-                ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-                : 5;
-
-        total = total * days;
-
-        additionalServices.forEach((service) => {
-            if (service.selected) total += service.price * days;
-        });
-
-        removableServices.forEach((service) => {
-            if (service.removed) total -= service.discount * days;
-        });
-
-        return total;
+    const handleInputChange = (field, value) => {
+        setUserInfo(prev => ({
+            ...prev,
+            [field]: value
+        }));
     };
 
     return (
@@ -151,22 +85,28 @@ export function BookingPanel({ basePrice, isOpen, onClose }) {
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
-                onClick={onClose}
+                onClick={(e) => {
+                    // Don't close if clicking on popover
+                    if (e.target && e.target.closest && e.target.closest('[data-slot="popover-content"]')) {
+                        return;
+                    }
+                    onClose();
+                }}
             />
 
             {/* Panel */}
-            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[90vh] bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 flex flex-col mx-4">
+            <div className="fixed top-[10vh] left-1/2 -translate-x-1/2 w-full max-w-4xl max-h-[80vh] bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-visible z-50 flex flex-col mx-4">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-5">
                     <div className="flex justify-between items-start">
                         <div>
                             <h3 className="text-2xl font-bold">{translations.panelBookTour}</h3>
-                            <p className="text-sm opacity-90">{translations.panelCustomizeAndBook}</p>
+                            <p className="text-sm opacity-90">{translations.panelBookTour}</p>
                         </div>
                         <div className="flex items-start gap-4">
                             <div className="text-right">
-                                <p className="text-xs opacity-90">{translations.from}</p>
-                                <p className="text-3xl font-bold">${basePrice}</p>
+                                <p className="text-xs opacity-90">{translations.from || "Từ"}</p>
+                                <p className="text-3xl font-bold">{basePrice.toLocaleString("vi-VN")} VND</p>
                             </div>
                             <button
                                 onClick={onClose}
@@ -178,305 +118,224 @@ export function BookingPanel({ basePrice, isOpen, onClose }) {
                     </div>
                 </div>
 
-                {/* Tabs Content - Scrollable */}
-                <div className="flex-1 overflow-y-auto">
-                    <Tabs defaultValue="booking" className="w-full">
-                        <TabsList className="w-full grid grid-cols-2 sticky top-0 z-10 bg-white dark:bg-gray-800 rounded-none">
-                            <TabsTrigger value="booking">{translations.panelBookTour}</TabsTrigger>
-                            <TabsTrigger value="customize">{translations.panelCustomize}</TabsTrigger>
-                        </TabsList>
-
-                        {/* Tab Đặt Tour / Booking */}
-                        <TabsContent value="booking" className="p-6 m-0">
+                {/* Booking Content - Scrollable */}
+                <div className="flex-1 overflow-y-auto p-6 pt-8 space-y-6 pb-8">
+                    {/* Date Selection */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Left column */}
-                                <div className="space-y-4">
-                                    {/* Guests */}
+                        {/* Departure Date */}
                                     <div>
-                                        <label className="text-sm font-medium flex items-center gap-2 mb-2">
-                                            <Users className="w-4 h-4" />
-                                            {translations.panelGuests}
-                                        </label>
-                                        <div className="flex items-center gap-3">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setGuests(Math.max(1, guests - 1))}
-                                                className="dark:border-gray-700 dark:text-gray-100"
-                                            >
-                                                <Minus className="w-4 h-4" />
-                                            </Button>
-                                            <span className="text-lg font-semibold w-12 text-center">
-                                                {guests}
-                                            </span>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setGuests(guests + 1)}
-                                                className="dark:border-gray-700 dark:text-gray-100"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    {/* Rooms */}
-                                    <div>
-                                        <label className="text-sm font-medium flex items-center gap-2 mb-2">
-                                            <Hotel className="w-4 h-4" />
-                                            {translations.panelRooms}
-                                        </label>
-                                        <div className="flex items-center gap-3">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setRooms(Math.max(1, rooms - 1))}
-                                                className="dark:border-gray-700 dark:text-gray-100"
-                                            >
-                                                <Minus className="w-4 h-4" />
-                                            </Button>
-                                            <span className="text-lg font-semibold w-12 text-center">
-                                                {rooms}
-                                            </span>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setRooms(rooms + 1)}
-                                                className="dark:border-gray-700 dark:text-gray-100"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Right column */}
-                                <div className="space-y-4">
-                                    {/* Start date */}
-                                    <div>
-                                        <label className="text-sm font-medium flex items-center gap-2 mb-2">
+                            <Label className="text-sm font-medium flex items-center gap-2 mb-2">
                                             <Calendar className="w-4 h-4" />
                                             {translations.panelDepartureDate}
-                                        </label>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full justify-start dark:border-gray-700 dark:text-gray-100"
-                                                >
-                                                    {formatDate(startDate, translations)}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                                <CalendarComponent
-                                                    mode="single"
-                                                    selected={startDate}
-                                                    onSelect={setStartDate}
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
+                            </Label>
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    value={startDate.toISOString().split('T')[0]}
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            const newDate = new Date(e.target.value);
+                                            newDate.setHours(0, 0, 0, 0);
+                                            setStartDate(newDate);
+                                        }
+                                    }}
+                                    min={new Date().toISOString().split('T')[0]}
+                                    className="w-full h-11 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
                                     </div>
 
-                                    {/* End date */}
+                        {/* Return Date - Auto-calculated */}
                                     <div>
-                                        <label className="text-sm font-medium flex items-center gap-2 mb-2">
+                            <Label className="text-sm font-medium flex items-center gap-2 mb-2">
                                             <Calendar className="w-4 h-4" />
                                             {translations.panelReturnDate}
-                                        </label>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full justify-start dark:border-gray-700 dark:text-gray-100"
-                                                >
-                                                    {formatDate(endDate, translations)}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                                <CalendarComponent
-                                                    mode="single"
-                                                    selected={endDate}
-                                                    onSelect={setEndDate}
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
-                                    </div>
-                                </div>
+                            </Label>
+                            <div className="w-full h-11 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center">
+                                {endDate ? formatDate(endDate, translations) : translations.chooseReturn || "Chọn ngày về"}
                             </div>
-                        </TabsContent>
-                        {/* Tab Tùy chỉnh / Customize */}
-                        <TabsContent value="customize" className="p-6 m-0">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Left column - Featured Attractions */}
-                                <div className="space-y-4">
-                                    <div>
-                                        <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                                            <MapPin className="w-5 h-5 text-blue-600" />
-                                            {translations.featuredAttractions}
-                                        </h4>
-                                        <div className="space-y-2">
-                                            {attractions.map((attr) => (
-                                                <div
-                                                    key={attr.id}
-                                                    className={`border rounded-lg p-3 cursor-pointer transition-all ${selectedAttractions.includes(attr.id)
-                                                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
-                                                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
-                                                        }`}
-                                                    onClick={() => {
-                                                        if (selectedAttractions.includes(attr.id)) {
-                                                            setSelectedAttractions(
-                                                                selectedAttractions.filter((id) => id !== attr.id)
-                                                            );
-                                                        } else {
-                                                            setSelectedAttractions([...selectedAttractions, attr.id]);
-                                                        }
-                                                    }}
-                                                >
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium">{attr.name}</p>
-                                                        </div>
-                                                        <div className="text-right flex-shrink-0">
-                                                            <p className="text-sm font-semibold text-blue-600">
-                                                                ${attr.price}
-                                                            </p>
-                                                            <div
-                                                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${selectedAttractions.includes(attr.id)
-                                                                    ? "bg-blue-500 border-blue-500"
-                                                                    : "border-gray-300 dark:border-gray-600"
-                                                                    }`}
-                                                            >
-                                                                {selectedAttractions.includes(attr.id) && (
-                                                                    <CheckCircle className="w-3 h-3 text-white" />
+                            {duration && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {translations.duration || "Thời gian"}: {duration}
+                                </p>
                                                                 )}
                                                             </div>
                                                         </div>
+
+                    {/* User Information Section */}
+                    <div className="border-t pt-6">
+                        <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                            {translations.contactInformation || "Thông tin liên hệ"}
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Full Name */}
+                            <div>
+                                <Label htmlFor="fullName" className="text-sm font-medium flex items-center gap-2 mb-2">
+                                    <User className="w-4 h-4" />
+                                    {translations.fullName || "Họ và tên"} <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="fullName"
+                                    type="text"
+                                    placeholder={translations.enterFullName || "Nhập họ và tên"}
+                                    value={userInfo.fullName}
+                                    onChange={(e) => handleInputChange("fullName", e.target.value)}
+                                    className="h-11"
+                                    required
+                                />
+                            </div>
+
+                            {/* Email */}
+                            <div>
+                                <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2 mb-2">
+                                    <Mail className="w-4 h-4" />
+                                    {translations.email || "Email"} <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder={translations.enterEmail || "Nhập email"}
+                                    value={userInfo.email}
+                                    onChange={(e) => handleInputChange("email", e.target.value)}
+                                    className="h-11"
+                                    required
+                                />
                                                     </div>
+
+                            {/* Phone */}
+                            <div>
+                                <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-2 mb-2">
+                                    <Phone className="w-4 h-4" />
+                                    {translations.phone || "Số điện thoại"} <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="phone"
+                                    type="tel"
+                                    placeholder={translations.enterPhone || "Nhập số điện thoại"}
+                                    value={userInfo.phone}
+                                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                                    className="h-11"
+                                    required
+                                />
                                                 </div>
-                                            ))}
+
+                            {/* Notes (optional) */}
+                            <div>
+                                <Label htmlFor="notes" className="text-sm font-medium mb-2">
+                                    {translations.notes || "Ghi chú"} ({translations.optional || "Tùy chọn"})
+                                </Label>
+                                <Input
+                                    id="notes"
+                                    type="text"
+                                    placeholder={translations.enterNotes || "Ghi chú thêm (nếu có)"}
+                                    value={userInfo.notes}
+                                    onChange={(e) => handleInputChange("notes", e.target.value)}
+                                    className="h-11"
+                                />
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Right column - Services */}
-                                <div className="space-y-4">
-                                    {/* Additional Services */}
-                                    <div>
-                                        <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                                            <Plus className="w-4 h-4 text-green-600" />
-                                            {translations.extraServices}
+                    {/* Payment Method Section */}
+                    <div className="border-t pt-6">
+                        <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
+                            <Wallet className="w-5 h-5" />
+                            {translations.paymentMethod || "Phương thức thanh toán"}
                                         </h4>
-                                        <div className="space-y-2">
-                                            {additionalServices.map((service) => (
-                                                <div
-                                                    key={service.id}
-                                                    className={`border rounded-lg p-3 cursor-pointer transition-all ${service.selected
-                                                        ? "border-green-500 bg-green-50 dark:bg-green-900/30"
-                                                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
-                                                        }`}
-                                                    onClick={() => toggleAdditionalService(service.id)}
-                                                >
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium truncate">
-                                                                {translations[`service_${service.id}`]} {/* 👈 lấy từ file dịch */}
-                                                            </p>
-                                                            <Badge variant="secondary" className="text-xs mt-1">
-                                                                {service.category}
-                                                            </Badge>
-                                                        </div>
-                                                        <div className="text-right flex-shrink-0">
-                                                            <p className="text-sm font-semibold text-green-600">
-                                                                +${service.price}
-                                                            </p>
-                                                            <div
-                                                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${service.selected
-                                                                    ? "bg-green-500 border-green-500"
-                                                                    : "border-gray-300 dark:border-gray-600"
-                                                                    }`}
-                                                            >
-                                                                {service.selected && (
-                                                                    <CheckCircle className="w-3 h-3 text-white" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Card Payment */}
+                            <div
+                                onClick={() => setPaymentMethod("card")}
+                                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                                    paymentMethod === "card"
+                                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                        paymentMethod === "card"
+                                            ? "border-blue-500 bg-blue-500"
+                                            : "border-gray-300 dark:border-gray-600"
+                                    }`}>
+                                        {paymentMethod === "card" && (
+                                            <div className="w-2 h-2 rounded-full bg-white" />
                                                                 )}
                                                             </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-
-                                    <Separator />
-
-                                    {/* Removable Services */}
+                                    <CreditCard className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                                     <div>
-                                        <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                                            <Minus className="w-4 h-4 text-red-600" />
-                                            {translations.reduceCost}
-                                        </h4>
-                                        <div className="space-y-2">
-                                            {removableServices.map((service) => (
-                                                <div
-                                                    key={service.id}
-                                                    className={`border rounded-lg p-3 cursor-pointer transition-all ${service.removed
-                                                            ? "border-red-500 bg-red-50 dark:bg-red-900/30"
-                                                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
-                                                        }`}
-                                                    onClick={() => toggleRemovableService(service.id)}
-                                                >
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium truncate">
-                                                                {service.id === "hotel-upgrade" && translations.removeHotelUpgrade}
-                                                                {service.id === "cruise-meal" && translations.removeCruiseMeal}
-                                                                {service.id === "entrance-fees" && translations.removeEntranceFees}
-                                                            </p>
-                                                        </div>
-                                                        <div className="text-right flex-shrink-0">
-                                                            <p className="text-sm font-semibold text-red-600">
-                                                                -${service.discount}
-                                                            </p>
-                                                            <div
-                                                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${service.removed
-                                                                        ? "bg-red-500 border-red-500"
-                                                                        : "border-gray-300 dark:border-gray-600"
-                                                                    }`}
-                                                            >
-                                                                {service.removed && <X className="w-3 h-3 text-white" />}
-                                                            </div>
+                                        <p className="font-semibold text-gray-900 dark:text-white">
+                                            {translations.cardPayment || "Thẻ tín dụng/Ghi nợ"}
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {translations.cardPaymentDesc || "Visa, Mastercard, JCB"}
+                                        </p>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
 
+                            {/* MoMo Payment */}
+                            <div
+                                onClick={() => setPaymentMethod("momo")}
+                                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                                    paymentMethod === "momo"
+                                        ? "border-pink-500 bg-pink-50 dark:bg-pink-900/20"
+                                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                        paymentMethod === "momo"
+                                            ? "border-pink-500 bg-pink-500"
+                                            : "border-gray-300 dark:border-gray-600"
+                                    }`}>
+                                        {paymentMethod === "momo" && (
+                                            <div className="w-2 h-2 rounded-full bg-white" />
+                                        )}
+                                        </div>
+                                    <div className="w-6 h-6 bg-gradient-to-br from-pink-500 to-pink-700 rounded flex items-center justify-center">
+                                        <span className="text-white font-bold text-xs">Mo</span>
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900 dark:text-white">
+                                            {translations.momoPayment || "Ví MoMo"}
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {translations.momoPaymentDesc || "Thanh toán qua ví điện tử"}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </TabsContent>
-                        {/* End of Tabs contents */}
-                    </Tabs> {/* close Tabs */}
-                </div> {/* close flex-1 overflow container */}
+                        </div>
+                    </div>
+                </div>
 
                 {/* Footer - Sticky */}
-                <div className="border-t bg-white dark:bg-gray-800 p-4 space-y-3">
+                <div className="border-t bg-white dark:bg-gray-800 p-6 pt-6 space-y-4">
                     {/* Total */}
                     <div className="flex justify-between items-center">
-                        <span className="font-semibold">{translations.panelTotal}:</span>
-                        <span className="text-2xl font-bold text-primary">
-                            ${calculateTotal()}
+                        <span className="font-semibold text-lg">{translations.panelTotal || "Tổng cộng"}:</span>
+                        <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            {calculateTotal().toLocaleString("vi-VN")} VND
                         </span>
                     </div>
 
                     {/* Book now button */}
-                    <Button className="w-full" size="lg">
+                    <Button 
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white" 
+                        size="lg"
+                        disabled={!userInfo.fullName || !userInfo.email || !userInfo.phone}
+                    >
+                        {paymentMethod === "card" ? (
                         <CreditCard className="w-4 h-4 mr-2" />
-                        {translations.bookNow}
+                        ) : (
+                            <Wallet className="w-4 h-4 mr-2" />
+                        )}
+                        <span className="text-white font-semibold">{translations.bookNow}</span>
                     </Button>
 
-                    <p className="text-xs text-center text-muted-foreground">
-                        💡 {translations.panelPriceIncludesTax}
+                    <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                        💡 {translations.panelPriceIncludesTax || "Giá đã bao gồm thuế và phí dịch vụ"}
                     </p>
                 </div>
             </div> {/* close Panel */}

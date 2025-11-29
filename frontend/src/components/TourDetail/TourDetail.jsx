@@ -27,6 +27,7 @@ import {
   Hotel,
   Utensils,
   Users,
+  Calendar,
 } from "lucide-react";
 import { ReviewCard } from "./ReviewCard";
 // THÊM IMPORT NÀY
@@ -180,6 +181,18 @@ export default function TourDetail() {
                   <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   <span>{tourData.location}</span>
                 </div>
+                {tourData.duration && (
+                  <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-medium">
+                    <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span>{tourData.duration}</span>
+                  </div>
+                )}
+                {tourData.number_of_members && (
+                  <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-medium">
+                    <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span>{tourData.number_of_members} {translations.people || "người"}</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex gap-2">
@@ -245,8 +258,8 @@ export default function TourDetail() {
                         <img
                           src={image.url}
                           alt={image.caption || `${tourData.title} - Ảnh ${index + 2}`}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                          style={{ minHeight: "145px", maxHeight: "145px" }}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 block"
+                          style={{ minHeight: "145px", maxHeight: "145px", display: "block" }}
                         />
                         <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors" />
                       </div>
@@ -261,8 +274,8 @@ export default function TourDetail() {
                         <img
                           src={tourImages[4].url}
                           alt={tourImages[4].caption || `${tourData.title} - Ảnh 5`}
-                          className="w-full h-full object-cover"
-                          style={{ minHeight: "145px", maxHeight: "145px" }}
+                          className="w-full h-full object-cover block"
+                          style={{ minHeight: "145px", maxHeight: "145px", display: "block" }}
                         />
                         <div className="absolute inset-0 bg-black/60 hover:bg-black/70 transition-colors flex items-center justify-center">
                           <div className="text-center text-white">
@@ -284,47 +297,47 @@ export default function TourDetail() {
 
             {/* Gallery Modal - Full screen */}
             {showGallery && (
-              <div className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center">
+              <div className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center py-[10vh] px-4">
                 {/* Close button */}
                 <button
                   onClick={closeGallery}
-                  className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+                  className="absolute top-[10vh] right-4 text-white hover:text-gray-300 transition-colors z-10"
                 >
                   <X className="w-8 h-8" />
                 </button>
 
                 {/* Image counter */}
-                <div className="absolute top-4 left-4 text-white text-lg font-semibold z-10">
+                <div className="absolute top-[10vh] left-4 text-white text-lg font-semibold z-10">
                   {currentImageIndex + 1} / {tourImages.length}
                 </div>
 
                 {/* Previous button */}
                 <button
                   onClick={prevImage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-3 hover:bg-black/70"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-3 hover:bg-black/70 z-10"
                 >
                   <ChevronLeft className="w-8 h-8" />
                 </button>
 
                 {/* Main image */}
-                <div className="max-w-6xl max-h-[90vh] mx-auto px-20">
+                <div className="max-w-6xl w-full max-h-[80vh] mx-auto px-4 md:px-20 flex items-center justify-center">
                   <img
                     src={tourImages[currentImageIndex]?.url}
                     alt={tourImages[currentImageIndex]?.caption || `${tourData.title} - Ảnh ${currentImageIndex + 1}`}
-                    className="w-full h-full object-contain"
+                    className="max-w-full max-h-[80vh] w-auto h-auto object-contain"
                   />
                 </div>
 
                 {/* Next button */}
                 <button
                   onClick={nextImage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-3 hover:bg-black/70"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-3 hover:bg-black/70 z-10"
                 >
                   <ChevronRight className="w-8 h-8" />
                 </button>
 
                 {/* Thumbnails */}
-                <div className="absolute bottom-4 left-0 right-0 px-4">
+                <div className="absolute bottom-[10vh] left-0 right-0 px-4">
                   <div className="max-w-4xl mx-auto flex gap-2 overflow-x-auto pb-2">
                     {tourImages.map((image, index) => (
                       <img
@@ -689,38 +702,35 @@ export default function TourDetail() {
                       "Địa điểm Tour & Khách sạn"}
                   </h3>
 
-                  {tourData.hotel ? (
-                    <>
-                      {/* THAY THẾ iframe bằng TourMap component */}
-                      <TourMap
-                        locations={tourData.tourLocations || []}
-                        centerCoords={tourData.centerCoordinates}
-                        hotelInfo={{
-                          name: tourData.hotel.name,
-                          description: tourData.hotel.description,
-                          address: tourData.hotel.address,
-                          coordinates: tourData.hotel.coordinates,
-                        }}
-                      />
+                  {/* Embedded Map showing destination city */}
+                  {tourData.destination_city && (
+                    <TourMap
+                      locations={tourData.tourLocations || []}
+                      centerCoords={tourData.centerCoordinates}
+                      destinationCityName={tourData.destination_city.name}
+                      hotelInfo={tourData.hotel ? {
+                        name: tourData.hotel.name,
+                        description: tourData.hotel.description,
+                        address: tourData.hotel.address,
+                        coordinates: tourData.hotel.coordinates,
+                      } : null}
+                    />
+                  )}
 
-                      {/* Thông tin khách sạn bên dưới map */}
-                      <div className="mt-6 space-y-2">
-                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {tourData.hotel.name}
-                        </h4>
-                        <p className="text-gray-600 dark:text-gray-400">
-                          {tourData.hotel.description}
-                        </p>
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                          <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                          <span>{tourData.hotel.address}</span>
-                        </div>
+                  {tourData.hotel && (
+                    /* Thông tin khách sạn bên dưới map */
+                    <div className="mt-6 space-y-2">
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {tourData.hotel.name}
+                      </h4>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        {tourData.hotel.description}
+                      </p>
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <span>{tourData.hotel.address}</span>
                       </div>
-                    </>
-                  ) : (
-                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                      {translations.noLocationInfo || "Chưa có thông tin địa điểm"}
-                    </p>
+                    </div>
                   )}
 
                   {/* Danh sách địa điểm trong tour */}
@@ -908,6 +918,7 @@ export default function TourDetail() {
           basePrice={tourData.basePrice}
           isOpen={isBookingPanelOpen}
           onClose={() => setIsBookingPanelOpen(false)}
+          duration={tourData.duration}
         />
       )}
     </div>

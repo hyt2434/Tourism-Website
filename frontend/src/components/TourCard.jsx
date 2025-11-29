@@ -71,20 +71,24 @@ export default function TourCard({ tour, viewMode = "grid" }) {
                 <span className="line-clamp-1">{tour.destination}</span>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                <span>{tour.duration}</span>
-              </div>
+              {tour.duration ? (
+                <div className="flex items-center gap-2">
+                  <Calendar size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                  <span>{tour.duration}</span>
+                </div>
+              ) : null}
 
-              <div className="flex items-center gap-2">
-                <Users size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                <span>
-                  {tour.maxSlots} {translations.slotsLeft}
-                </span>
-              </div>
+              {((tour.maxSlots && tour.maxSlots > 0) || (tour.number_of_members && tour.number_of_members > 0)) ? (
+                <div className="flex items-center gap-2">
+                  <Users size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                  <span>
+                    {tour.maxSlots || tour.number_of_members} {translations.people || "người"}
+                  </span>
+                </div>
+              ) : null}
 
-              {/* Rating */}
-              {tour.rating && (
+              {/* Rating - only show if rating exists and is > 0 and reviews > 0 */}
+              {(tour.rating && tour.rating > 0 && tour.reviews && tour.reviews > 0) ? (
                 <div className="flex items-center gap-2">
                   <div className="bg-blue-600 text-white px-2 py-0.5 rounded font-bold text-xs">
                     {tour.rating}
@@ -93,7 +97,7 @@ export default function TourCard({ tour, viewMode = "grid" }) {
                     ({tour.reviews} {translations.reviews})
                   </span>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -170,21 +174,25 @@ export default function TourCard({ tour, viewMode = "grid" }) {
             <span className="line-clamp-1">{tour.destination}</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
-            <span>{tour.duration}</span>
-          </div>
+          {tour.duration && (
+            <div className="flex items-center gap-2">
+              <Calendar size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+              <span>{tour.duration}</span>
+            </div>
+          )}
 
-          <div className="flex items-center gap-2">
-            <Users size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
-            <span>
-              {tour.maxSlots} {translations.slotsLeft}
-            </span>
-          </div>
+          {((tour.maxSlots && tour.maxSlots > 0) || (tour.number_of_members && tour.number_of_members > 0)) && (
+            <div className="flex items-center gap-2">
+              <Users size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+              <span>
+                {tour.maxSlots || tour.number_of_members} {translations.people || "người"}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Rating */}
-        {tour.rating && (
+        {/* Rating - only show if rating exists and is > 0 and reviews > 0 */}
+        {(tour.rating && tour.rating > 0 && tour.reviews && tour.reviews > 0) ? (
           <div className="flex items-center gap-2 mb-3">
             <div className="bg-blue-600 text-white px-2 py-1 rounded font-bold text-sm">
               {tour.rating}
@@ -193,7 +201,7 @@ export default function TourCard({ tour, viewMode = "grid" }) {
               ({tour.reviews} {translations.reviews})
             </span>
           </div>
-        )}
+        ) : null}
 
         {/* Price */}
         <div className="flex items-end justify-between pt-3 border-t border-gray-100 dark:border-gray-700 transition-colors mt-auto">
