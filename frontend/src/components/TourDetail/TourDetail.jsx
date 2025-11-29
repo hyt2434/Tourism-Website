@@ -8,6 +8,7 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { useLanguage } from "../../context/LanguageContext";
+import { getPublicTourDetail } from "../../api/tours";
 import {
   CheckCircle,
   X,
@@ -21,30 +22,18 @@ import {
   MessageSquare,
   ShoppingCart,
   Grid,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { ReviewCard } from "./ReviewCard";
-import { toursData } from "./tourData";
 // THÊM IMPORT NÀY
 import TourMap from "./TourMap";
-
-// Map tour ID từ URL sang tourId trong data
-const tourIdMapping = {
-  1: "halong-hanoi",
-  2: "danang-hoian",
-  3: "danang-hoian",
-  4: "phuquoc",
-  5: "nhatrang",
-  "halong-hanoi": "halong-hanoi",
-  "danang-hoian": "danang-hoian",
-  "saigon-mekong": "saigon-mekong",
-  "sapa-hagiang": "sapa-hagiang",
-  phuquoc: "phuquoc",
-  nhatrang: "nhatrang",
-};
 
 export default function TourDetail() {
   const { translations } = useLanguage();
   const { id } = useParams();
+  const [tourData, setTourData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
   const [isBookingPanelOpen, setIsBookingPanelOpen] = useState(false);
   const [showStickyButton, setShowStickyButton] = useState(false);
@@ -52,6 +41,26 @@ export default function TourDetail() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [userRole, setUserRole] = useState(null);
   const headerButtonRef = useRef(null);
+
+  // Load tour data from API
+  useEffect(() => {
+    loadTourData();
+  }, [id]);
+
+  const loadTourData = async () => {
+    try {
+      setLoading(true);
+      const data = await getPublicTourDetail(id);
+      console.log('Loaded tour data:', data);
+      console.log('Itinerary:', data?.itinerary);
+      setTourData(data);
+    } catch (error) {
+      console.error('Error loading tour:', error);
+      alert('Failed to load tour details');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Check user role from localStorage
   useEffect(() => {
@@ -62,12 +71,7 @@ export default function TourDetail() {
     }
   }, []);
 
-  // Map ID từ URL sang tourId trong data
-  const mappedTourId = tourIdMapping[id] || "halong-hanoi";
-
-  // Lấy dữ liệu tour theo ID (Giả định toursData["halong-hanoi"] luôn tồn tại)
-  const tourData = toursData[mappedTourId] || toursData["halong-hanoi"];
-  const tourImages = tourData.images;
+  const tourImages = tourData?.images || [];
 
   // Detect khi button header scroll ra khỏi màn hình
   useEffect(() => {
@@ -126,6 +130,27 @@ export default function TourDetail() {
     "data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-300 " +
     "data-[state=active]:font-semibold data-[state=active]:shadow-sm " +
     "data-[state=active]:border-transparent"; // Ẩn viền base khi active
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading tour details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tourData) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 dark:text-gray-400">Tour not found</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
@@ -188,64 +213,71 @@ export default function TourDetail() {
         <div className="grid grid-cols-1 gap-8">
           {/* Nội dung chính - Full width */}
           <div className="space-y-8">
-            {/* Thư viện ảnh - 1 lớn + 4 nhỏ */}
-            <div className="relative rounded-2xl overflow-hidden">
-              <div className="grid grid-cols-5 gap-2">
-                {/* Ảnh chính - chiếm 3 cột, giảm chiều cao */}
-                <div
-                  className="col-span-5 md:col-span-3 relative group cursor-pointer overflow-hidden rounded-lg"
-                  onClick={() => openGallery(0)}
-                >
-                  <ImageWithFallback
-                    src={tourImages[0]}
-                    alt={`${tourData.title} - Ảnh chính`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                    style={{ minHeight: "350px", maxHeight: "450px" }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-
-                {/* 4 ảnh nhỏ - chiếm 2 cột, tăng kích thước */}
-                <div className="col-span-5 md:col-span-2 grid grid-cols-2 gap-2">
-                  {/* 3 ảnh đầu */}
-                  {tourImages.slice(1, 4).map((image, index) => (
-                    <div
-                      key={index}
-                      className="relative group cursor-pointer overflow-hidden rounded-lg"
-                      onClick={() => openGallery(index + 1)}
-                    >
-                      <ImageWithFallback
-                        src={image}
-                        alt={`${tourData.title} - Ảnh ${index + 2}`}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        style={{ minHeight: "145px", maxHeight: "145px" }}
-                      />
-                      <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors" />
-                    </div>
-                  ))}
-
-                  {/* Ảnh cuối cùng - có overlay "Xem thêm" */}
+            {/* Thư viện ảnh */}
+            {tourImages.length > 0 ? (
+              <div className="relative rounded-2xl overflow-hidden">
+                <div className="grid grid-cols-5 gap-2">
+                  {/* Ảnh chính */}
                   <div
-                    className="relative group cursor-pointer overflow-hidden rounded-lg"
-                    onClick={() => openGallery(4)}
+                    className="col-span-5 md:col-span-3 relative group cursor-pointer overflow-hidden rounded-lg"
+                    onClick={() => openGallery(0)}
                   >
-                    <ImageWithFallback
-                      src={tourImages[4]}
-                      alt={`${tourData.title} - Ảnh 5`}
-                      className="w-full h-full object-cover"
-                      style={{ minHeight: "145px", maxHeight: "145px" }}
+                    <img
+                      src={tourImages[0].url}
+                      alt={tourImages[0].caption || `${tourData.title} - Ảnh chính`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                      style={{ minHeight: "350px", maxHeight: "450px" }}
                     />
-                    <div className="absolute inset-0 bg-black/60 hover:bg-black/70 transition-colors flex items-center justify-center">
-                      <div className="text-center text-white">
-                        <Grid className="w-6 h-6 mx-auto mb-1" />
-                        <p className="text-sm font-bold">Xem thêm</p>
-                        <p className="text-xs">{tourImages.length} ảnh</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+
+                  {/* 4 ảnh nhỏ */}
+                  <div className="col-span-5 md:col-span-2 grid grid-cols-2 gap-2">
+                    {tourImages.slice(1, 4).map((image, index) => (
+                      <div
+                        key={image.id}
+                        className="relative group cursor-pointer overflow-hidden rounded-lg"
+                        onClick={() => openGallery(index + 1)}
+                      >
+                        <img
+                          src={image.url}
+                          alt={image.caption || `${tourData.title} - Ảnh ${index + 2}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          style={{ minHeight: "145px", maxHeight: "145px" }}
+                        />
+                        <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors" />
                       </div>
-                    </div>
+                    ))}
+
+                    {/* Ảnh cuối với overlay */}
+                    {tourImages.length >= 5 && (
+                      <div
+                        className="relative group cursor-pointer overflow-hidden rounded-lg"
+                        onClick={() => openGallery(4)}
+                      >
+                        <img
+                          src={tourImages[4].url}
+                          alt={tourImages[4].caption || `${tourData.title} - Ảnh 5`}
+                          className="w-full h-full object-cover"
+                          style={{ minHeight: "145px", maxHeight: "145px" }}
+                        />
+                        <div className="absolute inset-0 bg-black/60 hover:bg-black/70 transition-colors flex items-center justify-center">
+                          <div className="text-center text-white">
+                            <Grid className="w-6 h-6 mx-auto mb-1" />
+                            <p className="text-sm font-bold">Xem thêm</p>
+                            <p className="text-xs">{tourImages.length} ảnh</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-gray-200 dark:bg-gray-700 rounded-2xl h-96 flex items-center justify-center">
+                <p className="text-gray-500 dark:text-gray-400">Chưa có hình ảnh</p>
+              </div>
+            )}
 
             {/* Gallery Modal - Full screen */}
             {showGallery && (
@@ -274,8 +306,8 @@ export default function TourDetail() {
                 {/* Main image */}
                 <div className="max-w-6xl max-h-[90vh] mx-auto px-20">
                   <img
-                    src={tourImages[currentImageIndex]}
-                    alt={`${tourData.title} - Ảnh ${currentImageIndex + 1}`}
+                    src={tourImages[currentImageIndex]?.url}
+                    alt={tourImages[currentImageIndex]?.caption || `${tourData.title} - Ảnh ${currentImageIndex + 1}`}
                     className="w-full h-full object-contain"
                   />
                 </div>
@@ -293,9 +325,9 @@ export default function TourDetail() {
                   <div className="max-w-4xl mx-auto flex gap-2 overflow-x-auto pb-2">
                     {tourImages.map((image, index) => (
                       <img
-                        key={index}
-                        src={image}
-                        alt={`Thumbnail ${index + 1}`}
+                        key={image.id}
+                        src={image.url}
+                        alt={image.caption || `Thumbnail ${index + 1}`}
                         onClick={() => setCurrentImageIndex(index)}
                         className={`w-20 h-16 object-cover rounded cursor-pointer transition-all ${
                           index === currentImageIndex
@@ -343,101 +375,186 @@ export default function TourDetail() {
                   <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
                     {translations.aboutTrip || "Về chuyến đi này"}
                   </h3>
-                  <p className="text-gray-700 dark:text-gray-300 mb-4">
-                    {tourData.description.overview}
+                  <p className="text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-line">
+                    {tourData.description}
                   </p>
-                  <p className="text-gray-700 dark:text-gray-300 mb-4">
-                    {tourData.description.detail}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {tourData.tags.map((tag, index) => (
-                      <Badge
-                        key={index}
-                        variant="secondary"
-                        className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
+                  {tourData.tags && tourData.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      {tourData.tags.map((tag, index) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                  <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                    {translations.tourHighlights || "Điểm nổi bật"}
-                  </h3>
-                  <ul className="space-y-3">
-                    {tourData.highlights.map((highlight, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700 dark:text-gray-300">
-                          {highlight}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                {tourData.highlights && tourData.highlights.length > 0 && (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+                      {translations.tourHighlights || "Điểm nổi bật"}
+                    </h3>
+                    <ul className="space-y-3">
+                      {tourData.highlights.map((highlight, index) => (
+                        <li key={index} className="flex items-start gap-3">
+                          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                          <span className="text-gray-700 dark:text-gray-300">
+                            {highlight}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="itinerary" className="mt-6">
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 space-y-6 border border-gray-200 dark:border-gray-700">
-                  {tourData.itinerary.map((day) => (
-                    <div key={day.day} className="flex gap-4">
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 rounded-full bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center font-semibold text-lg">
-                          {day.day}
+                  {tourData.itinerary && tourData.itinerary.length > 0 ? (
+                    tourData.itinerary.map((day) => (
+                      <div key={day.day_number || day.id} className="border-l-4 border-blue-500 pl-6 pb-6">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-12 h-12 rounded-full bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center font-semibold text-lg shadow-md">
+                            {day.day_number || day.day}
+                          </div>
+                          <div>
+                            <h4 className="text-lg font-bold text-gray-900 dark:text-white">
+                              Ngày {day.day_number || day.day}
+                            </h4>
+                            {day.day_title && (
+                              <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                                {day.day_title}
+                              </p>
+                            )}
+                          </div>
                         </div>
+                        
+                        {day.day_summary && (
+                          <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed whitespace-pre-line">
+                            {day.day_summary}
+                          </p>
+                        )}
+
+                        {/* Time checkpoints if available */}
+                        {day.checkpoints && (
+                          <div className="space-y-3 mt-4">
+                            {/* Morning */}
+                            {day.checkpoints.morning && day.checkpoints.morning.length > 0 && (
+                              <div>
+                                <h5 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">🌅 Buổi sáng</h5>
+                                <div className="space-y-2">
+                                  {day.checkpoints.morning.map((cp, idx) => (
+                                    <div key={cp.id || idx} className="flex gap-2 text-sm">
+                                      <span className="font-medium text-blue-600 dark:text-blue-400 min-w-[60px]">
+                                        {cp.checkpoint_time}
+                                      </span>
+                                      <div className="flex-1">
+                                        <p className="font-medium text-gray-900 dark:text-white">{cp.activity_title}</p>
+                                        {cp.activity_description && (
+                                          <p className="text-gray-600 dark:text-gray-400 text-sm">{cp.activity_description}</p>
+                                        )}
+                                        {cp.location && (
+                                          <p className="text-gray-500 dark:text-gray-500 text-xs flex items-center gap-1 mt-1">
+                                            <MapPin className="w-3 h-3" /> {cp.location}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Noon */}
+                            {day.checkpoints.noon && day.checkpoints.noon.length > 0 && (
+                              <div>
+                                <h5 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">☀️ Buổi trưa</h5>
+                                <div className="space-y-2">
+                                  {day.checkpoints.noon.map((cp, idx) => (
+                                    <div key={cp.id || idx} className="flex gap-2 text-sm">
+                                      <span className="font-medium text-blue-600 dark:text-blue-400 min-w-[60px]">
+                                        {cp.checkpoint_time}
+                                      </span>
+                                      <div className="flex-1">
+                                        <p className="font-medium text-gray-900 dark:text-white">{cp.activity_title}</p>
+                                        {cp.activity_description && (
+                                          <p className="text-gray-600 dark:text-gray-400 text-sm">{cp.activity_description}</p>
+                                        )}
+                                        {cp.location && (
+                                          <p className="text-gray-500 dark:text-gray-500 text-xs flex items-center gap-1 mt-1">
+                                            <MapPin className="w-3 h-3" /> {cp.location}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Evening */}
+                            {day.checkpoints.evening && day.checkpoints.evening.length > 0 && (
+                              <div>
+                                <h5 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">🌙 Buổi tối</h5>
+                                <div className="space-y-2">
+                                  {day.checkpoints.evening.map((cp, idx) => (
+                                    <div key={cp.id || idx} className="flex gap-2 text-sm">
+                                      <span className="font-medium text-blue-600 dark:text-blue-400 min-w-[60px]">
+                                        {cp.checkpoint_time}
+                                      </span>
+                                      <div className="flex-1">
+                                        <p className="font-medium text-gray-900 dark:text-white">{cp.activity_title}</p>
+                                        {cp.activity_description && (
+                                          <p className="text-gray-600 dark:text-gray-400 text-sm">{cp.activity_description}</p>
+                                        )}
+                                        {cp.location && (
+                                          <p className="text-gray-500 dark:text-gray-500 text-xs flex items-center gap-1 mt-1">
+                                            <MapPin className="w-3 h-3" /> {cp.location}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
-                          {day.title}
-                        </h4>
-                        <p className="text-gray-600 dark:text-gray-400">
-                          {day.description}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+                      {translations.noItinerary || "Chưa có lịch trình chi tiết"}
+                    </p>
+                  )}
                 </div>
               </TabsContent>
 
               <TabsContent value="included" className="mt-6">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                    <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                      {translations.tourIncludedItems || "Bao gồm"}
-                    </h4>
-                    <ul className="space-y-2">
-                      {tourData.included.map((item, index) => (
-                        <li
-                          key={index}
-                          className="flex items-center gap-2 text-gray-700 dark:text-gray-300"
-                        >
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                    <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
-                      <X className="w-5 h-5 text-red-500" />
-                      {translations.tourExcludedItems || "Không bao gồm"}
-                    </h4>
-                    <ul className="space-y-2">
-                      {tourData.excluded.map((item, index) => (
-                        <li
-                          key={index}
-                          className="flex items-center gap-2 text-gray-700 dark:text-gray-300"
-                        >
-                          <X className="w-4 h-4 text-red-500" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  {tourData.included && tourData.included.length > 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                      <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        {translations.tourIncludedItems || "Bao gồm"}
+                      </h4>
+                      <ul className="space-y-2">
+                        {tourData.included.map((item, index) => (
+                          <li
+                            key={index}
+                            className="flex items-center gap-2 text-gray-700 dark:text-gray-300"
+                          >
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
@@ -448,31 +565,39 @@ export default function TourDetail() {
                       "Địa điểm Tour & Khách sạn"}
                   </h3>
 
-                  {/* THAY THẾ iframe bằng TourMap component */}
-                  <TourMap
-                    locations={tourData.tourLocations || []}
-                    centerCoords={tourData.centerCoordinates}
-                    hotelInfo={{
-                      name: tourData.hotel.name,
-                      description: tourData.hotel.description,
-                      address: tourData.hotel.address,
-                      coordinates: tourData.hotel.coordinates,
-                    }}
-                  />
+                  {tourData.hotel ? (
+                    <>
+                      {/* THAY THẾ iframe bằng TourMap component */}
+                      <TourMap
+                        locations={tourData.tourLocations || []}
+                        centerCoords={tourData.centerCoordinates}
+                        hotelInfo={{
+                          name: tourData.hotel.name,
+                          description: tourData.hotel.description,
+                          address: tourData.hotel.address,
+                          coordinates: tourData.hotel.coordinates,
+                        }}
+                      />
 
-                  {/* Thông tin khách sạn bên dưới map */}
-                  <div className="mt-6 space-y-2">
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {tourData.hotel.name}
-                    </h4>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      {tourData.hotel.description}
+                      {/* Thông tin khách sạn bên dưới map */}
+                      <div className="mt-6 space-y-2">
+                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          {tourData.hotel.name}
+                        </h4>
+                        <p className="text-gray-600 dark:text-gray-400">
+                          {tourData.hotel.description}
+                        </p>
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                          <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          <span>{tourData.hotel.address}</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+                      {translations.noLocationInfo || "Chưa có thông tin địa điểm"}
                     </p>
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                      <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <span>{tourData.hotel.address}</span>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Danh sách địa điểm trong tour */}
                   {tourData.tourLocations &&
@@ -515,58 +640,60 @@ export default function TourDetail() {
             </Tabs>
 
             {/* Phần đánh giá */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {translations.customerReviews || "Đánh giá từ khách hàng"}
-                </h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {tourData.rating}
-                  </span>
-                  <div>
-                    <div className="flex gap-1">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < Math.floor(tourData.rating)
-                              ? "fill-yellow-400 text-yellow-400"
-                              : "fill-gray-300 text-gray-300 dark:fill-gray-600 dark:text-gray-600"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {tourData.reviewCount}{" "}
-                      {translations.reviews || "đánh giá"}
+            {tourData.reviews && tourData.reviews.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    {translations.customerReviews || "Đánh giá từ khách hàng"}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {tourData.rating}
                     </span>
+                    <div>
+                      <div className="flex gap-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${
+                              i < Math.floor(tourData.rating)
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "fill-gray-300 text-gray-300 dark:fill-gray-600 dark:text-gray-600"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {tourData.reviewCount}{" "}
+                        {translations.reviews || "đánh giá"}
+                      </span>
+                    </div>
                   </div>
                 </div>
+
+                <div className="space-y-4">
+                  {tourData.reviews.map((review, index) => (
+                    <ReviewCard
+                      key={index}
+                      name={review.name}
+                      rating={review.rating}
+                      date={review.date}
+                      review={review.review}
+                      helpful={review.helpful}
+                    />
+                  ))}
+                </div>
+
+                <Separator className="my-6 bg-gray-200 dark:bg-gray-700" />
+
+                <Button
+                  variant="outline"
+                  className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  {translations.viewAllReviews || "Xem tất cả đánh giá"}
+                </Button>
               </div>
-
-              <div className="space-y-4">
-                {tourData.reviews.map((review, index) => (
-                  <ReviewCard
-                    key={index}
-                    name={review.name}
-                    rating={review.rating}
-                    date={review.date}
-                    review={review.review}
-                    helpful={review.helpful}
-                  />
-                ))}
-              </div>
-
-              <Separator className="my-6 bg-gray-200 dark:bg-gray-700" />
-
-              <Button
-                variant="outline"
-                className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                {translations.viewAllReviews || "Xem tất cả đánh giá"}
-              </Button>
-            </div>
+            )}
 
             {/* Liên hệ nhà cung cấp */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">

@@ -22,6 +22,47 @@ const getAuthHeaders = () => {
 };
 
 /**
+ * Get published tours for public tour page (no auth required)
+ */
+export const getPublishedTours = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    
+    if (filters.search) params.append('search', filters.search);
+    if (filters.destination_city_id) params.append('destination_city_id', filters.destination_city_id);
+    if (filters.departure_city_id) params.append('departure_city_id', filters.departure_city_id);
+    if (filters.max_price) params.append('max_price', filters.max_price);
+    if (filters.min_duration) params.append('min_duration', filters.min_duration);
+    if (filters.max_duration) params.append('max_duration', filters.max_duration);
+    
+    const url = params.toString() 
+      ? `${API_BASE_URL}/api/tours?${params.toString()}`
+      : `${API_BASE_URL}/api/tours`;
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch published tours');
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching published tours:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get public tour detail by ID (no auth required)
+ */
+export const getPublicTourDetail = async (tourId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/tours/${tourId}`);
+    if (!response.ok) throw new Error(`Failed to fetch tour ${tourId}`);
+    return response.json();
+  } catch (error) {
+    console.error(`Error fetching tour ${tourId}:`, error);
+    throw error;
+  }
+};
+
+/**
  * Get all tours (admin only)
  */
 export const getAllTours = async () => {
