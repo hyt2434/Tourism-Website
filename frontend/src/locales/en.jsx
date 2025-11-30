@@ -564,7 +564,7 @@ export default {
   activities: "Activities & Fun",
   more: "More",
 
-  newUserPromoCodes: "New User Promo Codes",
+  newUserPromoCodes: "Promo Codes",
 
   reviewsTitle: "Reviews / Ratings",
   review1: "Amazing experience! The tour was well-organized and stress-free.",

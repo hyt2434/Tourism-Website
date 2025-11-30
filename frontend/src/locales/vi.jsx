@@ -568,7 +568,7 @@ export default {
   activities: "Hoạt động & Vui chơi",
   more: "Thêm",
 
-  newUserPromoCodes: "Mã khuyến mãi cho người dùng mới",
+  newUserPromoCodes: "Mã khuyến mãi",
 
   reviewsTitle: "Đánh giá / Xếp hạng",
   review1:

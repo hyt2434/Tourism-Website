@@ -85,6 +85,10 @@ try:
     from src.migration.migrate_tour_selections import migrate_tour_selections
     migrate_tour_selections()
 
+    # Initialize promotions homepage fields
+    from src.migration.migrate_promotions_homepage import migrate_promotions_homepage
+    migrate_promotions_homepage()
+
 
 except Exception as e:
     print(f"[WARNING] Could not initialize database tables: {e}")

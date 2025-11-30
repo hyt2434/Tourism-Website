@@ -34,6 +34,12 @@ import {
 } from '../../api/tours';
 import { getCities } from '../../api/cities';
 import { useLanguage } from '../../context/LanguageContext';
+import { 
+  getAllPromotions, 
+  createPromotion, 
+  updatePromotion, 
+  deletePromotion 
+} from '../../api/promotions';
 
 // Utility function to process images
 const processImages = async (files) => {
@@ -65,11 +71,34 @@ const TIME_PERIODS = ['morning', 'noon', 'evening'];
 
 export default function TourManagementTab() {
   const { translations } = useLanguage();
+  const [activeSection, setActiveSection] = useState('tours'); // 'tours' or 'promotions'
   const [tours, setTours] = useState([]);
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingTour, setEditingTour] = useState(null);
+  
+  // Promotions state
+  const [promotions, setPromotions] = useState([]);
+  const [showPromotionForm, setShowPromotionForm] = useState(false);
+  const [editingPromotion, setEditingPromotion] = useState(null);
+  const [promotionFormData, setPromotionFormData] = useState({
+    code: '',
+    discount_type: 'percentage', // 'percentage' or 'fixed'
+    discount_value: '',
+    max_uses: null,
+    start_date: '',
+    end_date: '',
+    conditions: '',
+    is_active: true,
+    show_on_homepage: false,
+    promotion_type: 'promo_code', // 'banner' or 'promo_code'
+    title: '',
+    subtitle: '',
+    image: '',
+    highlight: '',
+    terms: 'Terms & Conditions apply.'
+  });
   const [availableServices, setAvailableServices] = useState({
     restaurants: [],
     accommodations: [],
@@ -109,6 +138,7 @@ export default function TourManagementTab() {
   useEffect(() => {
     loadTours();
     loadCities();
+    loadPromotions();
   }, []);
 
   useEffect(() => {
@@ -389,6 +419,116 @@ export default function TourManagementTab() {
     }
   };
 
+  // Promotions functions
+  const loadPromotions = async () => {
+    try {
+      const data = await getAllPromotions();
+      setPromotions(data);
+    } catch (error) {
+      console.error('Error loading promotions:', error);
+      alert('Failed to load promotions');
+    }
+  };
+
+  const handlePromotionEdit = (promotion) => {
+    setEditingPromotion(promotion);
+    
+    // Format dates for HTML date input (YYYY-MM-DD format)
+    const formatDateForInput = (dateValue) => {
+      if (!dateValue) return '';
+      // If it's already in YYYY-MM-DD format, return as is
+      if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateValue)) {
+        return dateValue.split('T')[0]; // Remove time part if present
+      }
+      // If it's a date string in another format, parse it
+      try {
+        const date = new Date(dateValue);
+        if (!isNaN(date.getTime())) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        }
+      } catch (e) {
+        console.error('Error formatting date:', e);
+      }
+      return '';
+    };
+    
+    setPromotionFormData({
+      code: promotion.code || '',
+      discount_type: promotion.discount_type || 'percentage',
+      discount_value: promotion.discount_value || '',
+      max_uses: promotion.max_uses || null,
+      start_date: formatDateForInput(promotion.start_date),
+      end_date: formatDateForInput(promotion.end_date),
+      conditions: promotion.conditions || '',
+      is_active: promotion.is_active !== undefined ? promotion.is_active : true,
+      show_on_homepage: promotion.show_on_homepage || false,
+      promotion_type: promotion.promotion_type || 'promo_code',
+      title: promotion.title || '',
+      subtitle: promotion.subtitle || '',
+      image: promotion.image || '',
+      highlight: promotion.highlight || '',
+      terms: promotion.terms || 'Terms & Conditions apply.'
+    });
+    setShowPromotionForm(true);
+  };
+
+  const handlePromotionDelete = async (promotionId) => {
+    if (!confirm('Are you sure you want to delete this promotion?')) return;
+    
+    try {
+      await deletePromotion(promotionId);
+      alert('Promotion deleted successfully');
+      loadPromotions();
+    } catch (error) {
+      console.error('Error deleting promotion:', error);
+      alert('Failed to delete promotion');
+    }
+  };
+
+  const handlePromotionSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (editingPromotion) {
+        await updatePromotion(editingPromotion.id, promotionFormData);
+        alert('Promotion updated successfully');
+      } else {
+        await createPromotion(promotionFormData);
+        alert('Promotion created successfully');
+      }
+      
+      setShowPromotionForm(false);
+      setEditingPromotion(null);
+      setPromotionFormData({
+        code: '',
+        discount_type: 'percentage',
+        discount_value: '',
+        max_uses: null,
+        start_date: '',
+        end_date: '',
+        conditions: '',
+        is_active: true,
+        show_on_homepage: false,
+        promotion_type: 'promo_code',
+        title: '',
+        subtitle: '',
+        image: '',
+        highlight: '',
+        terms: 'Terms & Conditions apply.'
+      });
+      loadPromotions();
+    } catch (error) {
+      console.error('Error saving promotion:', error);
+      alert('Failed to save promotion: ' + (error.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -571,15 +711,34 @@ export default function TourManagementTab() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">{translations.tourManagement || "Tour Management"}</h2>
-        <Button 
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> {translations.createNewTour || "Create New Tour"}
-        </Button>
+        {activeSection === 'tours' && !showForm && (
+          <Button 
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> {translations.createNewTour || "Create New Tour"}
+          </Button>
+        )}
+        {activeSection === 'promotions' && !showPromotionForm && (
+          <Button 
+            onClick={() => setShowPromotionForm(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Create New Promotion
+          </Button>
+        )}
       </div>
 
-      {!showForm ? (
+      {/* Section Tabs */}
+      <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+          <TabsTrigger value="tours">Tours</TabsTrigger>
+          <TabsTrigger value="promotions">Promotions</TabsTrigger>
+        </TabsList>
+
+        {/* Tours Section */}
+        <TabsContent value="tours" className="mt-0">
+          {!showForm ? (
         <div className="grid gap-4">
           {tours.map((tour) => (
             <Card key={tour.id} className="hover:shadow-lg transition-shadow">
@@ -938,7 +1097,327 @@ export default function TourManagementTab() {
             </Button>
           </div>
         </form>
-      )}
+          )}
+        </TabsContent>
+
+        {/* Promotions Section */}
+        <TabsContent value="promotions" className="mt-0">
+          {!showPromotionForm ? (
+        <div className="grid gap-4">
+          {promotions.map((promotion) => (
+            <Card key={promotion.id} className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      {promotion.image && (
+                        <img 
+                          src={promotion.image} 
+                          alt={promotion.title || promotion.code}
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                      )}
+                      <div>
+                        <h3 className="text-xl font-semibold">{promotion.title || promotion.code}</h3>
+                        {promotion.subtitle && (
+                          <p className="text-sm text-gray-600">{promotion.subtitle}</p>
+                        )}
+                        <p className="text-sm text-gray-500">Code: {promotion.code}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div className="flex items-center gap-2 text-sm">
+                        <DollarSign className="w-4 h-4 text-yellow-500" />
+                        <span>
+                          {promotion.discount_type === 'percentage' 
+                            ? `${promotion.discount_value}% off`
+                            : `${promotion.discount_value} VND off`}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          promotion.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {promotion.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                        {promotion.show_on_homepage && (
+                          <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                            Homepage
+                          </span>
+                        )}
+                        <span className="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">
+                          {promotion.promotion_type || 'promo_code'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handlePromotionEdit(promotion)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => handlePromotionDelete(promotion.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {promotions.length === 0 && (
+            <Card>
+              <CardContent className="p-12 text-center text-gray-500">
+                <Info className="w-14 h-14 mx-auto mb-4 text-gray-400" />
+                <p className="text-base">No promotions yet. Create your first promotion!</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      ) : activeSection === 'promotions' && showPromotionForm ? (
+        <form onSubmit={handlePromotionSubmit} className="space-y-6">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl">
+                {editingPromotion ? 'Edit Promotion' : 'Create New Promotion'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="promotion_type">Promotion Type *</Label>
+                  <select
+                    id="promotion_type"
+                    value={promotionFormData.promotion_type}
+                    onChange={(e) => setPromotionFormData({...promotionFormData, promotion_type: e.target.value})}
+                    className="w-full h-11 px-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="promo_code">Promo Code</option>
+                    <option value="banner">Banner</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="code">Promo Code *</Label>
+                  <Input
+                    id="code"
+                    value={promotionFormData.code}
+                    onChange={(e) => setPromotionFormData({...promotionFormData, code: e.target.value})}
+                    required
+                    className="h-11"
+                    placeholder="e.g., TRAVELNEW"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="discount_type">Discount Type *</Label>
+                  <select
+                    id="discount_type"
+                    value={promotionFormData.discount_type}
+                    onChange={(e) => setPromotionFormData({...promotionFormData, discount_type: e.target.value})}
+                    className="w-full h-11 px-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="percentage">Percentage</option>
+                    <option value="fixed">Fixed Amount</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="discount_value">Discount Value *</Label>
+                  <Input
+                    id="discount_value"
+                    type="number"
+                    value={promotionFormData.discount_value}
+                    onChange={(e) => setPromotionFormData({...promotionFormData, discount_value: e.target.value})}
+                    required
+                    className="h-11"
+                    placeholder="e.g., 10 or 50000"
+                  />
+                </div>
+              </div>
+
+              {/* Show banner-specific fields for banner type */}
+              {promotionFormData.promotion_type === 'banner' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="image">Image URL</Label>
+                    <Input
+                      id="image"
+                      value={promotionFormData.image}
+                      onChange={(e) => setPromotionFormData({...promotionFormData, image: e.target.value})}
+                      className="h-11"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="highlight">Highlight Text</Label>
+                    <Input
+                      id="highlight"
+                      value={promotionFormData.highlight}
+                      onChange={(e) => setPromotionFormData({...promotionFormData, highlight: e.target.value})}
+                      className="h-11"
+                      placeholder="e.g., Save up to 1 Million"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Show title/subtitle when show_on_homepage is checked (required for homepage display) */}
+              {promotionFormData.show_on_homepage && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Title * {promotionFormData.show_on_homepage && '(Required for homepage)'}</Label>
+                    <Input
+                      id="title"
+                      value={promotionFormData.title}
+                      onChange={(e) => setPromotionFormData({...promotionFormData, title: e.target.value})}
+                      className="h-11"
+                      placeholder={promotionFormData.promotion_type === 'banner' ? "e.g., Chill this weekend" : "e.g., Get up to 50,000 VND off"}
+                      required={promotionFormData.show_on_homepage}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="subtitle">Subtitle</Label>
+                    <Input
+                      id="subtitle"
+                      value={promotionFormData.subtitle}
+                      onChange={(e) => setPromotionFormData({...promotionFormData, subtitle: e.target.value})}
+                      className="h-11"
+                      placeholder={promotionFormData.promotion_type === 'banner' ? "e.g., Up to 30% off" : "e.g., Valid for your first booking"}
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="start_date">Start Date</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={promotionFormData.start_date}
+                    onChange={(e) => setPromotionFormData({...promotionFormData, start_date: e.target.value})}
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="end_date">End Date</Label>
+                  <Input
+                    id="end_date"
+                    type="date"
+                    value={promotionFormData.end_date}
+                    onChange={(e) => setPromotionFormData({...promotionFormData, end_date: e.target.value})}
+                    className="h-11"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="max_uses">Max Uses (leave empty for unlimited)</Label>
+                <Input
+                  id="max_uses"
+                  type="number"
+                  value={promotionFormData.max_uses || ''}
+                  onChange={(e) => setPromotionFormData({...promotionFormData, max_uses: e.target.value ? parseInt(e.target.value) : null})}
+                  className="h-11"
+                  placeholder="e.g., 100"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="conditions">Conditions</Label>
+                <Textarea
+                  id="conditions"
+                  value={promotionFormData.conditions}
+                  onChange={(e) => setPromotionFormData({...promotionFormData, conditions: e.target.value})}
+                  rows={3}
+                  className="resize-none"
+                  placeholder="Terms and conditions..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="terms">Terms Text (for display)</Label>
+                <Input
+                  id="terms"
+                  value={promotionFormData.terms}
+                  onChange={(e) => setPromotionFormData({...promotionFormData, terms: e.target.value})}
+                  className="h-11"
+                  placeholder="Terms & Conditions apply."
+                />
+              </div>
+
+              <div className="flex gap-8 pt-2">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={promotionFormData.is_active}
+                    onChange={(e) => setPromotionFormData({...promotionFormData, is_active: e.target.checked})}
+                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className="text-sm font-medium">Active</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={promotionFormData.show_on_homepage}
+                    onChange={(e) => setPromotionFormData({...promotionFormData, show_on_homepage: e.target.checked})}
+                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className="text-sm font-medium">Show on Homepage</span>
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end gap-4 sticky bottom-0 bg-white/95 backdrop-blur-sm p-6 border-t border-gray-200 shadow-lg mt-8">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setShowPromotionForm(false);
+                setEditingPromotion(null);
+                setPromotionFormData({
+                  code: '',
+                  discount_type: 'percentage',
+                  discount_value: '',
+                  max_uses: null,
+                  start_date: '',
+                  end_date: '',
+                  conditions: '',
+                  is_active: true,
+                  show_on_homepage: false,
+                  promotion_type: 'promo_code',
+                  title: '',
+                  subtitle: '',
+                  image: '',
+                  highlight: '',
+                  terms: 'Terms & Conditions apply.'
+                });
+              }} 
+              className="gap-2 min-w-[120px] h-11"
+            >
+              <X className="w-4 h-4" /> Cancel
+            </Button>
+            <Button type="submit" disabled={loading} className="min-w-[150px] h-11 gap-2">
+              <Save className="w-4 h-4" /> 
+              {loading ? 'Saving...' : editingPromotion ? 'Update Promotion' : 'Create Promotion'}
+            </Button>
+          </div>
+        </form>
+          ) : null}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
