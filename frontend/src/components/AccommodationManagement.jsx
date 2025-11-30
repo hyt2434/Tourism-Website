@@ -6,6 +6,7 @@ import { processImages } from '../utils/imageUpload';
 const AccommodationManagement = () => {
   const { translations: t } = useLanguage();
   const [accommodations, setAccommodations] = useState([]);
+  const [cities, setCities] = useState([]);
   const [selectedAccommodation, setSelectedAccommodation] = useState(null);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -18,7 +19,7 @@ const AccommodationManagement = () => {
     name: '',
     description: '',
     address: '',
-    city: '',
+    cityId: '',
     starRating: 3,
     amenities: [],
     checkInTime: '14:00',
@@ -47,7 +48,17 @@ const AccommodationManagement = () => {
 
   useEffect(() => {
     loadAccommodations();
+    loadCities();
   }, []);
+
+  const loadCities = async () => {
+    try {
+      const data = await accommodationAPI.getCities();
+      setCities(data);
+    } catch (err) {
+      console.error('Failed to load cities:', err);
+    }
+  };
 
   const loadAccommodations = async () => {
     try {
@@ -108,7 +119,7 @@ const AccommodationManagement = () => {
       name: accommodation.name,
       description: accommodation.description || '',
       address: accommodation.address || '',
-      city: accommodation.city || '',
+      cityId: accommodation.cityId || '',
       starRating: accommodation.starRating || 3,
       amenities: accommodation.amenities || [],
       checkInTime: accommodation.checkInTime || '14:00',
@@ -125,7 +136,7 @@ const AccommodationManagement = () => {
       name: '',
       description: '',
       address: '',
-      city: '',
+      cityId: '',
       starRating: 3,
       amenities: [],
       checkInTime: '14:00',
@@ -264,7 +275,9 @@ const AccommodationManagement = () => {
                 />
               )}
               <h3 className="font-bold text-lg mb-2">{acc.name}</h3>
-              <p className="text-gray-600 text-sm mb-2">{acc.city}</p>
+              <p className="text-gray-600 text-sm mb-2">
+                {cities.find(c => c.id === acc.cityId)?.name || acc.cityId}
+              </p>
               <div className="flex items-center mb-2">
                 <span className="text-yellow-500">{'⭐'.repeat(acc.starRating || 0)}</span>
               </div>
@@ -316,12 +329,18 @@ const AccommodationManagement = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">{t.serviceManagement.city}</label>
-                <input
-                  type="text"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                <select
+                  value={formData.cityId}
+                  onChange={(e) => setFormData({ ...formData, cityId: e.target.value })}
                   className="w-full border rounded px-3 py-2"
-                />
+                >
+                  <option value="">{t.serviceManagement.selectCity || 'Select City'}</option>
+                  {cities.map((city) => (
+                    <option key={city.id} value={city.id}>
+                      {city.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium mb-1">{t.serviceManagement.address}</label>

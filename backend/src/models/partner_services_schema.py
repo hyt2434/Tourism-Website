@@ -9,7 +9,7 @@ This module defines the database tables for three types of partner services:
 Each service type has its own table with specific fields and a shared branches system.
 """
 
-from src.database import get_connection
+from config.database import get_connection
 
 
 def create_partner_service_tables():
@@ -230,6 +230,12 @@ def create_partner_service_tables():
                 is_popular BOOLEAN DEFAULT FALSE, -- Featured/Popular dishes
                 is_special BOOLEAN DEFAULT FALSE, -- Today's special
                 
+                -- Meal Types (breakfast, lunch, dinner)
+                meal_types JSONB DEFAULT '{"breakfast": false, "lunch": false, "dinner": false}'::jsonb,
+                
+                -- Images (multiple images per dish)
+                images TEXT[] DEFAULT '{}'::text[],
+                
                 -- Metadata
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -245,54 +251,34 @@ def create_partner_service_tables():
                 partner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
                 
                 -- Basic Information
-                name VARCHAR(200) NOT NULL,
                 description TEXT,
                 vehicle_type VARCHAR(100) NOT NULL, -- 'Bus', 'Van', 'Car', 'Motorbike', 'Bicycle'
                 
                 -- Vehicle Details
                 brand VARCHAR(100), -- 'Toyota', 'Honda', 'Mercedes'
-                model VARCHAR(100),
-                year INTEGER,
-                license_plate VARCHAR(50),
-                color VARCHAR(50),
+                license_plate VARCHAR(50) NOT NULL UNIQUE, -- Primary identifier, must be unique
                 
                 -- Capacity
                 max_passengers INTEGER NOT NULL,
-                luggage_capacity VARCHAR(100), -- 'Small', 'Medium', 'Large' or '3 bags'
                 
                 -- Features & Amenities
                 features TEXT[], -- ['AC', 'WiFi', 'USB Charging', 'Reclining Seats', 'Entertainment System']
-                accessibility_features TEXT[], -- ['Wheelchair Accessible', 'Child Seat Available']
                 
                 -- Route Information
                 default_pickup_locations TEXT[], -- Array of common pickup addresses
                 default_dropoff_locations TEXT[], -- Array of common dropoff addresses
-                service_areas TEXT[], -- Cities/regions where service is available
+                
+                -- City Information
+                departure_city_id INTEGER REFERENCES cities(id) ON DELETE SET NULL,
+                destination_city_id INTEGER REFERENCES cities(id) ON DELETE SET NULL,
                 
                 -- Pricing
                 base_price DECIMAL(10, 2) NOT NULL, -- Base price per trip or per hour
-                price_per_km DECIMAL(10, 2), -- Price per kilometer (optional)
-                price_per_hour DECIMAL(10, 2), -- Price per hour (optional)
-                minimum_fare DECIMAL(10, 2),
+                holiday_price DECIMAL(10, 2) DEFAULT 0, -- Special pricing for holidays
                 currency VARCHAR(10) DEFAULT 'VND',
-                
-                -- Booking & Availability
-                advance_booking_hours INTEGER DEFAULT 24, -- Minimum hours for advance booking
-                cancellation_hours INTEGER DEFAULT 12, -- Hours before trip for free cancellation
-                max_trip_duration INTEGER, -- in hours
-                operating_hours TEXT, -- JSON or text for operating schedule
                 
                 -- Contact
                 phone VARCHAR(50),
-                
-                -- Driver Information
-                driver_name VARCHAR(200),
-                driver_phone VARCHAR(50),
-                driver_license VARCHAR(100),
-                
-                -- Policies
-                cancellation_policy TEXT,
-                terms_and_conditions TEXT,
                 
                 -- Status
                 is_active BOOLEAN DEFAULT TRUE,

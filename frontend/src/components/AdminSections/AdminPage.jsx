@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Card, CardHeader, CardDescription, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -12,21 +12,50 @@ import {
   Clock,
   Shield,
   Bell,
+  Map,
 } from "lucide-react";
 import UserManagementTab from "./UserManagementTab";
 import PartnerManagementTab from "./PartnerManagementTab";
 import SocialModerationTab from "./SocialModerationTab";
+import TourManagementTab from "./TourManagementTab";
 import { useLanguage } from "../../context/LanguageContext";
+import { getDashboardStats } from "../../api/admin";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("users");
   const { translations } = useLanguage();
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activePartners: 0,
+    pendingApprovals: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      setLoadingStats(true);
+      const data = await getDashboardStats();
+      setStats({
+        totalUsers: data.total_users || 0,
+        activePartners: data.active_partners || 0,
+        pendingApprovals: data.pending_approvals || 0,
+      });
+    } catch (error) {
+      console.error("Failed to fetch dashboard stats:", error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Enhanced Stats Cards */}
       <div className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <Card className="relative overflow-hidden bg-white dark:bg-gray-900 border-2 border-blue-100 dark:border-blue-900 hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-transparent rounded-bl-full" />
             <CardHeader className="pb-3 relative">
@@ -35,15 +64,11 @@ export default function AdminPage() {
                 {translations.totalUsers}
               </CardDescription>
               <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
-                <span>1,248</span>
+                <span>{loadingStats ? "..." : stats.totalUsers.toLocaleString()}</span>
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                   <Users className="w-6 h-6 text-white" />
                 </div>
               </CardTitle>
-              <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
-                +12% {translations.fromLastMonth}
-              </p>
             </CardHeader>
           </Card>
 
@@ -55,15 +80,11 @@ export default function AdminPage() {
                 {translations.activePartners}
               </CardDescription>
               <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
-                <span>156</span>
+                <span>{loadingStats ? "..." : stats.activePartners.toLocaleString()}</span>
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                   <UserCheck className="w-6 h-6 text-white" />
                 </div>
               </CardTitle>
-              <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
-                +8% {translations.fromLastMonth}
-              </p>
             </CardHeader>
           </Card>
 
@@ -75,33 +96,13 @@ export default function AdminPage() {
                 {translations.pendingApprovals}
               </CardDescription>
               <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
-                <span>23</span>
+                <span>{loadingStats ? "..." : stats.pendingApprovals.toLocaleString()}</span>
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                   <Clock className="w-6 h-6 text-white" />
                 </div>
               </CardTitle>
               <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
                 {translations.requiresAttention}
-              </p>
-            </CardHeader>
-          </Card>
-
-          <Card className="relative overflow-hidden bg-white dark:bg-gray-900 border-2 border-green-100 dark:border-green-900 hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/20 to-transparent rounded-bl-full" />
-            <CardHeader className="pb-3 relative">
-              <CardDescription className="text-green-700 dark:text-green-300 font-semibold flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" />
-                {translations.socialPosts}
-              </CardDescription>
-              <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
-                <span>892</span>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <MessageSquare className="w-6 h-6 text-white" />
-                </div>
-              </CardTitle>
-              <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
-                +24% {translations.engagementIncrease}
               </p>
             </CardHeader>
           </Card>
@@ -132,12 +133,12 @@ export default function AdminPage() {
                 <span className="sm:hidden">{translations.partner}s</span>
               </TabsTrigger>
               <TabsTrigger
-                value="social"
-                className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                value="tours"
+                className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
               >
-                <MessageSquare className="w-5 h-5" />
-                <span className="hidden sm:inline">{translations.socialModeration}</span>
-                <span className="sm:hidden">{translations.social}</span>
+                <Map className="w-5 h-5" />
+                <span className="hidden sm:inline">{translations.tourManagement || "Tour Management"}</span>
+                <span className="sm:hidden">{translations.toursAdmin || "Tours"}</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -151,8 +152,8 @@ export default function AdminPage() {
               <PartnerManagementTab />
             </TabsContent>
 
-            <TabsContent value="social" className="mt-0">
-              <SocialModerationTab />
+            <TabsContent value="tours" className="mt-0">
+              <TourManagementTab />
             </TabsContent>
           </div>
         </Tabs>

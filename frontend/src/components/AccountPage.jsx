@@ -1,14 +1,26 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
-import { Calendar, Heart, Settings, Package, Clock, MapPin, Star } from "lucide-react";
+import { Calendar, Heart, Settings, Package, Clock, MapPin, Star, X, Eye } from "lucide-react";
+import { getUserBookings, getBookingDetails } from "../api/bookings";
+import { getUserFavorites } from "../api/favorites";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 
 export default function AccountPage() {
   const navigate = useNavigate();
   const { translations } = useLanguage();
   const [userRole, setUserRole] = useState(null);
+  const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("bookings");
+  const [bookings, setBookings] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
+  const [loadingFavorites, setLoadingFavorites] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showBookingDetail, setShowBookingDetail] = useState(false);
+  const [bookingDetail, setBookingDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   useEffect(() => {
     // Check if user is a client
@@ -16,10 +28,15 @@ export default function AccountPage() {
     if (currentUser) {
       const user = JSON.parse(currentUser);
       setUserRole(user.role);
+      setUserId(user.id);
       
       if (user.role !== "client") {
         // Redirect to home if not client
         navigate("/");
+      } else {
+        // Load bookings and favorites
+        loadBookings(user.id);
+        loadFavorites(user.id);
       }
     } else {
       // Redirect to login if not logged in
@@ -27,6 +44,82 @@ export default function AccountPage() {
     }
     setLoading(false);
   }, [navigate]);
+
+  // Reload data when switching tabs
+  useEffect(() => {
+    if (userId && activeTab === "favorites") {
+      loadFavorites(userId);
+    } else if (userId && activeTab === "bookings") {
+      loadBookings(userId);
+    }
+  }, [activeTab, userId]);
+
+  const loadBookings = async (userId) => {
+    setLoadingBookings(true);
+    try {
+      const result = await getUserBookings(userId);
+      if (result.success) {
+        setBookings(result.bookings || []);
+      }
+    } catch (error) {
+      console.error("Failed to load bookings:", error);
+    } finally {
+      setLoadingBookings(false);
+    }
+  };
+
+  const loadFavorites = async (userId) => {
+    setLoadingFavorites(true);
+    try {
+      const result = await getUserFavorites(userId);
+      if (result.success) {
+        setFavorites(result.favorites || []);
+      }
+    } catch (error) {
+      console.error("Failed to load favorites:", error);
+    } finally {
+      setLoadingFavorites(false);
+    }
+  };
+
+  const handleViewBookingDetail = async (bookingId) => {
+    setLoadingDetail(true);
+    setShowBookingDetail(true);
+    try {
+      const result = await getBookingDetails(bookingId);
+      if (result.success) {
+        setBookingDetail(result.booking);
+      }
+    } catch (error) {
+      console.error("Failed to load booking details:", error);
+      alert("Failed to load booking details");
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300";
+      case "cancelled":
+        return "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
+      case "completed":
+        return "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300";
+      default:
+        return "bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300";
+    }
+  };
 
   if (loading) {
     return (
@@ -46,7 +139,6 @@ export default function AccountPage() {
   const tabs = [
     { id: "bookings", name: translations.accountPage.myBookings, icon: Calendar },
     { id: "favorites", name: translations.accountPage.favorites, icon: Heart },
-    { id: "settings", name: translations.accountPage.settings, icon: Settings },
   ];
 
   return (
@@ -74,8 +166,8 @@ export default function AccountPage() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex-1 py-5 px-6 text-center border-b-3 font-semibold text-base transition-all duration-300 flex items-center justify-center gap-2 ${
                       activeTab === tab.id
-                        ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700/50"
+                        ? "border-indigo-600 text-gray-700 dark:text-gray-300 bg-transparent"
+                        : "border-transparent text-gray-500 hover:text-gray-700 bg-transparent dark:text-gray-400 dark:hover:text-gray-300"
                     }`}
                   >
                     <Icon size={20} />
@@ -96,72 +188,83 @@ export default function AccountPage() {
                     {translations.accountPage.myBookings}
                   </h2>
                 </div>
-                <div className="space-y-4">
-                  {/* Sample Booking Card */}
-                  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 border-2 border-gray-100 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all duration-300 shadow-md hover:shadow-xl">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                            Ha Long Bay Cruise Experience
-                          </h3>
-                          <span className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1">
-                            <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></span>
-                            {translations.accountPage.confirmed}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                          {translations.accountPage.bookingId}: #HLB-12345
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                      <div className="flex items-center gap-3 bg-white dark:bg-gray-600 p-3 rounded-lg">
-                        <Calendar className="text-indigo-600 dark:text-indigo-400" size={20} />
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{translations.accountPage.date}</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">Dec 25, 2025</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 bg-white dark:bg-gray-600 p-3 rounded-lg">
-                        <Clock className="text-purple-600 dark:text-purple-400" size={20} />
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{translations.accountPage.duration}</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">3 {translations.accountPage.days}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 bg-white dark:bg-gray-600 p-3 rounded-lg">
-                        <MapPin className="text-rose-600 dark:text-rose-400" size={20} />
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{translations.guests}</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">2 {translations.adults}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <button className="flex-1 bg-indigo-600 text-white py-2.5 px-4 rounded-lg hover:bg-indigo-700 transition-colors font-medium">
-                        {translations.accountPage.viewDetails}
-                      </button>
-                      <button className="flex-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 py-2.5 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors font-medium">
-                        {translations.accountPage.cancelBooking}
-                      </button>
-                    </div>
+                {loadingBookings ? (
+                  <div className="text-center py-16">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600 mx-auto mb-4"></div>
+                    <p className="text-gray-500 dark:text-gray-400">{translations.loading}</p>
                   </div>
-
-                  {/* Empty State */}
+                ) : bookings.length === 0 ? (
                   <div className="text-center py-16 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                     <Package className="mx-auto text-gray-400 dark:text-gray-500 mb-4" size={64} />
                     <p className="text-gray-500 dark:text-gray-400 text-lg">
                       {translations.accountPage.noOtherBookings}
                     </p>
                     <button
-                      onClick={() => navigate("/")}
+                      onClick={() => navigate("/tour")}
                       className="mt-4 bg-indigo-600 text-white px-6 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
                     >
                       {translations.exploreTours}
                     </button>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bookings.map((booking) => (
+                      <div
+                        key={booking.id}
+                        className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 border-2 border-gray-100 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all duration-300 shadow-md hover:shadow-xl"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2">
+                              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                {booking.tour_name || "Tour"}
+                              </h3>
+                              <span className={`${getStatusColor(booking.status)} text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1 capitalize`}>
+                                <span className={`w-2 h-2 rounded-full ${booking.status === "confirmed" ? "bg-green-600 animate-pulse" : booking.status === "cancelled" ? "bg-red-600" : "bg-blue-600"}`}></span>
+                                {booking.status}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                              {translations.accountPage.bookingId}: #{booking.id}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                          <div className="flex items-center gap-3 bg-white dark:bg-gray-600 p-3 rounded-lg">
+                            <Calendar className="text-indigo-600 dark:text-indigo-400" size={20} />
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{translations.accountPage.date}</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{formatDate(booking.departure_date)}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 bg-white dark:bg-gray-600 p-3 rounded-lg">
+                            <Clock className="text-purple-600 dark:text-purple-400" size={20} />
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{translations.accountPage.duration}</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{booking.tour_duration || "N/A"}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 bg-white dark:bg-gray-600 p-3 rounded-lg">
+                            <MapPin className="text-rose-600 dark:text-rose-400" size={20} />
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{translations.guests}</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{booking.number_of_guests} {translations.people || "people"}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => handleViewBookingDetail(booking.id)}
+                            className="flex-1 bg-indigo-600 text-white py-2.5 px-4 rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center justify-center gap-2"
+                          >
+                            <Eye size={18} />
+                            {translations.accountPage.viewDetails}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -173,106 +276,196 @@ export default function AccountPage() {
                     {translations.accountPage.favoriteTours}
                   </h2>
                 </div>
-                <div className="text-center py-20 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-gray-700/50 dark:to-gray-800/50 rounded-xl">
-                  <Heart className="mx-auto text-rose-400 dark:text-rose-500 mb-4" size={64} />
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                    {translations.accountPage.noFavorites}
-                  </h3>
-                  <p className="text-gray-500 dark:text-gray-400 mb-6">
-                    {translations.accountPage.startExploring}
-                  </p>
-                  <button
-                    onClick={() => navigate("/")}
-                    className="bg-gradient-to-r from-rose-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all font-medium"
-                  >
-                    {translations.accountPage.discoverTours}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {activeTab === "settings" && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Settings className="text-gray-600 dark:text-gray-400" size={28} />
-                    {translations.accountPage.accountSettings}
-                  </h2>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Email Notifications */}
-                  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1">
-                          {translations.accountPage.emailNotifications}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {translations.accountPage.emailNotificationsDesc}
-                        </p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" defaultChecked />
-                        <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
+                {loadingFavorites ? (
+                  <div className="text-center py-16">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-rose-600 mx-auto mb-4"></div>
+                    <p className="text-gray-500 dark:text-gray-400">{translations.loading}</p>
                   </div>
-
-                  {/* Marketing Emails */}
-                  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1">
-                          {translations.accountPage.marketingEmails}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {translations.accountPage.marketingEmailsDesc}
-                        </p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" />
-                        <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* SMS Notifications */}
-                  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1">
-                          {translations.accountPage.smsNotifications}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {translations.accountPage.smsNotificationsDesc}
-                        </p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" defaultChecked />
-                        <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Danger Zone */}
-                  <div className="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 rounded-xl p-6 border-2 border-red-200 dark:border-red-800 mt-8">
-                    <h3 className="font-bold text-red-900 dark:text-red-400 text-lg mb-2">
-                      {translations.accountPage.dangerZone}
+                ) : favorites.length === 0 ? (
+                  <div className="text-center py-20 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-gray-700/50 dark:to-gray-800/50 rounded-xl">
+                    <Heart className="mx-auto text-rose-400 dark:text-rose-500 mb-4" size={64} />
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                      {translations.accountPage.noFavorites}
                     </h3>
-                    <p className="text-sm text-red-700 dark:text-red-300 mb-4">
-                      {translations.accountPage.dangerZoneDesc}
+                    <p className="text-gray-500 dark:text-gray-400 mb-6">
+                      {translations.accountPage.startExploring}
                     </p>
-                    <button className="bg-red-600 text-white py-2.5 px-6 rounded-lg hover:bg-red-700 transition-colors font-medium">
-                      {translations.accountPage.deleteAccount}
+                    <button
+                      onClick={() => navigate("/tour")}
+                      className="bg-gradient-to-r from-rose-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all font-medium"
+                    >
+                      {translations.accountPage.discoverTours}
                     </button>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {favorites.map((favorite) => (
+                      <Link
+                        key={favorite.id}
+                        to={`/tour/${favorite.tour_id}`}
+                        className="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700"
+                      >
+                        {favorite.tour.image && (
+                          <div className="relative h-48 overflow-hidden">
+                            <img
+                              src={favorite.tour.image}
+                              alt={favorite.tour.name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                          </div>
+                        )}
+                        <div className="p-4">
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            {favorite.tour.name}
+                          </h3>
+                          <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-3">
+                            {favorite.tour.destination_city && (
+                              <div className="flex items-center gap-2">
+                                <MapPin size={14} className="text-gray-400" />
+                                <span>{favorite.tour.destination_city}</span>
+                              </div>
+                            )}
+                            {favorite.tour.duration && (
+                              <div className="flex items-center gap-2">
+                                <Clock size={14} className="text-gray-400" />
+                                <span>{favorite.tour.duration}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{translations.from}</p>
+                              <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                                {favorite.tour.total_price.toLocaleString("vi-VN")} {favorite.tour.currency || "đ"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
+
           </div>
         </div>
       </div>
+
+      {/* Booking Detail Dialog */}
+      <Dialog open={showBookingDetail} onOpenChange={setShowBookingDetail}>
+        <DialogContent className="max-w-3xl bg-white dark:bg-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white">
+              {translations.accountPage.bookingDetails}
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-300">
+              {translations.accountPage.bookingId}: #{bookingDetail?.id}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loadingDetail ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600 mx-auto mb-4"></div>
+              <p className="text-gray-500 dark:text-gray-400">{translations.loading}</p>
+            </div>
+          ) : bookingDetail ? (
+            <div className="space-y-6 mt-4">
+              {bookingDetail.tour_image && (
+                <img
+                  src={bookingDetail.tour_image}
+                  alt={bookingDetail.tour_name}
+                  className="w-full h-64 object-cover rounded-lg"
+                />
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{bookingDetail.tour_name}</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{translations.accountPage.fullName}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{bookingDetail.full_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{translations.email}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{bookingDetail.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{translations.phone}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{bookingDetail.phone}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{translations.accountPage.departureDate}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{formatDate(bookingDetail.departure_date)}</p>
+                  </div>
+                  {bookingDetail.return_date && (
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{translations.accountPage.returnDate}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{formatDate(bookingDetail.return_date)}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{translations.accountPage.duration}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{bookingDetail.tour_duration || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{translations.guests}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{bookingDetail.number_of_guests} {translations.people || "people"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{translations.accountPage.totalPrice}</p>
+                    <p className="font-semibold text-indigo-600 dark:text-indigo-400 text-xl">
+                      {bookingDetail.total_price.toLocaleString("vi-VN")} đ
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{translations.accountPage.paymentMethod}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white capitalize">{bookingDetail.payment_method}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{translations.accountPage.status}</p>
+                    <span className={`inline-block ${getStatusColor(bookingDetail.status)} text-xs font-semibold px-3 py-1.5 rounded-full capitalize`}>
+                      {bookingDetail.status}
+                    </span>
+                  </div>
+                  {bookingDetail.promotion_code && (
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{translations.accountPage.promotionCode}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{bookingDetail.promotion_code}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {bookingDetail.destination_city && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{translations.destination}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{bookingDetail.destination_city}</p>
+                </div>
+              )}
+              
+              {bookingDetail.tour_description && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{translations.description}</p>
+                  <p className="text-gray-700 dark:text-gray-300">{bookingDetail.tour_description}</p>
+                </div>
+              )}
+              
+              {bookingDetail.notes && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{translations.accountPage.notes}</p>
+                  <p className="text-gray-700 dark:text-gray-300">{bookingDetail.notes}</p>
+                </div>
+              )}
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

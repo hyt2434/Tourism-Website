@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app, url_for
-from src.database import get_connection
+from config.database import get_connection
 from datetime import datetime
 import re
 import os
