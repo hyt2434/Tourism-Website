@@ -266,6 +266,27 @@ def create_tables():
         END $$;
     """)
 
+    # Bookings table for tour reservations
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS bookings (
+            id SERIAL PRIMARY KEY,
+            tour_id INTEGER REFERENCES tours_admin(id) ON DELETE SET NULL,
+            user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            full_name VARCHAR(200) NOT NULL,
+            email VARCHAR(100) NOT NULL,
+            phone VARCHAR(20) NOT NULL,
+            departure_date DATE NOT NULL,
+            return_date DATE,
+            number_of_guests INTEGER DEFAULT 1,
+            total_price DECIMAL(12, 2) NOT NULL,
+            payment_method VARCHAR(20) NOT NULL,
+            payment_intent_id VARCHAR(200),
+            notes TEXT,
+            status VARCHAR(20) DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+
     conn.commit()
     cur.close()
     conn.close()

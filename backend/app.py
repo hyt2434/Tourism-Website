@@ -33,6 +33,8 @@ from src.routes.partner.accommodation_routes import accommodation_bp
 from src.routes.partner.restaurant_routes import restaurant_bp
 from src.routes.partner.transportation_routes import transportation_bp
 from src.routes.admin.tour_admin_routes import tour_admin_bp
+from src.routes.payment_routes import payment_routes
+from src.routes.booking_routes import booking_routes
 
 try:
     from src.models.models import create_tables
@@ -95,6 +97,8 @@ app.register_blueprint(social_routes, url_prefix="/api/social")
 app.register_blueprint(suggestion_routes, url_prefix="/api/suggestions")
 app.register_blueprint(tour_routes, url_prefix="/api/tours")
 app.register_blueprint(city_bp, url_prefix="/api")
+app.register_blueprint(payment_routes, url_prefix="/api/payments")
+app.register_blueprint(booking_routes, url_prefix="/api/bookings")
 app.register_blueprint(partner_registration_bp)
 # Partner service management routes
 app.register_blueprint(accommodation_bp)

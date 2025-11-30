@@ -16,3 +16,4 @@ ruff
 pytest
 flask_bcrypt
 requests-oauthlib
+stripe>=7.0.0

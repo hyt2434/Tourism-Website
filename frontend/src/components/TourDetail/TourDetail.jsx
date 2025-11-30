@@ -919,6 +919,7 @@ export default function TourDetail() {
           isOpen={isBookingPanelOpen}
           onClose={() => setIsBookingPanelOpen(false)}
           duration={tourData.duration}
+          tourId={tourData.id}
         />
       )}
     </div>
