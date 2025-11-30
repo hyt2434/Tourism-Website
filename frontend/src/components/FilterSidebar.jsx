@@ -4,6 +4,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
+import { getCities } from "../api/cities";
 
 export default function FilterSidebar({ onFilterChange, initialFilters = {} }) {
   const { translations } = useLanguage();
@@ -11,10 +12,9 @@ export default function FilterSidebar({ onFilterChange, initialFilters = {} }) {
   const [filters, setFilters] = useState({
     search: initialFilters.search || "",
     regions: initialFilters.regions || [],
-    provinces: initialFilters.provinces || [],
+    provinces: initialFilters.provinces || [], // This will store city IDs
     minPrice: initialFilters.minPrice || 0,
     maxPrice: initialFilters.maxPrice || 10000000,
-    startDate: initialFilters.startDate || "",
     minRating: initialFilters.minRating || 0,
     tourTypes: initialFilters.tourTypes || [],
     distance: initialFilters.distance || 100,
@@ -28,12 +28,50 @@ export default function FilterSidebar({ onFilterChange, initialFilters = {} }) {
     type: true,
   });
 
-  // Dữ liệu vùng miền và tỉnh thành
-  const regions = {
-    [translations.northRegion || "Miền Bắc"]: ["Hà Nội", "Hạ Long", "Sapa", "Ninh Bình", "Hải Phòng", "Hà Giang"],
-    [translations.centralRegion || "Miền Trung"]: ["Đà Nẵng", "Hội An", "Huế", "Quy Nhơn", "Nha Trang", "Đà Lạt"],
-    [translations.southRegion || "Miền Nam"]: ["TP Hồ Chí Minh", "Vũng Tàu", "Phú Quốc", "Cần Thơ", "Mũi Né", "Côn Đảo"],
-  };
+  const [regionsData, setRegionsData] = useState({});
+  const [cities, setCities] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(true);
+
+  // Load cities from API and group by region
+  useEffect(() => {
+    const loadCities = async () => {
+      try {
+        setLoadingCities(true);
+        const citiesData = await getCities();
+        setCities(citiesData);
+        
+        // Group cities by region
+        const grouped = {};
+        citiesData.forEach(city => {
+          if (!grouped[city.region]) {
+            grouped[city.region] = [];
+          }
+          grouped[city.region].push(city);
+        });
+        
+        // Map region names to translations
+        const regionMap = {
+          'North': translations.northRegion || 'Miền Bắc',
+          'Central': translations.centralRegion || 'Miền Trung',
+          'South': translations.southRegion || 'Miền Nam'
+        };
+        
+        const translatedRegions = {};
+        Object.keys(grouped).forEach(region => {
+          const translatedName = regionMap[region] || region;
+          translatedRegions[translatedName] = grouped[region];
+        });
+        
+        setRegionsData(translatedRegions);
+      } catch (error) {
+        console.error('Error loading cities:', error);
+      } finally {
+        setLoadingCities(false);
+      }
+    };
+    
+    loadCities();
+  }, [translations]);
 
   const tourTypes = [
     translations.culturalTour || "Du lịch văn hóa",
@@ -75,6 +113,10 @@ export default function FilterSidebar({ onFilterChange, initialFilters = {} }) {
   const handleChange = (key, value) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
+    // Auto-apply search filter as user types
+    if (key === 'search') {
+      onFilterChange(newFilters);
+    }
   };
 
   // Apply filters when component mounts with initial filters
@@ -96,7 +138,6 @@ export default function FilterSidebar({ onFilterChange, initialFilters = {} }) {
       provinces: [],
       minPrice: 0,
       maxPrice: 10000000,
-      startDate: "",
       minRating: 0,
       tourTypes: [],
       distance: 100,
@@ -165,6 +206,11 @@ export default function FilterSidebar({ onFilterChange, initialFilters = {} }) {
             value={filters.search}
             className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             onChange={(e) => handleChange("search", e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                applyFilters();
+              }
+            }}
           />
           {filters.search && (
             <button
@@ -188,38 +234,42 @@ export default function FilterSidebar({ onFilterChange, initialFilters = {} }) {
         </button>
         {expandedSections.region && (
           <div className="space-y-3">
-            {Object.keys(regions).map((region) => (
-              <div key={region} className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <Checkbox
-                    checked={filters.regions.includes(region)}
-                    onCheckedChange={() => handleArrayFilter("regions", region)}
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                    {region}
-                  </span>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
-                    ({regions[region].length})
-                  </span>
-                </label>
-                {/* Tỉnh thành con */}
-                {filters.regions.includes(region) && (
-                  <div className="ml-6 space-y-2 pl-3 border-l-2 border-gray-200 dark:border-gray-700">
-                    {regions[region].map((province) => (
-                      <label key={province} className="flex items-center gap-2 cursor-pointer group">
-                        <Checkbox
-                          checked={filters.provinces.includes(province)}
-                          onCheckedChange={() => handleArrayFilter("provinces", province)}
-                        />
-                        <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                          {province}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+            {loadingCities ? (
+              <div className="text-sm text-gray-500 dark:text-gray-400">Loading regions...</div>
+            ) : (
+              Object.keys(regionsData).map((region) => (
+                <div key={region} className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <Checkbox
+                      checked={filters.regions.includes(region)}
+                      onCheckedChange={() => handleArrayFilter("regions", region)}
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                      {region}
+                    </span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                      ({regionsData[region].length})
+                    </span>
+                  </label>
+                  {/* Cities in this region */}
+                  {filters.regions.includes(region) && (
+                    <div className="ml-6 space-y-2 pl-3 border-l-2 border-gray-200 dark:border-gray-700">
+                      {regionsData[region].map((city) => (
+                        <label key={city.id} className="flex items-center gap-2 cursor-pointer group">
+                          <Checkbox
+                            checked={filters.provinces.includes(city.id.toString())}
+                            onCheckedChange={() => handleArrayFilter("provinces", city.id.toString())}
+                          />
+                          <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                            {city.name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -324,18 +374,6 @@ export default function FilterSidebar({ onFilterChange, initialFilters = {} }) {
         )}
       </div>
 
-      {/* Ngày khởi hành */}
-      <div className="mb-6 border-t border-gray-200 dark:border-gray-700 pt-4">
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          {translations.departureDate || "Ngày khởi hành"}
-        </label>
-        <input
-          type="date"
-          value={filters.startDate}
-          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          onChange={(e) => handleChange("startDate", e.target.value)}
-        />
-      </div>
       </div>
 
       {/* Action Buttons - Fixed at bottom */}

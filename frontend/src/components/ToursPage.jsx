@@ -89,37 +89,42 @@ export default function ToursPage() {
   const handleFilterChange = (filters) => {
     let result = [...allTours];
 
+    // Search filter
     if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
       result = result.filter((t) =>
-        t.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        (t.destination && t.destination.toLowerCase().includes(filters.search.toLowerCase()))
+        t.name.toLowerCase().includes(searchLower) ||
+        (t.destination && t.destination.toLowerCase().includes(searchLower)) ||
+        (t.description && t.description.toLowerCase().includes(searchLower))
       );
     }
 
-    if (filters.regions && filters.regions.length > 0) {
-      result = result.filter((t) => filters.regions.includes(t.region));
-    }
-
+    // City filter (provinces contains city IDs)
     if (filters.provinces && filters.provinces.length > 0) {
-      result = result.filter((t) => filters.provinces.includes(t.province));
+      const cityIds = filters.provinces.map(id => parseInt(id));
+      result = result.filter((t) => {
+        // Check if tour's destination or departure city matches any selected city
+        const destCityId = t.destination_city?.id;
+        const depCityId = t.departure_city?.id;
+        return cityIds.includes(destCityId) || cityIds.includes(depCityId);
+      });
     }
 
-    if (filters.maxPrice) {
+    // Price filter
+    if (filters.maxPrice && filters.maxPrice < 10000000) {
       result = result.filter((t) => t.price <= filters.maxPrice);
     }
 
+    // Rating filter (if rating is implemented)
     if (filters.minRating > 0) {
-      result = result.filter((t) => t.rating >= filters.minRating);
+      result = result.filter((t) => (t.rating || 0) >= filters.minRating);
     }
 
+    // Tour types filter (if tour types are implemented)
     if (filters.tourTypes && filters.tourTypes.length > 0) {
       result = result.filter((t) =>
         t.type && t.type.some((type) => filters.tourTypes.includes(type))
       );
-    }
-
-    if (filters.startDate) {
-      // Giả lập filter theo ngày
     }
 
     setFilteredTours(result);
