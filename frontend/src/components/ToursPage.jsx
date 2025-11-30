@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import TourCard from "./TourCard";
 import FilterSidebar from "./FilterSidebar";
 import { useLanguage } from "../context/LanguageContext";
@@ -10,6 +11,7 @@ import { ArrowUpDown, Grid, List, MapPin, Star, Sun, Tag } from "lucide-react";
 
 export default function ToursPage() {
   const { translations } = useLanguage();
+  const [searchParams] = useSearchParams();
 
   const [allTours, setAllTours] = useState([]);
   const [filteredTours, setFilteredTours] = useState([]);
@@ -20,15 +22,33 @@ export default function ToursPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const toursPerPage = 9;
 
-  // Load tours from API
+  // Load tours from API with URL params
   useEffect(() => {
     loadTours();
-  }, []);
+  }, [searchParams]);
 
   const loadTours = async () => {
     try {
       setLoading(true);
-      const tours = await getPublishedTours();
+      
+      // Build filters from URL params
+      const filters = {};
+      const search = searchParams.get('search');
+      const departureCityId = searchParams.get('departure_city_id');
+      const destinationCityId = searchParams.get('destination_city_id');
+      const minDuration = searchParams.get('min_duration');
+      const maxDuration = searchParams.get('max_duration');
+      const numberOfMembers = searchParams.get('number_of_members');
+
+      if (search) filters.search = search;
+      if (departureCityId) filters.departure_city_id = departureCityId;
+      if (destinationCityId) filters.destination_city_id = destinationCityId;
+      if (minDuration) filters.min_duration = parseInt(minDuration);
+      if (maxDuration) filters.max_duration = parseInt(maxDuration);
+      if (numberOfMembers) filters.number_of_members = parseInt(numberOfMembers);
+
+      const tours = await getPublishedTours(filters);
+
       setAllTours(tours);
       setFilteredTours(tours);
     } catch (error) {
@@ -40,13 +60,39 @@ export default function ToursPage() {
     }
   };
 
+  const applyClientSideFilters = (tours) => {
+    // Apply any additional filters that might be in URL params
+    // This is for filters that are handled client-side
+    let result = [...tours];
+    
+    const search = searchParams.get('search');
+    if (search) {
+      result = result.filter((t) =>
+        t.name.toLowerCase().includes(search.toLowerCase()) ||
+        (t.destination && t.destination.toLowerCase().includes(search.toLowerCase()))
+      );
+    }
+
+    setFilteredTours(result);
+    applySorting(result, sortBy);
+  };
+
+  const getInitialFiltersFromParams = () => {
+    const filters = {};
+    const search = searchParams.get('search');
+    if (search) {
+      filters.search = search;
+    }
+    return filters;
+  };
+
   const handleFilterChange = (filters) => {
     let result = [...allTours];
 
     if (filters.search) {
       result = result.filter((t) =>
         t.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        t.destination.toLowerCase().includes(filters.search.toLowerCase())
+        (t.destination && t.destination.toLowerCase().includes(filters.search.toLowerCase()))
       );
     }
 
@@ -68,7 +114,7 @@ export default function ToursPage() {
 
     if (filters.tourTypes && filters.tourTypes.length > 0) {
       result = result.filter((t) =>
-        t.type.some((type) => filters.tourTypes.includes(type))
+        t.type && t.type.some((type) => filters.tourTypes.includes(type))
       );
     }
 
@@ -153,7 +199,7 @@ export default function ToursPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <FilterSidebar onFilterChange={handleFilterChange} />
+            <FilterSidebar onFilterChange={handleFilterChange} initialFilters={getInitialFiltersFromParams()} />
           </div>
 
           {/* Tours List */}

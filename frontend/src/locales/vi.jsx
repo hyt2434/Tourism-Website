@@ -732,7 +732,7 @@ export default {
   tourManagement: "Quản lý Tour",
   tourDescription: "Tạo, sửa, duyệt và ẩn các tour du lịch",
   addTour: "Thêm Tour mới",
-  searchTour: "Tìm kiếm tour...",
+  searchTour: "Tìm kiếm tour nâng cao",
   
   // Tour Management Tab
   createNewTour: "Tạo Tour Mới",

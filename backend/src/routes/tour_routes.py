@@ -1,7 +1,21 @@
 from flask import Blueprint, request, jsonify
 from src.database import get_connection
+import re
 
 tour_routes = Blueprint('tour_routes', __name__)
+
+def extract_days_from_duration(duration_str):
+    """
+    Extract number of days from duration string like "3 ngày 2 đêm" or "3 days 2 nights"
+    Returns the first number found, or None if no number found
+    """
+    if not duration_str:
+        return None
+    # Match first number in the string
+    match = re.search(r'(\d+)', str(duration_str))
+    if match:
+        return int(match.group(1))
+    return None
 
 @tour_routes.route('/', methods=['GET'])
 def get_tours():
@@ -15,6 +29,7 @@ def get_tours():
     max_price = request.args.get('max_price')
     min_duration = request.args.get('min_duration')
     max_duration = request.args.get('max_duration')
+    number_of_members = request.args.get('number_of_members')
 
     conn = get_connection()
     if not conn:
@@ -58,21 +73,35 @@ def get_tours():
             query += " AND t.total_price <= %s"
             params.append(max_price)
         
-        if min_duration:
-            query += " AND t.duration >= %s"
-            params.append(min_duration)
-        
-        if max_duration:
-            query += " AND t.duration <= %s"
-            params.append(max_duration)
+        if number_of_members:
+            try:
+                members_count = int(number_of_members)
+                query += " AND t.number_of_members >= %s"
+                params.append(members_count)
+            except (ValueError, TypeError):
+                pass  # Skip invalid number_of_members parameter
         
         query += " ORDER BY t.created_at DESC"
         
         cur.execute(query, params)
         rows = cur.fetchall()
         
+        # Filter by duration on application level since duration is stored as string
         tours = []
         for row in rows:
+            tour_duration_days = extract_days_from_duration(row[2])
+            
+            # Apply duration filters if specified
+            if min_duration:
+                min_days = int(min_duration)
+                if tour_duration_days is None or tour_duration_days < min_days:
+                    continue
+            
+            if max_duration:
+                max_days = int(max_duration)
+                if tour_duration_days is None or tour_duration_days > max_days:
+                    continue
+        
             tours.append({
                 'id': row[0],
                 'name': row[1],

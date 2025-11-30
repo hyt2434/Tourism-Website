@@ -1,23 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, MapPin, Star, ChevronDown, ChevronUp, X } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
 
-export default function FilterSidebar({ onFilterChange }) {
+export default function FilterSidebar({ onFilterChange, initialFilters = {} }) {
   const { translations } = useLanguage();
 
   const [filters, setFilters] = useState({
-    search: "",
-    regions: [],
-    provinces: [],
-    minPrice: 0,
-    maxPrice: 10000000,
-    startDate: "",
-    minRating: 0,
-    tourTypes: [],
-    distance: 100,
+    search: initialFilters.search || "",
+    regions: initialFilters.regions || [],
+    provinces: initialFilters.provinces || [],
+    minPrice: initialFilters.minPrice || 0,
+    maxPrice: initialFilters.maxPrice || 10000000,
+    startDate: initialFilters.startDate || "",
+    minRating: initialFilters.minRating || 0,
+    tourTypes: initialFilters.tourTypes || [],
+    distance: initialFilters.distance || 100,
   });
 
   const [expandedSections, setExpandedSections] = useState({
@@ -76,6 +76,14 @@ export default function FilterSidebar({ onFilterChange }) {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
   };
+
+  // Apply filters when component mounts with initial filters
+  useEffect(() => {
+    if (initialFilters && Object.keys(initialFilters).length > 0 && initialFilters.search) {
+      // Apply the search filter immediately if it exists
+      onFilterChange({ search: initialFilters.search });
+    }
+  }, []); // Only run on mount
 
   const applyFilters = () => {
     onFilterChange(filters);

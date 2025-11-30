@@ -1,18 +1,8 @@
-import React, { useState } from "react";
-
-import {
-  Hotel,
-  Plane,
-  PartyPopper,
-  MoreHorizontal,
-  MapPin,
-  Calendar as CalIcon,
-} from "lucide-react";
-import { useLanguage } from "../../context/LanguageContext"; // 👈 thêm
+import React from "react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function HeroSection({ children }) {
-  const [activeService, setActiveService] = useState("flight");
-  const { translations } = useLanguage(); // 👈 lấy translations
+  const { translations } = useLanguage();
 
   return (
     <section className="pb-16 pt-12 px-4 md:px-8 lg:px-36 bg-white dark:bg-gray-950 transition-colors duration-300">
@@ -43,28 +33,6 @@ export default function HeroSection({ children }) {
             {translations.heroSubtitle}
           </p>
 
-          {/* Service tabs */}
-          <div className="flex flex-wrap justify-center gap-4 mb-12">
-            <ServiceTab
-              icon={Hotel}
-              label={translations.hotels}
-              active={activeService === "hotel"}
-              onClick={() => setActiveService("hotel")}
-            />
-            <ServiceTab
-              icon={Plane}
-              label={translations.flights}
-              active={activeService === "flight"}
-              onClick={() => setActiveService("flight")}
-            />
-            <ServiceTab
-              icon={MapPin}
-              label={translations.toursLabel}
-              active={activeService === "pickup"}
-              onClick={() => setActiveService("pickup")}
-            />
-          </div>
-
           {/* Search form */}
           <div className="w-full max-w-6xl">
             {children}
@@ -72,21 +40,5 @@ export default function HeroSection({ children }) {
         </div>
       </div>
     </section>
-  );
-}
-
-function ServiceTab({ icon: Icon, label, active, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-3 px-6 md:px-8 py-3 md:py-4 rounded-full transition-all transform hover:scale-105 hover:-translate-y-1 ${
-        active
-          ? "bg-white text-blue-600 shadow-2xl font-semibold"
-          : "bg-white/20 text-white dark:text-gray-200 hover:bg-white/30 dark:hover:bg-white/30 backdrop-blur-md font-medium"
-      }`}
-    >
-      <Icon className="w-5 h-5 md:w-6 md:h-6" />
-      <span className="text-sm md:text-base lg:text-lg">{label}</span>
-    </button>
   );
 }

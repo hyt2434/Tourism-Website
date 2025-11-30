@@ -34,6 +34,7 @@ export const getPublishedTours = async (filters = {}) => {
     if (filters.max_price) params.append('max_price', filters.max_price);
     if (filters.min_duration) params.append('min_duration', filters.min_duration);
     if (filters.max_duration) params.append('max_duration', filters.max_duration);
+    if (filters.number_of_members) params.append('number_of_members', filters.number_of_members);
     
     const url = params.toString() 
       ? `${API_BASE_URL}/api/tours?${params.toString()}`

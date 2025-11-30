@@ -730,7 +730,7 @@ export default {
   tourManagement: "Tour Management",
   tourDescription: "Create, edit, approve and hide tours",
   addTour: "Add New Tour",
-  searchTour: "Search tours...",
+  searchTour: "Advance search tours",
   
   // Tour Management Tab
   createNewTour: "Create New Tour",
