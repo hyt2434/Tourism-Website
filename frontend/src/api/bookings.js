@@ -54,3 +54,25 @@ export async function getBookingDetails(bookingId) {
   }
 }
 
+// Get all bookings for a partner
+export async function getPartnerBookings(partnerId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/partner/${partnerId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to fetch partner bookings");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching partner bookings:", error);
+    throw error;
+  }
+}
+
