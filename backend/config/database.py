@@ -21,3 +21,4 @@ def get_connection():
     except Exception as e:
         print("[ERROR] Database connection failed:", e)
         return None
+

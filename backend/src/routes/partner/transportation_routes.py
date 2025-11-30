@@ -9,7 +9,7 @@ Partners can manage their transportation services including:
 """
 
 from flask import Blueprint, request, jsonify
-from src.database import get_connection
+from config.database import get_connection
 from datetime import datetime, timedelta
 
 transportation_bp = Blueprint('transportation_services', __name__, url_prefix='/api/partner/transportation')
@@ -40,7 +40,7 @@ def get_transportation_services():
                 max_passengers, features, default_pickup_locations,
                 default_dropoff_locations, base_price, holiday_price,
                 phone, is_active, is_verified,
-                created_at, updated_at
+                created_at, updated_at, departure_city_id, destination_city_id
             FROM transportation_services
             WHERE partner_id = %s
             ORDER BY created_at DESC
@@ -75,7 +75,9 @@ def get_transportation_services():
                 'isVerified': row[13],
                 'primaryImage': image_row[0] if image_row else None,
                 'createdAt': row[14].isoformat() if row[14] else None,
-                'updatedAt': row[15].isoformat() if row[15] else None
+                'updatedAt': row[15].isoformat() if row[15] else None,
+                'departureCityId': row[16],
+                'destinationCityId': row[17]
             })
         
         cur.close()
@@ -116,8 +118,9 @@ def create_transportation_service():
             INSERT INTO transportation_services (
                 partner_id, license_plate, description, vehicle_type, brand,
                 max_passengers, features, default_pickup_locations,
-                default_dropoff_locations, base_price, holiday_price, phone
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                default_dropoff_locations, base_price, holiday_price, phone,
+                departure_city_id, destination_city_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             partner_id,
@@ -131,7 +134,9 @@ def create_transportation_service():
             data.get('defaultDropoffLocations', []),
             data['basePrice'],
             data.get('holidayPrice', 0),
-            data.get('phone')
+            data.get('phone'),
+            data.get('departureCityId'),
+            data.get('destinationCityId')
         ))
         
         service_id = cur.fetchone()[0]
@@ -312,6 +317,12 @@ def update_transportation_service(service_id):
         if 'phone' in data:
             update_fields.append('phone = %s')
             params.append(data['phone'])
+        if 'departureCityId' in data:
+            update_fields.append('departure_city_id = %s')
+            params.append(data['departureCityId'])
+        if 'destinationCityId' in data:
+            update_fields.append('destination_city_id = %s')
+            params.append(data['destinationCityId'])
         
         if update_fields:
             update_fields.append('updated_at = CURRENT_TIMESTAMP')

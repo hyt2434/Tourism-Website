@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from src.models.models import Tour  
-from src.database import get_connection
+from config.database import get_connection
 
 suggestions_bp = Blueprint('suggestions', __name__, url_prefix='/api/suggestions')
 

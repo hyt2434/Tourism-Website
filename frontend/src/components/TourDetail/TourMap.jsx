@@ -10,18 +10,46 @@ import ReactDOMServer from "react-dom/server";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
-export default function TourMap({ locations = [], centerCoords, hotelInfo }) {
+export default function TourMap({ locations = [], centerCoords, hotelInfo, destinationCityName }) {
   const defaultCenter = centerCoords || [21.0285, 105.8542];
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [cityCoords, setCityCoords] = useState(null);
+  const [mapCenter, setMapCenter] = useState(defaultCenter);
+
+  // --- Geocode destination city name to get coordinates ---
+  useEffect(() => {
+    const geocodeCity = async () => {
+      if (destinationCityName) {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+              destinationCityName + ", Vietnam"
+            )}&limit=1`
+          );
+          const data = await response.json();
+          if (data && data.length > 0) {
+            const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+            setCityCoords(coords);
+            setMapCenter(coords);
+          }
+        } catch (error) {
+          console.error('Error geocoding city:', error);
+        }
+      } else if (centerCoords) {
+        setMapCenter(centerCoords);
+      }
+    };
+    geocodeCity();
+  }, [destinationCityName, centerCoords]);
 
   // --- Tự động cập nhật view khi centerCoords thay đổi ---
   const MapUpdater = () => {
     const map = useMap();
     useEffect(() => {
-      if (centerCoords) map.setView(centerCoords, 13);
-    }, [centerCoords, map]);
+      if (mapCenter) map.setView(mapCenter, 13);
+    }, [mapCenter, map]);
     return null;
   };
 
@@ -65,6 +93,20 @@ export default function TourMap({ locations = [], centerCoords, hotelInfo }) {
   // --- Tạo markers ---
   const markers = useMemo(() => {
     const allMarkers = [];
+
+    // Add destination city marker if coordinates are available
+    if (cityCoords) {
+      allMarkers.push({
+        position: cityCoords,
+        popup: `
+          <div style="min-width:180px">
+            <h3 style="font-weight:bold;margin-bottom:5px;">${destinationCityName || 'Destination'}</h3>
+            <p style="color:#555;font-size:14px;">Điểm đến chính</p>
+          </div>
+        `,
+        icon: createCustomIcon(<LocationOnIcon fontSize="small" />, "#2563eb"),
+      });
+    }
 
     if (hotelInfo?.coordinates?.length === 2) {
       allMarkers.push({
@@ -110,7 +152,7 @@ export default function TourMap({ locations = [], centerCoords, hotelInfo }) {
     }
 
     return allMarkers;
-  }, [locations, hotelInfo, selectedLocation]);
+  }, [locations, hotelInfo, selectedLocation, cityCoords, destinationCityName]);
 
   // --- Hàm tìm kiếm ---
   const handleSearch = async (e) => {
@@ -177,7 +219,7 @@ export default function TourMap({ locations = [], centerCoords, hotelInfo }) {
 
       {/* === Bản đồ === */}
       <MapContainer
-        center={defaultCenter}
+        center={mapCenter}
         zoom={13}
         scrollWheelZoom
         style={{
@@ -185,6 +227,7 @@ export default function TourMap({ locations = [], centerCoords, hotelInfo }) {
           width: "100%",
           borderRadius: "12px",
         }}
+        key={mapCenter.join(',')}
       >
         <MapUpdater />
         <TileLayer

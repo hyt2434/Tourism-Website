@@ -9,7 +9,7 @@ Partners can manage their accommodation services including:
 """
 
 from flask import Blueprint, request, jsonify
-from src.database import get_connection
+from config.database import get_connection
 from datetime import datetime
 import json
 
@@ -151,15 +151,6 @@ def create_accommodation():
             return jsonify({'error': 'Database connection failed'}), 500
         
         cur = conn.cursor()
-
-        # Verify ownership of accommodation
-        cur.execute("SELECT partner_id FROM accommodation_services WHERE id = %s", (accommodation_id,))
-        row = cur.fetchone()
-
-        if not row or str(row[0]) != str(partner_id):
-            cur.close()
-            conn.close()
-            return jsonify({'error': 'Unauthorized'}), 403
         
         # Insert accommodation
         cur.execute("""

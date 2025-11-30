@@ -1,4 +1,4 @@
-from src.models.models import get_connection
+from config.database import get_connection
 
 # List of Vietnam provinces/cities
 VIETNAM_CITIES = [

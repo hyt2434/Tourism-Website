@@ -112,42 +112,6 @@ export default function PartnerApprovalTab() {
 
   return (
     <div className="space-y-6">
-      {/* Header Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
-          <CardHeader className="pb-3">
-            <CardDescription className="text-blue-700 dark:text-blue-300 font-medium">
-              {t.pendingPartnerApprovals}
-            </CardDescription>
-            <CardTitle className="text-3xl text-blue-900 dark:text-blue-100">
-              {pendingPartners.length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
-          <CardHeader className="pb-3">
-            <CardDescription className="text-green-700 dark:text-green-300 font-medium">
-              {t.approvedThisMonth}
-            </CardDescription>
-            <CardTitle className="text-3xl text-green-900 dark:text-green-100">
-              24
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-700">
-          <CardHeader className="pb-3">
-            <CardDescription className="text-red-700 dark:text-red-300 font-medium">
-              {t.rejectedThisMonth}
-            </CardDescription>
-            <CardTitle className="text-3xl text-red-900 dark:text-red-100">
-              3
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
       {/* Pending Partners List */}
       <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
         <CardHeader>

@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { transportationAPI } from '../api/partnerServices';
 import { processImages } from '../utils/imageUpload';
+import { getCities } from '../api/cities';
 
 const TransportationManagement = () => {
   const { translations: t } = useLanguage();
   const [vehicles, setVehicles] = useState([]);
+  const [cities, setCities] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,12 +27,24 @@ const TransportationManagement = () => {
     phone: '',
     defaultPickupLocations: [],
     defaultDropoffLocations: [],
+    departureCityId: '',
+    destinationCityId: '',
     images: [],
   });
 
   useEffect(() => {
     loadVehicles();
+    loadCities();
   }, []);
+
+  const loadCities = async () => {
+    try {
+      const citiesData = await getCities();
+      setCities(citiesData);
+    } catch (err) {
+      console.error('Error loading cities:', err);
+    }
+  };
 
   const loadVehicles = async () => {
     try {
@@ -79,6 +93,8 @@ const TransportationManagement = () => {
       phone: vehicle.phone || '',
       defaultPickupLocations: vehicle.defaultPickupLocations || [],
       defaultDropoffLocations: vehicle.defaultDropoffLocations || [],
+      departureCityId: vehicle.departureCityId || '',
+      destinationCityId: vehicle.destinationCityId || '',
       images: [],
     });
     setPickupInput((vehicle.defaultPickupLocations || []).join(', '));
@@ -100,6 +116,8 @@ const TransportationManagement = () => {
       phone: '',
       defaultPickupLocations: [],
       defaultDropoffLocations: [],
+      departureCityId: '',
+      destinationCityId: '',
       images: [],
     });
     setPickupInput('');
@@ -295,6 +313,40 @@ const TransportationManagement = () => {
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="w-full border rounded px-3 py-2"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t.serviceManagement.departureCity || 'Departure City'}
+                </label>
+                <select
+                  value={formData.departureCityId}
+                  onChange={(e) => setFormData({ ...formData, departureCityId: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="">{t.serviceManagement.selectCity || 'Select a city'}</option>
+                  {cities.map((city) => (
+                    <option key={city.id} value={city.id}>
+                      {city.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {t.serviceManagement.destinationCity || 'Destination City'}
+                </label>
+                <select
+                  value={formData.destinationCityId}
+                  onChange={(e) => setFormData({ ...formData, destinationCityId: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="">{t.serviceManagement.selectCity || 'Select a city'}</option>
+                  {cities.map((city) => (
+                    <option key={city.id} value={city.id}>
+                      {city.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium mb-2">{t.serviceManagement.features}</label>

@@ -10,15 +10,15 @@ const getUserEmail = () => {
   return null;
 };
 
-// Get all users (admin only)
-export async function getAllUsers() {
+// Get all users (admin only) with pagination
+export async function getAllUsers(page = 1, limit = 10) {
   const email = getUserEmail();
   
   if (!email) {
     throw new Error("Authentication required");
   }
 
-  const response = await fetch(`${API_BASE_URL}/auth/users`, {
+  const response = await fetch(`${API_BASE_URL}/auth/users?page=${page}&limit=${limit}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -152,6 +152,30 @@ export async function deleteUser(userId) {
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || "Failed to delete user");
+  }
+
+  return response.json();
+}
+
+// Get dashboard statistics (admin only)
+export async function getDashboardStats() {
+  const email = getUserEmail();
+  
+  if (!email) {
+    throw new Error("Authentication required");
+  }
+
+  const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "X-User-Email": email,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to fetch dashboard stats");
   }
 
   return response.json();

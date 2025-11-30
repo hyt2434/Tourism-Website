@@ -8,6 +8,7 @@ import {
 import AccommodationManagement from "./AccommodationManagement";
 import RestaurantManagement from "./RestaurantManagement";
 import TransportationManagement from "./TransportationManagement";
+import ViewBookings from "./Partner/ViewBookings";
 
 export default function PartnerManagePage() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export default function PartnerManagePage() {
   const [partnerType, setPartnerType] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
-  const [currentView, setCurrentView] = useState('dashboard'); // dashboard, accommodations, restaurants, transportation
+  const [currentView, setCurrentView] = useState('dashboard'); // dashboard, accommodations, restaurants, transportation, bookings
 
   // Mock statistics - in production, fetch from API
   const [stats, setStats] = useState({
@@ -28,12 +29,6 @@ export default function PartnerManagePage() {
     responseRate: 98,
   });
 
-  const [recentActivity, setRecentActivity] = useState([
-    { id: 1, type: "booking", message: "New booking for Beach Resort", time: "2 hours ago", status: "pending" },
-    { id: 2, type: "review", message: "New 5-star review received", time: "5 hours ago", status: "success" },
-    { id: 3, type: "payment", message: "Payment received $450", time: "1 day ago", status: "success" },
-    { id: 4, type: "update", message: "Service updated: Mountain Villa", time: "2 days ago", status: "info" },
-  ]);
 
   useEffect(() => {
     // Check if user is a partner
@@ -112,6 +107,7 @@ export default function PartnerManagePage() {
               {currentView === 'accommodations' && (t.serviceManagement?.accommodations || "Accommodations")}
               {currentView === 'restaurants' && (t.serviceManagement?.restaurants || "Restaurants")}
               {currentView === 'transportation' && (t.serviceManagement?.transportation || "Transportation")}
+              {currentView === 'bookings' && (t.partnerViewBookings || "View Bookings")}
             </h1>
           </div>
         </div>
@@ -119,6 +115,7 @@ export default function PartnerManagePage() {
           {currentView === 'accommodations' && <AccommodationManagement />}
           {currentView === 'restaurants' && <RestaurantManagement />}
           {currentView === 'transportation' && <TransportationManagement />}
+          {currentView === 'bookings' && <ViewBookings />}
         </div>
       </div>
     );
@@ -249,184 +246,128 @@ export default function PartnerManagePage() {
             </div>
           </div>
 
-          {/* Main Content Grid */}
+          {/* Main Content Grid - 3 cards on same line: My Services, View Bookings, Reviews */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Management Cards - 2 columns */}
-            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 auto-rows-fr">
-              {/* Services Card - Conditionally show based on partner type */}
-              {canManageServiceType('accommodation') && (
-                <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <Briefcase className="w-7 h-7 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                        {t.partnerMyAccommodations || "My Accommodations"}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{stats.totalServices} {t.partnerTotal || "total"}</p>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 min-h-[40px]">
-                    {t.partnerAccommodationsDesc || "Manage your hotels, resorts, and accommodation services"}
-                  </p>
-                  <button 
-                    onClick={() => setCurrentView('accommodations')}
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
-                    <span>{t.partnerManageAccommodations || "Manage Accommodations"}</span>
-                    <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                  </button>
-                </div>
-              )}
-
-              {canManageServiceType('transportation') && (
-                <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <Briefcase className="w-7 h-7 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                        {t.partnerMyTransportation || "My Transportation"}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{stats.totalServices} {t.partnerTotal || "total"}</p>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 min-h-[40px]">
-                    {t.partnerTransportationDesc || "Manage your vehicle fleet and transportation services"}
-                  </p>
-                  <button 
-                    onClick={() => setCurrentView('transportation')}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
-                    <span>{t.partnerManageTransportation || "Manage Transportation"}</span>
-                    <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                  </button>
-                </div>
-              )}
-
-              {canManageServiceType('restaurant') && (
-                <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <Briefcase className="w-7 h-7 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                        {t.partnerMyRestaurants || "My Restaurants"}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{stats.totalServices} {t.partnerTotal || "total"}</p>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 min-h-[40px]">
-                    {t.partnerRestaurantsDesc || "Manage your restaurants and dining services"}
-                  </p>
-                  <button 
-                    onClick={() => setCurrentView('restaurants')}
-                    className="w-full bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
-                    <span>{t.partnerManageRestaurants || "Manage Restaurants"}</span>
-                    <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                  </button>
-                </div>
-              )}
-
-              {/* Bookings Card - Available to all partners */}
+            {/* Services Card - Conditionally show based on partner type */}
+            {canManageServiceType('accommodation') && (
               <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <Calendar className="w-7 h-7 text-white" />
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <Briefcase className="w-7 h-7 text-white" />
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                      {t.partnerBookings || "Bookings"}
+                      {t.partnerMyAccommodations || "My Accommodations"}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{stats.activeBookings} {t.partnerActive || "active"}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{stats.totalServices} {t.partnerTotal || "total"}</p>
                   </div>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 min-h-[40px]">
-                  {t.partnerBookingsDesc || "View and manage customer bookings"}
+                  {t.partnerAccommodationsDesc || "Manage your hotels, resorts, and accommodation services"}
                 </p>
-                <button className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
-                  <span>{t.partnerViewBookings || "View Bookings"}</span>
+                <button 
+                  onClick={() => setCurrentView('accommodations')}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
+                  <span>{t.partnerManageAccommodations || "Manage Accommodations"}</span>
                   <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </button>
               </div>
+            )}
 
-              {/* Revenue Card - Available to all partners */}
+            {canManageServiceType('transportation') && (
               <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <DollarSign className="w-7 h-7 text-white" />
+                  <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <Briefcase className="w-7 h-7 text-white" />
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                      {t.partnerRevenue || "Revenue"}
+                      {t.partnerMyTransportation || "My Transportation"}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t.partnerThisMonth || "This month"}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{stats.totalServices} {t.partnerTotal || "total"}</p>
                   </div>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 min-h-[40px]">
-                  {t.partnerRevenueDesc || "Track your earnings and financial reports"}
+                  {t.partnerTransportationDesc || "Manage your vehicle fleet and transportation services"}
                 </p>
-                <button className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
-                  <span>{t.partnerViewRevenue || "View Revenue"}</span>
+                <button 
+                  onClick={() => setCurrentView('transportation')}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
+                  <span>{t.partnerManageTransportation || "Manage Transportation"}</span>
                   <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </button>
               </div>
+            )}
 
-              {/* Reviews Card - Available to all partners */}
+            {canManageServiceType('restaurant') && (
               <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <Star className="w-7 h-7 text-white fill-white" />
+                  <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <Briefcase className="w-7 h-7 text-white" />
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                      {t.partnerReviewsTitle || "Reviews"}
+                      {t.partnerMyRestaurants || "My Restaurants"}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{stats.averageRating} {t.partnerAvgRating || "avg rating"}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{stats.totalServices} {t.partnerTotal || "total"}</p>
                   </div>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 min-h-[40px]">
-                  {t.partnerReviewsDesc || "Manage customer reviews and ratings"}
+                  {t.partnerRestaurantsDesc || "Manage your restaurants and dining services"}
                 </p>
-                <button className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
-                  <span>{t.partnerViewReviews || "View Reviews"}</span>
+                <button 
+                  onClick={() => setCurrentView('restaurants')}
+                  className="w-full bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
+                  <span>{t.partnerManageRestaurants || "Manage Restaurants"}</span>
                   <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </button>
               </div>
+            )}
+
+            {/* Bookings Card - Available to all partners */}
+            <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Calendar className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                    {t.partnerBookings || "Bookings"}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{stats.activeBookings} {t.partnerActive || "active"}</p>
+                </div>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 min-h-[40px]">
+                {t.partnerBookingsDesc || "View and manage customer bookings"}
+              </p>
+              <button 
+                onClick={() => setCurrentView('bookings')}
+                className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
+                <span>{t.partnerViewBookings || "View Bookings"}</span>
+                <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              </button>
             </div>
 
-            {/* Recent Activity - 1 column */}
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t.partnerRecentActivity || "Recent Activity"}</h3>
-                <button className="text-blue-600 dark:text-blue-400 text-sm font-semibold hover:underline">
-                  {t.partnerViewAll || "View All"}
-                </button>
+            {/* Reviews Card - Available to all partners */}
+            <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-[1.02]">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Star className="w-7 h-7 text-white fill-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                    {t.partnerReviewsTitle || "Reviews"}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{stats.averageRating} {t.partnerAvgRating || "avg rating"}</p>
+                </div>
               </div>
-              <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-900/40 hover:bg-gray-100 dark:hover:bg-gray-900/60 transition-colors">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      activity.status === 'success' ? 'bg-green-100 dark:bg-green-900/30' :
-                      activity.status === 'pending' ? 'bg-amber-100 dark:bg-amber-900/30' :
-                      'bg-blue-100 dark:bg-blue-900/30'
-                    }`}>
-                      {activity.status === 'success' && <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />}
-                      {activity.status === 'pending' && <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
-                      {activity.status === 'info' && <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {activity.message}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2 min-h-[40px]">
+                {t.partnerReviewsDesc || "Manage customer reviews and ratings"}
+              </p>
+              <button className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
+                <span>{t.partnerViewReviews || "View Reviews"}</span>
+                <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              </button>
             </div>
           </div>
 

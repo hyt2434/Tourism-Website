@@ -1,24 +1,29 @@
 // BookingPanel.jsx — Part 1 (imports, helpers, component start, header, booking tab)
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-import { Separator } from "../ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import {
-    Plus,
-    Minus,
-    CheckCircle,
-    X as XIcon,
-    Calendar,
-    Users,
-    Hotel,
-    MapPin,
-    CreditCard,
-    X,
-} from "lucide-react";
-import { Calendar as CalendarComponent } from "../ui/calendar";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import {
+    X as XIcon,
+    Calendar as CalendarIcon,
+    CreditCard,
+    User,
+    Mail,
+    Phone,
+    Wallet,
+} from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
+import { validatePromotionCode } from "../../api/promotions";
+import { Tag, Check, X } from "lucide-react";
+
+// Initialize Stripe
+// Note: Add VITE_STRIPE_PUBLISHABLE_KEY to your frontend .env file
+// Get your publishable key from Stripe Dashboard (it starts with pk_test_ for test mode)
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const formatDate = (date, translations) => {
     if (!date) return translations.chooseDate;
@@ -28,122 +33,322 @@ const formatDate = (date, translations) => {
     return `${day}/${month}/${year}`;
 };
 
-export function BookingPanel({ basePrice, isOpen, onClose }) {
-    if (!isOpen) return null;
+// Inner component that uses Stripe hooks
+function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
+    const stripe = useStripe();
+    const elements = useElements();
 
-    const { translations } = useLanguage();
+    // Check if user is a partner (partners cannot book tours)
+    const [isPartner, setIsPartner] = useState(false);
+    // Check if user is logged in
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    
+    useEffect(() => {
+        try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                const user = JSON.parse(storedUser);
+                if (user.role === 'partner') {
+                    setIsPartner(true);
+                }
+                if (user.isLoggedIn) {
+                    setIsLoggedIn(true);
+                }
+            }
+        } catch (e) {
+            console.log('Error reading user:', e);
+        }
+    }, []);
 
-    // Booking states
-    const [guests, setGuests] = useState(2);
-    const [rooms, setRooms] = useState(1);
-    const [startDate, setStartDate] = useState(new Date(2025, 10, 15));
-    const [endDate, setEndDate] = useState(new Date(2025, 10, 20));
-    const [selectedAttractions, setSelectedAttractions] = useState([
-        "halong-bay",
-        "old-quarter",
-    ]);
+    // Booking states - dates and user information
+    const [startDate, setStartDate] = useState(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return today;
+    });
+    const [endDate, setEndDate] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState(null); // null, "card", or "momo"
+    const [openDeparture, setOpenDeparture] = useState(false);
+    const [cardholderName, setCardholderName] = useState("");
+    const [cardError, setCardError] = useState(null);
+    const [userInfo, setUserInfo] = useState({
+        fullName: "",
+        email: "",
+        phone: "",
+        notes: "",
+    });
+    
+    // Promotion code state
+    const [promoCode, setPromoCode] = useState("");
+    const [promoCodeValid, setPromoCodeValid] = useState(null); // null, true, or false
+    const [promoCodeData, setPromoCodeData] = useState(null);
+    const [validatingPromo, setValidatingPromo] = useState(false);
 
-    // Customization states
-    const [additionalServices, setAdditionalServices] = useState([
-        {
-            id: "photo",
-            name: translations.servicePhoto,
-            price: 150,
-            category: "premium",
-            selected: false,
-        },
-        {
-            id: "cooking",
-            name: translations.serviceCooking,
-            price: 80,
-            category: "experience",
-            selected: false,
-        },
-        {
-            id: "spa",
-            name: translations.serviceSpa,
-            price: 120,
-            category: "wellness",
-            selected: false,
-        },
-        {
-            id: "bike",
-            name: translations.serviceBike,
-            price: 60,
-            category: "adventure",
-            selected: false,
-        },
-    ]);
-
-    const attractions = [
-        { id: "halong-bay", name: translations.halongCruise, price: 120 },
-        { id: "old-quarter", name: translations.hanoiOldQuarter, price: 40 },
-        { id: "temple", name: translations.templeOfLiterature, price: 30 },
-        { id: "water-puppet", name: translations.waterPuppetShow, price: 25 },
-    ];
-
-    const [removableServices, setRemovableServices] = useState([
-        {
-            id: "hotel-upgrade",
-            name: translations.removeHotelUpgrade,
-            discount: 100,
-            removed: false,
-        },
-        {
-            id: "cruise-meal",
-            name: translations.removeCruiseMeal,
-            discount: 60,
-            removed: false,
-        },
-        {
-            id: "entrance-fees",
-            name: translations.removeEntranceFees,
-            discount: 40,
-            removed: false,
-        },
-    ]);
-
-    const toggleAdditionalService = (serviceId) => {
-        setAdditionalServices((prev) =>
-            prev.map((service) =>
-                service.id === serviceId ? { ...service, selected: !service.selected } : service
-            )
-        );
+    // Extract number of nights from duration (e.g., "3 ngày 2 đêm" -> 2)
+    const extractNights = (durationStr) => {
+        if (!durationStr) return 1;
+        const match = durationStr.match(/(\d+)\s*(?:night|đêm)/i);
+        return match ? parseInt(match[1]) : 1;
     };
 
-    const toggleRemovableService = (serviceId) => {
-        setRemovableServices((prev) =>
-            prev.map((service) =>
-                service.id === serviceId ? { ...service, removed: !service.removed } : service
-            )
-        );
+    const numNights = extractNights(duration);
+
+    // Auto-calculate end date when start date changes
+    useEffect(() => {
+        if (startDate) {
+            const end = new Date(startDate);
+            end.setDate(end.getDate() + numNights);
+            setEndDate(end);
+        }
+    }, [startDate, numNights]);
+
+    // Helper to check if date is before today (ignoring time)
+    const isDateBeforeToday = (date) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const compareDate = new Date(date);
+        compareDate.setHours(0, 0, 0, 0);
+        return compareDate < today;
     };
 
     const calculateTotal = () => {
-        let total = basePrice * guests;
-        total += rooms * 80;
+        if (promoCodeValid && promoCodeData) {
+            return promoCodeData.final_amount;
+        }
+        return basePrice;
+    };
+    
+    const handleValidatePromoCode = async () => {
+        if (!promoCode.trim()) {
+            setPromoCodeValid(null);
+            setPromoCodeData(null);
+            return;
+        }
+        
+        setValidatingPromo(true);
+        try {
+            const result = await validatePromotionCode(promoCode.trim().toUpperCase(), basePrice);
+            if (result.valid) {
+                setPromoCodeValid(true);
+                setPromoCodeData(result);
+            } else {
+                setPromoCodeValid(false);
+                setPromoCodeData(null);
+            }
+        } catch (error) {
+            setPromoCodeValid(false);
+            setPromoCodeData(null);
+            console.error('Error validating promo code:', error);
+        } finally {
+            setValidatingPromo(false);
+        }
+    };
+    
+    const handlePromoCodeChange = (value) => {
+        setPromoCode(value);
+        // Reset validation when code changes
+        if (promoCodeValid !== null) {
+            setPromoCodeValid(null);
+            setPromoCodeData(null);
+        }
+    };
 
-        selectedAttractions.forEach((id) => {
-            const attraction = attractions.find((a) => a.id === id);
-            if (attraction) total += attraction.price * guests;
-        });
+    const handleInputChange = (field, value) => {
+        setUserInfo(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
 
-        const days =
-            startDate && endDate
-                ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-                : 5;
+    const validateCardInfo = () => {
+        if (!cardholderName.trim()) {
+            setCardError(translations.cardholderNameRequired || "Tên chủ thẻ là bắt buộc");
+            return false;
+        }
+        const cardElement = elements?.getElement(CardElement);
+        if (!cardElement) {
+            setCardError(translations.cardInformationRequired || "Thông tin thẻ là bắt buộc");
+            return false;
+        }
+        setCardError(null);
+        return true;
+    };
 
-        total = total * days;
+    // Stripe payment processing using Stripe Elements
+    const processStripePayment = async () => {
+        try {
+            if (!stripe || !elements) {
+                throw new Error('Stripe not initialized');
+            }
 
-        additionalServices.forEach((service) => {
-            if (service.selected) total += service.price * days;
-        });
+            const cardElement = elements.getElement(CardElement);
+            if (!cardElement) {
+                throw new Error('Card element not found');
+            }
 
-        removableServices.forEach((service) => {
-            if (service.removed) total -= service.discount * days;
-        });
+            // Create payment intent on backend
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const response = await fetch(`${API_URL}/api/payments/create-intent`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    amount: Math.round(calculateTotal()),
+                    promotion_code: promoCodeValid ? promoCode : null,
+                    currency: 'vnd',
+                    tour_id: null, // You may want to pass tour ID here
+                }),
+            });
 
-        return total;
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to create payment intent');
+            }
+
+            const { client_secret, payment_intent_id } = await response.json();
+
+            // Create PaymentMethod using Stripe Elements (secure, PCI compliant)
+            const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+                billing_details: {
+                    name: cardholderName,
+                },
+            });
+
+            if (pmError) {
+                throw new Error(pmError.message || 'Failed to create payment method');
+            }
+
+            if (!paymentMethod) {
+                throw new Error('Payment method creation failed');
+            }
+
+            // Confirm payment with PaymentMethod ID
+            const confirmResponse = await fetch(`${API_URL}/api/payments/confirm-payment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    payment_intent_id: payment_intent_id,
+                    payment_method_id: paymentMethod.id,
+                }),
+            });
+
+            if (!confirmResponse.ok) {
+                const errorData = await confirmResponse.json();
+                throw new Error(errorData.message || 'Payment confirmation failed');
+            }
+
+            const confirmData = await confirmResponse.json();
+            
+            if (confirmData.success && confirmData.status === 'succeeded') {
+                return { success: true, payment_intent_id: confirmData.payment_intent_id };
+            } else {
+                throw new Error(confirmData.message || 'Payment failed');
+            }
+        } catch (error) {
+            console.error('Payment error:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    const handleBookNow = async () => {
+        // Prevent non-logged-in users from booking tours
+        if (!isLoggedIn) {
+            alert(translations.pleaseLoginToBook || "Vui lòng đăng nhập để đặt tour.");
+            return;
+        }
+
+        // Prevent partners from booking tours
+        if (isPartner) {
+            alert(translations.partnersCannotBook || "Đối tác không thể đặt tour. Vui lòng đăng nhập bằng tài khoản khách hàng.");
+            return;
+        }
+
+        // Validate user info
+        if (!userInfo.fullName || !userInfo.email || !userInfo.phone) {
+            alert(translations.pleaseFillAllFields || "Vui lòng điền đầy đủ thông tin");
+            return;
+        }
+
+        // Validate payment method
+        if (!paymentMethod) {
+            alert(translations.pleaseSelectPaymentMethod || "Vui lòng chọn phương thức thanh toán");
+            return;
+        }
+
+        let paymentIntentId = null;
+
+        // Validate card info if credit card is selected
+        if (paymentMethod === "card") {
+            if (!validateCardInfo()) {
+                alert(translations.pleaseFixCardErrors || "Vui lòng sửa các lỗi trong thông tin thẻ");
+                return;
+            }
+
+            // Process Stripe payment
+            const result = await processStripePayment();
+            if (!result.success) {
+                alert(translations.paymentFailed || "Thanh toán thất bại: " + result.error);
+                return;
+            }
+            paymentIntentId = result.payment_intent_id;
+        }
+
+        // Save booking to database
+        try {
+            // Get current user ID from localStorage if logged in
+            let currentUserId = null;
+            try {
+                const storedUser = localStorage.getItem('user');
+                if (storedUser) {
+                    const user = JSON.parse(storedUser);
+                    if (user.id && user.isLoggedIn) {
+                        currentUserId = user.id;
+                    }
+                }
+            } catch (e) {
+                console.log('No user logged in or error reading user:', e);
+            }
+
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const bookingResponse = await fetch(`${API_URL}/api/bookings/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    tour_id: tourId,
+                    user_id: currentUserId, // Set to null if user is not logged in (guest booking)
+                    full_name: userInfo.fullName,
+                    email: userInfo.email,
+                    phone: userInfo.phone,
+                    departure_date: startDate.toISOString().split('T')[0],
+                    return_date: endDate ? endDate.toISOString().split('T')[0] : null,
+                    number_of_guests: 1, // Can be calculated from adults + children + infants if needed
+                    total_price: calculateTotal(),
+                    payment_method: paymentMethod,
+                    payment_intent_id: paymentIntentId,
+                    notes: userInfo.notes || '',
+                    promotion_code: promoCodeValid ? promoCode.trim().toUpperCase() : null,
+                }),
+            });
+
+            if (!bookingResponse.ok) {
+                const errorData = await bookingResponse.json();
+                throw new Error(errorData.message || 'Failed to save booking');
+            }
+
+            const bookingData = await bookingResponse.json();
+            alert(translations.bookingSuccess || "Đặt tour thành công! Mã đặt tour: " + bookingData.booking_id);
+            onClose();
+        } catch (error) {
+            console.error('Error saving booking:', error);
+            alert(translations.bookingSaveError || "Thanh toán thành công nhưng lưu đặt tour thất bại. Vui lòng liên hệ hỗ trợ.");
+        }
     };
 
     return (
@@ -151,22 +356,24 @@ export function BookingPanel({ basePrice, isOpen, onClose }) {
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
-                onClick={onClose}
+                onClick={(e) => {
+                    // Don't close if clicking on popover
+                    if (e.target && e.target.closest && e.target.closest('[data-slot="popover-content"]')) {
+                        return;
+                    }
+                    onClose();
+                }}
             />
 
-            {/* Panel */}
-            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[90vh] bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 flex flex-col mx-4">
+            {/* Panel - Centered vertically with equal spacing from header and bottom */}
+            <div className="fixed inset-y-[80px] left-1/2 -translate-x-1/2 w-full max-w-4xl max-h-[calc(100vh-160px)] bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-visible z-50 flex flex-col mx-4">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-5">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h3 className="text-2xl font-bold">{translations.panelBookTour}</h3>
-                            <p className="text-sm opacity-90">{translations.panelCustomizeAndBook}</p>
-                        </div>
-                        <div className="flex items-start gap-4">
-                            <div className="text-right">
-                                <p className="text-xs opacity-90">{translations.from}</p>
-                                <p className="text-3xl font-bold">${basePrice}</p>
+                {!isLoggedIn ? (
+                    <div className="bg-gradient-to-r from-orange-600 to-orange-500 text-white p-5">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="text-2xl font-bold">{translations.loginRequired || "Yêu cầu đăng nhập"}</h3>
+                                <p className="text-sm opacity-90 mt-2">{translations.loginRequiredMessage || "Vui lòng đăng nhập để đặt tour. Nếu chưa có tài khoản, vui lòng đăng ký."}</p>
                             </div>
                             <button
                                 onClick={onClose}
@@ -176,310 +383,470 @@ export function BookingPanel({ basePrice, isOpen, onClose }) {
                             </button>
                         </div>
                     </div>
+                ) : isPartner ? (
+                    <div className="bg-gradient-to-r from-red-600 to-red-500 text-white p-5">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="text-2xl font-bold">{translations.accessDenied || "Không thể đặt tour"}</h3>
+                                <p className="text-sm opacity-90 mt-2">{translations.partnersCannotBookMessage || "Tài khoản đối tác không thể đặt tour. Vui lòng đăng nhập bằng tài khoản khách hàng."}</p>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                            >
+                                <XIcon className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-5">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="text-2xl font-bold">{translations.panelBookTour}</h3>
+                                <p className="text-sm opacity-90">{translations.panelBookTour}</p>
+                            </div>
+                            <div className="flex items-start gap-4">
+                                <div className="text-right">
+                                    <p className="text-xs opacity-90">{translations.from || "Từ"}</p>
+                                    <p className="text-3xl font-bold">{basePrice.toLocaleString("vi-VN")} VND</p>
+                                </div>
+                                <button
+                                    onClick={onClose}
+                                    className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                                >
+                                    <XIcon className="w-6 h-6" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {isLoggedIn && !isPartner && (
+                    <>
+                        {/* Booking Content - Scrollable */}
+                        <div className="flex-1 overflow-y-auto p-6 pt-8 space-y-6 pb-8">
+                    {/* Date Selection */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Departure Date */}
+                        <div>
+                            <Label className="text-sm font-medium flex items-center gap-2 mb-2">
+                                <CalendarIcon className="w-4 h-4" />
+                                {translations.panelDepartureDate}
+                            </Label>
+                            <Popover 
+                                open={openDeparture} 
+                                onOpenChange={(open) => {
+                                    setOpenDeparture(open);
+                                }}
+                            >
+                                <PopoverTrigger asChild>
+                                    <div className="relative">
+                                        <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                        <input
+                                            readOnly
+                                            value={formatDate(startDate, translations)}
+                                            onClick={() => setOpenDeparture(true)}
+                                            className={`w-full h-11 pl-10 rounded-md cursor-pointer font-medium
+                                                bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                                                border-2 ${
+                                                    openDeparture
+                                                        ? "ring-2 ring-blue-500 border-blue-500"
+                                                        : "border-gray-300 dark:border-gray-600"
+                                                }
+                                                focus:outline-none`}
+                                        />
+                                    </div>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    className="w-auto p-0 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-500 z-[60]"
+                                    align="start"
+                                    onInteractOutside={(e) => {
+                                        // Close when clicking outside
+                                        setOpenDeparture(false);
+                                    }}
+                                >
+                                    <Calendar
+                                        mode="single"
+                                        selected={startDate}
+                                        onSelect={(date) => {
+                                            if (date) {
+                                                const newDate = new Date(date);
+                                                newDate.setHours(0, 0, 0, 0);
+                                                setStartDate(newDate);
+                                                setOpenDeparture(false);
+                                            }
+                                        }}
+                                        disabled={(date) => isDateBeforeToday(date)}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        {/* Return Date - Auto-calculated */}
+                        <div>
+                            <Label className="text-sm font-medium flex items-center gap-2 mb-2">
+                                <CalendarIcon className="w-4 h-4" />
+                                {translations.panelReturnDate}
+                            </Label>
+                            <div className="w-full h-11 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center">
+                                {endDate ? formatDate(endDate, translations) : translations.chooseReturn || "Chọn ngày về"}
+                            </div>
+                            {duration && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    {translations.duration || "Thời gian"}: {duration}
+                                </p>
+                            )}
+                        </div>
+                                                        </div>
+
+                    {/* User Information Section */}
+                    <div className="border-t pt-6">
+                        <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                            {translations.contactInformation || "Thông tin liên hệ"}
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Full Name */}
+                            <div>
+                                <Label htmlFor="fullName" className="text-sm font-medium flex items-center gap-2 mb-2">
+                                    <User className="w-4 h-4" />
+                                    {translations.fullName || "Họ và tên"} <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="fullName"
+                                    type="text"
+                                    placeholder={translations.enterFullName || "Nhập họ và tên"}
+                                    value={userInfo.fullName}
+                                    onChange={(e) => handleInputChange("fullName", e.target.value)}
+                                    className="h-11"
+                                    required
+                                />
+                            </div>
+
+                            {/* Email */}
+                            <div>
+                                <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2 mb-2">
+                                    <Mail className="w-4 h-4" />
+                                    {translations.email || "Email"} <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder={translations.enterEmail || "Nhập email"}
+                                    value={userInfo.email}
+                                    onChange={(e) => handleInputChange("email", e.target.value)}
+                                    className="h-11"
+                                    required
+                                />
+                                                    </div>
+
+                            {/* Phone */}
+                            <div>
+                                <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-2 mb-2">
+                                    <Phone className="w-4 h-4" />
+                                    {translations.phone || "Số điện thoại"} <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="phone"
+                                    type="tel"
+                                    placeholder={translations.enterPhone || "Nhập số điện thoại"}
+                                    value={userInfo.phone}
+                                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                                    className="h-11"
+                                    required
+                                />
+                                                </div>
+
+                            {/* Notes (optional) */}
+                            <div>
+                                <Label htmlFor="notes" className="text-sm font-medium mb-2">
+                                    {translations.notes || "Ghi chú"} ({translations.optional || "Tùy chọn"})
+                                </Label>
+                                <Input
+                                    id="notes"
+                                    type="text"
+                                    placeholder={translations.enterNotes || "Ghi chú thêm (nếu có)"}
+                                    value={userInfo.notes}
+                                    onChange={(e) => handleInputChange("notes", e.target.value)}
+                                    className="h-11"
+                                />
+                                        </div>
+                                    </div>
+                                </div>
+
+                    {/* Promotion Code Section */}
+                    <div className="border-t pt-6">
+                        <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
+                            <Tag className="w-5 h-5" />
+                            {translations.promotionCode || "Mã khuyến mãi"} ({translations.optional || "Tùy chọn"})
+                        </h4>
+                        <div className="flex gap-2">
+                            <div className="flex-1">
+                                <Input
+                                    type="text"
+                                    placeholder={translations.enterPromoCode || "Nhập mã khuyến mãi"}
+                                    value={promoCode}
+                                    onChange={(e) => handlePromoCodeChange(e.target.value)}
+                                    onBlur={handleValidatePromoCode}
+                                    className="h-11"
+                                />
+                                {promoCodeValid === true && promoCodeData && (
+                                    <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                                            <Check className="w-4 h-4" />
+                                            <span className="text-sm font-medium">
+                                                {promoCodeData.promotion.title || translations.promoCodeApplied || "Mã khuyến mãi đã được áp dụng!"}
+                                            </span>
+                                        </div>
+                                        {promoCodeData.promotion.subtitle && (
+                                            <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                                                {promoCodeData.promotion.subtitle}
+                                            </p>
+                                        )}
+                                        <div className="mt-2 text-sm">
+                                            <span className="text-gray-600 dark:text-gray-400">
+                                                {translations.discount || "Giảm giá"}: 
+                                            </span>
+                                            <span className="font-semibold text-green-700 dark:text-green-400 ml-2">
+                                                -{promoCodeData.discount_amount.toLocaleString("vi-VN")} VND
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {promoCodeValid === false && (
+                                    <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                        <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                                            <X className="w-4 h-4" />
+                                            <span className="text-sm">
+                                                {translations.invalidPromoCode || "Mã khuyến mãi không hợp lệ hoặc đã hết hạn"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {validatingPromo && (
+                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                        {translations.validating || "Đang kiểm tra..."}
+                                    </p>
+                                )}
+                            </div>
+                            <Button
+                                type="button"
+                                onClick={handleValidatePromoCode}
+                                disabled={!promoCode.trim() || validatingPromo}
+                                className="h-11 px-6"
+                                variant="outline"
+                            >
+                                {translations.apply || "Áp dụng"}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Payment Method Section */}
+                    <div className="border-t pt-6">
+                        <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
+                            <Wallet className="w-5 h-5" />
+                            {translations.paymentMethod || "Phương thức thanh toán"} <span className="text-red-500">*</span>
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Card Payment */}
+                            <div
+                                onClick={() => setPaymentMethod("card")}
+                                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                                    paymentMethod === "card"
+                                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                        paymentMethod === "card"
+                                            ? "border-blue-500 bg-blue-500"
+                                            : "border-gray-300 dark:border-gray-600"
+                                    }`}>
+                                        {paymentMethod === "card" && (
+                                            <div className="w-2 h-2 rounded-full bg-white" />
+                                        )}
+                                    </div>
+                                    <CreditCard className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                                    <div>
+                                        <p className="font-semibold text-gray-900 dark:text-white">
+                                            {translations.cardPayment || "Thẻ tín dụng/Ghi nợ"}
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {translations.cardPaymentDesc || "Visa, Mastercard, JCB"}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* MoMo Payment */}
+                            <div
+                                onClick={() => setPaymentMethod("momo")}
+                                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                                    paymentMethod === "momo"
+                                        ? "border-pink-500 bg-pink-50 dark:bg-pink-900/20"
+                                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                        paymentMethod === "momo"
+                                            ? "border-pink-500 bg-pink-500"
+                                            : "border-gray-300 dark:border-gray-600"
+                                    }`}>
+                                        {paymentMethod === "momo" && (
+                                            <div className="w-2 h-2 rounded-full bg-white" />
+                                        )}
+                                    </div>
+                                    <div className="w-6 h-6 bg-gradient-to-br from-pink-500 to-pink-700 rounded flex items-center justify-center">
+                                        <span className="text-white font-bold text-xs">Mo</span>
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900 dark:text-white">
+                                            {translations.momoPayment || "Ví MoMo"}
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {translations.momoPaymentDesc || "Thanh toán qua ví điện tử"}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Card Information Form - Show only when credit card is selected */}
+                        {paymentMethod === "card" && (
+                            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <h5 className="text-sm font-semibold mb-4 text-gray-900 dark:text-white">
+                                    {translations.cardInformation || "Thông tin thẻ"}
+                                </h5>
+                                <div className="space-y-4">
+                                    {/* Cardholder Name */}
+                                    <div>
+                                        <Label htmlFor="cardholderName" className="text-sm font-medium mb-2">
+                                            {translations.cardholderName || "Tên chủ thẻ"} <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="cardholderName"
+                                            type="text"
+                                            placeholder={translations.enterCardholderName || "Nhập tên chủ thẻ"}
+                                            value={cardholderName}
+                                            onChange={(e) => {
+                                                setCardholderName(e.target.value);
+                                                if (cardError) setCardError(null);
+                                            }}
+                                            className="h-11"
+                                        />
+                                    </div>
+
+                                    {/* Stripe CardElement */}
+                                    <div>
+                                        <Label className="text-sm font-medium mb-2">
+                                            {translations.cardNumber || "Thông tin thẻ"} <span className="text-red-500">*</span>
+                                        </Label>
+                                        <div className="h-11 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700">
+                                            <CardElement
+                                                options={{
+                                                    style: {
+                                                        base: {
+                                                            fontSize: '16px',
+                                                            color: '#424770',
+                                                            '::placeholder': {
+                                                                color: '#aab7c4',
+                                                            },
+                                                        },
+                                                        invalid: {
+                                                            color: '#9e2146',
+                                                        },
+                                                    },
+                                                }}
+                                                onChange={(e) => {
+                                                    if (e.error) {
+                                                        setCardError(e.error.message);
+                                                    } else {
+                                                        setCardError(null);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        {cardError && (
+                                            <p className="text-xs text-red-500 mt-1">{cardError}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Tabs Content - Scrollable */}
-                <div className="flex-1 overflow-y-auto">
-                    <Tabs defaultValue="booking" className="w-full">
-                        <TabsList className="w-full grid grid-cols-2 sticky top-0 z-10 bg-white dark:bg-gray-800 rounded-none">
-                            <TabsTrigger value="booking">{translations.panelBookTour}</TabsTrigger>
-                            <TabsTrigger value="customize">{translations.panelCustomize}</TabsTrigger>
-                        </TabsList>
-
-                        {/* Tab Đặt Tour / Booking */}
-                        <TabsContent value="booking" className="p-6 m-0">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Left column */}
-                                <div className="space-y-4">
-                                    {/* Guests */}
-                                    <div>
-                                        <label className="text-sm font-medium flex items-center gap-2 mb-2">
-                                            <Users className="w-4 h-4" />
-                                            {translations.panelGuests}
-                                        </label>
-                                        <div className="flex items-center gap-3">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setGuests(Math.max(1, guests - 1))}
-                                                className="dark:border-gray-700 dark:text-gray-100"
-                                            >
-                                                <Minus className="w-4 h-4" />
-                                            </Button>
-                                            <span className="text-lg font-semibold w-12 text-center">
-                                                {guests}
-                                            </span>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setGuests(guests + 1)}
-                                                className="dark:border-gray-700 dark:text-gray-100"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    {/* Rooms */}
-                                    <div>
-                                        <label className="text-sm font-medium flex items-center gap-2 mb-2">
-                                            <Hotel className="w-4 h-4" />
-                                            {translations.panelRooms}
-                                        </label>
-                                        <div className="flex items-center gap-3">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setRooms(Math.max(1, rooms - 1))}
-                                                className="dark:border-gray-700 dark:text-gray-100"
-                                            >
-                                                <Minus className="w-4 h-4" />
-                                            </Button>
-                                            <span className="text-lg font-semibold w-12 text-center">
-                                                {rooms}
-                                            </span>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setRooms(rooms + 1)}
-                                                className="dark:border-gray-700 dark:text-gray-100"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Right column */}
-                                <div className="space-y-4">
-                                    {/* Start date */}
-                                    <div>
-                                        <label className="text-sm font-medium flex items-center gap-2 mb-2">
-                                            <Calendar className="w-4 h-4" />
-                                            {translations.panelDepartureDate}
-                                        </label>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full justify-start dark:border-gray-700 dark:text-gray-100"
-                                                >
-                                                    {formatDate(startDate, translations)}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                                <CalendarComponent
-                                                    mode="single"
-                                                    selected={startDate}
-                                                    onSelect={setStartDate}
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
-                                    </div>
-
-                                    {/* End date */}
-                                    <div>
-                                        <label className="text-sm font-medium flex items-center gap-2 mb-2">
-                                            <Calendar className="w-4 h-4" />
-                                            {translations.panelReturnDate}
-                                        </label>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full justify-start dark:border-gray-700 dark:text-gray-100"
-                                                >
-                                                    {formatDate(endDate, translations)}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                                <CalendarComponent
-                                                    mode="single"
-                                                    selected={endDate}
-                                                    onSelect={setEndDate}
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
-                                    </div>
-                                </div>
-                            </div>
-                        </TabsContent>
-                        {/* Tab Tùy chỉnh / Customize */}
-                        <TabsContent value="customize" className="p-6 m-0">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Left column - Featured Attractions */}
-                                <div className="space-y-4">
-                                    <div>
-                                        <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                                            <MapPin className="w-5 h-5 text-blue-600" />
-                                            {translations.featuredAttractions}
-                                        </h4>
-                                        <div className="space-y-2">
-                                            {attractions.map((attr) => (
-                                                <div
-                                                    key={attr.id}
-                                                    className={`border rounded-lg p-3 cursor-pointer transition-all ${selectedAttractions.includes(attr.id)
-                                                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
-                                                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
-                                                        }`}
-                                                    onClick={() => {
-                                                        if (selectedAttractions.includes(attr.id)) {
-                                                            setSelectedAttractions(
-                                                                selectedAttractions.filter((id) => id !== attr.id)
-                                                            );
-                                                        } else {
-                                                            setSelectedAttractions([...selectedAttractions, attr.id]);
-                                                        }
-                                                    }}
-                                                >
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium">{attr.name}</p>
-                                                        </div>
-                                                        <div className="text-right flex-shrink-0">
-                                                            <p className="text-sm font-semibold text-blue-600">
-                                                                ${attr.price}
-                                                            </p>
-                                                            <div
-                                                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${selectedAttractions.includes(attr.id)
-                                                                    ? "bg-blue-500 border-blue-500"
-                                                                    : "border-gray-300 dark:border-gray-600"
-                                                                    }`}
-                                                            >
-                                                                {selectedAttractions.includes(attr.id) && (
-                                                                    <CheckCircle className="w-3 h-3 text-white" />
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Right column - Services */}
-                                <div className="space-y-4">
-                                    {/* Additional Services */}
-                                    <div>
-                                        <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                                            <Plus className="w-4 h-4 text-green-600" />
-                                            {translations.extraServices}
-                                        </h4>
-                                        <div className="space-y-2">
-                                            {additionalServices.map((service) => (
-                                                <div
-                                                    key={service.id}
-                                                    className={`border rounded-lg p-3 cursor-pointer transition-all ${service.selected
-                                                        ? "border-green-500 bg-green-50 dark:bg-green-900/30"
-                                                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
-                                                        }`}
-                                                    onClick={() => toggleAdditionalService(service.id)}
-                                                >
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium truncate">
-                                                                {translations[`service_${service.id}`]} {/* 👈 lấy từ file dịch */}
-                                                            </p>
-                                                            <Badge variant="secondary" className="text-xs mt-1">
-                                                                {service.category}
-                                                            </Badge>
-                                                        </div>
-                                                        <div className="text-right flex-shrink-0">
-                                                            <p className="text-sm font-semibold text-green-600">
-                                                                +${service.price}
-                                                            </p>
-                                                            <div
-                                                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${service.selected
-                                                                    ? "bg-green-500 border-green-500"
-                                                                    : "border-gray-300 dark:border-gray-600"
-                                                                    }`}
-                                                            >
-                                                                {service.selected && (
-                                                                    <CheckCircle className="w-3 h-3 text-white" />
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-
-                                    <Separator />
-
-                                    {/* Removable Services */}
-                                    <div>
-                                        <h4 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                                            <Minus className="w-4 h-4 text-red-600" />
-                                            {translations.reduceCost}
-                                        </h4>
-                                        <div className="space-y-2">
-                                            {removableServices.map((service) => (
-                                                <div
-                                                    key={service.id}
-                                                    className={`border rounded-lg p-3 cursor-pointer transition-all ${service.removed
-                                                            ? "border-red-500 bg-red-50 dark:bg-red-900/30"
-                                                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
-                                                        }`}
-                                                    onClick={() => toggleRemovableService(service.id)}
-                                                >
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium truncate">
-                                                                {service.id === "hotel-upgrade" && translations.removeHotelUpgrade}
-                                                                {service.id === "cruise-meal" && translations.removeCruiseMeal}
-                                                                {service.id === "entrance-fees" && translations.removeEntranceFees}
-                                                            </p>
-                                                        </div>
-                                                        <div className="text-right flex-shrink-0">
-                                                            <p className="text-sm font-semibold text-red-600">
-                                                                -${service.discount}
-                                                            </p>
-                                                            <div
-                                                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-1 ${service.removed
-                                                                        ? "bg-red-500 border-red-500"
-                                                                        : "border-gray-300 dark:border-gray-600"
-                                                                    }`}
-                                                            >
-                                                                {service.removed && <X className="w-3 h-3 text-white" />}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </TabsContent>
-                        {/* End of Tabs contents */}
-                    </Tabs> {/* close Tabs */}
-                </div> {/* close flex-1 overflow container */}
-
                 {/* Footer - Sticky */}
-                <div className="border-t bg-white dark:bg-gray-800 p-4 space-y-3">
+                <div className="border-t bg-white dark:bg-gray-800 p-6 pt-6 space-y-4">
+                    {/* Price Breakdown */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">{translations.originalPrice || "Giá gốc"}:</span>
+                            <span className="text-gray-700 dark:text-gray-300">
+                                {basePrice.toLocaleString("vi-VN")} VND
+                            </span>
+                        </div>
+                        {promoCodeValid && promoCodeData && (
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-green-600 dark:text-green-400">{translations.discount || "Giảm giá"}:</span>
+                                <span className="text-green-600 dark:text-green-400 font-semibold">
+                                    -{promoCodeData.discount_amount.toLocaleString("vi-VN")} VND
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                    
                     {/* Total */}
-                    <div className="flex justify-between items-center">
-                        <span className="font-semibold">{translations.panelTotal}:</span>
-                        <span className="text-2xl font-bold text-primary">
-                            ${calculateTotal()}
+                    <div className="flex justify-between items-center border-t pt-2">
+                        <span className="font-semibold text-lg">{translations.panelTotal || "Tổng cộng"}:</span>
+                        <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            {calculateTotal().toLocaleString("vi-VN")} VND
                         </span>
                     </div>
 
                     {/* Book now button */}
-                    <Button className="w-full" size="lg">
-                        <CreditCard className="w-4 h-4 mr-2" />
-                        {translations.bookNow}
+                    <Button 
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white" 
+                        size="lg"
+                        onClick={handleBookNow}
+                        disabled={!userInfo.fullName || !userInfo.email || !userInfo.phone || !paymentMethod}
+                    >
+                        {paymentMethod === "card" ? (
+                            <CreditCard className="w-4 h-4 mr-2" />
+                        ) : paymentMethod === "momo" ? (
+                            <Wallet className="w-4 h-4 mr-2" />
+                        ) : null}
+                        <span className="text-white font-semibold">{translations.bookNow}</span>
                     </Button>
 
-                    <p className="text-xs text-center text-muted-foreground">
-                        💡 {translations.panelPriceIncludesTax}
+                    <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                        💡 {translations.panelPriceIncludesTax || "Giá đã bao gồm thuế và phí dịch vụ"}
                     </p>
                 </div>
+                    </>
+                )}
             </div> {/* close Panel */}
         </>
+    );
+}
+
+// Main component that wraps BookingForm with Elements provider
+export function BookingPanel({ basePrice, isOpen, onClose, duration, tourId }) {
+    if (!isOpen) return null;
+
+    const { translations } = useLanguage();
+
+    return (
+        <Elements stripe={stripePromise}>
+            <BookingForm 
+                basePrice={basePrice} 
+                onClose={onClose} 
+                duration={duration} 
+                tourId={tourId}
+                translations={translations} 
+            />
+        </Elements>
     );
 }

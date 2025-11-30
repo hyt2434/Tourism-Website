@@ -1,4 +1,4 @@
-from src.database import get_connection
+from config.database import get_connection
 
 def create_table():
     conn = get_connection()
@@ -123,6 +123,7 @@ def create_tables():
             avatar_url TEXT,
             role VARCHAR(20) DEFAULT 'client' CHECK (role IN ('admin', 'client', 'partner')),
             partner_type VARCHAR(50) CHECK (partner_type IN ('accommodation', 'transportation', 'restaurant') OR partner_type IS NULL),
+            status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended', 'pending')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
@@ -264,6 +265,62 @@ def create_tables():
                 END;
             END IF;
         END $$;
+    """)
+
+    # Promotions table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS promotions (
+            id SERIAL PRIMARY KEY,
+            code VARCHAR(50) UNIQUE NOT NULL,
+            discount_type VARCHAR(20) NOT NULL,
+            discount_value DECIMAL(10, 2) NOT NULL,
+            max_uses INTEGER,
+            start_date DATE,
+            end_date DATE,
+            conditions TEXT,
+            is_active BOOLEAN DEFAULT true,
+            show_on_homepage BOOLEAN DEFAULT false,
+            promotion_type VARCHAR(20) DEFAULT 'promo_code' CHECK (promotion_type IN ('banner', 'promo_code')),
+            title VARCHAR(200),
+            subtitle VARCHAR(200),
+            image TEXT,
+            highlight VARCHAR(100),
+            terms TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+    
+    # Favorites table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS favorites (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            tour_id INTEGER NOT NULL REFERENCES tours_admin(id) ON DELETE CASCADE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, tour_id)
+        );
+    """)
+
+    # Bookings table for tour reservations
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS bookings (
+            id SERIAL PRIMARY KEY,
+            tour_id INTEGER REFERENCES tours_admin(id) ON DELETE SET NULL,
+            user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            full_name VARCHAR(200) NOT NULL,
+            email VARCHAR(100) NOT NULL,
+            phone VARCHAR(20) NOT NULL,
+            departure_date DATE NOT NULL,
+            return_date DATE,
+            number_of_guests INTEGER DEFAULT 1,
+            total_price DECIMAL(12, 2) NOT NULL,
+            payment_method VARCHAR(20) NOT NULL,
+            payment_intent_id VARCHAR(200),
+            promotion_code VARCHAR(50),
+            notes TEXT,
+            status VARCHAR(20) DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     """)
 
     conn.commit()

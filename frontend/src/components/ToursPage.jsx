@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import TourCard from "./TourCard";
 import FilterSidebar from "./FilterSidebar";
 import { useLanguage } from "../context/LanguageContext";
-import { allToursData, weatherSuggestions, promotions, topRatedDestinations } from "../data/toursData";
+import { getPublishedTours } from "../api/tours";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -10,48 +11,120 @@ import { ArrowUpDown, Grid, List, MapPin, Star, Sun, Tag } from "lucide-react";
 
 export default function ToursPage() {
   const { translations } = useLanguage();
+  const [searchParams] = useSearchParams();
 
-  const [filteredTours, setFilteredTours] = useState(allToursData);
+  const [allTours, setAllTours] = useState([]);
+  const [filteredTours, setFilteredTours] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("rating-desc");
   const [viewMode, setViewMode] = useState("grid");
   const [currentWeather] = useState("sunny");
   const [currentPage, setCurrentPage] = useState(1);
   const toursPerPage = 9;
 
-  const handleFilterChange = (filters) => {
-    let result = [...allToursData];
+  // Load tours from API with URL params
+  useEffect(() => {
+    loadTours();
+  }, [searchParams]);
 
-    if (filters.search) {
+  const loadTours = async () => {
+    try {
+      setLoading(true);
+      
+      // Build filters from URL params
+      const filters = {};
+      const search = searchParams.get('search');
+      const departureCityId = searchParams.get('departure_city_id');
+      const destinationCityId = searchParams.get('destination_city_id');
+      const minDuration = searchParams.get('min_duration');
+      const maxDuration = searchParams.get('max_duration');
+      const numberOfMembers = searchParams.get('number_of_members');
+
+      if (search) filters.search = search;
+      if (departureCityId) filters.departure_city_id = departureCityId;
+      if (destinationCityId) filters.destination_city_id = destinationCityId;
+      if (minDuration) filters.min_duration = parseInt(minDuration);
+      if (maxDuration) filters.max_duration = parseInt(maxDuration);
+      if (numberOfMembers) filters.number_of_members = parseInt(numberOfMembers);
+
+      const tours = await getPublishedTours(filters);
+
+      setAllTours(tours);
+      setFilteredTours(tours);
+    } catch (error) {
+      console.error('Error loading tours:', error);
+      setAllTours([]);
+      setFilteredTours([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyClientSideFilters = (tours) => {
+    // Apply any additional filters that might be in URL params
+    // This is for filters that are handled client-side
+    let result = [...tours];
+    
+    const search = searchParams.get('search');
+    if (search) {
       result = result.filter((t) =>
-        t.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        t.destination.toLowerCase().includes(filters.search.toLowerCase())
+        t.name.toLowerCase().includes(search.toLowerCase()) ||
+        (t.destination && t.destination.toLowerCase().includes(search.toLowerCase()))
       );
     }
 
-    if (filters.regions && filters.regions.length > 0) {
-      result = result.filter((t) => filters.regions.includes(t.region));
+    setFilteredTours(result);
+    applySorting(result, sortBy);
+  };
+
+  const getInitialFiltersFromParams = () => {
+    const filters = {};
+    const search = searchParams.get('search');
+    if (search) {
+      filters.search = search;
+    }
+    return filters;
+  };
+
+  const handleFilterChange = (filters) => {
+    let result = [...allTours];
+
+    // Search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      result = result.filter((t) =>
+        t.name.toLowerCase().includes(searchLower) ||
+        (t.destination && t.destination.toLowerCase().includes(searchLower)) ||
+        (t.description && t.description.toLowerCase().includes(searchLower))
+      );
     }
 
+    // City filter (provinces contains city IDs)
     if (filters.provinces && filters.provinces.length > 0) {
-      result = result.filter((t) => filters.provinces.includes(t.province));
+      const cityIds = filters.provinces.map(id => parseInt(id));
+      result = result.filter((t) => {
+        // Check if tour's destination or departure city matches any selected city
+        const destCityId = t.destination_city?.id;
+        const depCityId = t.departure_city?.id;
+        return cityIds.includes(destCityId) || cityIds.includes(depCityId);
+      });
     }
 
-    if (filters.maxPrice) {
+    // Price filter
+    if (filters.maxPrice && filters.maxPrice < 10000000) {
       result = result.filter((t) => t.price <= filters.maxPrice);
     }
 
+    // Rating filter (if rating is implemented)
     if (filters.minRating > 0) {
-      result = result.filter((t) => t.rating >= filters.minRating);
+      result = result.filter((t) => (t.rating || 0) >= filters.minRating);
     }
 
+    // Tour types filter (if tour types are implemented)
     if (filters.tourTypes && filters.tourTypes.length > 0) {
       result = result.filter((t) =>
-        t.type.some((type) => filters.tourTypes.includes(type))
+        t.type && t.type.some((type) => filters.tourTypes.includes(type))
       );
-    }
-
-    if (filters.startDate) {
-      // Giả lập filter theo ngày
     }
 
     setFilteredTours(result);
@@ -90,19 +163,6 @@ export default function ToursPage() {
     applySorting(filteredTours, sortOption);
   };
 
-  // Safe access to weather data with fallback
-  const weather = weatherSuggestions?.[currentWeather] || {
-    icon: "☀️",
-    condition: "Sunny",
-    temp: "28°C",
-    description: "Perfect weather for touring",
-    tours: []
-  };
-
-  const suggestedTours = allToursData.filter((t) =>
-    weather.tours.includes(t.id)
-  );
-
   // Pagination logic
   const indexOfLastTour = currentPage * toursPerPage;
   const indexOfFirstTour = indexOfLastTour - toursPerPage;
@@ -114,6 +174,17 @@ export default function ToursPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading tours...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       {/* Hero Section */}
@@ -123,7 +194,7 @@ export default function ToursPage() {
             {translations.exploreTours || "Khám Phá Tour Du Lịch"}
           </h1>
           <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400">
-            {allToursData.length} {translations.toursWaiting || "trải nghiệm đặc biệt đang chờ bạn khám phá"}
+            {allTours.length} {translations.toursWaiting || "trải nghiệm đặc biệt đang chờ bạn khám phá"}
           </p>
         </div>
       </div>
@@ -133,7 +204,7 @@ export default function ToursPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <FilterSidebar onFilterChange={handleFilterChange} />
+            <FilterSidebar onFilterChange={handleFilterChange} initialFilters={getInitialFiltersFromParams()} />
           </div>
 
           {/* Tours List */}
@@ -258,67 +329,6 @@ export default function ToursPage() {
           </div>
         </div>
       </div>
-
-      {/* Top Rated Destinations */}
-      <div className="bg-white dark:bg-gray-800 py-16 px-4 md:px-8 lg:px-36">
-        <div>
-          <div className="flex items-center gap-3 mb-10">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
-              <MapPin className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
-                {translations.topRatedDestinations || "Địa Điểm Được Đánh Giá Cao"}
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Khám phá những điểm đến ưa thích nhất
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {topRatedDestinations.map((dest, index) => (
-              <div key={index} className="group cursor-pointer">
-                <div className="relative overflow-hidden rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300">
-                  <img
-                    src={dest.image}
-                    alt={dest.name}
-                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <h3 className="font-bold text-white text-lg mb-1 line-clamp-1">{dest.name}</h3>
-                      <p className="text-xs text-gray-200 mb-2 line-clamp-1">{dest.province}</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 bg-yellow-500 px-2 py-0.5 rounded-full">
-                          <Star className="w-3 h-3 fill-white text-white" />
-                          <span className="text-xs font-bold text-white">{dest.rating}</span>
-                        </div>
-                        <span className="text-xs text-gray-200">({dest.reviews} reviews)</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Weather-based Suggestions */}
-      {suggestedTours.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 py-12 px-4 md:px-8 lg:px-36">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-              {translations.weatherSuggestions || "Gợi Ý Theo Thời Tiết Hôm Nay"}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {suggestedTours.slice(0, 3).map((tour) => (
-                <TourCard key={tour.id} tour={tour} />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
