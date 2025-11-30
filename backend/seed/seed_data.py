@@ -19,10 +19,12 @@ from flask_bcrypt import Bcrypt
 # Load environment variables
 load_dotenv()
 
-# Add backend to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add backend directory to path so we can import from config and src
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, backend_dir)
 
 from config.database import get_connection
+from seed.import_tour_images import import_tour_images
 
 bcrypt = Bcrypt()
 
@@ -2976,6 +2978,12 @@ def main():
     print()
     print("Note: Image URLs are placeholders. Please update them with actual images.")
     print("=" * 60)
+
+    # Import tour images
+    print("🖼️ Importing tour images...")
+    # tour_images folder is in the seed directory
+    tour_images_path = os.path.join(os.path.dirname(__file__), 'tour_images')
+    import_tour_images(tour_images_path)
 
 if __name__ == "__main__":
     main()
