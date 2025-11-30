@@ -8,7 +8,7 @@ This module defines the database tables for creating and managing tours with:
 4. Automatic pricing calculation based on selected services
 """
 
-from src.database import get_connection
+from config.database import get_connection
 
 
 def create_tour_tables():

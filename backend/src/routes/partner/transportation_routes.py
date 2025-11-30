@@ -9,7 +9,7 @@ Partners can manage their transportation services including:
 """
 
 from flask import Blueprint, request, jsonify
-from src.database import get_connection
+from config.database import get_connection
 from datetime import datetime, timedelta
 
 transportation_bp = Blueprint('transportation_services', __name__, url_prefix='/api/partner/transportation')

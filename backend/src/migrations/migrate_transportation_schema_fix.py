@@ -11,7 +11,7 @@ This migration:
 4. Makes license_plate NOT NULL and UNIQUE
 """
 
-from src.database import get_connection
+from config.database import get_connection
 
 
 def migrate():

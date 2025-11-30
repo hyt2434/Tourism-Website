@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-from src.database import get_connection
+from config.database import get_connection
 
 def migrate_add_status():
     """Add status column to existing users table."""

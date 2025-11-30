@@ -1,4 +1,4 @@
-from src.database import get_connection
+from config.database import get_connection
 
 def create_table():
     conn = get_connection()

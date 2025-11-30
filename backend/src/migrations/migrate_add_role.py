@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 # Load environment variables from the correct location
 load_dotenv()
 
-from src.database import get_connection
+from config.database import get_connection
 
 def migrate_add_role():
     """Add role column to existing users table and set default admin."""

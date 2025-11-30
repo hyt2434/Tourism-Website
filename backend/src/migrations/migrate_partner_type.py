@@ -8,7 +8,7 @@ Run this script once to migrate existing database:
     python -m src.routes.user.migrate_partner_type
 """
 
-from src.database import get_connection
+from config.database import get_connection
 
 
 def migrate_add_partner_type():

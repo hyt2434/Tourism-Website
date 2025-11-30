@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.database import get_connection
+from config.database import get_connection
 import re
 
 tour_routes = Blueprint('tour_routes', __name__)

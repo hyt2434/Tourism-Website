@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-from src.database import get_connection
+from config.database import get_connection
 
 def migrate_add_promotion_code_to_bookings():
     """Add promotion_code column to bookings table."""

@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-from src.database import get_connection
+from config.database import get_connection
 
 def migrate_add_meal_types():
     """Add meal_types column to restaurant_menu_items table."""

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.database import get_connection
+from config.database import get_connection
 import secrets
 import string
 from datetime import datetime

@@ -3,7 +3,7 @@ Migration script to add tables for storing tour room and menu selections.
 Run this once to create the tables.
 """
 
-from src.database import get_connection
+from config.database import get_connection
 
 def migrate_tour_selections():
     """Create tables for tour_selected_rooms and tour_selected_menu_items."""

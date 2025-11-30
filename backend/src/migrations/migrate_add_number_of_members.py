@@ -3,7 +3,7 @@ Migration script to add number_of_members column to tours_admin table.
 Run this once to update the database schema.
 """
 
-from src.database import get_connection
+from config.database import get_connection
 
 def migrate_add_number_of_members():
     """Add number_of_members column to tours_admin table."""

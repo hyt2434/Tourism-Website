@@ -3,7 +3,7 @@ Migration to add departure_city_id and destination_city_id to transportation_ser
 This allows transportation services to specify their departure and destination cities.
 """
 
-from src.database import get_connection
+from config.database import get_connection
 
 def apply_migration():
     """Apply the migration to add city fields to transportation_services table"""

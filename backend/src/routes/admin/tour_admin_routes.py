@@ -6,7 +6,7 @@ All endpoints require admin authentication.
 """
 
 from flask import Blueprint, request, jsonify
-from src.database import get_connection
+from config.database import get_connection
 from src.routes.user.auth_routes import admin_required
 from decimal import Decimal
 import json

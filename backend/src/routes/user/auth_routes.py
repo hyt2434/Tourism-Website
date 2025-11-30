@@ -5,7 +5,7 @@ import os
 import random
 import string
 from datetime import datetime, timedelta
-from src.database import get_connection
+from config.database import get_connection
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 

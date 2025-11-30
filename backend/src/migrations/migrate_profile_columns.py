@@ -9,7 +9,7 @@ import os
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.database import get_connection
+from config.database import get_connection
 
 def migrate_add_profile_columns():
     """Add phone and avatar_url columns to existing users table."""

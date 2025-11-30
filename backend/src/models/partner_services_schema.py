@@ -9,7 +9,7 @@ This module defines the database tables for three types of partner services:
 Each service type has its own table with specific fields and a shared branches system.
 """
 
-from src.database import get_connection
+from config.database import get_connection
 
 
 def create_partner_service_tables():

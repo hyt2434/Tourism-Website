@@ -20,7 +20,7 @@ bcrypt = Bcrypt(app)
 app.bcrypt = bcrypt
 app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 
-from src.migration.migrate_partner_type import migrate_add_partner_type
+from src.migrations.migrate_partner_type import migrate_add_partner_type
 from src.routes.user.auth_routes import auth_routes, ensure_default_admin
 from src.routes.filter_routes import filter_routes
 from src.routes.promotion_routes import promotion_routes
@@ -45,16 +45,16 @@ try:
     ensure_default_admin()
     
     # Initialize cities
-    from src.models.city_init import init_cities
+    from src.services.city_init import init_cities
     init_cities()
     # Initialize statuses and roles
-    from src.migration.migrate_add_status import migrate_add_status
+    from src.migrations.migrate_add_status import migrate_add_status
     migrate_add_status()
-    from src.migration.migrate_add_role import migrate_add_role
+    from src.migrations.migrate_add_role import migrate_add_role
     migrate_add_role()
 
     # Initialize profile columns
-    from src.migration.migrate_profile_columns import migrate_add_profile_columns
+    from src.migrations.migrate_profile_columns import migrate_add_profile_columns
     migrate_add_profile_columns()
     #Initialize partner types
     migrate_add_partner_type()
@@ -62,35 +62,35 @@ try:
     create_partner_service_tables()
     
     #Initialize meal types for restaurant menu items
-    from src.migration.migrate_add_meal_types import migrate_add_meal_types
+    from src.migrations.migrate_add_meal_types import migrate_add_meal_types
     migrate_add_meal_types()
 
     #Initialize transportation schema fix
-    from src.migration.migrate_transportation_schema_fix import migrate
+    from src.migrations.migrate_transportation_schema_fix import migrate
     migrate()
     
     # Initialize tour tables
-    from src.migration.migrate_tour_tables import migrate_tour_tables
+    from src.migrations.migrate_tour_tables import migrate_tour_tables
     migrate_tour_tables()
 
     # Initialize cities in transportation services
-    from src.migration.migrate_add_cities_to_transportation import apply_migration
+    from src.migrations.migrate_add_cities_to_transportation import apply_migration
     apply_migration()
 
     # Initialize number_of_members column in tours_admin
-    from src.migration.migrate_add_number_of_members import migrate_add_number_of_members
+    from src.migrations.migrate_add_number_of_members import migrate_add_number_of_members
     migrate_add_number_of_members()
 
     # Initialize tour selection
-    from src.migration.migrate_tour_selections import migrate_tour_selections
+    from src.migrations.migrate_tour_selections import migrate_tour_selections
     migrate_tour_selections()
 
     # Initialize promotions homepage fields
-    from src.migration.migrate_promotions_homepage import migrate_promotions_homepage
+    from src.migrations.migrate_promotions_homepage import migrate_promotions_homepage
     migrate_promotions_homepage()
 
     # Initialize promotion_code column in bookings
-    from src.migration.migrate_add_promotion_code_to_bookings import migrate_add_promotion_code_to_bookings
+    from src.migrations.migrate_add_promotion_code_to_bookings import migrate_add_promotion_code_to_bookings
     migrate_add_promotion_code_to_bookings()
 
 
