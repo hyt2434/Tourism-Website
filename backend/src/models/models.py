@@ -289,6 +289,17 @@ def create_tables():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
+    
+    # Favorites table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS favorites (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            tour_id INTEGER NOT NULL REFERENCES tours_admin(id) ON DELETE CASCADE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, tour_id)
+        );
+    """)
 
     # Bookings table for tour reservations
     cur.execute("""

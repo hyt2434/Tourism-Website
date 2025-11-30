@@ -35,6 +35,7 @@ from src.routes.admin.tour_admin_routes import tour_admin_bp
 from src.routes.admin.stats_routes import stats_bp
 from src.routes.payment_routes import payment_routes
 from src.routes.booking_routes import booking_routes
+from src.routes.favorites_routes import favorites_routes
 
 try:
     # Create all database tables (users, posts, comments, likes, stories, tags, cities, partner_registrations, bookings, promotions)
@@ -70,6 +71,7 @@ app.register_blueprint(tour_routes, url_prefix="/api/tours")
 app.register_blueprint(city_bp, url_prefix="/api")
 app.register_blueprint(payment_routes, url_prefix="/api/payments")
 app.register_blueprint(booking_routes, url_prefix="/api/bookings")
+app.register_blueprint(favorites_routes, url_prefix="/api/favorites")
 app.register_blueprint(partner_registration_bp)
 # Partner service management routes
 app.register_blueprint(accommodation_bp)

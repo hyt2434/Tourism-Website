@@ -1,21 +1,66 @@
 import { Heart, MapPin, Calendar, Users } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useLanguage } from "../context/LanguageContext"; // 👈 thêm
+import { useLanguage } from "../context/LanguageContext";
+import { checkFavorite, addFavorite, removeFavorite } from "../api/favorites";
 
 export default function TourCard({ tour, viewMode = "grid" }) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [userRole, setUserRole] = useState(null);
-  const { translations } = useLanguage(); // 👈 lấy translations
+  const [userId, setUserId] = useState(null);
+  const [loadingFavorite, setLoadingFavorite] = useState(false);
+  const { translations } = useLanguage();
 
-  // Check user role from localStorage
+  // Check user role and load favorite status from localStorage
   useEffect(() => {
     const currentUser = localStorage.getItem("user");
     if (currentUser) {
       const user = JSON.parse(currentUser);
       setUserRole(user.role);
+      setUserId(user.id);
+      
+      // Check if tour is favorited
+      if (user.id && tour.id) {
+        checkFavoriteStatus(user.id, tour.id);
+      }
     }
-  }, []);
+  }, [tour.id]);
+
+  const checkFavoriteStatus = async (userId, tourId) => {
+    try {
+      const result = await checkFavorite(userId, tourId);
+      if (result.success) {
+        setIsFavorite(result.is_favorite);
+      }
+    } catch (error) {
+      console.error("Error checking favorite status:", error);
+    }
+  };
+
+  const handleFavoriteClick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!userId || userRole !== "client") {
+      return;
+    }
+    
+    setLoadingFavorite(true);
+    try {
+      if (isFavorite) {
+        await removeFavorite(userId, tour.id);
+        setIsFavorite(false);
+      } else {
+        await addFavorite(userId, tour.id);
+        setIsFavorite(true);
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+      alert("Failed to update favorite. Please try again.");
+    } finally {
+      setLoadingFavorite(false);
+    }
+  };
 
   // List view layout
   if (viewMode === "list") {
@@ -33,22 +78,22 @@ export default function TourCard({ tour, viewMode = "grid" }) {
           />
 
           {/* Favorite button */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              setIsFavorite(!isFavorite);
-            }}
-            className="absolute top-3 right-3 p-2 bg-white/90 dark:bg-gray-700 rounded-full hover:bg-white dark:hover:bg-gray-600 transition-colors"
-          >
-            <Heart
-              size={18}
-              className={
-                isFavorite
-                  ? "fill-red-500 text-red-500"
-                  : "text-gray-600 dark:text-gray-300"
-              }
-            />
-          </button>
+          {userRole === "client" && (
+            <button
+              onClick={handleFavoriteClick}
+              disabled={loadingFavorite}
+              className="absolute top-3 right-3 p-2 bg-white/90 dark:bg-gray-700 rounded-full hover:bg-white dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+            >
+              <Heart
+                size={18}
+                className={
+                  isFavorite
+                    ? "fill-red-500 text-red-500"
+                    : "text-gray-600 dark:text-gray-300"
+                }
+              />
+            </button>
+          )}
 
           {/* Badge */}
           {tour.badge && (
@@ -107,7 +152,7 @@ export default function TourCard({ tour, viewMode = "grid" }) {
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {translations.from}
               </p>
-              <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
                 {tour.price.toLocaleString("vi-VN")} đ
               </p>
             </div>
@@ -137,22 +182,22 @@ export default function TourCard({ tour, viewMode = "grid" }) {
         />
 
         {/* Favorite button */}
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            setIsFavorite(!isFavorite);
-          }}
-          className="absolute top-3 right-3 p-2 bg-white/90 dark:bg-gray-700 rounded-full hover:bg-white dark:hover:bg-gray-600 transition-colors"
-        >
-          <Heart
-            size={20}
-            className={
-              isFavorite
-                ? "fill-red-500 text-red-500"
-                : "text-gray-600 dark:text-gray-300"
-            }
-          />
-        </button>
+        {userRole === "client" && (
+          <button
+            onClick={handleFavoriteClick}
+            disabled={loadingFavorite}
+            className="absolute top-3 right-3 p-2 bg-white/90 dark:bg-gray-700 rounded-full hover:bg-white dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+          >
+            <Heart
+              size={20}
+              className={
+                isFavorite
+                  ? "fill-red-500 text-red-500"
+                  : "text-gray-600 dark:text-gray-300"
+              }
+            />
+          </button>
+        )}
 
         {/* Badge */}
         {tour.badge && (
@@ -209,7 +254,7 @@ export default function TourCard({ tour, viewMode = "grid" }) {
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {translations.from}
             </p>
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
               {tour.price.toLocaleString("vi-VN")} đ
             </p>
           </div>
