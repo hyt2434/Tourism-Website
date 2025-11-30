@@ -20,7 +20,6 @@ bcrypt = Bcrypt(app)
 app.bcrypt = bcrypt
 app.secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 
-from src.migrations.migrate_partner_type import migrate_add_partner_type
 from src.routes.user.auth_routes import auth_routes, ensure_default_admin
 from src.routes.filter_routes import filter_routes
 from src.routes.promotion_routes import promotion_routes
@@ -37,6 +36,7 @@ from src.routes.payment_routes import payment_routes
 from src.routes.booking_routes import booking_routes
 
 try:
+    # Create all database tables (users, posts, comments, likes, stories, tags, cities, partner_registrations, bookings, promotions)
     from src.models.models import create_tables
     create_tables()
     print("[OK] Database tables checked/created successfully.")
@@ -47,52 +47,14 @@ try:
     # Initialize cities
     from src.services.city_init import init_cities
     init_cities()
-    # Initialize statuses and roles
-    from src.migrations.migrate_add_status import migrate_add_status
-    migrate_add_status()
-    from src.migrations.migrate_add_role import migrate_add_role
-    migrate_add_role()
-
-    # Initialize profile columns
-    from src.migrations.migrate_profile_columns import migrate_add_profile_columns
-    migrate_add_profile_columns()
-    #Initialize partner types
-    migrate_add_partner_type()
+    
+    # Create partner service tables (accommodations, restaurants, transportation)
     from src.models.partner_services_schema import create_partner_service_tables
     create_partner_service_tables()
     
-    #Initialize meal types for restaurant menu items
-    from src.migrations.migrate_add_meal_types import migrate_add_meal_types
-    migrate_add_meal_types()
-
-    #Initialize transportation schema fix
-    from src.migrations.migrate_transportation_schema_fix import migrate
-    migrate()
-    
-    # Initialize tour tables
-    from src.migrations.migrate_tour_tables import migrate_tour_tables
-    migrate_tour_tables()
-
-    # Initialize cities in transportation services
-    from src.migrations.migrate_add_cities_to_transportation import apply_migration
-    apply_migration()
-
-    # Initialize number_of_members column in tours_admin
-    from src.migrations.migrate_add_number_of_members import migrate_add_number_of_members
-    migrate_add_number_of_members()
-
-    # Initialize tour selection
-    from src.migrations.migrate_tour_selections import migrate_tour_selections
-    migrate_tour_selections()
-
-    # Initialize promotions homepage fields
-    from src.migrations.migrate_promotions_homepage import migrate_promotions_homepage
-    migrate_promotions_homepage()
-
-    # Initialize promotion_code column in bookings
-    from src.migrations.migrate_add_promotion_code_to_bookings import migrate_add_promotion_code_to_bookings
-    migrate_add_promotion_code_to_bookings()
-
+    # Create tour management tables
+    from src.models.tour_schema import create_tour_tables
+    create_tour_tables()
 
 except Exception as e:
     print(f"[WARNING] Could not initialize database tables: {e}")

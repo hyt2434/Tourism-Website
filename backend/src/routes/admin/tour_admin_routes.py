@@ -1166,3 +1166,107 @@ def get_restaurant_menu(restaurant_id):
     finally:
         cur.close()
         conn.close()
+
+
+# =====================================================================
+# SYNC ALL TOUR PRICES
+# =====================================================================
+
+@tour_admin_bp.route('/sync-all-prices', methods=['POST'])
+@admin_required
+def sync_all_tour_prices():
+    """Sync all tour prices by recalculating based on current service prices."""
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        # Get all tours
+        cur.execute("""
+            SELECT id, duration FROM tours_admin
+        """)
+        tours = cur.fetchall()
+        
+        updated_count = 0
+        errors = []
+        
+        for tour_id, duration in tours:
+            try:
+                total_price = 0
+                
+                # Extract number of nights from duration
+                num_nights = 1  # Default to 1 night
+                if duration:
+                    night_match = re.search(r'(\d+)\s*(?:night|đêm)', duration.lower())
+                    if night_match:
+                        num_nights = int(night_match.group(1))
+                
+                # Calculate accommodation cost from selected rooms
+                cur.execute("""
+                    SELECT room_id FROM tour_selected_rooms WHERE tour_id = %s
+                """, (tour_id,))
+                selected_room_ids = [row[0] for row in cur.fetchall()]
+                
+                if selected_room_ids:
+                    for room_id in selected_room_ids:
+                        cur.execute("""
+                            SELECT base_price FROM accommodation_rooms WHERE id = %s
+                        """, (room_id,))
+                        result = cur.fetchone()
+                        if result and result[0]:
+                            total_price += float(result[0]) * num_nights
+                
+                # Calculate restaurant costs from selected menu items
+                cur.execute("""
+                    SELECT menu_item_id FROM tour_selected_menu_items WHERE tour_id = %s
+                """, (tour_id,))
+                selected_menu_item_ids = [row[0] for row in cur.fetchall()]
+                
+                if selected_menu_item_ids:
+                    for item_id in selected_menu_item_ids:
+                        cur.execute("""
+                            SELECT price FROM restaurant_menu_items WHERE id = %s
+                        """, (item_id,))
+                        result = cur.fetchone()
+                        if result and result[0]:
+                            total_price += float(result[0])
+                
+                # Add transportation cost (round trip)
+                cur.execute("""
+                    SELECT transportation_id FROM tour_services 
+                    WHERE tour_id = %s AND service_type = 'transportation'
+                """, (tour_id,))
+                trans_result = cur.fetchone()
+                if trans_result and trans_result[0]:
+                    trans_price = get_service_price('transportation', trans_result[0])
+                    total_price += trans_price * 2  # Round trip
+                
+                # Update total_price
+                cur.execute("""
+                    UPDATE tours_admin SET total_price = %s WHERE id = %s
+                """, (total_price, tour_id))
+                
+                updated_count += 1
+                
+            except Exception as e:
+                errors.append(f"Tour {tour_id}: {str(e)}")
+                print(f"Error syncing tour {tour_id}: {e}")
+        
+        conn.commit()
+        
+        return jsonify({
+            "message": f"Successfully synced {updated_count} tours",
+            "updated_count": updated_count,
+            "total_tours": len(tours),
+            "errors": errors if errors else None
+        }), 200
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error syncing tour prices: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()

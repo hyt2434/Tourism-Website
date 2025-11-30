@@ -123,6 +123,7 @@ def create_tables():
             avatar_url TEXT,
             role VARCHAR(20) DEFAULT 'client' CHECK (role IN ('admin', 'client', 'partner')),
             partner_type VARCHAR(50) CHECK (partner_type IN ('accommodation', 'transportation', 'restaurant') OR partner_type IS NULL),
+            status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended', 'pending')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
@@ -266,6 +267,29 @@ def create_tables():
         END $$;
     """)
 
+    # Promotions table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS promotions (
+            id SERIAL PRIMARY KEY,
+            code VARCHAR(50) UNIQUE NOT NULL,
+            discount_type VARCHAR(20) NOT NULL,
+            discount_value DECIMAL(10, 2) NOT NULL,
+            max_uses INTEGER,
+            start_date DATE,
+            end_date DATE,
+            conditions TEXT,
+            is_active BOOLEAN DEFAULT true,
+            show_on_homepage BOOLEAN DEFAULT false,
+            promotion_type VARCHAR(20) DEFAULT 'promo_code' CHECK (promotion_type IN ('banner', 'promo_code')),
+            title VARCHAR(200),
+            subtitle VARCHAR(200),
+            image TEXT,
+            highlight VARCHAR(100),
+            terms TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+
     # Bookings table for tour reservations
     cur.execute("""
         CREATE TABLE IF NOT EXISTS bookings (
@@ -281,6 +305,7 @@ def create_tables():
             total_price DECIMAL(12, 2) NOT NULL,
             payment_method VARCHAR(20) NOT NULL,
             payment_intent_id VARCHAR(200),
+            promotion_code VARCHAR(50),
             notes TEXT,
             status VARCHAR(20) DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

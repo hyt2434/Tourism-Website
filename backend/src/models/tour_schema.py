@@ -50,6 +50,9 @@ def create_tour_tables():
                 total_price DECIMAL(12, 2) NOT NULL DEFAULT 0,
                 currency VARCHAR(10) DEFAULT 'VND',
                 
+                -- Number of members/guests
+                number_of_members INTEGER DEFAULT 1 NOT NULL,
+                
                 -- Status & Visibility
                 is_active BOOLEAN DEFAULT TRUE,
                 is_published BOOLEAN DEFAULT FALSE,
@@ -234,6 +237,33 @@ def create_tour_tables():
             AFTER INSERT OR UPDATE OR DELETE ON tour_services
             FOR EACH ROW
             EXECUTE FUNCTION update_tour_total_price();
+        """)
+        
+        # =====================================================================
+        # TOUR SELECTED ROOMS TABLE (Selected accommodation rooms for tours)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS tour_selected_rooms (
+                id SERIAL PRIMARY KEY,
+                tour_id INTEGER NOT NULL REFERENCES tours_admin(id) ON DELETE CASCADE,
+                room_id INTEGER NOT NULL REFERENCES accommodation_rooms(id) ON DELETE CASCADE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(tour_id, room_id)
+            );
+        """)
+        
+        # =====================================================================
+        # TOUR SELECTED MENU ITEMS TABLE (Selected restaurant menu items for tours)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS tour_selected_menu_items (
+                id SERIAL PRIMARY KEY,
+                tour_id INTEGER NOT NULL REFERENCES tours_admin(id) ON DELETE CASCADE,
+                menu_item_id INTEGER NOT NULL REFERENCES restaurant_menu_items(id) ON DELETE CASCADE,
+                day_number INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(tour_id, menu_item_id, day_number)
+            );
         """)
         
         conn.commit()

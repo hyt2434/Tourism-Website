@@ -192,3 +192,20 @@ export const calculateTourPrice = async (data) => {
     throw error;
   }
 };
+
+/**
+ * Sync all tour prices (recalculate based on current service prices)
+ */
+export const syncAllTourPrices = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tours/sync-all-prices`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to sync tour prices');
+    return response.json();
+  } catch (error) {
+    console.error('Error syncing tour prices:', error);
+    throw error;
+  }
+};

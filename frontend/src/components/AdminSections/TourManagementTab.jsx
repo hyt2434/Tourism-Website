@@ -15,7 +15,7 @@ import {
   Plus, Edit, Trash2, Eye, Save, X, 
   Calendar, MapPin, DollarSign, Image as ImageIcon,
   Clock, UtensilsCrossed, Hotel, Car, ChevronDown, ChevronUp,
-  Upload, Trash, Info, Users, Utensils, Star
+  Upload, Trash, Info, Users, Utensils, Star, RefreshCw
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
@@ -30,7 +30,8 @@ import {
   updateTour, 
   deleteTour,
   getAvailableServices,
-  calculateTourPrice 
+  calculateTourPrice,
+  syncAllTourPrices
 } from '../../api/tours';
 import { getCities } from '../../api/cities';
 import { useLanguage } from '../../context/LanguageContext';
@@ -419,6 +420,22 @@ export default function TourManagementTab() {
     }
   };
 
+  const handleSyncAllPrices = async () => {
+    if (!confirm('Are you sure you want to sync all tour prices? This will recalculate prices based on current service prices.')) return;
+    
+    setLoading(true);
+    try {
+      const result = await syncAllTourPrices();
+      alert(`Successfully synced ${result.updated_count} out of ${result.total_tours} tours.${result.errors ? `\n\nErrors: ${result.errors.join('\n')}` : ''}`);
+      loadTours(); // Reload tours to show updated prices
+    } catch (error) {
+      console.error('Error syncing tour prices:', error);
+      alert('Failed to sync tour prices: ' + (error.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Promotions functions
   const loadPromotions = async () => {
     try {
@@ -712,12 +729,23 @@ export default function TourManagementTab() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">{translations.tourManagement || "Tour Management"}</h2>
         {activeSection === 'tours' && !showForm && (
-          <Button 
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> {translations.createNewTour || "Create New Tour"}
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              onClick={handleSyncAllPrices}
+              variant="outline"
+              className="flex items-center gap-2"
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> 
+              Sync All Tour Prices
+            </Button>
+            <Button 
+              onClick={() => setShowForm(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> {translations.createNewTour || "Create New Tour"}
+            </Button>
+          </div>
         )}
         {activeSection === 'promotions' && !showPromotionForm && (
           <Button 
