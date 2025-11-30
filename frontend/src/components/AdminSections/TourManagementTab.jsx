@@ -15,7 +15,8 @@ import {
   Plus, Edit, Trash2, Eye, Save, X, 
   Calendar, MapPin, DollarSign, Image as ImageIcon,
   Clock, UtensilsCrossed, Hotel, Car, ChevronDown, ChevronUp,
-  Upload, Trash, Info, Users, Utensils, Star, RefreshCw
+  Upload, Trash, Info, Users, Utensils, Star, RefreshCw,
+  Search, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
@@ -79,6 +80,16 @@ export default function TourManagementTab() {
   const [showForm, setShowForm] = useState(false);
   const [editingTour, setEditingTour] = useState(null);
   
+  // Pagination and search state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalTours, setTotalTours] = useState(0);
+  const [pageSize] = useState(10);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Promotion filter state
+  const [promotionTypeFilter, setPromotionTypeFilter] = useState("all");
+  
   // Promotions state
   const [promotions, setPromotions] = useState([]);
   const [showPromotionForm, setShowPromotionForm] = useState(false);
@@ -137,10 +148,32 @@ export default function TourManagementTab() {
   const [priceBreakdown, setPriceBreakdown] = useState(null);
 
   useEffect(() => {
-    loadTours();
     loadCities();
     loadPromotions();
   }, []);
+  
+  // Handle page changes
+  useEffect(() => {
+    loadTours(currentPage, searchQuery);
+  }, [currentPage]);
+  
+  // Debounce search and reset to page 1
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+      } else {
+        loadTours(1, searchQuery);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  
+  // Handle promotion filter changes
+  useEffect(() => {
+    loadPromotions();
+  }, [promotionTypeFilter]);
 
   useEffect(() => {
     if (formData.destination_city_id) {
@@ -176,11 +209,13 @@ export default function TourManagementTab() {
     JSON.stringify(selectedMenuItemIds)
   ]);
 
-  const loadTours = async () => {
+  const loadTours = async (page = 1, search = '') => {
     setLoading(true);
     try {
-      const data = await getAllTours();
-      setTours(data);
+      const data = await getAllTours(page, pageSize, search);
+      setTours(data.tours || []);
+      setTotalPages(data.total_pages || 1);
+      setTotalTours(data.total || 0);
     } catch (error) {
       console.error('Error loading tours:', error);
       alert('Failed to load tours');
@@ -413,7 +448,7 @@ export default function TourManagementTab() {
     try {
       await deleteTour(tourId);
       alert('Tour deleted successfully');
-      loadTours();
+      loadTours(currentPage, searchQuery);
     } catch (error) {
       console.error('Error deleting tour:', error);
       alert('Failed to delete tour');
@@ -427,7 +462,7 @@ export default function TourManagementTab() {
     try {
       const result = await syncAllTourPrices();
       alert(`Successfully synced ${result.updated_count} out of ${result.total_tours} tours.${result.errors ? `\n\nErrors: ${result.errors.join('\n')}` : ''}`);
-      loadTours(); // Reload tours to show updated prices
+      loadTours(currentPage, searchQuery); // Reload tours to show updated prices
     } catch (error) {
       console.error('Error syncing tour prices:', error);
       alert('Failed to sync tour prices: ' + (error.message || 'Unknown error'));
@@ -439,7 +474,7 @@ export default function TourManagementTab() {
   // Promotions functions
   const loadPromotions = async () => {
     try {
-      const data = await getAllPromotions();
+      const data = await getAllPromotions(promotionTypeFilter);
       setPromotions(data);
     } catch (error) {
       console.error('Error loading promotions:', error);
@@ -567,7 +602,7 @@ export default function TourManagementTab() {
       }
       
       resetForm();
-      loadTours();
+      loadTours(currentPage, searchQuery);
     } catch (error) {
       console.error('Error saving tour:', error);
       alert('Failed to save tour: ' + (error.response?.data?.error || error.message));
@@ -767,7 +802,21 @@ export default function TourManagementTab() {
         {/* Tours Section */}
         <TabsContent value="tours" className="mt-0">
           {!showForm ? (
-        <div className="grid gap-4">
+        <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Input
+                placeholder="Search tours by name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400"
+              />
+            </div>
+          </div>
+          
+          <div className="grid gap-4">
           {tours.map((tour) => (
             <Card key={tour.id} className="hover:shadow-lg transition-shadow">
               <CardContent className="p-6">
@@ -835,6 +884,63 @@ export default function TourManagementTab() {
               </CardContent>
             </Card>
           ))}
+          </div>
+          
+          {/* Pagination */}
+          {!loading && totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalTours)} of {totalTours} tours
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="h-9"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="h-9 w-9"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="h-9"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -1131,7 +1237,21 @@ export default function TourManagementTab() {
         {/* Promotions Section */}
         <TabsContent value="promotions" className="mt-0">
           {!showPromotionForm ? (
-        <div className="grid gap-4">
+        <div className="space-y-4">
+          {/* Filter Bar */}
+          <div className="flex gap-4">
+            <select
+              value={promotionTypeFilter}
+              onChange={(e) => setPromotionTypeFilter(e.target.value)}
+              className="h-12 px-10 border-2 border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400"
+            >
+              <option value="all">All Promotions</option>
+              <option value="banner">Banner</option>
+              <option value="promo_code">Promo Code</option>
+            </select>
+          </div>
+          
+          <div className="grid gap-4">
           {promotions.map((promotion) => (
             <Card key={promotion.id} className="hover:shadow-lg transition-shadow">
               <CardContent className="p-6">
@@ -1209,6 +1329,7 @@ export default function TourManagementTab() {
               </CardContent>
             </Card>
           )}
+          </div>
         </div>
       ) : activeSection === 'promotions' && showPromotionForm ? (
         <form onSubmit={handlePromotionSubmit} className="space-y-6">

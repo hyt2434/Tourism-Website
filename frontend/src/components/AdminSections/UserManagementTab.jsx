@@ -19,7 +19,9 @@ import {
   MoreVertical,
   UserX,
   UserCheck,
-  Filter
+  Filter,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "../ui/dialog";
 import { ConfirmDialog } from "../ui/confirm-dialog";
@@ -40,20 +42,28 @@ export default function UserManagementTab() {
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: "", description: "", onConfirm: () => {} });
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [pageSize] = useState(10);
+  
   // Form state for edit dialog
   const [editForm, setEditForm] = useState({ username: "", email: "", role: "" });
 
-  // Fetch users on component mount
+  // Fetch users on component mount and when page changes
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(currentPage);
+  }, [currentPage]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = 1) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAllUsers();
+      const data = await getAllUsers(page, pageSize);
       setUsers(data.users || []);
+      setTotalPages(data.total_pages || 1);
+      setTotalUsers(data.total || 0);
     } catch (err) {
       setError(err.message);
       console.error("Failed to fetch users:", err);
@@ -72,7 +82,7 @@ export default function UserManagementTab() {
     try {
       console.log("[DEBUG Frontend] Updating user:", { userId, username, email, role });
       await updateUser(userId, { username, email, role });
-      await fetchUsers(); // Refresh the list
+      await fetchUsers(currentPage); // Refresh the list
       setEditDialogOpen(false);
       showToast("User updated successfully", "success");
     } catch (err) {
@@ -92,7 +102,7 @@ export default function UserManagementTab() {
       onConfirm: async () => {
         try {
           await updateUserStatus(userId, newStatus);
-          await fetchUsers();
+          await fetchUsers(currentPage);
           showToast(`User ${action}ned successfully`, "success");
         } catch (err) {
           showToast(`Failed to ${action} user: ${err.message}`, "error");
@@ -112,7 +122,7 @@ export default function UserManagementTab() {
           const result = await resetUserPassword(userId);
           setResetPasswordInfo(result);
           setResetPasswordDialogOpen(true);
-          await fetchUsers();
+          await fetchUsers(currentPage);
         } catch (err) {
           showToast(`Failed to reset password: ${err.message}`, "error");
         }
@@ -129,7 +139,7 @@ export default function UserManagementTab() {
       onConfirm: async () => {
         try {
           await deleteUser(userId);
-          await fetchUsers();
+          await fetchUsers(currentPage);
           showToast("User deleted successfully", "success");
         } catch (err) {
           showToast(`Failed to delete user: ${err.message}`, "error");
@@ -460,6 +470,62 @@ export default function UserManagementTab() {
             </div>
           )}
             </>
+          )}
+          
+          {/* Pagination */}
+          {!loading && !error && totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalUsers)} of {totalUsers} users
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="h-9"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="h-9 w-9"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="h-9"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

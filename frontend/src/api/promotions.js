@@ -10,15 +10,24 @@ const getUserEmail = () => {
   return null;
 };
 
-// Get all promotions (admin only)
-export async function getAllPromotions() {
+// Get all promotions (admin only) with optional filter by promotion_type
+export async function getAllPromotions(promotionType = 'all') {
   const email = getUserEmail();
   
   if (!email) {
     throw new Error("Authentication required");
   }
 
-  const response = await fetch(`${API_BASE_URL}/promotions`, {
+  const params = new URLSearchParams();
+  if (promotionType && promotionType !== 'all') {
+    params.append('promotion_type', promotionType);
+  }
+
+  const url = params.toString() 
+    ? `${API_BASE_URL}/promotions?${params.toString()}`
+    : `${API_BASE_URL}/promotions`;
+
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",

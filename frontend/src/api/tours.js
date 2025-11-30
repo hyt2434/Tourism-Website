@@ -64,11 +64,16 @@ export const getPublicTourDetail = async (tourId) => {
 };
 
 /**
- * Get all tours (admin only)
+ * Get all tours (admin only) with pagination and search
  */
-export const getAllTours = async () => {
+export const getAllTours = async (page = 1, limit = 10, search = '') => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/admin/tours`, {
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('limit', limit);
+    if (search) params.append('search', search);
+    
+    const response = await fetch(`${API_BASE_URL}/api/admin/tours?${params.toString()}`, {
       headers: getAuthHeaders()
     });
     if (!response.ok) throw new Error('Failed to fetch tours');

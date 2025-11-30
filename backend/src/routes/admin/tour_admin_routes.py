@@ -70,7 +70,13 @@ def get_service_price(service_type, service_id):
 @tour_admin_bp.route('', methods=['GET'])
 @admin_required
 def get_all_tours():
-    """Get all tours with basic information."""
+    """
+    Get all tours with pagination and search support.
+    Query params:
+    - page: page number (default 1)
+    - limit: items per page (default 10)
+    - search: search query for tour name (optional)
+    """
     conn = get_connection()
     if not conn:
         return jsonify({"error": "Database connection failed"}), 500
@@ -78,7 +84,26 @@ def get_all_tours():
     try:
         cur = conn.cursor()
         
-        cur.execute("""
+        # Get pagination and search parameters
+        page = request.args.get('page', 1, type=int)
+        limit = request.args.get('limit', 10, type=int)
+        search_query = request.args.get('search', '', type=str)
+        offset = (page - 1) * limit
+        
+        # Build WHERE clause for search
+        where_clause = ""
+        params = []
+        if search_query:
+            where_clause = "WHERE t.name ILIKE %s"
+            params.append(f"%{search_query}%")
+        
+        # Get total count
+        count_query = f"SELECT COUNT(*) FROM tours_admin t {where_clause}"
+        cur.execute(count_query, params)
+        total_count = cur.fetchone()[0]
+        
+        # Get paginated tours
+        query = f"""
             SELECT 
                 t.id, t.name, t.duration, t.description,
                 t.destination_city_id, dc.name as destination_city_name,
@@ -89,8 +114,12 @@ def get_all_tours():
             FROM tours_admin t
             LEFT JOIN cities dc ON t.destination_city_id = dc.id
             LEFT JOIN cities dpc ON t.departure_city_id = dpc.id
+            {where_clause}
             ORDER BY t.created_at DESC
-        """)
+            LIMIT %s OFFSET %s
+        """
+        params.extend([limit, offset])
+        cur.execute(query, params)
         
         rows = cur.fetchall()
         
@@ -113,7 +142,15 @@ def get_all_tours():
                 'primary_image': row[15]
             })
         
-        return jsonify(tours), 200
+        total_pages = (total_count + limit - 1) // limit  # Ceiling division
+        
+        return jsonify({
+            'tours': tours,
+            'total': total_count,
+            'page': page,
+            'limit': limit,
+            'total_pages': total_pages
+        }), 200
         
     except Exception as e:
         print(f"Error fetching tours: {e}")

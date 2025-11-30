@@ -10,12 +10,24 @@ def get_promotions():
     """
     Lấy danh sách tất cả khuyến mãi
     (Dùng cho trang Admin - PromotionsTab.jsx)
+    Query params:
+    - promotion_type: filter by 'banner' or 'promo_code' (optional)
     """
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        cur.execute("SELECT * FROM promotions ORDER BY created_at DESC")
+        # Get filter parameter
+        promotion_type = request.args.get('promotion_type', '', type=str)
+        
+        if promotion_type and promotion_type in ['banner', 'promo_code']:
+            cur.execute(
+                "SELECT * FROM promotions WHERE promotion_type = %s ORDER BY created_at DESC",
+                (promotion_type,)
+            )
+        else:
+            cur.execute("SELECT * FROM promotions ORDER BY created_at DESC")
+        
         promotions = cur.fetchall()
         
         cur.close()

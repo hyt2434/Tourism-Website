@@ -305,8 +305,9 @@ def login():
 @admin_required
 def list_all_users():
     """
-    Admin-only endpoint to list all users in the system.
+    Admin-only endpoint to list all users in the system with pagination.
     Returns user information without sensitive data like passwords.
+    Query params: page (default 1), limit (default 10)
     """
     conn = get_connection()
     if not conn:
@@ -315,6 +316,11 @@ def list_all_users():
     cur = conn.cursor()
     
     try:
+        # Get pagination parameters
+        page = request.args.get('page', 1, type=int)
+        limit = request.args.get('limit', 10, type=int)
+        offset = (page - 1) * limit
+        
         # First, ensure status column exists
         try:
             cur.execute("""
@@ -334,7 +340,11 @@ def list_all_users():
         """)
         bookings_exists = cur.fetchone()[0]
         
-        # Get all users with their data
+        # Get total count
+        cur.execute("SELECT COUNT(*) FROM users")
+        total_count = cur.fetchone()[0]
+        
+        # Get paginated users with their data
         if bookings_exists:
             cur.execute("""
                 SELECT 
@@ -347,7 +357,8 @@ def list_all_users():
                     (SELECT COUNT(*) FROM bookings b WHERE b.user_id = u.id) as total_bookings
                 FROM users u
                 ORDER BY u.created_at DESC
-            """)
+                LIMIT %s OFFSET %s
+            """, (limit, offset))
         else:
             # If bookings table doesn't exist, just return 0 for total_bookings
             cur.execute("""
@@ -361,7 +372,8 @@ def list_all_users():
                     0 as total_bookings
                 FROM users u
                 ORDER BY u.created_at DESC
-            """)
+                LIMIT %s OFFSET %s
+            """, (limit, offset))
         
         rows = cur.fetchall()
         
@@ -380,8 +392,13 @@ def list_all_users():
                 "lastLogin": row[4].strftime('%Y-%m-%d') if row[4] else None  # Placeholder
             })
         
+        total_pages = (total_count + limit - 1) // limit  # Ceiling division
+        
         return jsonify({
-            "total": len(users),
+            "total": total_count,
+            "page": page,
+            "limit": limit,
+            "total_pages": total_pages,
             "users": users
         }), 200
     

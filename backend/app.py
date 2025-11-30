@@ -32,6 +32,7 @@ from src.routes.partner.accommodation_routes import accommodation_bp
 from src.routes.partner.restaurant_routes import restaurant_bp
 from src.routes.partner.transportation_routes import transportation_bp
 from src.routes.admin.tour_admin_routes import tour_admin_bp
+from src.routes.admin.stats_routes import stats_bp
 from src.routes.payment_routes import payment_routes
 from src.routes.booking_routes import booking_routes
 
@@ -76,6 +77,7 @@ app.register_blueprint(restaurant_bp)
 app.register_blueprint(transportation_bp)
 # Admin routes
 app.register_blueprint(tour_admin_bp)
+app.register_blueprint(stats_bp)
 
 # Print registered routes for debugging
 print("\n[OK] Registered Partner Service Routes:")
@@ -84,6 +86,7 @@ print("   - /api/partner/restaurants")
 print("   - /api/partner/transportation")
 print("\n[OK] Registered Admin Routes:")
 print("   - /api/admin/tours")
+print("   - /api/admin/stats")
 
 @app.route("/test")
 def test():
