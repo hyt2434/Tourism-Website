@@ -105,6 +105,8 @@ export default {
   tourItinerary: "Lịch trình",
   tourIncluded: "Bao gồm",
   tourLocation: "Địa điểm",
+  tourPartners: "Đối tác",
+  tourPartner: "Đối tác",
   aboutTrip: "Về chuyến đi này",
   tourHighlights: "Điểm nổi bật",
   tourIncludedItems: "Bao gồm",

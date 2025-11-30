@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 // import { BookingCard } from "./BookingCard";
 import { BookingPanel } from "./BookingPanel";
 import ImageWithFallback from "../../figma/ImageWithFallback";
@@ -28,6 +28,8 @@ import {
   Utensils,
   Users,
   Calendar,
+  Building2,
+  Car,
 } from "lucide-react";
 import { ReviewCard } from "./ReviewCard";
 // THÊM IMPORT NÀY
@@ -36,6 +38,7 @@ import TourMap from "./TourMap";
 export default function TourDetail() {
   const { translations } = useLanguage();
   const { id } = useParams();
+  const navigate = useNavigate();
   const [tourData, setTourData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
@@ -44,7 +47,26 @@ export default function TourDetail() {
   const [showGallery, setShowGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [userRole, setUserRole] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const headerButtonRef = useRef(null);
+
+  // Helper function to check if user can book
+  const canBook = () => {
+    return isLoggedIn && userRole !== "partner";
+  };
+
+  // Handle booking button click - redirect to login if not logged in
+  const handleBookingClick = () => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+    if (userRole === "partner") {
+      alert(translations.partnersCannotBook || "Đối tác không thể đặt tour.");
+      return;
+    }
+    setIsBookingPanelOpen(true);
+  };
 
   // Load tour data from API
   useEffect(() => {
@@ -72,6 +94,15 @@ export default function TourDetail() {
     if (currentUser) {
       const user = JSON.parse(currentUser);
       setUserRole(user.role);
+      setIsLoggedIn(user.isLoggedIn || false);
+      // Only allow booking if user is logged in and not a partner
+      if (!user.isLoggedIn || user.role === "partner") {
+        setIsBookingPanelOpen(false);
+      }
+    } else {
+      // No user logged in, close booking panel if open
+      setIsLoggedIn(false);
+      setIsBookingPanelOpen(false);
     }
   }, []);
 
@@ -199,7 +230,7 @@ export default function TourDetail() {
               {userRole !== "partner" && (
                 <Button
                   ref={headerButtonRef}
-                  onClick={() => setIsBookingPanelOpen(true)}
+                  onClick={handleBookingClick}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
                   size="lg"
                 >
@@ -424,6 +455,52 @@ export default function TourDetail() {
                         </li>
                       ))}
                     </ul>
+                  </div>
+                )}
+
+                {/* Partners Information */}
+                {tourData.partners && tourData.partners.length > 0 && (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-purple-500" />
+                      {translations.tourPartners || "Đối tác"}
+                    </h3>
+                    <div className="space-y-4">
+                      {tourData.partners.map((partner, index) => (
+                        <div key={partner.id || index} className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-b-0 last:pb-0">
+                          <div>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {partner.name}
+                            </p>
+                            {partner.partner_type && (
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {partner.partner_type === 'accommodation' ? 
+                                  (translations.partnerTypeAccommodation || translations.accommodation || 'Khách sạn') :
+                                 partner.partner_type === 'transportation' ? 
+                                  (translations.partnerTypeTransportation || translations.transportation || 'Vận chuyển') :
+                                 partner.partner_type === 'restaurant' ? 
+                                  (translations.partnerTypeRestaurant || translations.restaurant || 'Nhà hàng') :
+                                 partner.partner_type}
+                              </p>
+                            )}
+                          </div>
+                          <div className="mt-2 space-y-1">
+                            {partner.email && (
+                              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 text-sm">
+                                <Mail className="w-4 h-4" />
+                                <span>{partner.email}</span>
+                              </div>
+                            )}
+                            {partner.phone && (
+                              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 text-sm">
+                                <Phone className="w-4 h-4" />
+                                <span>{partner.phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </TabsContent>
@@ -672,6 +749,61 @@ export default function TourDetail() {
                     </div>
                   )}
 
+                  {/* Transportation */}
+                  {tourData.services?.transportation && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                      <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+                        <Car className="w-5 h-5 text-blue-500" />
+                        {translations.transportation || "Phương tiện di chuyển"}
+                      </h4>
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <h5 className="font-semibold text-gray-900 dark:text-white mb-3">
+                          {(() => {
+                            if (tourData.services.transportation.service_name) {
+                              // Capitalize first letter of vehicle type only (e.g., "bus - 30A-12345" -> "Bus - 30A-12345")
+                              const parts = tourData.services.transportation.service_name.split(' - ');
+                              if (parts.length > 0) {
+                                const vehicleType = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+                                return parts.length > 1 ? `${vehicleType} - ${parts.slice(1).join(' - ')}` : vehicleType;
+                              }
+                              return tourData.services.transportation.service_name;
+                            }
+                            if (tourData.services.transportation.vehicle_type) {
+                              return tourData.services.transportation.vehicle_type.charAt(0).toUpperCase() + 
+                                     tourData.services.transportation.vehicle_type.slice(1).toLowerCase();
+                            }
+                            return '';
+                          })()}
+                        </h5>
+                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                          {tourData.services.transportation.vehicle_type && (
+                            <p className="flex items-center gap-2">
+                              <Car className="w-4 h-4" />
+                              <span>
+                                {translations.vehicleType || "Loại xe"}: {
+                                  tourData.services.transportation.vehicle_type.charAt(0).toUpperCase() + 
+                                  tourData.services.transportation.vehicle_type.slice(1).toLowerCase()
+                                }
+                              </span>
+                            </p>
+                          )}
+                          {tourData.services.transportation.license_plate && (
+                            <p>{translations.licensePlate || "Biển số"}: {tourData.services.transportation.license_plate}</p>
+                          )}
+                          {tourData.services.transportation.brand && (
+                            <p>{translations.brand || "Hãng"}: {tourData.services.transportation.brand}</p>
+                          )}
+                          {tourData.services.transportation.capacity && (
+                            <p>{translations.capacity || "Sức chứa"}: {tourData.services.transportation.capacity} {translations.people || "người"}</p>
+                          )}
+                          {tourData.services.transportation.description && (
+                            <p className="mt-2 text-gray-700 dark:text-gray-300">{tourData.services.transportation.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Included Items (if any) */}
                   {tourData.included && tourData.included.length > 0 && (
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
@@ -890,7 +1022,7 @@ export default function TourDetail() {
               </span>
             </div>
             <Button
-              onClick={() => setIsBookingPanelOpen(true)}
+              onClick={handleBookingClick}
               className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl px-8 py-6 text-lg"
             >
               Đặt Tour Ngay
@@ -903,7 +1035,7 @@ export default function TourDetail() {
       {showStickyButton && userRole !== "partner" && (
         <div className="hidden md:block fixed bottom-8 right-8 z-50">
           <Button
-            onClick={() => setIsBookingPanelOpen(true)}
+            onClick={handleBookingClick}
             className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold shadow-2xl hover:shadow-3xl px-8 py-6 text-lg rounded-full animate-pulse hover:animate-none"
             size="lg"
           >
@@ -913,7 +1045,7 @@ export default function TourDetail() {
       )}
 
       {/* Floating Booking Panel */}
-      {userRole !== "partner" && (
+      {canBook() && (
         <BookingPanel
           basePrice={tourData.basePrice}
           isOpen={isBookingPanelOpen}

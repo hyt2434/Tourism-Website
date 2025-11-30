@@ -96,6 +96,8 @@ export default {
   tourItinerary: "Itinerary",
   tourIncluded: "Included",
   tourLocation: "Location",
+  tourPartners: "Partners",
+  tourPartner: "Partner",
   aboutTrip: "About this trip",
   tourHighlights: "Highlights",
   tourIncludedItems: "Included",

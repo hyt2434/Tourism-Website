@@ -149,17 +149,20 @@ def get_tour_detail(tour_id):
     try:
         cur = conn.cursor()
         
-        # Get basic tour info
+        # Get basic tour info with partner information
         cur.execute("""
             SELECT 
                 t.id, t.name, t.duration, t.description,
                 t.destination_city_id, dc.name as destination_city_name,
                 t.departure_city_id, dpc.name as departure_city_name,
                 t.total_price, t.currency, t.number_of_members,
-                t.created_at, t.updated_at
+                t.created_at, t.updated_at, t.created_by,
+                u.username as partner_name, u.email as partner_email, u.phone as partner_phone,
+                u.partner_type
             FROM tours_admin t
             LEFT JOIN cities dc ON t.destination_city_id = dc.id
             LEFT JOIN cities dpc ON t.departure_city_id = dpc.id
+            LEFT JOIN users u ON t.created_by = u.id
             WHERE t.id = %s AND t.is_published = TRUE AND t.is_active = TRUE
         """, (tour_id,))
         
@@ -296,6 +299,20 @@ def get_tour_detail(tour_id):
             elif svc_row[1] == 'transportation':
                 service_data['service_id'] = svc_row[9]
                 service_data['service_name'] = svc_row[10]
+                # Get more transportation details
+                if svc_row[9]:
+                    cur.execute("""
+                        SELECT id, license_plate, vehicle_type, brand, max_passengers, description
+                        FROM transportation_services
+                        WHERE id = %s
+                    """, (svc_row[9],))
+                    trans_row = cur.fetchone()
+                    if trans_row:
+                        service_data['license_plate'] = trans_row[1]
+                        service_data['vehicle_type'] = trans_row[2]
+                        service_data['brand'] = trans_row[3]
+                        service_data['capacity'] = trans_row[4]  # max_passengers
+                        service_data['description'] = trans_row[5]
                 tour_data['services']['transportation'] = service_data
         
         # Get selected rooms with details
@@ -380,6 +397,67 @@ def get_tour_detail(tour_id):
                 'spiceLevel': menu_row[13],
                 'image': image_row[0] if image_row else None
             })
+        
+        # Get all partners involved in this tour from services
+        partners_dict = {}  # Use dict to avoid duplicates by partner_id
+        
+        # Get partners from accommodation
+        if tour_data['services'].get('accommodation') and tour_data['services']['accommodation'].get('service_id'):
+            cur.execute("""
+                SELECT u.id, u.username, u.email, u.phone, u.partner_type
+                FROM accommodation_services acs
+                JOIN users u ON acs.partner_id = u.id
+                WHERE acs.id = %s
+            """, (tour_data['services']['accommodation']['service_id'],))
+            acc_row = cur.fetchone()
+            if acc_row:
+                partners_dict[acc_row[0]] = {
+                    'id': acc_row[0],
+                    'name': acc_row[1] or 'N/A',
+                    'email': acc_row[2],
+                    'phone': acc_row[3],
+                    'partner_type': acc_row[4]
+                }
+        
+        # Get partners from transportation
+        if tour_data['services'].get('transportation') and tour_data['services']['transportation'].get('service_id'):
+            cur.execute("""
+                SELECT u.id, u.username, u.email, u.phone, u.partner_type
+                FROM transportation_services ts
+                JOIN users u ON ts.partner_id = u.id
+                WHERE ts.id = %s
+            """, (tour_data['services']['transportation']['service_id'],))
+            trans_row = cur.fetchone()
+            if trans_row:
+                partners_dict[trans_row[0]] = {
+                    'id': trans_row[0],
+                    'name': trans_row[1] or 'N/A',
+                    'email': trans_row[2],
+                    'phone': trans_row[3],
+                    'partner_type': trans_row[4]
+                }
+        
+        # Get partners from restaurants
+        for restaurant in tour_data['services'].get('restaurants', []):
+            if restaurant.get('service_id'):
+                cur.execute("""
+                    SELECT u.id, u.username, u.email, u.phone, u.partner_type
+                    FROM restaurant_services rs
+                    JOIN users u ON rs.partner_id = u.id
+                    WHERE rs.id = %s
+                """, (restaurant['service_id'],))
+                rest_row = cur.fetchone()
+                if rest_row:
+                    partners_dict[rest_row[0]] = {
+                        'id': rest_row[0],
+                        'name': rest_row[1] or 'N/A',
+                        'email': rest_row[2],
+                        'phone': rest_row[3],
+                        'partner_type': rest_row[4]
+                    }
+        
+        # Convert dict to list
+        tour_data['partners'] = list(partners_dict.values())
         
         return jsonify(tour_data), 200
         

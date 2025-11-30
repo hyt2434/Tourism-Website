@@ -36,6 +36,28 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
     const stripe = useStripe();
     const elements = useElements();
 
+    // Check if user is a partner (partners cannot book tours)
+    const [isPartner, setIsPartner] = useState(false);
+    // Check if user is logged in
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    
+    useEffect(() => {
+        try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                const user = JSON.parse(storedUser);
+                if (user.role === 'partner') {
+                    setIsPartner(true);
+                }
+                if (user.isLoggedIn) {
+                    setIsLoggedIn(true);
+                }
+            }
+        } catch (e) {
+            console.log('Error reading user:', e);
+        }
+    }, []);
+
     // Booking states - dates and user information
     const [startDate, setStartDate] = useState(() => {
         const today = new Date();
@@ -187,6 +209,18 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
     };
 
     const handleBookNow = async () => {
+        // Prevent non-logged-in users from booking tours
+        if (!isLoggedIn) {
+            alert(translations.pleaseLoginToBook || "Vui lòng đăng nhập để đặt tour.");
+            return;
+        }
+
+        // Prevent partners from booking tours
+        if (isPartner) {
+            alert(translations.partnersCannotBook || "Đối tác không thể đặt tour. Vui lòng đăng nhập bằng tài khoản khách hàng.");
+            return;
+        }
+
         // Validate user info
         if (!userInfo.fullName || !userInfo.email || !userInfo.phone) {
             alert(translations.pleaseFillAllFields || "Vui lòng điền đầy đủ thông tin");
@@ -286,16 +320,12 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
             {/* Panel - Centered vertically with equal spacing from header and bottom */}
             <div className="fixed inset-y-[80px] left-1/2 -translate-x-1/2 w-full max-w-4xl max-h-[calc(100vh-160px)] bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-visible z-50 flex flex-col mx-4">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-5">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h3 className="text-2xl font-bold">{translations.panelBookTour}</h3>
-                            <p className="text-sm opacity-90">{translations.panelBookTour}</p>
-                        </div>
-                        <div className="flex items-start gap-4">
-                            <div className="text-right">
-                                <p className="text-xs opacity-90">{translations.from || "Từ"}</p>
-                                <p className="text-3xl font-bold">{basePrice.toLocaleString("vi-VN")} VND</p>
+                {!isLoggedIn ? (
+                    <div className="bg-gradient-to-r from-orange-600 to-orange-500 text-white p-5">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="text-2xl font-bold">{translations.loginRequired || "Yêu cầu đăng nhập"}</h3>
+                                <p className="text-sm opacity-90 mt-2">{translations.loginRequiredMessage || "Vui lòng đăng nhập để đặt tour. Nếu chưa có tài khoản, vui lòng đăng ký."}</p>
                             </div>
                             <button
                                 onClick={onClose}
@@ -305,10 +335,48 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
                             </button>
                         </div>
                     </div>
-                </div>
+                ) : isPartner ? (
+                    <div className="bg-gradient-to-r from-red-600 to-red-500 text-white p-5">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="text-2xl font-bold">{translations.accessDenied || "Không thể đặt tour"}</h3>
+                                <p className="text-sm opacity-90 mt-2">{translations.partnersCannotBookMessage || "Tài khoản đối tác không thể đặt tour. Vui lòng đăng nhập bằng tài khoản khách hàng."}</p>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                            >
+                                <XIcon className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-5">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="text-2xl font-bold">{translations.panelBookTour}</h3>
+                                <p className="text-sm opacity-90">{translations.panelBookTour}</p>
+                            </div>
+                            <div className="flex items-start gap-4">
+                                <div className="text-right">
+                                    <p className="text-xs opacity-90">{translations.from || "Từ"}</p>
+                                    <p className="text-3xl font-bold">{basePrice.toLocaleString("vi-VN")} VND</p>
+                                </div>
+                                <button
+                                    onClick={onClose}
+                                    className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                                >
+                                    <XIcon className="w-6 h-6" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-                {/* Booking Content - Scrollable */}
-                <div className="flex-1 overflow-y-auto p-6 pt-8 space-y-6 pb-8">
+                {isLoggedIn && !isPartner && (
+                    <>
+                        {/* Booking Content - Scrollable */}
+                        <div className="flex-1 overflow-y-auto p-6 pt-8 space-y-6 pb-8">
                     {/* Date Selection */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Departure Date */}
@@ -624,6 +692,8 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
                         💡 {translations.panelPriceIncludesTax || "Giá đã bao gồm thuế và phí dịch vụ"}
                     </p>
                 </div>
+                    </>
+                )}
             </div> {/* close Panel */}
         </>
     );
