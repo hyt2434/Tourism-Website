@@ -17,6 +17,8 @@ import {
     Wallet,
 } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
+import { validatePromotionCode } from "../../api/promotions";
+import { Tag, Check, X } from "lucide-react";
 
 // Initialize Stripe
 // Note: Add VITE_STRIPE_PUBLISHABLE_KEY to your frontend .env file
@@ -75,6 +77,12 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
         phone: "",
         notes: "",
     });
+    
+    // Promotion code state
+    const [promoCode, setPromoCode] = useState("");
+    const [promoCodeValid, setPromoCodeValid] = useState(null); // null, true, or false
+    const [promoCodeData, setPromoCodeData] = useState(null);
+    const [validatingPromo, setValidatingPromo] = useState(false);
 
     // Extract number of nights from duration (e.g., "3 ngày 2 đêm" -> 2)
     const extractNights = (durationStr) => {
@@ -104,7 +112,45 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
     };
 
     const calculateTotal = () => {
+        if (promoCodeValid && promoCodeData) {
+            return promoCodeData.final_amount;
+        }
         return basePrice;
+    };
+    
+    const handleValidatePromoCode = async () => {
+        if (!promoCode.trim()) {
+            setPromoCodeValid(null);
+            setPromoCodeData(null);
+            return;
+        }
+        
+        setValidatingPromo(true);
+        try {
+            const result = await validatePromotionCode(promoCode.trim().toUpperCase(), basePrice);
+            if (result.valid) {
+                setPromoCodeValid(true);
+                setPromoCodeData(result);
+            } else {
+                setPromoCodeValid(false);
+                setPromoCodeData(null);
+            }
+        } catch (error) {
+            setPromoCodeValid(false);
+            setPromoCodeData(null);
+            console.error('Error validating promo code:', error);
+        } finally {
+            setValidatingPromo(false);
+        }
+    };
+    
+    const handlePromoCodeChange = (value) => {
+        setPromoCode(value);
+        // Reset validation when code changes
+        if (promoCodeValid !== null) {
+            setPromoCodeValid(null);
+            setPromoCodeData(null);
+        }
     };
 
     const handleInputChange = (field, value) => {
@@ -149,6 +195,7 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
                 },
                 body: JSON.stringify({
                     amount: Math.round(calculateTotal()),
+                    promotion_code: promoCodeValid ? promoCode : null,
                     currency: 'vnd',
                     tour_id: null, // You may want to pass tour ID here
                 }),
@@ -286,6 +333,7 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
                     payment_method: paymentMethod,
                     payment_intent_id: paymentIntentId,
                     notes: userInfo.notes || '',
+                    promotion_code: promoCodeValid ? promoCode.trim().toUpperCase() : null,
                 }),
             });
 
@@ -526,6 +574,73 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
                                     </div>
                                 </div>
 
+                    {/* Promotion Code Section */}
+                    <div className="border-t pt-6">
+                        <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
+                            <Tag className="w-5 h-5" />
+                            {translations.promotionCode || "Mã khuyến mãi"} ({translations.optional || "Tùy chọn"})
+                        </h4>
+                        <div className="flex gap-2">
+                            <div className="flex-1">
+                                <Input
+                                    type="text"
+                                    placeholder={translations.enterPromoCode || "Nhập mã khuyến mãi"}
+                                    value={promoCode}
+                                    onChange={(e) => handlePromoCodeChange(e.target.value)}
+                                    onBlur={handleValidatePromoCode}
+                                    className="h-11"
+                                />
+                                {promoCodeValid === true && promoCodeData && (
+                                    <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                                            <Check className="w-4 h-4" />
+                                            <span className="text-sm font-medium">
+                                                {promoCodeData.promotion.title || translations.promoCodeApplied || "Mã khuyến mãi đã được áp dụng!"}
+                                            </span>
+                                        </div>
+                                        {promoCodeData.promotion.subtitle && (
+                                            <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                                                {promoCodeData.promotion.subtitle}
+                                            </p>
+                                        )}
+                                        <div className="mt-2 text-sm">
+                                            <span className="text-gray-600 dark:text-gray-400">
+                                                {translations.discount || "Giảm giá"}: 
+                                            </span>
+                                            <span className="font-semibold text-green-700 dark:text-green-400 ml-2">
+                                                -{promoCodeData.discount_amount.toLocaleString("vi-VN")} VND
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {promoCodeValid === false && (
+                                    <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                        <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                                            <X className="w-4 h-4" />
+                                            <span className="text-sm">
+                                                {translations.invalidPromoCode || "Mã khuyến mãi không hợp lệ hoặc đã hết hạn"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {validatingPromo && (
+                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                        {translations.validating || "Đang kiểm tra..."}
+                                    </p>
+                                )}
+                            </div>
+                            <Button
+                                type="button"
+                                onClick={handleValidatePromoCode}
+                                disabled={!promoCode.trim() || validatingPromo}
+                                className="h-11 px-6"
+                                variant="outline"
+                            >
+                                {translations.apply || "Áp dụng"}
+                            </Button>
+                        </div>
+                    </div>
+
                     {/* Payment Method Section */}
                     <div className="border-t pt-6">
                         <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
@@ -665,8 +780,26 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
 
                 {/* Footer - Sticky */}
                 <div className="border-t bg-white dark:bg-gray-800 p-6 pt-6 space-y-4">
+                    {/* Price Breakdown */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">{translations.originalPrice || "Giá gốc"}:</span>
+                            <span className="text-gray-700 dark:text-gray-300">
+                                {basePrice.toLocaleString("vi-VN")} VND
+                            </span>
+                        </div>
+                        {promoCodeValid && promoCodeData && (
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-green-600 dark:text-green-400">{translations.discount || "Giảm giá"}:</span>
+                                <span className="text-green-600 dark:text-green-400 font-semibold">
+                                    -{promoCodeData.discount_amount.toLocaleString("vi-VN")} VND
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                    
                     {/* Total */}
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center border-t pt-2">
                         <span className="font-semibold text-lg">{translations.panelTotal || "Tổng cộng"}:</span>
                         <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                             {calculateTotal().toLocaleString("vi-VN")} VND

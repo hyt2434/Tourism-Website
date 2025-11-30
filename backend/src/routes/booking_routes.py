@@ -23,6 +23,7 @@ def create_booking():
         payment_method = data.get('payment_method')  # 'card' or 'momo'
         payment_intent_id = data.get('payment_intent_id')
         notes = data.get('notes', '')
+        promotion_code = data.get('promotion_code')  # Optional promotion code
         
         # Validate required fields
         if not all([tour_id, full_name, email, phone, departure_date, total_price, payment_method]):
@@ -41,31 +42,66 @@ def create_booking():
         try:
             cur = conn.cursor()
             
-            # Insert booking into database
+            # Check if promotion_code column exists
             cur.execute("""
-                INSERT INTO bookings (
-                    tour_id, user_id, full_name, email, phone,
-                    departure_date, return_date, number_of_guests,
-                    total_price, payment_method, payment_intent_id,
-                    notes, status, created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
-            """, (
-                tour_id,
-                user_id,
-                full_name,
-                email,
-                phone,
-                departure_date,
-                return_date,
-                number_of_guests,
-                total_price,
-                payment_method,
-                payment_intent_id,
-                notes,
-                'confirmed',  # Status: confirmed, cancelled, completed
-                datetime.now()
-            ))
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name = 'bookings' AND column_name = 'promotion_code'
+            """)
+            has_promotion_code = cur.fetchone() is not None
+            
+            if has_promotion_code:
+                # Insert booking with promotion_code
+                cur.execute("""
+                    INSERT INTO bookings (
+                        tour_id, user_id, full_name, email, phone,
+                        departure_date, return_date, number_of_guests,
+                        total_price, payment_method, payment_intent_id,
+                        notes, promotion_code, status, created_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                """, (
+                    tour_id,
+                    user_id,
+                    full_name,
+                    email,
+                    phone,
+                    departure_date,
+                    return_date,
+                    number_of_guests,
+                    total_price,
+                    payment_method,
+                    payment_intent_id,
+                    notes,
+                    promotion_code,
+                    'confirmed',  # Status: confirmed, cancelled, completed
+                    datetime.now()
+                ))
+            else:
+                # Insert booking without promotion_code (backward compatibility)
+                cur.execute("""
+                    INSERT INTO bookings (
+                        tour_id, user_id, full_name, email, phone,
+                        departure_date, return_date, number_of_guests,
+                        total_price, payment_method, payment_intent_id,
+                        notes, status, created_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                """, (
+                    tour_id,
+                    user_id,
+                    full_name,
+                    email,
+                    phone,
+                    departure_date,
+                    return_date,
+                    number_of_guests,
+                    total_price,
+                    payment_method,
+                    payment_intent_id,
+                    notes,
+                    'confirmed',  # Status: confirmed, cancelled, completed
+                    datetime.now()
+                ))
             
             booking_id = cur.fetchone()[0]
             conn.commit()

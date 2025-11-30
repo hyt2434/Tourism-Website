@@ -125,3 +125,21 @@ export async function deletePromotion(promotionId) {
   return response.json();
 }
 
+// Validate and apply promotion code (public)
+export async function validatePromotionCode(code, amount) {
+  const response = await fetch(`${API_BASE_URL}/promotions/validate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ code, amount }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to validate promotion code");
+  }
+
+  return response.json();
+}
+

@@ -89,6 +89,10 @@ try:
     from src.migration.migrate_promotions_homepage import migrate_promotions_homepage
     migrate_promotions_homepage()
 
+    # Initialize promotion_code column in bookings
+    from src.migration.migrate_add_promotion_code_to_bookings import migrate_add_promotion_code_to_bookings
+    migrate_add_promotion_code_to_bookings()
+
 
 except Exception as e:
     print(f"[WARNING] Could not initialize database tables: {e}")

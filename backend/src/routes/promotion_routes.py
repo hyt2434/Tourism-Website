@@ -353,3 +353,88 @@ def delete_promotion(promotion_id):
             conn.rollback()
         logging.error(f"CAN'T DELETE promotion: {e}")
         return jsonify({"error": "SERVER ERROR"}), 500
+
+# --- API 6: VALIDATE VÀ ÁP DỤNG KHUYẾN MÃI ---
+@promotion_routes.route('/validate', methods=['POST'])
+def validate_promotion():
+    """
+    Validate và tính toán discount cho promotion code
+    """
+    try:
+        data = request.json
+        code = data.get('code')
+        amount = data.get('amount')  # Tổng tiền cần áp dụng discount
+        
+        if not code:
+            return jsonify({"error": "Promotion code is required"}), 400
+        
+        if not amount or amount <= 0:
+            return jsonify({"error": "Valid amount is required"}), 400
+        
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Tìm promotion code
+        cur.execute("""
+            SELECT * FROM promotions 
+            WHERE code = %s AND is_active = true
+        """, (code.upper(),))
+        
+        promotion = cur.fetchone()
+        
+        if not promotion:
+            return jsonify({
+                "valid": False,
+                "error": "Invalid or inactive promotion code"
+            }), 200
+        
+        # Kiểm tra ngày hiệu lực
+        from datetime import datetime
+        today = datetime.now().date()
+        
+        if promotion.get('start_date') and promotion['start_date'] > today:
+            return jsonify({
+                "valid": False,
+                "error": "Promotion code is not yet active"
+            }), 200
+        
+        if promotion.get('end_date') and promotion['end_date'] < today:
+            return jsonify({
+                "valid": False,
+                "error": "Promotion code has expired"
+            }), 200
+        
+        # Tính toán discount
+        discount_type = promotion.get('discount_type', 'percentage')
+        discount_value = float(promotion.get('discount_value', 0))
+        
+        if discount_type == 'percentage':
+            discount_amount = (amount * discount_value) / 100
+        else:  # fixed
+            discount_amount = discount_value
+        
+        # Đảm bảo discount không vượt quá tổng tiền
+        discount_amount = min(discount_amount, amount)
+        final_amount = amount - discount_amount
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            "valid": True,
+            "promotion": {
+                "id": promotion.get('id'),
+                "code": promotion.get('code'),
+                "discount_type": discount_type,
+                "discount_value": discount_value,
+                "title": promotion.get('title'),
+                "subtitle": promotion.get('subtitle')
+            },
+            "original_amount": amount,
+            "discount_amount": discount_amount,
+            "final_amount": final_amount
+        }), 200
+        
+    except Exception as e:
+        logging.error(f"CAN'T VALIDATE promotion: {e}")
+        return jsonify({"error": "SERVER ERROR"}), 500
