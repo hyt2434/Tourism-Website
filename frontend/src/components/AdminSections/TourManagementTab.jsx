@@ -869,7 +869,7 @@ export default function TourManagementTab() {
                       )}
                       <div>
                         <h3 className="text-xl font-semibold">{tour.name}</h3>
-                        <p className="text-sm text-gray-600">{tour.duration}</p>
+                        <p className="text-sm text-gray-600">{tour.duration} {tour.duration === 1 ? 'day' : `days ${tour.duration - 1} ${tour.duration - 1 === 1 ? 'night' : 'nights'}`}</p>
                       </div>
                     </div>
                     
@@ -1014,14 +1014,16 @@ export default function TourManagementTab() {
 
                   <div className="grid grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="duration" className="text-sm font-medium">{translations.duration || "Duration"} *</Label>
+                      <Label htmlFor="duration" className="text-sm font-medium">{translations.duration || "Duration"} (days) *</Label>
                       <Input
                         id="duration"
+                        type="number"
+                        min="1"
                         value={formData.duration}
-                        onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                        onChange={(e) => setFormData({...formData, duration: parseInt(e.target.value) || ''})}
                         required
                         className="h-11"
-                        placeholder={translations.durationPlaceholder || "e.g., 3 days 2 nights"}
+                        placeholder={translations.durationPlaceholder || "e.g., 3 for 3 days 2 nights"}
                       />
                     </div>
                     <div className="space-y-2">

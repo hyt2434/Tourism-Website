@@ -2831,7 +2831,7 @@ def create_tours(user_ids):
         tours = [
             {
                 'name': 'Tour Hà Nội - Sapa 3 ngày 2 đêm',
-                'duration': '3 days 2 nights',
+                'duration': 3,
                 'description': 'Khám phá thủ đô Hà Nội và vùng núi Sapa với cảnh quan tuyệt đẹp, văn hóa dân tộc đặc sắc. Tham quan Hồ Hoàn Kiếm, Phố Cổ, Fansipan, Bản Cát Cát.',
                 'departure_city': 'Hà Nội',
                 'destination_city': 'Lào Cai',
@@ -2840,7 +2840,7 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Hạ Long Bay 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Du thuyền vịnh Hạ Long - Di sản thiên nhiên thế giới. Tham quan hang động, chèo kayak, tắm biển, thưởng thức hải sản tươi ngon.',
                 'departure_city': 'Hà Nội',
                 'destination_city': 'Quảng Ninh',
@@ -2849,7 +2849,7 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Đà Lạt - Thành phố ngàn hoa 4 ngày 3 đêm',
-                'duration': '4 days 3 nights',
+                'duration': 4,
                 'description': 'Khám phá Đà Lạt với khí hậu mát mẻ, cảnh quan đẹp như tranh. Tham quan Hồ Xuân Hương, Thung lũng Tình Yêu, Vườn hoa, Đồi chè Cầu Đất.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Lâm Đồng',
@@ -2858,7 +2858,7 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Nha Trang - Biển đảo 3 ngày 2 đêm',
-                'duration': '3 days 2 nights',
+                'duration': 3,
                 'description': 'Nghỉ dưỡng tại Nha Trang với bãi biển đẹp, nước trong xanh. Tham quan Vinpearl, Đảo Hòn Mun, Tháp Bà Ponagar, tắm biển, lặn biển.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Khánh Hòa',
@@ -2867,7 +2867,7 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Huế - Cố đô 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Tham quan Cố đô Huế với các di tích lịch sử: Đại Nội, Lăng Tự Đức, Chùa Thiên Mụ, Sông Hương. Thưởng thức ẩm thực cung đình.',
                 'departure_city': 'Đà Nẵng',
                 'destination_city': 'Thừa Thiên Huế',
@@ -2876,7 +2876,7 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Hội An - Phố cổ 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Khám phá Phố cổ Hội An - Di sản văn hóa thế giới. Tham quan Chùa Cầu, Nhà cổ, Làng gốm Thanh Hà, làm đèn lồng, thưởng thức cao lầu.',
                 'departure_city': 'Đà Nẵng',
                 'destination_city': 'Quảng Nam',
@@ -2885,7 +2885,7 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Mũi Né - Phan Thiết 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Nghỉ dưỡng tại Mũi Né với đồi cát đỏ, bãi biển đẹp. Tham quan Suối Tiên, Làng chài, thưởng thức hải sản tươi sống.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Bình Thuận',
@@ -2894,7 +2894,7 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Cần Thơ - Miền Tây 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Khám phá miền Tây sông nước. Đi chợ nổi Cái Răng, vườn trái cây, làng nghề, thưởng thức đặc sản miền Tây.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Cần Thơ',
@@ -2903,7 +2903,7 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Phú Quốc - Đảo ngọc 4 ngày 3 đêm',
-                'duration': '4 days 3 nights',
+                'duration': 4,
                 'description': 'Nghỉ dưỡng tại Phú Quốc với bãi biển đẹp nhất Việt Nam. Tham quan Vinpearl Safari, Cáp treo Hòn Thơm, Làng chài, tắm biển, lặn ngắm san hô.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Kiên Giang',
@@ -2912,7 +2912,7 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Ninh Bình - Tam Cốc Bích Động 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Tham quan Ninh Bình với cảnh quan non nước hữu tình. Đi thuyền Tam Cốc, thăm Chùa Bái Đính, Tràng An, Hang Múa.',
                 'departure_city': 'Hà Nội',
                 'destination_city': 'Ninh Bình',
@@ -2921,7 +2921,7 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Đà Nẵng - Bà Nà Hills 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Khám phá Đà Nẵng và Bà Nà Hills. Đi cáp treo, tham quan Cầu Vàng, Làng Pháp, tắm biển Mỹ Khê, thưởng thức ẩm thực địa phương.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Đà Nẵng',
@@ -2930,7 +2930,7 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Cao Bằng - Thác Bản Giốc 3 ngày 2 đêm',
-                'duration': '3 days 2 nights',
+                'duration': 3,
                 'description': 'Khám phá Cao Bằng với cảnh quan núi non hùng vĩ. Tham quan Thác Bản Giốc, Động Ngườm Ngao, Pác Bó, văn hóa dân tộc đặc sắc.',
                 'departure_city': 'Hà Nội',
                 'destination_city': 'Cao Bằng',
@@ -2955,10 +2955,8 @@ def create_tours(user_ids):
                 print(f"⚠️  Warning: Tour '{tour['name']}' has same departure and destination city ({tour['departure_city']}). Skipping.")
                 continue
             
-            # Parse duration to get number of days (e.g., "3 days 2 nights" -> 3 days)
-            import re
-            duration_match = re.search(r'(\d+)\s*days?', tour['duration'].lower())
-            num_days = int(duration_match.group(1)) if duration_match else 2
+            # Duration is now stored as integer representing number of days
+            num_days = tour['duration']
             
             # Validate that all required services exist BEFORE creating the tour
             services = _validate_tour_services(cur, dest_city_id, dep_city_id, num_days)

@@ -4,18 +4,25 @@ import re
 
 tour_routes = Blueprint('tour_routes', __name__)
 
-def extract_days_from_duration(duration_str):
+def extract_days_from_duration(duration):
     """
-    Extract number of days from duration string like "3 ngày 2 đêm" or "3 days 2 nights"
-    Returns the first number found, or None if no number found
+    Extract number of days from duration (now stored as integer)
+    Returns the duration as integer if it's a number, otherwise tries to parse from string
     """
-    if not duration_str:
+    if not duration:
         return None
-    # Match first number in the string
-    match = re.search(r'(\d+)', str(duration_str))
-    if match:
-        return int(match.group(1))
-    return None
+    
+    # If duration is already a number, return it
+    if isinstance(duration, (int, float)):
+        return int(duration)
+    
+    # Try to parse as integer
+    try:
+        return int(duration)
+    except (ValueError, TypeError):
+        # Fallback: try to extract from string format "3 days 2 nights"
+        match = re.search(r'(\d+)', str(duration))
+        return int(match.group(1)) if match else None
 
 @tour_routes.route('/', methods=['GET'])
 def get_tours():

@@ -505,13 +505,9 @@ def create_tour():
         # Calculate and set total_price based on selected rooms and menu items
         total_price = 0
         
-        # Extract number of nights from duration (e.g., "3 days 2 nights" -> 2)
-        duration = data.get('duration', '')
-        num_nights = 1  # Default to 1 night
-        if duration:
-            night_match = re.search(r'(\d+)\s*(?:night|đêm)', duration.lower())
-            if night_match:
-                num_nights = int(night_match.group(1))
+        # Extract number of nights from duration (duration is number of days, nights = days - 1)
+        duration = data.get('duration', 1)
+        num_nights = max(1, int(duration) - 1) if duration else 1  # Nights = Days - 1, minimum 1
         
         # Get number of members
         number_of_members = data.get('number_of_members', 1)
@@ -766,14 +762,11 @@ def update_tour(tour_id):
         # Get tour duration and number of members to calculate price
         cur.execute("SELECT duration, number_of_members FROM tours_admin WHERE id = %s", (tour_id,))
         tour_result = cur.fetchone()
-        duration = tour_result[0] if tour_result else ''
+        duration = tour_result[0] if tour_result else 1
         number_of_members = tour_result[1] if tour_result and tour_result[1] else 1
         
-        num_nights = 1  # Default to 1 night
-        if duration:
-            night_match = re.search(r'(\d+)\s*(?:night|đêm)', duration.lower())
-            if night_match:
-                num_nights = int(night_match.group(1))
+        # Calculate nights from days (duration is number of days, nights = days - 1, minimum 1)
+        num_nights = max(1, int(duration) - 1) if duration else 1
         
         # Get current selected rooms
         cur.execute("SELECT room_id FROM tour_selected_rooms WHERE tour_id = %s", (tour_id,))

@@ -223,7 +223,7 @@ export default function TourCard({ tour, viewMode = "grid" }) {
           {tour.duration && (
             <div className="flex items-center gap-2">
               <Calendar size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
-              <span>{tour.duration}</span>
+              <span>{tour.duration} {tour.duration === 1 ? 'day' : `days ${tour.duration - 1} ${tour.duration - 1 === 1 ? 'night' : 'nights'}`}</span>
             </div>
           )}
 
