@@ -240,6 +240,41 @@ def create_tour_tables():
         """)
         
         # =====================================================================
+        # TOUR SCHEDULES TABLE (Available departure dates for tours)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS tour_schedules (
+                id SERIAL PRIMARY KEY,
+                tour_id INTEGER NOT NULL REFERENCES tours_admin(id) ON DELETE CASCADE,
+                
+                -- Departure Information
+                departure_datetime TIMESTAMP NOT NULL, -- Date and time of departure
+                return_datetime TIMESTAMP NOT NULL, -- Auto-calculated: departure + duration
+                
+                -- Capacity Management
+                max_slots INTEGER NOT NULL, -- Max number of people (from tour's number_of_members)
+                slots_booked INTEGER DEFAULT 0, -- Number of slots already booked
+                slots_available INTEGER GENERATED ALWAYS AS (max_slots - slots_booked) STORED,
+                
+                -- Status
+                is_active BOOLEAN DEFAULT TRUE, -- Can be deactivated without deletion
+                
+                -- Metadata
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                CONSTRAINT valid_slots CHECK (slots_booked >= 0 AND slots_booked <= max_slots),
+                CONSTRAINT valid_datetime CHECK (return_datetime > departure_datetime)
+            );
+        """)
+        
+        # Create index for tour schedules
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_tour_schedules_tour 
+                ON tour_schedules(tour_id, departure_datetime);
+        """)
+        
+        # =====================================================================
         # TOUR SELECTED ROOMS TABLE (Selected accommodation rooms for tours)
         # =====================================================================
         cur.execute("""

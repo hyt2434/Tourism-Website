@@ -306,6 +306,7 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS bookings (
             id SERIAL PRIMARY KEY,
             tour_id INTEGER REFERENCES tours_admin(id) ON DELETE SET NULL,
+            tour_schedule_id INTEGER REFERENCES tour_schedules(id) ON DELETE SET NULL,
             user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
             full_name VARCHAR(200) NOT NULL,
             email VARCHAR(100) NOT NULL,
@@ -313,6 +314,8 @@ def create_tables():
             departure_date DATE NOT NULL,
             return_date DATE,
             number_of_guests INTEGER DEFAULT 1,
+            number_of_adults INTEGER DEFAULT 1,
+            number_of_children INTEGER DEFAULT 0,
             total_price DECIMAL(12, 2) NOT NULL,
             payment_method VARCHAR(20) NOT NULL,
             payment_intent_id VARCHAR(200),
@@ -321,6 +324,39 @@ def create_tables():
             status VARCHAR(20) DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+    """)
+    
+    # Add columns to existing bookings table if they don't exist
+    cur.execute("""
+        DO $$ 
+        BEGIN
+            -- Add tour_schedule_id column
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'bookings' AND column_name = 'tour_schedule_id'
+            ) THEN
+                ALTER TABLE bookings 
+                ADD COLUMN tour_schedule_id INTEGER REFERENCES tour_schedules(id) ON DELETE SET NULL;
+            END IF;
+            
+            -- Add number_of_adults column
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'bookings' AND column_name = 'number_of_adults'
+            ) THEN
+                ALTER TABLE bookings 
+                ADD COLUMN number_of_adults INTEGER DEFAULT 1;
+            END IF;
+            
+            -- Add number_of_children column
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'bookings' AND column_name = 'number_of_children'
+            ) THEN
+                ALTER TABLE bookings 
+                ADD COLUMN number_of_children INTEGER DEFAULT 0;
+            END IF;
+        END $$;
     """)
 
     conn.commit()

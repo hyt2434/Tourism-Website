@@ -476,3 +476,53 @@ def get_tour_detail(tour_id):
     finally:
         cur.close()
         conn.close()
+
+
+@tour_routes.route('/<int:tour_id>/schedules', methods=['GET'])
+def get_available_schedules(tour_id):
+    """
+    Get available schedules for a tour (public endpoint for booking).
+    Returns only active schedules with available slots.
+    """
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        # Get only active schedules with available slots
+        cur.execute("""
+            SELECT 
+                id, tour_id, departure_datetime, return_datetime,
+                max_slots, slots_booked, slots_available, is_active
+            FROM tour_schedules
+            WHERE tour_id = %s 
+                AND is_active = TRUE 
+                AND departure_datetime > NOW()
+                AND slots_available > 0
+            ORDER BY departure_datetime ASC
+        """, (tour_id,))
+        
+        rows = cur.fetchall()
+        schedules = []
+        for row in rows:
+            schedules.append({
+                'id': row[0],
+                'tour_id': row[1],
+                'departure_datetime': row[2].isoformat() if row[2] else None,
+                'return_datetime': row[3].isoformat() if row[3] else None,
+                'max_slots': row[4],
+                'slots_booked': row[5],
+                'slots_available': row[6],
+                'is_active': row[7]
+            })
+        
+        return jsonify(schedules), 200
+        
+    except Exception as e:
+        print(f"Error getting available schedules: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()

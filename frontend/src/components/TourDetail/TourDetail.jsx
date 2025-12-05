@@ -9,6 +9,7 @@ import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { useLanguage } from "../../context/LanguageContext";
 import { getPublicTourDetail } from "../../api/tours";
+import { getAvailableSchedules } from "../../api/tours";
 import {
   CheckCircle,
   X,
@@ -48,6 +49,7 @@ export default function TourDetail() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [userRole, setUserRole] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [availableSchedules, setAvailableSchedules] = useState([]);
   const headerButtonRef = useRef(null);
 
   // Helper function to check if user can book
@@ -80,6 +82,11 @@ export default function TourDetail() {
       console.log('Loaded tour data:', data);
       console.log('Itinerary:', data?.itinerary);
       setTourData(data);
+      
+      // Load available schedules
+      const schedules = await getAvailableSchedules(id);
+      console.log('Loaded schedules:', schedules);
+      setAvailableSchedules(schedules);
     } catch (error) {
       console.error('Error loading tour:', error);
       alert('Failed to load tour details');
@@ -1052,6 +1059,7 @@ export default function TourDetail() {
           onClose={() => setIsBookingPanelOpen(false)}
           duration={tourData.duration}
           tourId={tourData.id}
+          availableSchedules={availableSchedules}
         />
       )}
     </div>

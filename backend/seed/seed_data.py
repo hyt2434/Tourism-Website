@@ -2988,7 +2988,22 @@ def create_tours(user_ids):
                 """, (tour_id,))
                 service_count = cur.fetchone()[0]
                 
-                print(f"✅ Created tour: {tour['name']} (ID: {tour_id}) with {num_days} days itinerary, {service_count} services assigned")
+                # Create 3 tour schedules starting from now
+                from datetime import datetime, timedelta
+                now = datetime.now()
+                for schedule_num in range(3):
+                    # Schedule departures: today + 7, 14, 21 days
+                    departure_dt = now + timedelta(days=7 * (schedule_num + 1))
+                    # Return date = departure + duration - 1 (e.g., 2 days tour = day 1 depart, day 2 return)
+                    return_dt = departure_dt + timedelta(days=num_days - 1)
+                    
+                    cur.execute("""
+                        INSERT INTO tour_schedules
+                        (tour_id, departure_datetime, return_datetime, max_slots, is_active)
+                        VALUES (%s, %s, %s, %s, TRUE)
+                    """, (tour_id, departure_dt, return_dt, tour['number_of_members']))
+                
+                print(f"✅ Created tour: {tour['name']} (ID: {tour_id}) with {num_days} days itinerary, {service_count} services assigned, 3 schedules")
             except Exception as tour_error:
                 print(f"⚠️  Error creating tour '{tour['name']}': {tour_error}")
                 import traceback

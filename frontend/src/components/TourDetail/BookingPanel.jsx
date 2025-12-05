@@ -34,7 +34,7 @@ const formatDate = (date, translations) => {
 };
 
 // Inner component that uses Stripe hooks
-function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
+function BookingForm({ basePrice, onClose, duration, tourId, translations, availableSchedules }) {
     const stripe = useStripe();
     const elements = useElements();
 
@@ -59,6 +59,11 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
             console.log('Error reading user:', e);
         }
     }, []);
+
+    // NEW: Schedule and passenger states
+    const [selectedSchedule, setSelectedSchedule] = useState(null);
+    const [numberOfAdults, setNumberOfAdults] = useState(1);
+    const [numberOfChildren, setNumberOfChildren] = useState(0);
 
     // Booking states - dates and user information
     const [startDate, setStartDate] = useState(() => {
@@ -93,14 +98,15 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
 
     const numNights = extractNights(duration);
 
-    // Auto-calculate end date when start date changes
+    // Auto-calculate end date when schedule changes
     useEffect(() => {
-        if (startDate) {
-            const end = new Date(startDate);
-            end.setDate(end.getDate() + numNights);
+        if (selectedSchedule) {
+            const start = new Date(selectedSchedule.departure_datetime);
+            const end = new Date(selectedSchedule.return_datetime);
+            setStartDate(start);
             setEndDate(end);
         }
-    }, [startDate, numNights]);
+    }, [selectedSchedule]);
 
     // Helper to check if date is before today (ignoring time)
     const isDateBeforeToday = (date) => {
@@ -111,11 +117,25 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
         return compareDate < today;
     };
 
+    // Calculate slots needed (2 children = 1 adult)
+    const calculateSlotsNeeded = () => {
+        return numberOfAdults + Math.ceil(numberOfChildren / 2);
+    };
+
+    // Calculate total price based on passengers
     const calculateTotal = () => {
+        let totalPassengers = numberOfAdults + numberOfChildren;
+        let price = basePrice * totalPassengers;
+        
         if (promoCodeValid && promoCodeData) {
-            return promoCodeData.final_amount;
+            // Apply promotion to the calculated price
+            if (promoCodeData.discount_type === 'percentage') {
+                price = price * (1 - promoCodeData.discount_value / 100);
+            } else {
+                price = price - promoCodeData.discount_value;
+            }
         }
-        return basePrice;
+        return Math.max(0, price);
     };
     
     const handleValidatePromoCode = async () => {
@@ -127,7 +147,8 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
         
         setValidatingPromo(true);
         try {
-            const result = await validatePromotionCode(promoCode.trim().toUpperCase(), basePrice);
+            const totalBeforePromo = basePrice * (numberOfAdults + numberOfChildren);
+            const result = await validatePromotionCode(promoCode.trim().toUpperCase(), totalBeforePromo);
             if (result.valid) {
                 setPromoCodeValid(true);
                 setPromoCodeData(result);
@@ -268,6 +289,25 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
             return;
         }
 
+        // Validate schedule selection
+        if (!selectedSchedule) {
+            alert("Please select a departure date");
+            return;
+        }
+
+        // Validate passenger count
+        if (numberOfAdults < 1) {
+            alert("At least 1 adult is required");
+            return;
+        }
+
+        // Validate slots availability
+        const slotsNeeded = calculateSlotsNeeded();
+        if (slotsNeeded > selectedSchedule.slots_available) {
+            alert(`Not enough slots available. You need ${slotsNeeded} slots but only ${selectedSchedule.slots_available} are available.`);
+            return;
+        }
+
         // Validate user info
         if (!userInfo.fullName || !userInfo.email || !userInfo.phone) {
             alert(translations.pleaseFillAllFields || "Vui lòng điền đầy đủ thông tin");
@@ -322,13 +362,16 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
                 },
                 body: JSON.stringify({
                     tour_id: tourId,
+                    tour_schedule_id: selectedSchedule.id,
                     user_id: currentUserId, // Set to null if user is not logged in (guest booking)
                     full_name: userInfo.fullName,
                     email: userInfo.email,
                     phone: userInfo.phone,
                     departure_date: startDate.toISOString().split('T')[0],
                     return_date: endDate ? endDate.toISOString().split('T')[0] : null,
-                    number_of_guests: 1, // Can be calculated from adults + children + infants if needed
+                    number_of_guests: numberOfAdults + numberOfChildren,
+                    number_of_adults: numberOfAdults,
+                    number_of_children: numberOfChildren,
                     total_price: calculateTotal(),
                     payment_method: paymentMethod,
                     payment_intent_id: paymentIntentId,
@@ -425,62 +468,116 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
                     <>
                         {/* Booking Content - Scrollable */}
                         <div className="flex-1 overflow-y-auto p-6 pt-8 space-y-6 pb-8">
-                    {/* Date Selection */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    {/* Schedule Selection */}
+                    <div className="space-y-4">
+                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {translations.selectDepartureDate || "Select Departure Date"}
+                        </h4>
+                        {availableSchedules && availableSchedules.length > 0 ? (
+                            <div className="grid gap-3">
+                                {availableSchedules.map((schedule) => (
+                                    <div
+                                        key={schedule.id}
+                                        className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                                            selectedSchedule?.id === schedule.id
+                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                : 'border-gray-300 dark:border-gray-600 hover:border-blue-300'
+                                        }`}
+                                        onClick={() => setSelectedSchedule(schedule)}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="font-semibold text-gray-900 dark:text-white">
+                                                    {new Date(schedule.departure_datetime).toLocaleDateString()} at{' '}
+                                                    {new Date(schedule.departure_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                </p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    Return: {new Date(schedule.return_datetime).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                                                    {schedule.slots_available} slots left
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    of {schedule.max_slots}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                                {translations.noSchedulesAvailable || "No departure dates available for this tour"}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Passenger Selection */}
+                    {selectedSchedule && (
+                        <div className="space-y-4 border-t pt-6">
+                            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                {translations.numberOfPassengers || "Number of Passengers"}
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Adults */}
+                                <div>
+                                    <Label className="text-sm font-medium mb-2 block">
+                                        {translations.adults || "Adults"} <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        type="number"
+                                        min="1"
+                                        value={numberOfAdults}
+                                        onChange={(e) => setNumberOfAdults(Math.max(1, parseInt(e.target.value) || 1))}
+                                        className="w-full"
+                                    />
+                                </div>
+
+                                {/* Children */}
+                                <div>
+                                    <Label className="text-sm font-medium mb-2 block">
+                                        {translations.children || "Children"} <span className="text-xs text-gray-500">(2 children = 1 slot)</span>
+                                    </Label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        value={numberOfChildren}
+                                        onChange={(e) => setNumberOfChildren(Math.max(0, parseInt(e.target.value) || 0))}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Slots Info */}
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                                <p className="text-sm">
+                                    <span className="font-semibold">Slots needed:</span> {calculateSlotsNeeded()} 
+                                    <span className="text-gray-600 dark:text-gray-400"> / {selectedSchedule.slots_available} available</span>
+                                </p>
+                                {calculateSlotsNeeded() > selectedSchedule.slots_available && (
+                                    <p className="text-red-600 dark:text-red-400 text-sm mt-2">
+                                        ⚠️ Not enough slots available
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Date Display (now read-only) */}
+                    {selectedSchedule && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
                         {/* Departure Date */}
                         <div>
                             <Label className="text-sm font-medium flex items-center gap-2 mb-2">
                                 <CalendarIcon className="w-4 h-4" />
                                 {translations.panelDepartureDate}
                             </Label>
-                            <Popover 
-                                open={openDeparture} 
-                                onOpenChange={(open) => {
-                                    setOpenDeparture(open);
-                                }}
-                            >
-                                <PopoverTrigger asChild>
-                                    <div className="relative">
-                                        <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                        <input
-                                            readOnly
-                                            value={formatDate(startDate, translations)}
-                                            onClick={() => setOpenDeparture(true)}
-                                            className={`w-full h-11 pl-10 rounded-md cursor-pointer font-medium
-                                                bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-                                                border-2 ${
-                                                    openDeparture
-                                                        ? "ring-2 ring-blue-500 border-blue-500"
-                                                        : "border-gray-300 dark:border-gray-600"
-                                                }
-                                                focus:outline-none`}
-                                        />
-                                    </div>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                    className="w-auto p-0 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-500 z-[60]"
-                                    align="start"
-                                    onInteractOutside={(e) => {
-                                        // Close when clicking outside
-                                        setOpenDeparture(false);
-                                    }}
-                                >
-                                    <Calendar
-                                        mode="single"
-                                        selected={startDate}
-                                        onSelect={(date) => {
-                                            if (date) {
-                                                const newDate = new Date(date);
-                                                newDate.setHours(0, 0, 0, 0);
-                                                setStartDate(newDate);
-                                                setOpenDeparture(false);
-                                            }
-                                        }}
-                                        disabled={(date) => isDateBeforeToday(date)}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <div className="w-full h-11 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center">
+                                {startDate ? formatDate(startDate, translations) : translations.chooseDate}
+                            </div>
                         </div>
 
                         {/* Return Date - Auto-calculated */}
@@ -498,7 +595,8 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
                                 </p>
                             )}
                         </div>
-                                                        </div>
+                    </div>
+                    )}
 
                     {/* User Information Section */}
                     <div className="border-t pt-6">
@@ -833,7 +931,7 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations }) {
 }
 
 // Main component that wraps BookingForm with Elements provider
-export function BookingPanel({ basePrice, isOpen, onClose, duration, tourId }) {
+export function BookingPanel({ basePrice, isOpen, onClose, duration, tourId, availableSchedules }) {
     if (!isOpen) return null;
 
     const { translations } = useLanguage();
@@ -845,7 +943,8 @@ export function BookingPanel({ basePrice, isOpen, onClose, duration, tourId }) {
                 onClose={onClose} 
                 duration={duration} 
                 tourId={tourId}
-                translations={translations} 
+                translations={translations}
+                availableSchedules={availableSchedules}
             />
         </Elements>
     );

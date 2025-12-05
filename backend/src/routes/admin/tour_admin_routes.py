@@ -1412,3 +1412,278 @@ def sync_all_tours():
     finally:
         cur.close()
         conn.close()
+
+
+# =====================================================================
+# TOUR SCHEDULES MANAGEMENT
+# =====================================================================
+
+@tour_admin_bp.route('/<int:tour_id>/schedules', methods=['GET'])
+@admin_required
+def get_tour_schedules(tour_id):
+    """Get all schedules for a specific tour."""
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT 
+                id, tour_id, departure_datetime, return_datetime,
+                max_slots, slots_booked, slots_available, is_active,
+                created_at, updated_at
+            FROM tour_schedules
+            WHERE tour_id = %s
+            ORDER BY departure_datetime ASC
+        """, (tour_id,))
+        
+        rows = cur.fetchall()
+        schedules = []
+        for row in rows:
+            schedules.append({
+                'id': row[0],
+                'tour_id': row[1],
+                'departure_datetime': row[2].isoformat() if row[2] else None,
+                'return_datetime': row[3].isoformat() if row[3] else None,
+                'max_slots': row[4],
+                'slots_booked': row[5],
+                'slots_available': row[6],
+                'is_active': row[7],
+                'created_at': row[8].isoformat() if row[8] else None,
+                'updated_at': row[9].isoformat() if row[9] else None
+            })
+        
+        return jsonify(schedules), 200
+        
+    except Exception as e:
+        print(f"Error getting tour schedules: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@tour_admin_bp.route('/<int:tour_id>/schedules', methods=['POST'])
+@admin_required
+def create_tour_schedule(tour_id):
+    """Create a new schedule for a tour."""
+    data = request.get_json()
+    
+    departure_datetime = data.get('departure_datetime')
+    
+    if not departure_datetime:
+        return jsonify({"error": "departure_datetime is required"}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        # Get tour details (duration and max_slots)
+        cur.execute("""
+            SELECT duration, number_of_members
+            FROM tours_admin
+            WHERE id = %s
+        """, (tour_id,))
+        
+        tour_data = cur.fetchone()
+        if not tour_data:
+            return jsonify({"error": "Tour not found"}), 404
+        
+        duration_str = tour_data[0]
+        max_slots = tour_data[1]
+        
+        # Extract days from duration (expecting format like "3 days 2 nights" or just a number)
+        duration_days = extract_days_from_duration(duration_str)
+        if not duration_days:
+            return jsonify({"error": "Invalid tour duration format"}), 400
+        
+        # Calculate return datetime (departure + duration - 1 days)
+        # e.g., 2 days tour: day 1 departure, day 2 return = add 1 day
+        from datetime import datetime, timedelta
+        departure_dt = datetime.fromisoformat(departure_datetime.replace('Z', '+00:00'))
+        return_dt = departure_dt + timedelta(days=duration_days - 1)
+        
+        # Insert schedule
+        cur.execute("""
+            INSERT INTO tour_schedules (
+                tour_id, departure_datetime, return_datetime, max_slots, is_active
+            ) VALUES (%s, %s, %s, %s, TRUE)
+            RETURNING id, departure_datetime, return_datetime, max_slots, slots_booked, slots_available
+        """, (tour_id, departure_dt, return_dt, max_slots))
+        
+        result = cur.fetchone()
+        conn.commit()
+        
+        return jsonify({
+            'id': result[0],
+            'tour_id': tour_id,
+            'departure_datetime': result[1].isoformat(),
+            'return_datetime': result[2].isoformat(),
+            'max_slots': result[3],
+            'slots_booked': result[4],
+            'slots_available': result[5],
+            'is_active': True
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error creating tour schedule: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@tour_admin_bp.route('/<int:tour_id>/schedules/<int:schedule_id>', methods=['PUT'])
+@admin_required
+def update_tour_schedule(tour_id, schedule_id):
+    """Update a tour schedule."""
+    data = request.get_json()
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        # Check if schedule exists and belongs to tour
+        cur.execute("""
+            SELECT id FROM tour_schedules
+            WHERE id = %s AND tour_id = %s
+        """, (schedule_id, tour_id))
+        
+        if not cur.fetchone():
+            return jsonify({"error": "Schedule not found"}), 404
+        
+        # Build update query
+        update_fields = []
+        params = []
+        
+        if 'departure_datetime' in data:
+            # If departure changes, recalculate return date
+            departure_dt = datetime.fromisoformat(data['departure_datetime'].replace('Z', '+00:00'))
+            
+            # Get tour duration
+            cur.execute("SELECT duration FROM tours_admin WHERE id = %s", (tour_id,))
+            duration_str = cur.fetchone()[0]
+            duration_days = extract_days_from_duration(duration_str)
+            
+            # Calculate return datetime (departure + duration - 1 days)
+            return_dt = departure_dt + timedelta(days=duration_days - 1)
+            
+            update_fields.append("departure_datetime = %s")
+            params.append(departure_dt)
+            update_fields.append("return_datetime = %s")
+            params.append(return_dt)
+        
+        if 'is_active' in data:
+            update_fields.append("is_active = %s")
+            params.append(data['is_active'])
+        
+        if not update_fields:
+            return jsonify({"error": "No fields to update"}), 400
+        
+        update_fields.append("updated_at = CURRENT_TIMESTAMP")
+        params.append(schedule_id)
+        params.append(tour_id)
+        
+        query = f"""
+            UPDATE tour_schedules
+            SET {', '.join(update_fields)}
+            WHERE id = %s AND tour_id = %s
+            RETURNING id, departure_datetime, return_datetime, max_slots, slots_booked, slots_available, is_active
+        """
+        
+        cur.execute(query, params)
+        result = cur.fetchone()
+        conn.commit()
+        
+        return jsonify({
+            'id': result[0],
+            'tour_id': tour_id,
+            'departure_datetime': result[1].isoformat(),
+            'return_datetime': result[2].isoformat(),
+            'max_slots': result[3],
+            'slots_booked': result[4],
+            'slots_available': result[5],
+            'is_active': result[6]
+        }), 200
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error updating tour schedule: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@tour_admin_bp.route('/<int:tour_id>/schedules/<int:schedule_id>', methods=['DELETE'])
+@admin_required
+def delete_tour_schedule(tour_id, schedule_id):
+    """Delete a tour schedule."""
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        # Check if schedule has bookings
+        cur.execute("""
+            SELECT COUNT(*) FROM bookings
+            WHERE tour_schedule_id = %s
+        """, (schedule_id,))
+        
+        booking_count = cur.fetchone()[0]
+        if booking_count > 0:
+            return jsonify({
+                "error": f"Cannot delete schedule with {booking_count} existing booking(s)"
+            }), 400
+        
+        # Delete schedule
+        cur.execute("""
+            DELETE FROM tour_schedules
+            WHERE id = %s AND tour_id = %s
+            RETURNING id
+        """, (schedule_id, tour_id))
+        
+        result = cur.fetchone()
+        if not result:
+            return jsonify({"error": "Schedule not found"}), 404
+        
+        conn.commit()
+        return jsonify({"message": "Schedule deleted successfully"}), 200
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error deleting tour schedule: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+def extract_days_from_duration(duration):
+    """Extract number of days from duration string."""
+    if not duration:
+        return None
+    
+    # If duration is already a number, return it
+    if isinstance(duration, (int, float)):
+        return int(duration)
+    
+    # Try to parse as integer
+    try:
+        return int(duration)
+    except (ValueError, TypeError):
+        # Try to extract from string format "3 days 2 nights"
+        match = re.search(r'(\d+)', str(duration))
+        return int(match.group(1)) if match else None
+

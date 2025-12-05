@@ -12,6 +12,7 @@ def create_booking():
         
         # Extract booking data
         tour_id = data.get('tour_id')
+        tour_schedule_id = data.get('tour_schedule_id')  # NEW: Schedule reference
         user_id = data.get('user_id')  # Optional, can be null for guest bookings
         full_name = data.get('full_name')
         email = data.get('email')
@@ -19,6 +20,8 @@ def create_booking():
         departure_date = data.get('departure_date')
         return_date = data.get('return_date')
         number_of_guests = data.get('number_of_guests', 1)
+        number_of_adults = data.get('number_of_adults', 1)  # NEW
+        number_of_children = data.get('number_of_children', 0)  # NEW
         total_price = data.get('total_price')
         payment_method = data.get('payment_method')  # 'card' or 'momo'
         payment_intent_id = data.get('payment_intent_id')
@@ -26,7 +29,7 @@ def create_booking():
         promotion_code = data.get('promotion_code')  # Optional promotion code
         
         # Validate required fields
-        if not all([tour_id, full_name, email, phone, departure_date, total_price, payment_method]):
+        if not all([tour_id, tour_schedule_id, full_name, email, phone, departure_date, total_price, payment_method]):
             return jsonify({
                 'success': False,
                 'message': 'Missing required fields'
@@ -42,68 +45,72 @@ def create_booking():
         try:
             cur = conn.cursor()
             
-            # Check if promotion_code column exists
+            # Validate schedule and check availability
             cur.execute("""
-                SELECT column_name FROM information_schema.columns 
-                WHERE table_name = 'bookings' AND column_name = 'promotion_code'
-            """)
-            has_promotion_code = cur.fetchone() is not None
+                SELECT slots_available, max_slots, slots_booked
+                FROM tour_schedules
+                WHERE id = %s AND tour_id = %s AND is_active = TRUE
+            """, (tour_schedule_id, tour_id))
             
-            if has_promotion_code:
-                # Insert booking with promotion_code
-                cur.execute("""
-                    INSERT INTO bookings (
-                        tour_id, user_id, full_name, email, phone,
-                        departure_date, return_date, number_of_guests,
-                        total_price, payment_method, payment_intent_id,
-                        notes, promotion_code, status, created_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    RETURNING id
-                """, (
-                    tour_id,
-                    user_id,
-                    full_name,
-                    email,
-                    phone,
-                    departure_date,
-                    return_date,
-                    number_of_guests,
-                    total_price,
-                    payment_method,
-                    payment_intent_id,
-                    notes,
-                    promotion_code,
-                    'confirmed',  # Status: confirmed, cancelled, completed
-                    datetime.now()
-                ))
-            else:
-                # Insert booking without promotion_code (backward compatibility)
-                cur.execute("""
-                    INSERT INTO bookings (
-                        tour_id, user_id, full_name, email, phone,
-                        departure_date, return_date, number_of_guests,
-                        total_price, payment_method, payment_intent_id,
-                        notes, status, created_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    RETURNING id
-                """, (
-                    tour_id,
-                    user_id,
-                    full_name,
-                    email,
-                    phone,
-                    departure_date,
-                    return_date,
-                    number_of_guests,
-                    total_price,
-                    payment_method,
-                    payment_intent_id,
-                    notes,
-                    'confirmed',  # Status: confirmed, cancelled, completed
-                    datetime.now()
-                ))
+            schedule = cur.fetchone()
+            if not schedule:
+                return jsonify({
+                    'success': False,
+                    'message': 'Invalid or inactive tour schedule'
+                }), 400
+            
+            slots_available = schedule[0]
+            
+            # Calculate total slots needed (2 children = 1 adult slot)
+            slots_needed = number_of_adults + (number_of_children // 2) + (number_of_children % 2)
+            
+            if slots_needed > slots_available:
+                return jsonify({
+                    'success': False,
+                    'message': f'Not enough slots available. Requested: {slots_needed}, Available: {slots_available}'
+                }), 400
+            
+            # Insert booking
+            cur.execute("""
+                INSERT INTO bookings (
+                    tour_id, tour_schedule_id, user_id, full_name, email, phone,
+                    departure_date, return_date, number_of_guests,
+                    number_of_adults, number_of_children,
+                    total_price, payment_method, payment_intent_id,
+                    notes, promotion_code, status, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (
+                tour_id,
+                tour_schedule_id,
+                user_id,
+                full_name,
+                email,
+                phone,
+                departure_date,
+                return_date,
+                number_of_guests,
+                number_of_adults,
+                number_of_children,
+                total_price,
+                payment_method,
+                payment_intent_id,
+                notes,
+                promotion_code,
+                'confirmed',  # Status: confirmed, cancelled, completed
+                datetime.now()
+            ))
             
             booking_id = cur.fetchone()[0]
+            
+            # Update schedule slots
+            cur.execute("""
+                UPDATE tour_schedules
+                SET slots_booked = slots_booked + %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+            """, (slots_needed, tour_schedule_id))
+            
             conn.commit()
             
             return jsonify({

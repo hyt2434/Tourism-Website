@@ -32,7 +32,11 @@ import {
   deleteTour,
   getAvailableServices,
   calculateTourPrice,
-  syncAllTourPrices
+  syncAllTourPrices,
+  getTourSchedules,
+  createTourSchedule,
+  updateTourSchedule,
+  deleteTourSchedule
 } from '../../api/tours';
 import { getCities } from '../../api/cities';
 import { useLanguage } from '../../context/LanguageContext';
@@ -79,6 +83,14 @@ export default function TourManagementTab() {
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingTour, setEditingTour] = useState(null);
+  
+  // Schedule management state
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [currentScheduleTour, setCurrentScheduleTour] = useState(null);
+  const [schedules, setSchedules] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [newSchedule, setNewSchedule] = useState({ departure_datetime: '' });
+  const [modalScrollPosition, setModalScrollPosition] = useState(0);
   
   // Pagination and search state
   const [currentPage, setCurrentPage] = useState(1);
@@ -490,6 +502,87 @@ export default function TourManagementTab() {
       console.error('Error deleting tour:', error);
       alert('Failed to delete tour');
     }
+  };
+
+  // Schedule Management Functions
+  const handleManageSchedules = async (tour) => {
+    // Capture current scroll position to center modal in viewport
+    const scrollY = window.scrollY;
+    const viewportHeight = window.innerHeight;
+    // Position modal higher - closer to top of viewport
+    setModalScrollPosition(scrollY - (viewportHeight * 0.4)); // Move up by 50% of viewport
+    setCurrentScheduleTour(tour);
+    setShowScheduleModal(true);
+    await loadSchedules(tour.id);
+  };
+
+  const loadSchedules = async (tourId) => {
+    setLoadingSchedules(true);
+    try {
+      const data = await getTourSchedules(tourId);
+      setSchedules(data || []);
+    } catch (error) {
+      console.error('Error loading schedules:', error);
+      alert('Failed to load schedules');
+    } finally {
+      setLoadingSchedules(false);
+    }
+  };
+
+  const handleAddSchedule = async () => {
+    if (!newSchedule.departure_datetime) {
+      alert('Please select a departure date and time');
+      return;
+    }
+
+    try {
+      await createTourSchedule(currentScheduleTour.id, {
+        departure_datetime: newSchedule.departure_datetime
+      });
+      setNewSchedule({ departure_datetime: '' });
+      await loadSchedules(currentScheduleTour.id);
+      alert('Schedule added successfully');
+    } catch (error) {
+      console.error('Error adding schedule:', error);
+      alert('Failed to add schedule');
+    }
+  };
+
+  const handleDeleteSchedule = async (scheduleId) => {
+    if (!confirm('Are you sure you want to delete this schedule?')) return;
+
+    try {
+      await deleteTourSchedule(currentScheduleTour.id, scheduleId);
+      await loadSchedules(currentScheduleTour.id);
+      alert('Schedule deleted successfully');
+    } catch (error) {
+      console.error('Error deleting schedule:', error);
+      alert(error.message || 'Failed to delete schedule');
+    }
+  };
+
+  const handleToggleScheduleActive = async (schedule) => {
+    try {
+      await updateTourSchedule(currentScheduleTour.id, schedule.id, {
+        is_active: !schedule.is_active
+      });
+      await loadSchedules(currentScheduleTour.id);
+    } catch (error) {
+      console.error('Error updating schedule:', error);
+      alert('Failed to update schedule');
+    }
+  };
+
+  const formatDateTime = (dateTimeString) => {
+    if (!dateTimeString) return '';
+    const date = new Date(dateTimeString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const handleSyncAllPrices = async () => {
@@ -907,6 +1000,14 @@ export default function TourManagementTab() {
                   </div>
                   
                   <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleManageSchedules(tour)}
+                      title="Manage Schedules"
+                    >
+                      <Calendar className="w-4 h-4" />
+                    </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -1619,6 +1720,190 @@ export default function TourManagementTab() {
           ) : null}
         </TabsContent>
       </Tabs>
+
+      {/* Schedule Management Modal */}
+      {showScheduleModal && currentScheduleTour && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 overflow-y-auto">
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-5xl w-full mx-auto border border-gray-200 dark:border-gray-700"
+            style={{ marginTop: `${modalScrollPosition}px`, marginBottom: '32px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+              {/* Header - Simple & Clean */}
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                      Schedule Management
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {currentScheduleTour.name}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowScheduleModal(false)}
+                    className="hover:bg-gray-200 dark:hover:bg-gray-700"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Content */}
+            <div className="overflow-y-auto p-6 max-h-[calc(100vh-200px)]">
+              {/* Add New Schedule Card */}
+              <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add New Departure
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <div className="grid md:grid-cols-3 gap-4 items-end">
+                    <div className="md:col-span-2">
+                      <Label className="text-sm font-medium mb-2 block text-gray-700 dark:text-gray-300">
+                        Departure Date & Time
+                      </Label>
+                      <Input
+                        type="datetime-local"
+                        value={newSchedule.departure_datetime}
+                        onChange={(e) => setNewSchedule({ departure_datetime: e.target.value })}
+                        className="h-10 border-gray-300 dark:border-gray-600"
+                      />
+                      <div className="mt-2 flex items-start gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                        <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          Return date calculated based on tour duration: <strong>{currentScheduleTour.duration} days</strong>
+                        </p>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={handleAddSchedule}
+                      className="h-10 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Schedule
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Existing Schedules */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Available Departures
+                  </h3>
+                </div>
+                <div className="p-4">
+                  {loadingSchedules ? (
+                    <div className="text-center py-12">
+                      <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600"></div>
+                      <p className="mt-3 text-gray-600 dark:text-gray-400 text-sm">Loading schedules...</p>
+                    </div>
+                  ) : schedules.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
+                      <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
+                        No schedules yet
+                      </p>
+                      <p className="text-gray-500 dark:text-gray-500 text-xs mt-1">
+                        Add your first departure using the form above
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {schedules.map((schedule, index) => (
+                        <div
+                          key={schedule.id}
+                          className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all"
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1 grid md:grid-cols-3 gap-4 items-center">
+                              {/* Date & Time */}
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Departure</span>
+                                </div>
+                                <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                                  {formatDateTime(schedule.departure_datetime)}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                  Return: {formatDateTime(schedule.return_datetime)}
+                                </p>
+                              </div>
+                              
+                              {/* Slots Info */}
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Availability</span>
+                                </div>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-2xl font-bold text-gray-900 dark:text-white">{schedule.slots_available}</span>
+                                  <span className="text-gray-400 dark:text-gray-500 text-sm">/ {schedule.max_slots}</span>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                  {schedule.slots_booked} booked
+                                </p>
+                              </div>
+                              
+                              {/* Status Badge */}
+                              <div className="flex items-center justify-center">
+                                <span
+                                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                    schedule.is_active
+                                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                                  }`}
+                                >
+                                  {schedule.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {/* Actions */}
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleScheduleActive(schedule)}
+                                className="h-8 px-3 text-xs border-gray-300 dark:border-gray-600"
+                              >
+                                {schedule.is_active ? 'Deactivate' : 'Activate'}
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteSchedule(schedule.id)}
+                                disabled={schedule.slots_booked > 0}
+                                title={
+                                  schedule.slots_booked > 0
+                                    ? 'Cannot delete schedule with bookings'
+                                    : 'Delete schedule'
+                                }
+                                className="h-8 px-3 text-xs"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

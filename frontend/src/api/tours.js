@@ -217,3 +217,86 @@ export const syncAllTours = async () => {
 
 // Keep old function for backward compatibility
 export const syncAllTourPrices = syncAllTours;
+
+/**
+ * Get all schedules for a tour (admin)
+ */
+export const getTourSchedules = async (tourId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tours/${tourId}/schedules`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch tour schedules');
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching tour schedules:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get available schedules for a tour (public - for booking)
+ */
+export const getAvailableSchedules = async (tourId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/tours/${tourId}/schedules`);
+    if (!response.ok) throw new Error('Failed to fetch available schedules');
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching available schedules:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new schedule for a tour (admin)
+ */
+export const createTourSchedule = async (tourId, scheduleData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tours/${tourId}/schedules`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(scheduleData)
+    });
+    if (!response.ok) throw new Error('Failed to create schedule');
+    return response.json();
+  } catch (error) {
+    console.error('Error creating schedule:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a tour schedule (admin)
+ */
+export const updateTourSchedule = async (tourId, scheduleId, scheduleData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tours/${tourId}/schedules/${scheduleId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(scheduleData)
+    });
+    if (!response.ok) throw new Error('Failed to update schedule');
+    return response.json();
+  } catch (error) {
+    console.error('Error updating schedule:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a tour schedule (admin)
+ */
+export const deleteTourSchedule = async (tourId, scheduleId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tours/${tourId}/schedules/${scheduleId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to delete schedule');
+    return response.json();
+  } catch (error) {
+    console.error('Error deleting schedule:', error);
+    throw error;
+  }
+};
