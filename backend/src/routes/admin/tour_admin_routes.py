@@ -19,6 +19,11 @@ tour_admin_bp = Blueprint('tour_admin', __name__, url_prefix='/api/admin/tours')
 # HELPER FUNCTIONS
 # =====================================================================
 
+def round_to_thousands(price):
+    """Round price to nearest thousand (e.g., 649,000 -> 650,000, 911,900 -> 912,000)"""
+    import math
+    return math.ceil(price / 1000) * 1000
+
 def get_service_price(service_type, service_id):
     """Get the price of a service for tour cost calculation."""
     conn = get_connection()
@@ -508,7 +513,11 @@ def create_tour():
             if night_match:
                 num_nights = int(night_match.group(1))
         
+        # Get number of members
+        number_of_members = data.get('number_of_members', 1)
+        
         # Calculate accommodation cost from selected rooms (multiply by number of nights)
+        accommodation_cost = 0
         if 'selectedRooms' in data and data['selectedRooms']:
             for room_id in data['selectedRooms']:
                 cur.execute("""
@@ -516,9 +525,10 @@ def create_tour():
                 """, (room_id,))
                 result = cur.fetchone()
                 if result and result[0]:
-                    total_price += float(result[0]) * num_nights
+                    accommodation_cost += float(result[0]) * num_nights
         
         # Calculate restaurant costs from selected menu items
+        restaurant_cost = 0
         if 'selectedMenuItems' in data and data['selectedMenuItems']:
             for day_number, item_ids in data['selectedMenuItems'].items():
                 for item_id in item_ids:
@@ -527,12 +537,28 @@ def create_tour():
                     """, (item_id,))
                     result = cur.fetchone()
                     if result and result[0]:
-                        total_price += float(result[0])
+                        restaurant_cost += float(result[0])
         
-        # Add transportation cost (round trip)
+        # Add transportation cost (per person, multiply by number of members, double for round trip)
+        transportation_cost = 0
         if 'services' in data and 'transportation' in data['services'] and data['services']['transportation']:
-            trans_price = get_service_price('transportation', data['services']['transportation']['service_id'])
-            total_price += trans_price * 2  # Round trip
+            cur.execute("""
+                SELECT base_price FROM transportation_services WHERE id = %s
+            """, (data['services']['transportation']['service_id'],))
+            result = cur.fetchone()
+            if result and result[0]:
+                price_per_person = float(result[0])
+                transportation_cost = price_per_person * number_of_members * 2  # Round trip
+        
+        # Calculate subtotal
+        subtotal = accommodation_cost + restaurant_cost + transportation_cost
+        
+        # Add 10% admin fee
+        admin_fee = subtotal * 0.10
+        total_price = subtotal + admin_fee
+        
+        # Round to nearest ten thousand
+        total_price = round_to_thousands(total_price)
         
         # Update total_price directly
         cur.execute("""
@@ -737,10 +763,12 @@ def update_tour(tour_id):
         # Calculate and set total_price based on selected rooms and menu items
         total_price = 0
         
-        # Get tour duration to calculate number of nights
-        cur.execute("SELECT duration FROM tours_admin WHERE id = %s", (tour_id,))
-        duration_result = cur.fetchone()
-        duration = duration_result[0] if duration_result else ''
+        # Get tour duration and number of members to calculate price
+        cur.execute("SELECT duration, number_of_members FROM tours_admin WHERE id = %s", (tour_id,))
+        tour_result = cur.fetchone()
+        duration = tour_result[0] if tour_result else ''
+        number_of_members = tour_result[1] if tour_result and tour_result[1] else 1
+        
         num_nights = 1  # Default to 1 night
         if duration:
             night_match = re.search(r'(\d+)\s*(?:night|đêm)', duration.lower())
@@ -752,6 +780,7 @@ def update_tour(tour_id):
         selected_room_ids = [row[0] for row in cur.fetchall()]
         
         # Calculate accommodation cost from selected rooms (multiply by number of nights)
+        accommodation_cost = 0
         if selected_room_ids:
             for room_id in selected_room_ids:
                 cur.execute("""
@@ -759,7 +788,7 @@ def update_tour(tour_id):
                 """, (room_id,))
                 result = cur.fetchone()
                 if result and result[0]:
-                    total_price += float(result[0]) * num_nights
+                    accommodation_cost += float(result[0]) * num_nights
         
         # Get current selected menu items
         cur.execute("""
@@ -768,6 +797,7 @@ def update_tour(tour_id):
         selected_menu_item_ids = [row[0] for row in cur.fetchall()]
         
         # Calculate restaurant costs from selected menu items
+        restaurant_cost = 0
         if selected_menu_item_ids:
             for item_id in selected_menu_item_ids:
                 cur.execute("""
@@ -775,17 +805,33 @@ def update_tour(tour_id):
                 """, (item_id,))
                 result = cur.fetchone()
                 if result and result[0]:
-                    total_price += float(result[0])
+                    restaurant_cost += float(result[0])
         
-        # Add transportation cost (round trip)
+        # Add transportation cost (per person, multiply by number of members, double for round trip)
+        transportation_cost = 0
         cur.execute("""
             SELECT transportation_id FROM tour_services 
             WHERE tour_id = %s AND service_type = 'transportation'
         """, (tour_id,))
         trans_result = cur.fetchone()
         if trans_result and trans_result[0]:
-            trans_price = get_service_price('transportation', trans_result[0])
-            total_price += trans_price * 2  # Round trip
+            cur.execute("""
+                SELECT base_price FROM transportation_services WHERE id = %s
+            """, (trans_result[0],))
+            price_result = cur.fetchone()
+            if price_result and price_result[0]:
+                price_per_person = float(price_result[0])
+                transportation_cost = price_per_person * number_of_members * 2  # Round trip
+        
+        # Calculate subtotal
+        subtotal = accommodation_cost + restaurant_cost + transportation_cost
+        
+        # Add 10% admin fee
+        admin_fee = subtotal * 0.10
+        total_price = subtotal + admin_fee
+        
+        # Round to nearest ten thousand
+        total_price = round_to_thousands(total_price)
         
         # Update total_price directly
         cur.execute("""
@@ -987,15 +1033,18 @@ def calculate_tour_price():
         breakdown = {
             'restaurants': 0,
             'accommodation': 0,
-            'transportation': 0
+            'transportation': 0,
+            'admin_fee': 0
         }
         
         services = data['services']
         selected_rooms = data.get('selectedRooms', [])
         selected_menu_items = data.get('selectedMenuItems', {})
+        number_of_members = data.get('number_of_members', 1)
         
         print(f"Calculating price - Selected rooms: {selected_rooms}")
         print(f"Calculating price - Selected menu items: {selected_menu_items}")
+        print(f"Calculating price - Number of members: {number_of_members}")
         
         # Extract number of nights from duration if provided
         num_nights = 1  # Default to 1 night
@@ -1037,14 +1086,36 @@ def calculate_tour_price():
                         else:
                             print(f"Menu item {item_id}: No price found")
         
-        # Calculate transportation cost (double for round trip)
+        # Calculate transportation cost (per person, multiply by number of members, double for round trip)
         if 'transportation' in services and services['transportation']:
-            price = get_service_price('transportation', services['transportation']['service_id'])
-            breakdown['transportation'] = price * 2  # Round trip
-            print(f"Transportation: {price} x 2 = {breakdown['transportation']} VND")
+            cur.execute("""
+                SELECT base_price FROM transportation_services WHERE id = %s
+            """, (services['transportation']['service_id'],))
+            result = cur.fetchone()
+            if result and result[0]:
+                price_per_person = float(result[0])
+                # Price is per person, multiply by number of members, then by 2 for round trip
+                breakdown['transportation'] = price_per_person * number_of_members * 2
+                print(f"Transportation: {price_per_person} VND/person x {number_of_members} members x 2 (round trip) = {breakdown['transportation']} VND")
+            else:
+                print("Transportation: No price found")
         
-        total_price = sum(breakdown.values())
-        print(f"Total price: {total_price} VND")
+        # Calculate subtotal before admin fee
+        subtotal = breakdown['accommodation'] + breakdown['restaurants'] + breakdown['transportation']
+        
+        # Add 10% admin fee
+        admin_fee = subtotal * 0.10
+        breakdown['admin_fee'] = admin_fee
+        
+        # Calculate total with admin fee
+        total_price = subtotal + admin_fee
+        
+        # Round to nearest ten thousand
+        total_price = round_to_thousands(total_price)
+        
+        print(f"Subtotal: {subtotal} VND")
+        print(f"Admin fee (10%): {admin_fee} VND")
+        print(f"Total price (rounded): {total_price} VND")
         print(f"Breakdown: {breakdown}")
         
         return jsonify({
@@ -1206,13 +1277,13 @@ def get_restaurant_menu(restaurant_id):
 
 
 # =====================================================================
-# SYNC ALL TOUR PRICES
+# SYNC ALL TOURS (Update all tour information including members and prices)
 # =====================================================================
 
-@tour_admin_bp.route('/sync-all-prices', methods=['POST'])
+@tour_admin_bp.route('/sync-all-tours', methods=['POST'])
 @admin_required
-def sync_all_tour_prices():
-    """Sync all tour prices by recalculating based on current service prices."""
+def sync_all_tours():
+    """Sync all tours by recalculating number of members and prices based on current data."""
     conn = get_connection()
     if not conn:
         return jsonify({"error": "Database connection failed"}), 500
@@ -1231,7 +1302,37 @@ def sync_all_tour_prices():
         
         for tour_id, duration in tours:
             try:
-                total_price = 0
+                # Get selected rooms to calculate number of members
+                cur.execute("""
+                    SELECT ar.id, ar.max_adults, ar.max_children
+                    FROM tour_selected_rooms tsr
+                    JOIN accommodation_rooms ar ON tsr.room_id = ar.id
+                    WHERE tsr.tour_id = %s
+                """, (tour_id,))
+                selected_rooms = cur.fetchall()
+                
+                # Calculate number of members from rooms
+                # Formula: 1 adult = 1 person, 2 children = 1 person
+                number_of_members = 0
+                if selected_rooms:
+                    for room_id, max_adults, max_children in selected_rooms:
+                        adults = max_adults or 0
+                        children = max_children or 0
+                        number_of_members += adults + (children // 2)
+                
+                # Default to 1 if no rooms selected
+                if number_of_members == 0:
+                    number_of_members = 1
+                
+                # Update number of members
+                cur.execute("""
+                    UPDATE tours_admin SET number_of_members = %s WHERE id = %s
+                """, (number_of_members, tour_id))
+                
+                # Now calculate prices
+                accommodation_cost = 0
+                restaurant_cost = 0
+                transportation_cost = 0
                 
                 # Extract number of nights from duration
                 num_nights = 1  # Default to 1 night
@@ -1241,11 +1342,7 @@ def sync_all_tour_prices():
                         num_nights = int(night_match.group(1))
                 
                 # Calculate accommodation cost from selected rooms
-                cur.execute("""
-                    SELECT room_id FROM tour_selected_rooms WHERE tour_id = %s
-                """, (tour_id,))
-                selected_room_ids = [row[0] for row in cur.fetchall()]
-                
+                selected_room_ids = [row[0] for row in selected_rooms]
                 if selected_room_ids:
                     for room_id in selected_room_ids:
                         cur.execute("""
@@ -1253,7 +1350,7 @@ def sync_all_tour_prices():
                         """, (room_id,))
                         result = cur.fetchone()
                         if result and result[0]:
-                            total_price += float(result[0]) * num_nights
+                            accommodation_cost += float(result[0]) * num_nights
                 
                 # Calculate restaurant costs from selected menu items
                 cur.execute("""
@@ -1268,17 +1365,32 @@ def sync_all_tour_prices():
                         """, (item_id,))
                         result = cur.fetchone()
                         if result and result[0]:
-                            total_price += float(result[0])
+                            restaurant_cost += float(result[0])
                 
-                # Add transportation cost (round trip)
+                # Add transportation cost (per person, multiply by number of members, round trip)
                 cur.execute("""
                     SELECT transportation_id FROM tour_services 
                     WHERE tour_id = %s AND service_type = 'transportation'
                 """, (tour_id,))
                 trans_result = cur.fetchone()
                 if trans_result and trans_result[0]:
-                    trans_price = get_service_price('transportation', trans_result[0])
-                    total_price += trans_price * 2  # Round trip
+                    cur.execute("""
+                        SELECT base_price FROM transportation_services WHERE id = %s
+                    """, (trans_result[0],))
+                    price_result = cur.fetchone()
+                    if price_result and price_result[0]:
+                        price_per_person = float(price_result[0])
+                        transportation_cost = price_per_person * number_of_members * 2  # Round trip
+                
+                # Calculate subtotal
+                subtotal = accommodation_cost + restaurant_cost + transportation_cost
+                
+                # Add 10% admin fee
+                admin_fee = subtotal * 0.10
+                total_price = subtotal + admin_fee
+                
+                # Round to nearest ten thousand
+                total_price = round_to_thousands(total_price)
                 
                 # Update total_price
                 cur.execute("""
@@ -1302,7 +1414,7 @@ def sync_all_tour_prices():
         
     except Exception as e:
         conn.rollback()
-        print(f"Error syncing tour prices: {e}")
+        print(f"Error syncing tours: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cur.close()

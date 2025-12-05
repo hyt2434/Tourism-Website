@@ -181,6 +181,41 @@ export default function TourManagementTab() {
     }
   }, [formData.destination_city_id, formData.departure_city_id]);
 
+  // Auto-calculate number of members from selected rooms
+  useEffect(() => {
+    if (selectedRoomIds.length > 0 && selectedAccommodationRooms.length > 0) {
+      let totalMembers = 0;
+      selectedRoomIds.forEach(roomId => {
+        const room = selectedAccommodationRooms.find(r => r.id === roomId);
+        if (room) {
+          // 1 adult = 1 person, 2 children = 1 person
+          const adults = room.maxAdults || 0;
+          const children = room.maxChildren || 0;
+          totalMembers += adults + Math.floor(children / 2);
+        }
+      });
+
+      if (totalMembers !== formData.number_of_members) {
+        console.log(`Auto-calculating members: ${totalMembers} from ${selectedRoomIds.length} rooms`);
+        setFormData(prev => ({
+          ...prev,
+          number_of_members: totalMembers
+        }));
+      }
+    } else if (selectedRoomIds.length === 0 && formData.number_of_members !== 0) {
+      // Reset to 0 when no rooms selected
+      setFormData(prev => ({
+        ...prev,
+        number_of_members: 0
+      }));
+    }
+  }, [selectedRoomIds, selectedAccommodationRooms, formData.number_of_members]);
+
+  // Scroll to top when creating, editing, or canceling tour form
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [showForm, editingTour]);
+
   useEffect(() => {
     console.log('Services changed, triggering price calculation');
     console.log('Current services:', formData.services);
@@ -349,13 +384,15 @@ export default function TourManagementTab() {
       console.log('With selected rooms:', selectedRoomIds);
       console.log('With selected menu items:', selectedMenuItemIds);
       console.log('Duration:', formData.duration);
+      console.log('Number of members:', formData.number_of_members);
       
-      // Send all data to the API including duration for nights calculation
+      // Send all data to the API including duration for nights calculation and number of members
       const requestData = {
         services: formData.services,
         selectedRooms: selectedRoomIds,
         selectedMenuItems: selectedMenuItemIds,
-        duration: formData.duration  // Include duration to calculate number of nights
+        duration: formData.duration,  // Include duration to calculate number of nights
+        number_of_members: formData.number_of_members  // Include number of members for transportation pricing
       };
       
       console.log('Sending to API:', requestData);
@@ -456,16 +493,16 @@ export default function TourManagementTab() {
   };
 
   const handleSyncAllPrices = async () => {
-    if (!confirm('Are you sure you want to sync all tour prices? This will recalculate prices based on current service prices.')) return;
+    if (!confirm('Are you sure you want to sync all tours? This will recalculate number of members and prices based on current room selections and service prices.')) return;
     
     setLoading(true);
     try {
       const result = await syncAllTourPrices();
       alert(`Successfully synced ${result.updated_count} out of ${result.total_tours} tours.${result.errors ? `\n\nErrors: ${result.errors.join('\n')}` : ''}`);
-      loadTours(currentPage, searchQuery); // Reload tours to show updated prices
+      loadTours(currentPage, searchQuery); // Reload tours to show updated data
     } catch (error) {
-      console.error('Error syncing tour prices:', error);
-      alert('Failed to sync tour prices: ' + (error.message || 'Unknown error'));
+      console.error('Error syncing tours:', error);
+      alert('Failed to sync tours: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -772,7 +809,7 @@ export default function TourManagementTab() {
               disabled={loading}
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> 
-              Sync All Tour Prices
+              Sync All Tours
             </Button>
             <Button 
               onClick={() => setShowForm(true)}
@@ -847,7 +884,12 @@ export default function TourManagementTab() {
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <DollarSign className="w-4 h-4 text-yellow-500" />
-                        <span>{tour.total_price.toLocaleString()} {tour.currency}</span>
+                        <span>
+                          {tour.number_of_members > 0
+                            ? `${(Math.ceil((tour.total_price / tour.number_of_members) / 1000) * 1000).toLocaleString()} ${tour.currency}/person (${tour.number_of_members} people)`
+                            : `${tour.total_price.toLocaleString()} ${tour.currency}`
+                          }
+                        </span>
                       </div>
                       <div className="flex gap-2">
                         <span className={`px-2 py-1 rounded text-xs ${
@@ -983,7 +1025,12 @@ export default function TourManagementTab() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="number_of_members" className="text-sm font-medium">{translations.numberOfMembers || "Number of Members"} *</Label>
+                      <Label htmlFor="number_of_members" className="text-sm font-medium">
+                        {translations.numberOfMembers || "Number of Members"} *
+                        {selectedRoomIds.length > 0 && (
+                          <span className="text-xs text-gray-500 ml-2">(Auto-calculated from rooms)</span>
+                        )}
+                      </Label>
                       <Input
                         id="number_of_members"
                         type="number"
@@ -993,6 +1040,8 @@ export default function TourManagementTab() {
                         required
                         className="h-11"
                         placeholder={translations.numberOfMembersPlaceholder || "e.g., 4"}
+                        readOnly={selectedRoomIds.length > 0}
+                        disabled={selectedRoomIds.length > 0}
                       />
                     </div>
                     <div className="space-y-2">
@@ -1209,6 +1258,7 @@ export default function TourManagementTab() {
                   setSelectedRoomIds={setSelectedRoomIds}
                   selectedMenuItemIds={selectedMenuItemIds}
                   setSelectedMenuItemIds={setSelectedMenuItemIds}
+                  numberOfMembers={formData.number_of_members}
                 />
               ) : (
                 <Card className="shadow-sm">
@@ -1702,9 +1752,17 @@ function ServicesEditor({
   selectedRoomIds,
   setSelectedRoomIds,
   selectedMenuItemIds,
-  setSelectedMenuItemIds
+  setSelectedMenuItemIds,
+  numberOfMembers
 }) {
   const { translations } = useLanguage();
+  
+  // Filter transportation based on number of members (max passengers should be >= members AND <= 2× number of members)
+  const filteredTransportation = availableServices.transportation?.filter(t => {
+    if (!numberOfMembers) return true; // Show all if no members calculated yet
+    return t.max_passengers >= numberOfMembers && t.max_passengers <= (numberOfMembers * 2);
+  }) || [];
+  
   const handleAccommodationChange = async (serviceId) => {
     onChange({
       ...services,
@@ -1760,58 +1818,6 @@ function ServicesEditor({
   
   return (
     <div className="space-y-8">
-      <Card className="shadow-sm">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-xl">
-            <Car className="w-5 h-5 text-blue-500" />
-            {translations.transportation || "Transportation"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-5 shadow-sm">
-            <div className="flex items-center gap-3 text-sm">
-              <MapPin className="w-5 h-5 text-blue-600" />
-              <span className="font-semibold">{translations.route || "Route"}:</span>
-              <span className="text-blue-700 font-medium">{getDepartureCityName()}</span>
-              <span className="text-gray-400 text-lg">→</span>
-              <span className="text-blue-700 font-medium">{getDestinationCityName()}</span>
-            </div>
-          </div>
-          
-          <select
-            value={services.transportation?.service_id || ''}
-            onChange={(e) => {
-              onChange({
-                ...services,
-                transportation: e.target.value ? {
-                  service_id: parseInt(e.target.value),
-                  notes: ''
-                } : null
-              });
-            }}
-            className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-          >
-            <option value="">{translations.selectTransportation || "Select transportation for entire trip"}</option>
-            {availableServices.transportation?.map(t => (
-              <option key={t.id} value={t.id}>
-                {t.vehicle_type} {t.brand ? `(${t.brand})` : ''} - 
-                Plate: {t.license_plate} - 
-                {t.max_passengers} passengers - 
-                {t.base_price.toLocaleString()} VND
-                {t.pickup_location && ` - Pickup: ${t.pickup_location}`}
-                {t.dropoff_location && ` - Dropoff: ${t.dropoff_location}`}
-              </option>
-            ))}
-          </select>
-          
-          {availableServices.transportation?.length === 0 && (
-            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 p-4 rounded-lg">
-              {translations.noTransportationAvailable || "No transportation available for the selected route. Please check departure and destination cities."}
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
       <Card className="shadow-sm">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-3 text-xl">
@@ -1886,6 +1892,71 @@ function ServicesEditor({
                 </div>
               )}
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-xl">
+            <Car className="w-5 h-5 text-blue-500" />
+            {translations.transportation || "Transportation"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-3 text-sm mb-2">
+              <MapPin className="w-5 h-5 text-blue-600" />
+              <span className="font-semibold">{translations.route || "Route"}:</span>
+              <span className="text-blue-700 font-medium">{getDepartureCityName()}</span>
+              <span className="text-gray-400 text-lg">→</span>
+              <span className="text-blue-700 font-medium">{getDestinationCityName()}</span>
+            </div>
+            {numberOfMembers > 0 && (
+              <div className="flex items-center gap-3 text-sm">
+                <Users className="w-5 h-5 text-blue-600" />
+                <span className="font-semibold">{translations.totalMembers || "Total Members"}:</span>
+                <span className="text-blue-700 font-medium">{numberOfMembers} {translations.people || "people"}</span>
+                <span className="text-gray-500 text-xs ml-2">(Showing vehicles ≤ {numberOfMembers * 2} seats)</span>
+              </div>
+            )}
+          </div>
+          
+          <select
+            value={services.transportation?.service_id || ''}
+            onChange={(e) => {
+              onChange({
+                ...services,
+                transportation: e.target.value ? {
+                  service_id: parseInt(e.target.value),
+                  notes: ''
+                } : null
+              });
+            }}
+            className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          >
+            <option value="">{translations.selectTransportation || "Select transportation for entire trip"}</option>
+            {filteredTransportation.map(t => (
+              <option key={t.id} value={t.id}>
+                {t.vehicle_type} {t.brand ? `(${t.brand})` : ''} - 
+                Plate: {t.license_plate} - 
+                {t.max_passengers} passengers - 
+                {t.base_price.toLocaleString()} VND/person
+                {t.pickup_location && ` - Pickup: ${t.pickup_location}`}
+                {t.dropoff_location && ` - Dropoff: ${t.dropoff_location}`}
+              </option>
+            ))}
+          </select>
+          
+          {filteredTransportation.length === 0 && numberOfMembers > 0 && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 p-4 rounded-lg">
+              {translations.noTransportationAvailable || `No transportation available for ${numberOfMembers} members. Please select rooms first or check available vehicles.`}
+            </p>
+          )}
+          {filteredTransportation.length === 0 && numberOfMembers === 0 && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 p-4 rounded-lg">
+              {translations.pleaseSelectRoomsFirst || "Please select accommodation rooms first to determine the number of members."}
+            </p>
           )}
         </CardContent>
       </Card>

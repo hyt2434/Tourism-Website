@@ -35,6 +35,11 @@ export default function AdminPage() {
     fetchStats();
   }, []);
 
+  // Scroll to top when tab changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
+
   const fetchStats = async () => {
     try {
       setLoadingStats(true);

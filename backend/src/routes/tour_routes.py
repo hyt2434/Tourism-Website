@@ -109,7 +109,8 @@ def get_tours():
                 'description': row[3],
                 'destination_city': {'id': row[4], 'name': row[5]},
                 'departure_city': {'id': row[6], 'name': row[7]},
-                'price': float(row[8]) if row[8] else 0,
+                'price': round((float(row[8]) / row[10]) / 1000) * 1000 if row[8] and row[10] and row[10] > 0 else float(row[8]) if row[8] else 0,  # Price per person rounded to nearest 1,000
+                'total_price': float(row[8]) if row[8] else 0,
                 'currency': row[9],
                 'number_of_members': row[10],
                 'created_at': row[11].isoformat() if row[11] else None,
@@ -179,8 +180,9 @@ def get_tour_detail(tour_id):
             'destination_city': {'id': tour_row[4], 'name': tour_row[5]},
             'departure_city': {'id': tour_row[6], 'name': tour_row[7]},
             'location': tour_row[5],  # destination city name for display
-            'price': float(tour_row[8]) if tour_row[8] else 0,
-            'basePrice': float(tour_row[8]) if tour_row[8] else 0,  # For compatibility
+            'price': round((float(tour_row[8]) / tour_row[10]) / 1000) * 1000 if tour_row[8] and tour_row[10] and tour_row[10] > 0 else float(tour_row[8]) if tour_row[8] else 0,  # Price per person rounded to nearest 1,000
+            'total_price': float(tour_row[8]) if tour_row[8] else 0,
+            'basePrice': round((float(tour_row[8]) / tour_row[10]) / 1000) * 1000 if tour_row[8] and tour_row[10] and tour_row[10] > 0 else float(tour_row[8]) if tour_row[8] else 0,  # For compatibility, price per person rounded
             'currency': tour_row[9],
             'number_of_members': tour_row[10],
             'created_at': tour_row[11].isoformat() if tour_row[11] else None,

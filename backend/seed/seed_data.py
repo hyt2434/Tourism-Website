@@ -1769,6 +1769,403 @@ def create_transportation(user_ids):
                 'base_price': 200000,
                 'holiday_price': 250000,
                 'phone': '0234123458'
+            },
+            # Small capacity vehicles (4-seater cars)
+            {
+                'partner_key': 'transport1@example.com_partner_transportation',
+                'description': 'Xe 4 chỗ Hà Nội - Sapa',
+                'vehicle_type': 'Car',
+                'brand': 'Toyota Vios',
+                'license_plate': '29G-11111',
+                'max_passengers': 4,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Lào Cai',
+                'base_price': 100000,
+                'holiday_price': 120000,
+                'phone': '0241234575'
+            },
+            {
+                'partner_key': 'transport1@example.com_partner_transportation',
+                'description': 'Xe 4 chỗ Hà Nội - Hạ Long',
+                'vehicle_type': 'Car',
+                'brand': 'Honda City',
+                'license_plate': '29H-22222',
+                'max_passengers': 4,
+                'features': ['AC', 'WiFi'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Quảng Ninh',
+                'base_price': 80000,
+                'holiday_price': 100000,
+                'phone': '0241234576'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 4 chỗ Sài Gòn - Đà Lạt',
+                'vehicle_type': 'Car',
+                'brand': 'Toyota Vios',
+                'license_plate': '51I-33333',
+                'max_passengers': 4,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Lâm Đồng',
+                'base_price': 90000,
+                'holiday_price': 110000,
+                'phone': '0281234575'
+            },
+            # Medium capacity vehicles (7-seater vans)
+            {
+                'partner_key': 'transport1@example.com_partner_transportation',
+                'description': 'Xe 7 chỗ Hà Nội - Ninh Bình',
+                'vehicle_type': 'Van',
+                'brand': 'Toyota Innova',
+                'license_plate': '29I-44444',
+                'max_passengers': 7,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Ninh Bình',
+                'base_price': 60000,
+                'holiday_price': 75000,
+                'phone': '0241234577'
+            },
+            {
+                'partner_key': 'transport4@example.com_partner_transportation',
+                'description': 'Xe 7 chỗ Đà Nẵng - Hội An',
+                'vehicle_type': 'Van',
+                'brand': 'Mitsubishi Xpander',
+                'license_plate': '43G-55555',
+                'max_passengers': 7,
+                'features': ['AC', 'WiFi'],
+                'departure_city': 'Đà Nẵng',
+                'destination_city': 'Quảng Nam',
+                'base_price': 40000,
+                'holiday_price': 50000,
+                'phone': '0236123459'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 7 chỗ Sài Gòn - Mũi Né',
+                'vehicle_type': 'Van',
+                'brand': 'Toyota Innova',
+                'license_plate': '51J-66666',
+                'max_passengers': 7,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Bình Thuận',
+                'base_price': 80000,
+                'holiday_price': 95000,
+                'phone': '0281234576'
+            },
+            # Small buses (12-16 seater)
+            {
+                'partner_key': 'transport5@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Hà Nội - Sapa',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '29J-77777',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Lào Cai',
+                'base_price': 70000,
+                'holiday_price': 85000,
+                'phone': '0241234578'
+            },
+            {
+                'partner_key': 'transport6@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Hà Nội - Hạ Long',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '29K-88888',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Quảng Ninh',
+                'base_price': 60000,
+                'holiday_price': 72000,
+                'phone': '0241234579'
+            },
+            {
+                'partner_key': 'transport3@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Đà Nẵng - Huế',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '43H-99999',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi'],
+                'departure_city': 'Đà Nẵng',
+                'destination_city': 'Thừa Thiên Huế',
+                'base_price': 50000,
+                'holiday_price': 60000,
+                'phone': '0236123460'
+            },
+            {
+                'partner_key': 'transport7@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Sài Gòn - Đà Lạt',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '51K-AAAAA',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Lâm Đồng',
+                'base_price': 75000,
+                'holiday_price': 90000,
+                'phone': '0281234577'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Sài Gòn - Vũng Tàu',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '51L-BBBBB',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Bà Rịa - Vũng Tàu',
+                'base_price': 55000,
+                'holiday_price': 65000,
+                'phone': '0281234578'
+            },
+            {
+                'partner_key': 'transport4@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Đà Nẵng - Nha Trang',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '43I-CCCCC',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Đà Nẵng',
+                'destination_city': 'Khánh Hòa',
+                'base_price': 85000,
+                'holiday_price': 100000,
+                'phone': '0236123461'
+            },
+            # Additional 10 vehicles for better coverage
+            {
+                'partner_key': 'transport1@example.com_partner_transportation',
+                'description': 'Xe 7 chỗ Hà Nội - Đà Nẵng',
+                'vehicle_type': 'Van',
+                'brand': 'Toyota Innova',
+                'license_plate': '29L-11111',
+                'max_passengers': 7,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Đà Nẵng',
+                'base_price': 120000,
+                'holiday_price': 145000,
+                'phone': '0241234580'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 4 chỗ Sài Gòn - Cần Thơ',
+                'vehicle_type': 'Car',
+                'brand': 'Toyota Vios',
+                'license_plate': '51M-22222',
+                'max_passengers': 4,
+                'features': ['AC', 'WiFi'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Cần Thơ',
+                'base_price': 70000,
+                'holiday_price': 85000,
+                'phone': '0281234580'
+            },
+            {
+                'partner_key': 'transport3@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Đà Nẵng - Hội An',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '43J-33333',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Đà Nẵng',
+                'destination_city': 'Quảng Nam',
+                'base_price': 45000,
+                'holiday_price': 55000,
+                'phone': '0236123462'
+            },
+            {
+                'partner_key': 'transport4@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Hà Nội - Huế',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '29M-44444',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Thừa Thiên Huế',
+                'base_price': 95000,
+                'holiday_price': 115000,
+                'phone': '0241234581'
+            },
+            {
+                'partner_key': 'transport5@example.com_partner_transportation',
+                'description': 'Xe 7 chỗ Sài Gòn - Phú Quốc',
+                'vehicle_type': 'Van',
+                'brand': 'Mitsubishi Xpander',
+                'license_plate': '51N-55555',
+                'max_passengers': 7,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Kiên Giang',
+                'base_price': 150000,
+                'holiday_price': 180000,
+                'phone': '0281234581'
+            },
+            {
+                'partner_key': 'transport6@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Hà Nội - Cao Bằng',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '29N-66666',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Cao Bằng',
+                'base_price': 85000,
+                'holiday_price': 105000,
+                'phone': '0241234582'
+            },
+            {
+                'partner_key': 'transport7@example.com_partner_transportation',
+                'description': 'Xe 4 chỗ Đà Nẵng - Huế',
+                'vehicle_type': 'Car',
+                'brand': 'Honda City',
+                'license_plate': '43K-77777',
+                'max_passengers': 4,
+                'features': ['AC', 'WiFi'],
+                'departure_city': 'Đà Nẵng',
+                'destination_city': 'Thừa Thiên Huế',
+                'base_price': 55000,
+                'holiday_price': 68000,
+                'phone': '0236123463'
+            },
+            {
+                'partner_key': 'transport8@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Sài Gòn - Nha Trang',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '51O-88888',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'USB Charging', 'Reclining Seats'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Khánh Hòa',
+                'base_price': 110000,
+                'holiday_price': 135000,
+                'phone': '0281234582'
+            },
+            {
+                'partner_key': 'transport1@example.com_partner_transportation',
+                'description': 'Xe 7 chỗ Hà Nội - Lạng Sơn',
+                'vehicle_type': 'Van',
+                'brand': 'Toyota Innova',
+                'license_plate': '29O-99999',
+                'max_passengers': 7,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Lạng Sơn',
+                'base_price': 75000,
+                'holiday_price': 92000,
+                'phone': '0241234583'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Sài Gòn - Tây Ninh',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '51P-AAAAA',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Tây Ninh',
+                'base_price': 65000,
+                'holiday_price': 78000,
+                'phone': '0281234583'
+            },
+            # Additional vehicles for missing routes (user-reported)
+            {
+                'partner_key': 'transport5@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Hà Nội - Cao Bằng',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '29P-11111',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Cao Bằng',
+                'base_price': 90000,
+                'holiday_price': 110000,
+                'phone': '0241234590'
+            },
+            {
+                'partner_key': 'transport3@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Đà Nẵng - Thừa Thiên Huế',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '43L-22222',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Đà Nẵng',
+                'destination_city': 'Thừa Thiên Huế',
+                'base_price': 52000,
+                'holiday_price': 62000,
+                'phone': '0236123470'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Hồ Chí Minh - Đà Nẵng',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '51Q-33333',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Đà Nẵng',
+                'base_price': 125000,
+                'holiday_price': 150000,
+                'phone': '0281234591'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Hồ Chí Minh - Bình Thuận',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '51R-44444',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Bình Thuận',
+                'base_price': 70000,
+                'holiday_price': 85000,
+                'phone': '0281234592'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Hồ Chí Minh - Kiên Giang',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '51S-55555',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Kiên Giang',
+                'base_price': 135000,
+                'holiday_price': 165000,
+                'phone': '0281234593'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Hồ Chí Minh - Cần Thơ',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '51T-66666',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Cần Thơ',
+                'base_price': 58000,
+                'holiday_price': 70000,
+                'phone': '0281234594'
             }
         ]
         
@@ -1915,28 +2312,63 @@ def _create_tour_itinerary_and_services(cur, tour_id, num_days, destination_city
             """, (destination_city_id, num_days - len(restaurant_ids)))
             restaurant_ids.extend([row[0] for row in cur.fetchall()])
         
-        # Get transportation - try exact route first (both directions)
+        # Get transportation - filter based on number of members (capacity >= members AND <= 2 * number_of_members)
+        min_capacity = number_of_members
+        max_capacity = number_of_members * 2
+        
+        # Get city names for logging
+        cur.execute("SELECT name FROM cities WHERE id = %s", (departure_city_id,))
+        dep_result = cur.fetchone()
+        dep_city_name = dep_result[0] if dep_result else f"City {departure_city_id}"
+        
+        cur.execute("SELECT name FROM cities WHERE id = %s", (destination_city_id,))
+        dest_result = cur.fetchone()
+        dest_city_name = dest_result[0] if dest_result else f"City {destination_city_id}"
+        
+        # Try exact route first (both directions) with appropriate capacity
         cur.execute("""
-            SELECT id FROM transportation_services 
+            SELECT id, vehicle_type, max_passengers, license_plate FROM transportation_services 
             WHERE ((departure_city_id = %s AND destination_city_id = %s)
                OR (departure_city_id = %s AND destination_city_id = %s))
             AND is_active = TRUE 
+            AND max_passengers >= %s AND max_passengers <= %s
+            ORDER BY max_passengers ASC
             LIMIT 1
-        """, (departure_city_id, destination_city_id, destination_city_id, departure_city_id))
+        """, (departure_city_id, destination_city_id, destination_city_id, departure_city_id, min_capacity, max_capacity))
         transportation_result = cur.fetchone()
         
         if not transportation_result:
-            # Try one-way routes (departure or destination matches either city)
+            # Try one-way routes (departure or destination matches either city) with appropriate capacity
             cur.execute("""
-                SELECT id FROM transportation_services 
+                SELECT id, vehicle_type, max_passengers, license_plate FROM transportation_services 
                 WHERE ((departure_city_id = %s OR destination_city_id = %s)
                    OR (departure_city_id = %s OR destination_city_id = %s))
                 AND is_active = TRUE 
+                AND max_passengers >= %s AND max_passengers <= %s
+                ORDER BY max_passengers ASC
                 LIMIT 1
-            """, (departure_city_id, departure_city_id, destination_city_id, destination_city_id))
+            """, (departure_city_id, departure_city_id, destination_city_id, destination_city_id, min_capacity, max_capacity))
             transportation_result = cur.fetchone()
         
-        transportation_id = transportation_result[0] if transportation_result else None
+        if not transportation_result:
+            # If still no match, try any transportation for this route without capacity filter
+            print(f"   ⚠️  No transportation found for {dep_city_name} → {dest_city_name} with capacity {min_capacity}-{max_capacity} ({number_of_members} members)")
+            cur.execute("""
+                SELECT id, vehicle_type, max_passengers, license_plate FROM transportation_services 
+                WHERE ((departure_city_id = %s AND destination_city_id = %s)
+                   OR (departure_city_id = %s AND destination_city_id = %s))
+                AND is_active = TRUE 
+                ORDER BY max_passengers ASC
+                LIMIT 1
+            """, (departure_city_id, destination_city_id, destination_city_id, departure_city_id))
+            transportation_result = cur.fetchone()
+        
+        if transportation_result:
+            transportation_id = transportation_result[0]
+            print(f"   ✓ Assigned {transportation_result[1]} ({transportation_result[3]}) - {transportation_result[2]} seats for {number_of_members} members")
+        else:
+            transportation_id = None
+            print(f"   ❌ NO TRANSPORTATION AVAILABLE for {dep_city_name} → {dest_city_name}")
         
         # Create daily itinerary for each day
         for day_num in range(1, num_days + 1):
