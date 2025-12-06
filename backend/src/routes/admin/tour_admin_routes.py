@@ -546,12 +546,8 @@ def create_tour():
                 price_per_person = float(result[0])
                 transportation_cost = price_per_person * number_of_members * 2  # Round trip
         
-        # Calculate subtotal
-        subtotal = accommodation_cost + restaurant_cost + transportation_cost
-        
-        # Add 10% admin fee
-        admin_fee = subtotal * 0.10
-        total_price = subtotal + admin_fee
+        # Calculate total price
+        total_price = accommodation_cost + restaurant_cost + transportation_cost
         
         # Round to nearest ten thousand
         total_price = round_to_thousands(total_price)
@@ -816,12 +812,8 @@ def update_tour(tour_id):
                 price_per_person = float(price_result[0])
                 transportation_cost = price_per_person * number_of_members * 2  # Round trip
         
-        # Calculate subtotal
-        subtotal = accommodation_cost + restaurant_cost + transportation_cost
-        
-        # Add 10% admin fee
-        admin_fee = subtotal * 0.10
-        total_price = subtotal + admin_fee
+        # Calculate total price
+        total_price = accommodation_cost + restaurant_cost + transportation_cost
         
         # Round to nearest ten thousand
         total_price = round_to_thousands(total_price)
@@ -1026,8 +1018,7 @@ def calculate_tour_price():
         breakdown = {
             'restaurants': 0,
             'accommodation': 0,
-            'transportation': 0,
-            'admin_fee': 0
+            'transportation': 0
         }
         
         services = data['services']
@@ -1093,21 +1084,12 @@ def calculate_tour_price():
             else:
                 print("Transportation: No price found")
         
-        # Calculate subtotal before admin fee
-        subtotal = breakdown['accommodation'] + breakdown['restaurants'] + breakdown['transportation']
-        
-        # Add 10% admin fee
-        admin_fee = subtotal * 0.10
-        breakdown['admin_fee'] = admin_fee
-        
-        # Calculate total with admin fee
-        total_price = subtotal + admin_fee
+        # Calculate total price
+        total_price = breakdown['accommodation'] + breakdown['restaurants'] + breakdown['transportation']
         
         # Round to nearest ten thousand
         total_price = round_to_thousands(total_price)
         
-        print(f"Subtotal: {subtotal} VND")
-        print(f"Admin fee (10%): {admin_fee} VND")
         print(f"Total price (rounded): {total_price} VND")
         print(f"Breakdown: {breakdown}")
         
@@ -1375,12 +1357,8 @@ def sync_all_tours():
                         price_per_person = float(price_result[0])
                         transportation_cost = price_per_person * number_of_members * 2  # Round trip
                 
-                # Calculate subtotal
-                subtotal = accommodation_cost + restaurant_cost + transportation_cost
-                
-                # Add 10% admin fee
-                admin_fee = subtotal * 0.10
-                total_price = subtotal + admin_fee
+                # Calculate total price
+                total_price = accommodation_cost + restaurant_cost + transportation_cost
                 
                 # Round to nearest ten thousand
                 total_price = round_to_thousands(total_price)

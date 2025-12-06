@@ -122,13 +122,30 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations, avail
         return numberOfAdults + Math.ceil(numberOfChildren / 2);
     };
 
-    // Calculate total price based on passengers
+    // Calculate service fee (10% of base price before promotion)
+    const calculateServiceFee = () => {
+        let totalPassengers = numberOfAdults + numberOfChildren;
+        let baseTotal = basePrice * totalPassengers;
+        return baseTotal * 0.10; // 10% service fee
+    };
+
+    // Calculate subtotal (base price * passengers)
+    const calculateSubtotal = () => {
+        let totalPassengers = numberOfAdults + numberOfChildren;
+        return basePrice * totalPassengers;
+    };
+    
+    // Calculate total price based on passengers with service fee
     const calculateTotal = () => {
         let totalPassengers = numberOfAdults + numberOfChildren;
         let price = basePrice * totalPassengers;
+        let serviceFee = calculateServiceFee();
+        
+        // Add service fee to base price
+        price = price + serviceFee;
         
         if (promoCodeValid && promoCodeData) {
-            // Apply promotion to the calculated price
+            // Apply promotion to the total (including service fee)
             if (promoCodeData.discount_type === 'percentage') {
                 price = price * (1 - promoCodeData.discount_value / 100);
             } else {
@@ -881,9 +898,15 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations, avail
                     {/* Price Breakdown */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">{translations.originalPrice || "Giá gốc"}:</span>
+                            <span className="text-gray-600 dark:text-gray-400">{translations.subtotal || "Tạm tính"}:</span>
                             <span className="text-gray-700 dark:text-gray-300">
-                                {basePrice.toLocaleString("vi-VN")} VND
+                                {calculateSubtotal().toLocaleString("vi-VN")} VND
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">{translations.serviceFee || "Phí dịch vụ"} (10%):</span>
+                            <span className="text-gray-700 dark:text-gray-300">
+                                {calculateServiceFee().toLocaleString("vi-VN")} VND
                             </span>
                         </div>
                         {promoCodeValid && promoCodeData && (

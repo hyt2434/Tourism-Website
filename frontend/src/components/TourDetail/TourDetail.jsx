@@ -679,9 +679,6 @@ export default function TourDetail() {
                               {room.roomSize && (
                                 <p>📐 {room.roomSize}m²</p>
                               )}
-                              <p className="font-semibold text-blue-600 dark:text-blue-400 mt-2">
-                                {(room.basePrice || 0).toLocaleString("vi-VN")} {room.currency || 'VND'}/đêm
-                              </p>
                             </div>
                             {room.amenities && room.amenities.length > 0 && (
                               <div className="mt-3 flex flex-wrap gap-1">
@@ -731,10 +728,7 @@ export default function TourDetail() {
                                     {item.description}
                                   </p>
                                 )}
-                                <div className="flex items-center justify-between mt-2">
-                                  <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">
-                                    {(item.price || 0).toLocaleString("vi-VN")} {item.currency || 'VND'}
-                                  </p>
+                                <div className="flex items-center justify-end mt-2">
                                   <div className="flex gap-1">
                                     {item.isVegetarian && (
                                       <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
