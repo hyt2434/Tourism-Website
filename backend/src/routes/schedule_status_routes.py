@@ -112,7 +112,9 @@ def complete_tour_schedule(schedule_id):
                 print(f"\nProcessing booking {booking_id}:")
                 print(f"  Guests: {number_of_guests}, Total: {total_price}")
                 
-                customizations = json.loads(customizations) if customizations else {}
+                # customizations is already a dict from psycopg2 JSONB conversion
+                if not customizations:
+                    customizations = {}
                 print(f"  Customizations: {customizations}")
                 
                 # Calculate service fee (10%) - convert to float for calculations
@@ -125,39 +127,43 @@ def complete_tour_schedule(schedule_id):
                 accommodation_revenue = 0
                 accommodation_partner_id = None
                 
+                # Calculate number of rooms needed (use actual_people_count if available, otherwise use number_of_guests from booking)
+                actual_guests = customizations.get('actual_people_count', number_of_guests)
+                num_rooms = max(1, (actual_guests + 1) // 2)  # Ceiling division: 2 people per room
+                
                 # Try to get from customizations
                 if customizations.get('room_upgrade'):
                     room_price = customizations['room_upgrade'].get('room_price', 0)
-                    accommodation_revenue = room_price * nights
+                    accommodation_revenue = room_price * num_rooms * nights
                     # Get partner from room_upgrade
                     room_id = customizations['room_upgrade'].get('room_id')
                     if room_id:
                         cur.execute("""
-                            SELECT ar.partner_id 
+                            SELECT acs.partner_id 
                             FROM accommodation_rooms ar
-                            INNER JOIN tour_selected_rooms tsr ON ar.id = tsr.room_id
-                            WHERE tsr.room_id = %s AND tsr.tour_id = %s
-                        """, (room_id, tour_id))
+                            INNER JOIN accommodation_services acs ON ar.accommodation_id = acs.id
+                            WHERE ar.id::text = %s OR ar.room_type = %s
+                        """, (str(room_id), str(room_id)))
                         result = cur.fetchone()
                         if result:
                             accommodation_partner_id = result[0]
-                            print(f"  Accommodation (upgraded): Partner {accommodation_partner_id}, Revenue: {accommodation_revenue}")
+                            print(f"  Accommodation (upgraded): Partner {accommodation_partner_id}, {num_rooms} rooms × {nights} nights, Revenue: {accommodation_revenue}")
                 
                 elif customizations.get('default_room'):
                     room_price = customizations['default_room'].get('room_price', 0)
-                    accommodation_revenue = room_price * nights
+                    accommodation_revenue = room_price * num_rooms * nights
                     room_id = customizations['default_room'].get('room_id')
                     if room_id:
                         cur.execute("""
-                            SELECT ar.partner_id 
+                            SELECT acs.partner_id 
                             FROM accommodation_rooms ar
-                            INNER JOIN tour_selected_rooms tsr ON ar.id = tsr.room_id
-                            WHERE tsr.room_id = %s AND tsr.tour_id = %s
-                        """, (room_id, tour_id))
+                            INNER JOIN accommodation_services acs ON ar.accommodation_id = acs.id
+                            WHERE ar.id::text = %s OR ar.room_type = %s
+                        """, (str(room_id), str(room_id)))
                         result = cur.fetchone()
                         if result:
                             accommodation_partner_id = result[0]
-                            print(f"  Accommodation (default): Partner {accommodation_partner_id}, Revenue: {accommodation_revenue}")
+                            print(f"  Accommodation (default): Partner {accommodation_partner_id}, {num_rooms} rooms × {nights} nights, Revenue: {accommodation_revenue}")
                 
                 # Add to partner revenues
                 if accommodation_partner_id and accommodation_revenue > 0:
@@ -179,17 +185,19 @@ def complete_tour_schedule(schedule_id):
                         
                         # Get meal price and partner
                         cur.execute("""
-                            SELECT tsm.price_per_person, tsm.partner_id
-                            FROM tour_selected_set_meals tsm
-                            WHERE tsm.tour_id = %s
-                            AND tsm.day_number = %s
-                            AND tsm.meal_session = %s
+                            SELECT rsm.total_price, rs.partner_id
+                            FROM tour_selected_set_meals tssm
+                            INNER JOIN restaurant_set_meals rsm ON tssm.set_meal_id = rsm.id
+                            INNER JOIN restaurant_services rs ON rsm.restaurant_id = rs.id
+                            WHERE tssm.tour_id = %s
+                            AND tssm.day_number = %s
+                            AND tssm.meal_session = %s
                         """, (tour_id, day_number, meal_session))
                         
                         meal_info = cur.fetchone()
                         if meal_info:
-                            price_per_person, restaurant_partner_id = meal_info
-                            meal_revenue = price_per_person * number_of_guests
+                            total_price, restaurant_partner_id = meal_info
+                            meal_revenue = total_price * number_of_guests
                             
                             print(f"    Meal {day_number}-{meal_session}: Partner {restaurant_partner_id}, Revenue: {meal_revenue}")
                             
@@ -213,8 +221,9 @@ def complete_tour_schedule(schedule_id):
                 if trips_selected > 0:
                     # Get transportation service
                     cur.execute("""
-                        SELECT ts.price, ts.partner_id
+                        SELECT trs.base_price, trs.partner_id
                         FROM tour_services ts
+                        INNER JOIN transportation_services trs ON ts.transportation_id = trs.id
                         WHERE ts.tour_id = %s AND ts.service_type = 'transportation'
                         LIMIT 1
                     """, (tour_id,))
@@ -222,7 +231,7 @@ def complete_tour_schedule(schedule_id):
                     transport_info = cur.fetchone()
                     if transport_info:
                         one_way_price, transport_partner_id = transport_info
-                        transport_revenue = one_way_price * number_of_guests * trips_selected
+                        transport_revenue = float(one_way_price) * number_of_guests * trips_selected
                         
                         print(f"    Transport Partner {transport_partner_id}, Revenue: {transport_revenue}")
                         
@@ -366,7 +375,7 @@ def cancel_tour_schedule(schedule_id):
 
 @schedule_status_routes.route('/schedules/summary', methods=['GET'])
 def get_schedules_summary():
-    """Get summary of all tour schedules with booking counts"""
+    """Get summary of tour schedules that have confirmed bookings"""
     try:
         conn = get_connection()
         if not conn:
@@ -375,8 +384,16 @@ def get_schedules_summary():
         try:
             cur = conn.cursor()
             
-            # Get all schedules with booking information
-            cur.execute("""
+            # Get status filter from query params
+            status_filter = request.args.get('status', 'all')
+            
+            # Build status condition
+            status_condition = ""
+            if status_filter != 'all':
+                status_condition = f"AND ts.status = '{status_filter}'"
+            
+            # Get schedules that have at least one confirmed booking
+            cur.execute(f"""
                 SELECT 
                     ts.id as schedule_id,
                     ts.tour_id,
@@ -387,12 +404,17 @@ def get_schedules_summary():
                     ts.slots_booked,
                     ts.slots_available,
                     ts.status,
-                    COUNT(b.id) as booking_count,
-                    COALESCE(SUM(CASE WHEN b.status = 'confirmed' THEN b.total_price ELSE 0 END), 0) as total_revenue
+                    COUNT(DISTINCT b.id) as booking_count
                 FROM tour_schedules ts
                 INNER JOIN tours_admin t ON ts.tour_id = t.id
-                LEFT JOIN bookings b ON ts.id = b.tour_schedule_id
-                WHERE ts.is_active = TRUE
+                LEFT JOIN bookings b ON ts.id = b.tour_schedule_id AND b.status = 'confirmed'
+                WHERE ts.is_active = TRUE 
+                AND EXISTS (
+                    SELECT 1 FROM bookings 
+                    WHERE tour_schedule_id = ts.id 
+                    AND status = 'confirmed'
+                )
+                {status_condition}
                 GROUP BY ts.id, t.name
                 ORDER BY ts.departure_datetime ASC
             """)
@@ -412,7 +434,6 @@ def get_schedules_summary():
                     'slots_available': row[7],
                     'status': row[8],
                     'booking_count': row[9],
-                    'total_revenue': float(row[10]) if row[10] else 0,
                     'occupancy_percentage': (row[6] / row[5] * 100) if row[5] > 0 else 0
                 })
             

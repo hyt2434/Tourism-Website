@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
-import { Calendar, Heart, Settings, Package, Clock, MapPin, Star, X, Eye } from "lucide-react";
+import { Calendar, Heart, Settings, Package, Clock, MapPin, Star, X, Eye, MessageSquare } from "lucide-react";
 import { getUserBookings, getBookingDetails } from "../api/bookings";
 import { getUserFavorites } from "../api/favorites";
+import { checkCanReview } from "../api/reviews";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import TourReviewForm from "./TourReviewForm";
 
 export default function AccountPage() {
   const navigate = useNavigate();
@@ -21,6 +23,9 @@ export default function AccountPage() {
   const [showBookingDetail, setShowBookingDetail] = useState(false);
   const [bookingDetail, setBookingDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [reviewBooking, setReviewBooking] = useState(null);
+  const [bookingReviewStatus, setBookingReviewStatus] = useState({});
 
   useEffect(() => {
     // Check if user is a client
@@ -96,6 +101,66 @@ export default function AccountPage() {
     } finally {
       setLoadingDetail(false);
     }
+  };
+
+  const checkBookingReviewStatus = async (bookingId) => {
+    try {
+      const result = await checkCanReview(bookingId);
+      setBookingReviewStatus(prev => ({
+        ...prev,
+        [bookingId]: result
+      }));
+    } catch (error) {
+      console.error("Failed to check review status:", error);
+    }
+  };
+
+  const handleWriteReview = async (booking) => {
+    // Check if can review first
+    try {
+      const token = localStorage.getItem('token');
+      console.log('Token exists:', !!token);
+      console.log('Token value:', token ? token.substring(0, 20) + '...' : 'null');
+      
+      if (!token) {
+        alert('Please login to write a review');
+        return;
+      }
+
+      console.log('Calling checkCanReview for booking:', booking.id);
+      const result = await checkCanReview(booking.id);
+      
+      console.log('Can review result:', result);
+      
+      if (!result) {
+        alert('Không nhận được phản hồi từ server');
+        return;
+      }
+      
+      if (result.success && result.can_review) {
+        setReviewBooking({
+          bookingId: booking.id,
+          tourId: booking.tour_id,
+          tourName: booking.tour_name
+        });
+        setShowReviewDialog(true);
+      } else if (result.success && result.has_review) {
+        alert('Bạn đã đánh giá tour này rồi');
+      } else {
+        alert(result.message || 'Bạn chưa thể đánh giá tour này');
+      }
+    } catch (error) {
+      console.error('Error checking review eligibility:', error);
+      alert('Không thể kiểm tra trạng thái đánh giá: ' + error.message);
+    }
+  };
+
+  const handleReviewSuccess = (review) => {
+    setShowReviewDialog(false);
+    setReviewBooking(null);
+    alert("Review submitted successfully!");
+    // Refresh bookings to update review status
+    if (userId) loadBookings(userId);
   };
 
   const formatDate = (dateString) => {
@@ -260,6 +325,15 @@ export default function AccountPage() {
                             <Eye size={18} />
                             {translations.accountPage.viewDetails}
                           </button>
+                          {booking.tour_schedule_status === 'completed' && (
+                            <button
+                              onClick={() => handleWriteReview(booking)}
+                              className="flex-1 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+                            >
+                              <MessageSquare size={18} />
+                              Viết đánh giá
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -464,6 +538,23 @@ export default function AccountPage() {
               )}
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Review Dialog */}
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto bg-white dark:bg-gray-900 p-0">
+          {reviewBooking && (
+            <TourReviewForm
+              bookingId={reviewBooking.bookingId}
+              tourId={reviewBooking.tourId}
+              onSuccess={handleReviewSuccess}
+              onCancel={() => {
+                setShowReviewDialog(false);
+                setReviewBooking(null);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

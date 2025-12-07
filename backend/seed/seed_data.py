@@ -3749,6 +3749,11 @@ def main():
             create_tour_tables()
             print("✅ Tour tables created/verified")
             
+            # Create tour reviews table
+            from src.models.tour_reviews_schema import create_tour_reviews_table
+            create_tour_reviews_table()
+            print("✅ Tour reviews table created/verified")
+            
             # Create remaining core tables (posts, comments, bookings, etc.)
             from src.models.models import create_tables
             create_tables()
@@ -3801,16 +3806,6 @@ def main():
     create_promotions()
     print()
     
-    # Create tour schedules
-    print("📅 Creating tour schedules...")
-    create_tour_schedules()
-    print()
-    
-    # Create sample bookings with customizations
-    print("📝 Creating sample bookings...")
-    create_sample_bookings(user_ids)
-    print()
-    
     print("=" * 60)
     print("✅ SEED DATA COMPLETED SUCCESSFULLY!")
     print("=" * 60)
@@ -3820,8 +3815,6 @@ def main():
     print(f"  - Users created: {len(user_ids)}")
     print("  - Accommodations, restaurants, transportation created")
     print("  - Tours created: 12")
-    print("  - Tour schedules created")
-    print("  - Sample bookings created with customizations")
     print("  - Promotions created: 10 promo codes + 10 banners")
     print()
     print("Note: Image URLs are placeholders. Please update them with actual images.")

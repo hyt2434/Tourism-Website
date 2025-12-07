@@ -280,7 +280,19 @@ def login():
         # Store user email in session for role-based access
         session['user_email'] = email
         
-        # Return user info including role and partner_type
+        # Generate JWT token
+        import jwt
+        import datetime
+        SECRET_KEY = os.getenv('SECRET_KEY', 'your_secret_key')
+        
+        token = jwt.encode({
+            'user_id': user_id,
+            'email': email,
+            'role': role,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7)  # Token valid for 7 days
+        }, SECRET_KEY, algorithm='HS256')
+        
+        # Return user info including role, partner_type, and token
         user_data = {
             "id": user_id,
             "username": username,
@@ -294,7 +306,8 @@ def login():
         
         return jsonify({
             "message": "Successfully logged in.",
-            "user": user_data
+            "user": user_data,
+            "token": token  # Add JWT token to response
         }), 200
     else:
         return jsonify({"error": "Invalid password."}), 401

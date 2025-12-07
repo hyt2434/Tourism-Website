@@ -11,6 +11,7 @@ import { Separator } from "../ui/separator";
 import { useLanguage } from "../../context/LanguageContext";
 import { getPublicTourDetail } from "../../api/tours";
 import { getAvailableSchedules } from "../../api/tours";
+import TourReviews from "../TourReviews";
 import {
   CheckCircle,
   X,
@@ -971,61 +972,8 @@ export default function TourDetail() {
               </TabsContent>
             </Tabs>
 
-            {/* Phần đánh giá */}
-            {tourData.reviews && tourData.reviews.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    {translations.customerReviews || "Đánh giá từ khách hàng"}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {tourData.rating}
-                    </span>
-                    <div>
-                      <div className="flex gap-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < Math.floor(tourData.rating)
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "fill-gray-300 text-gray-300 dark:fill-gray-600 dark:text-gray-600"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {tourData.reviewCount}{" "}
-                        {translations.reviews || "đánh giá"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {tourData.reviews.map((review, index) => (
-                    <ReviewCard
-                      key={index}
-                      name={review.name}
-                      rating={review.rating}
-                      date={review.date}
-                      review={review.review}
-                      helpful={review.helpful}
-                    />
-                  ))}
-                </div>
-
-                <Separator className="my-6 bg-gray-200 dark:bg-gray-700" />
-
-                <Button
-                  variant="outline"
-                  className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  {translations.viewAllReviews || "Xem tất cả đánh giá"}
-                </Button>
-              </div>
-            )}
+            {/* Tour Reviews Section */}
+            <TourReviews tourId={tourData.id} />
 
             {/* Liên hệ nhà cung cấp */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">

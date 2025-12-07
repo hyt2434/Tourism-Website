@@ -44,6 +44,13 @@ export default function Login() {
         }
         
         localStorage.setItem("user", JSON.stringify(currentUser));
+        
+        // Store JWT token
+        if (result.token) {
+          localStorage.setItem("token", result.token);
+          console.log("Token saved to localStorage");
+        }
+        
         window.dispatchEvent(new Event("storage"));
         
         // Redirect based on role

@@ -1,4 +1,5 @@
 from config.database import get_connection
+from .tour_reviews_schema import create_tour_reviews_table
 
 def create_table():
     conn = get_connection()
@@ -20,6 +21,9 @@ def create_table():
     conn.commit()
     cur.close()
     conn.close()
+    
+    # Create tour reviews table
+    create_tour_reviews_table()
 
 class Tour:
     def __init__(self, id, name, image, price, duration, rating, reviews, tour_type, is_active, province_name, region_name, max_slots, badge, start_date=None):

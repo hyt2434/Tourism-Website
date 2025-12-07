@@ -425,9 +425,13 @@ function EnhancedBookingForm({
                 notes: userInfo.notes,
                 customizations: {
                     room_upgrade: roomUpgrade ? {
-                        room_id: roomUpgrade.id,
+                        // Extract actual room ID from fake IDs like "deluxe_6" or "suite_6"
+                        room_id: roomUpgrade.id.includes('_') 
+                            ? parseInt(roomUpgrade.id.split('_')[1]) 
+                            : roomUpgrade.id,
                         room_price: roomUpgrade.base_price,
-                        upgrade_price: roomUpgrade.upgrade_price
+                        upgrade_price: roomUpgrade.upgrade_price,
+                        room_type: roomUpgrade.room_type // Include the upgrade type for reference
                     } : null,
                     default_room: !roomUpgrade && tourData.roomBookings?.[0] ? {
                         room_id: tourData.roomBookings[0].room_id,

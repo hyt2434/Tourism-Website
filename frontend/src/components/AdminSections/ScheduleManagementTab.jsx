@@ -18,17 +18,22 @@ export default function ScheduleManagementTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     loadSchedules();
-  }, []);
+  }, [statusFilter]);
 
   const loadSchedules = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('http://localhost:5000/api/schedules/summary', {
+      const url = statusFilter === 'all' 
+        ? 'http://localhost:5000/api/schedules/summary'
+        : `http://localhost:5000/api/schedules/summary?status=${statusFilter}`;
+      
+      const response = await fetch(url, {
         credentials: 'include'
       });
 
@@ -235,8 +240,7 @@ export default function ScheduleManagementTab() {
     total: schedules.length,
     pending: schedules.filter(s => s.status === 'pending').length,
     ongoing: schedules.filter(s => s.status === 'ongoing').length,
-    completed: schedules.filter(s => s.status === 'completed').length,
-    totalRevenue: schedules.reduce((sum, s) => sum + s.total_revenue, 0)
+    completed: schedules.filter(s => s.status === 'completed').length
   };
 
   return (
@@ -252,7 +256,7 @@ export default function ScheduleManagementTab() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="rounded-xl shadow-lg p-6 border bg-white border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -300,20 +304,35 @@ export default function ScheduleManagementTab() {
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="rounded-xl shadow-lg p-6 border bg-white border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Revenue</p>
-              <p className="text-lg font-bold mt-1 text-green-600">
-                {formatPrice(stats.totalRevenue)}
-              </p>
-            </div>
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-100">
-              <TrendingUp className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
+      {/* Status Filter */}
+      <div className="flex gap-2 border-b border-gray-200">
+        {['all', 'pending', 'ongoing', 'completed'].map((status) => (
+          <button
+            key={status}
+            onClick={() => setStatusFilter(status)}
+            className={`px-4 py-2 font-medium text-sm transition-colors ${
+              statusFilter === status
+                ? 'border-b-2 border-blue-600 text-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            {status === 'all' 
+              ? 'All Schedules'
+              : status === 'pending'
+              ? 'Pending'
+              : status === 'ongoing'
+              ? 'On Going'
+              : 'Completed'
+            }
+            {status !== 'all' && (
+              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">
+                {stats[status]}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* Schedules List */}
@@ -386,19 +405,14 @@ export default function ScheduleManagementTab() {
                     </div>
                   </div>
 
-                  {/* Revenue Info */}
+                  {/* Booking Count Info */}
                   <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-5 h-5 text-gray-600" />
                       <div>
-                        <p className="text-xs font-medium text-gray-600">Bookings</p>
+                        <p className="text-xs font-medium text-gray-600">Total Bookings</p>
                         <p className="text-lg font-bold text-gray-900 mt-1">
                           {schedule.booking_count} booking{schedule.booking_count !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-gray-600">Total Revenue</p>
-                        <p className="text-lg font-bold text-green-600 mt-1">
-                          {formatPrice(schedule.total_revenue)}
                         </p>
                       </div>
                     </div>

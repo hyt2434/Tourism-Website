@@ -3,16 +3,46 @@ import { useLanguage } from '../../context/LanguageContext';
 import { getPartnerBookings } from '../../api/bookings';
 import { Calendar, User, Phone, Mail, MapPin, DollarSign, Users, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
 export default function ViewBookings() {
   const { translations: t } = useLanguage();
   const [bookings, setBookings] = useState([]);
+  const [revenue, setRevenue] = useState({ total_pending: 0, total_paid: 0, total_revenue: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all'); // all, confirmed, cancelled, completed
 
   useEffect(() => {
     loadBookings();
+    loadRevenue();
   }, []);
+
+  const loadRevenue = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const partnerId = user.id;
+      
+      console.log('Loading revenue for partner:', partnerId);
+      
+      if (!partnerId) return;
+
+      const url = `${API_BASE_URL}/api/partner/${partnerId}/revenue`;
+      console.log('Fetching revenue from:', url);
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      console.log('Revenue response:', data);
+      
+      if (data.success) {
+        setRevenue(data);
+        console.log('Revenue set:', data);
+      }
+    } catch (err) {
+      console.error('Error loading revenue:', err);
+    }
+  };
 
   const loadBookings = async () => {
     try {
@@ -184,7 +214,7 @@ export default function ViewBookings() {
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{t.totalRevenue || 'Total Revenue'}</p>
                 <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
-                  {formatPrice(bookings.reduce((sum, b) => sum + (b.service_revenue || 0), 0))}
+                  {formatPrice(revenue.total_revenue || 0)}
                 </p>
               </div>
               <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
