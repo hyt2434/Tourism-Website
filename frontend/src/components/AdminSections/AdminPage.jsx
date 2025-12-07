@@ -13,11 +13,13 @@ import {
   Shield,
   Bell,
   Map,
+  Package,
 } from "lucide-react";
 import UserManagementTab from "./UserManagementTab";
 import PartnerManagementTab from "./PartnerManagementTab";
 import SocialModerationTab from "./SocialModerationTab";
 import TourManagementTab from "./TourManagementTab";
+import BookingManagementTab from "./BookingManagementTab";
 import { useLanguage } from "../../context/LanguageContext";
 import { getDashboardStats } from "../../api/admin";
 
@@ -120,7 +122,7 @@ export default function AdminPage() {
           className="space-y-6"
         >
           <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700 p-2">
-            <TabsList className="grid w-full grid-cols-3 bg-gray-100 dark:bg-gray-800 rounded-xl p-1.5 h-auto gap-2">
+            <TabsList className="grid w-full grid-cols-4 bg-gray-100 dark:bg-gray-800 rounded-xl p-1.5 h-auto gap-2">
               <TabsTrigger
                 value="users"
                 className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
@@ -145,6 +147,14 @@ export default function AdminPage() {
                 <span className="hidden sm:inline">{translations.tourManagement || "Tour Management"}</span>
                 <span className="sm:hidden">{translations.toursAdmin || "Tours"}</span>
               </TabsTrigger>
+              <TabsTrigger
+                value="bookings"
+                className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+              >
+                <Package className="w-5 h-5" />
+                <span className="hidden sm:inline">{translations.bookingManagement || "Bookings"}</span>
+                <span className="sm:hidden">{translations.bookings || "Bookings"}</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -159,6 +169,10 @@ export default function AdminPage() {
 
             <TabsContent value="tours" className="mt-0">
               <TourManagementTab />
+            </TabsContent>
+
+            <TabsContent value="bookings" className="mt-0">
+              <BookingManagementTab />
             </TabsContent>
           </div>
         </Tabs>

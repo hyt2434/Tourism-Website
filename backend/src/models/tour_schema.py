@@ -301,6 +301,35 @@ def create_tour_tables():
             );
         """)
         
+        # =====================================================================
+        # TOUR SELECTED SET MEALS TABLE (Selected restaurant set meals for tours)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS tour_selected_set_meals (
+                id SERIAL PRIMARY KEY,
+                tour_id INTEGER NOT NULL REFERENCES tours_admin(id) ON DELETE CASCADE,
+                set_meal_id INTEGER NOT NULL REFERENCES restaurant_set_meals(id) ON DELETE CASCADE,
+                day_number INTEGER NOT NULL,
+                meal_session VARCHAR(20) NOT NULL CHECK (meal_session IN ('morning', 'noon', 'evening')),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(tour_id, set_meal_id, day_number, meal_session)
+            );
+        """)
+        
+        # =====================================================================
+        # TOUR ROOM BOOKINGS TABLE (Track room selection and quantity)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS tour_room_bookings (
+                id SERIAL PRIMARY KEY,
+                tour_id INTEGER NOT NULL REFERENCES tours_admin(id) ON DELETE CASCADE,
+                room_id INTEGER NOT NULL REFERENCES accommodation_rooms(id) ON DELETE CASCADE,
+                quantity INTEGER NOT NULL DEFAULT 1, -- Number of rooms booked
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(tour_id, room_id)
+            );
+        """)
+        
         conn.commit()
         print("[OK] Tour tables created successfully!")
         return True

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 // import { BookingCard } from "./BookingCard";
 import { BookingPanel } from "./BookingPanel";
+import { EnhancedBookingPanel } from "./EnhancedBookingPanel";
 import ImageWithFallback from "../../figma/ImageWithFallback";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Badge } from "../ui/badge";
@@ -636,117 +637,181 @@ export default function TourDetail() {
 
               <TabsContent value="included" className="mt-6">
                 <div className="space-y-6">
-                  {/* Selected Rooms */}
-                  {tourData.selectedRooms && tourData.selectedRooms.length > 0 && (
+                  {/* Accommodation - Display detailed information */}
+                  {tourData.accommodationDetails && (
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                       <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                         <Hotel className="w-5 h-5 text-purple-500" />
-                        {translations.selectedRooms || "Phòng đã chọn"}
+                        {translations.accommodation || "Khách sạn"}
                       </h4>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        {tourData.selectedRooms.map((room) => (
-                          <div
-                            key={room.id}
-                            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
-                          >
-                            {room.image && (
-                              <img
-                                src={room.image}
-                                alt={room.name}
-                                className="w-full h-32 object-cover rounded mb-3"
-                              />
-                            )}
-                            <h5 className="font-semibold text-gray-900 dark:text-white mb-2">
-                              {room.name || room.roomType}
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h5 className="font-semibold text-gray-900 dark:text-white mb-1">
+                              {tourData.accommodationDetails.name}
                             </h5>
-                            <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                              {room.roomType && (
-                                <p>Loại: {room.roomType}</p>
-                              )}
-                              {room.maxAdults && (
-                                <p>
-                                  <Users className="w-4 h-4 inline mr-1" />
-                                  Tối đa: {room.maxAdults} người lớn
-                                  {room.maxChildren ? ` + ${room.maxChildren} trẻ em` : ''}
-                                </p>
-                              )}
-                              {room.bedType && (
-                                <p>🛏️ {room.bedType}</p>
-                              )}
-                              {room.viewType && (
-                                <p>👁️ {room.viewType}</p>
-                              )}
-                              {room.roomSize && (
-                                <p>📐 {room.roomSize}m²</p>
-                              )}
-                            </div>
-                            {room.amenities && room.amenities.length > 0 && (
-                              <div className="mt-3 flex flex-wrap gap-1">
-                                {room.amenities.slice(0, 3).map((amenity, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs">
-                                    {amenity}
-                                  </Badge>
+                            {tourData.accommodationDetails.star_rating && (
+                              <div className="flex items-center gap-1 mb-2">
+                                {[...Array(tourData.accommodationDetails.star_rating)].map((_, i) => (
+                                  <span key={i} className="text-yellow-500">⭐</span>
                                 ))}
                               </div>
                             )}
                           </div>
-                        ))}
+                        </div>
+                        {tourData.accommodationDetails.address && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 flex items-start gap-2">
+                            <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                            {tourData.accommodationDetails.address}
+                          </p>
+                        )}
+                        {tourData.accommodationDetails.description && (
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                            {tourData.accommodationDetails.description}
+                          </p>
+                        )}
+                        
+                        {/* Room Details */}
+                        {tourData.roomBookings && tourData.roomBookings.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <h6 className="font-medium text-gray-900 dark:text-white mb-3">
+                              Chi tiết phòng ({tourData.roomBookings.reduce((sum, r) => sum + r.quantity, 0)} phòng)
+                            </h6>
+                            <div className="grid md:grid-cols-2 gap-3">
+                              {tourData.roomBookings.map((room, idx) => (
+                                <div key={idx} className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
+                                  {room.image && (
+                                    <img
+                                      src={room.image}
+                                      alt={room.name}
+                                      className="w-full h-32 object-cover rounded mb-2"
+                                    />
+                                  )}
+                                  <div className="flex items-start justify-between mb-2">
+                                    <h6 className="font-medium text-sm text-gray-900 dark:text-white">
+                                      {room.name || room.roomType}
+                                    </h6>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {room.quantity} phòng
+                                    </Badge>
+                                  </div>
+                                  <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+                                    {room.bedType && (
+                                      <p>🛏️ {room.bedType}</p>
+                                    )}
+                                    {room.maxAdults && (
+                                      <p>
+                                        <Users className="w-3 h-3 inline mr-1" />
+                                        {room.maxAdults} người lớn
+                                        {room.maxChildren ? ` + ${room.maxChildren} trẻ em` : ''}
+                                      </p>
+                                    )}
+                                    {room.roomSize && (
+                                      <p>📐 {room.roomSize}m²</p>
+                                    )}
+                                    {room.viewType && (
+                                      <p>👁️ {room.viewType}</p>
+                                    )}
+                                  </div>
+                                  {room.amenities && room.amenities.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                      {room.amenities.slice(0, 3).map((amenity, i) => (
+                                        <span key={i} className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded">
+                                          {amenity}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
 
-                  {/* Selected Menu Items */}
-                  {tourData.selectedMenuItems && Object.keys(tourData.selectedMenuItems).length > 0 && (
+                  {/* Restaurants - Display set meals with details */}
+                  {tourData.selectedSetMeals && tourData.selectedSetMeals.length > 0 && (
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                       <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                         <Utensils className="w-5 h-5 text-orange-500" />
-                        {translations.selectedMenuItems || "Món ăn đã chọn"}
+                        {translations.meals || "Bữa ăn"}
                       </h4>
-                      {Object.entries(tourData.selectedMenuItems).map(([dayNumber, items]) => (
-                        <div key={dayNumber} className="mb-6 last:mb-0">
-                          <h5 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                            {translations.day || "Ngày"} {dayNumber}
-                          </h5>
-                          <div className="grid md:grid-cols-3 gap-3">
-                            {items.map((item) => (
-                              <div
-                                key={item.id}
-                                className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:shadow-md transition-shadow"
-                              >
-                                {item.image && (
-                                  <img
-                                    src={item.image}
-                                    alt={item.name}
-                                    className="w-full h-24 object-cover rounded mb-2"
-                                  />
-                                )}
-                                <h6 className="font-medium text-sm text-gray-900 dark:text-white mb-1">
-                                  {item.name}
-                                </h6>
-                                {item.description && (
-                                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
-                                    {item.description}
-                                  </p>
-                                )}
-                                <div className="flex items-center justify-end mt-2">
-                                  <div className="flex gap-1">
-                                    {item.isVegetarian && (
-                                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                                        Chay
-                                      </Badge>
-                                    )}
-                                    {item.isSpicy && (
-                                      <Badge variant="secondary" className="text-xs bg-red-100 text-red-700">
-                                        Cay
-                                      </Badge>
-                                    )}
+                      <div className="space-y-4">
+                        {/* Group by day */}
+                        {Object.entries(
+                          tourData.selectedSetMeals.reduce((acc, meal) => {
+                            if (!acc[meal.day_number]) acc[meal.day_number] = [];
+                            acc[meal.day_number].push(meal);
+                            return acc;
+                          }, {})
+                        ).map(([day, meals]) => {
+                          // Sort meals by session: morning -> noon -> evening
+                          const sessionOrder = { 'morning': 1, 'noon': 2, 'evening': 3 };
+                          const sortedMeals = [...meals].sort((a, b) => 
+                            sessionOrder[a.meal_session] - sessionOrder[b.meal_session]
+                          );
+                          
+                          return (
+                          <div key={day} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <h5 className="font-semibold text-gray-900 dark:text-white mb-3">
+                              Ngày {day}
+                            </h5>
+                            <div className="space-y-3">
+                              {sortedMeals.map((meal, idx) => (
+                                <div key={idx} className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <Badge variant="secondary" className="text-xs">
+                                          {meal.meal_session === 'morning' ? '🌅 Sáng' : 
+                                           meal.meal_session === 'noon' ? '☀️ Trưa' : 
+                                           '🌙 Tối'}
+                                        </Badge>
+                                      </div>
+                                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1">
+                                        <Utensils className="w-3 h-3" />
+                                        {meal.restaurant_name}
+                                        {meal.cuisine_type && ` • ${meal.cuisine_type}`}
+                                      </p>
+                                      {meal.set_meal_description && (
+                                        <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
+                                          {meal.set_meal_description}
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
+                                  
+                                  {/* Menu items in set meal */}
+                                  {meal.menu_items && meal.menu_items.length > 0 && (
+                                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Món ăn:
+                                      </p>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        {meal.menu_items.map((item, i) => (
+                                          <div key={i} className="text-xs text-gray-600 dark:text-gray-400">
+                                            <span className="font-medium text-gray-800 dark:text-gray-200">
+                                              • {item.name}
+                                            </span>
+                                            {item.description && (
+                                              <p className="text-gray-500 dark:text-gray-500 ml-3 line-clamp-1">
+                                                {item.description}
+                                              </p>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
@@ -1045,15 +1110,14 @@ export default function TourDetail() {
         </div>
       )}
 
-      {/* Floating Booking Panel */}
+      {/* Enhanced Booking Panel */}
       {canBook() && (
-        <BookingPanel
-          basePrice={tourData.basePrice}
+        <EnhancedBookingPanel
           isOpen={isBookingPanelOpen}
           onClose={() => setIsBookingPanelOpen(false)}
-          duration={tourData.duration}
           tourId={tourData.id}
-          availableSchedules={availableSchedules}
+          tourData={tourData}
+          basePrice={tourData.basePrice}
         />
       )}
     </div>

@@ -381,24 +381,96 @@ def create_accommodations(user_ids):
             
             acc_id = cur.fetchone()[0]
             
-            # Create rooms for each accommodation (reduced prices - 60% of original)
+            # Create rooms for each accommodation with NEW LOGIC:
+            # - At least 2 Standard rooms (2 people each) with different descriptions
+            # - At least 2 Standard Quad rooms (4 people each) with different descriptions
+            # - Each Standard room has upgrade pricing for Deluxe and Suite
+            
+            # Calculate upgrade prices (Deluxe = +30%, Suite = +80%)
+            standard_price = int(acc['min_price'] * 0.6)
+            deluxe_upgrade = int(standard_price * 0.3)
+            suite_upgrade = int(standard_price * 0.8)
+            
             rooms_data = [
-                {'name': 'Phòng Standard', 'room_type': 'Double', 'max_adults': 2, 'max_children': 1,
-                 'base_price': int(acc['min_price'] * 0.6), 'weekend_price': int(acc['min_price'] * 0.6 * 1.2), 'holiday_price': int(acc['min_price'] * 0.6 * 1.5)},
-                {'name': 'Phòng Deluxe', 'room_type': 'Double', 'max_adults': 2, 'max_children': 2,
-                 'base_price': int((acc['min_price'] + acc['max_price']) / 2 * 0.6), 'weekend_price': int((acc['min_price'] + acc['max_price']) / 2 * 0.6 * 1.2),
-                 'holiday_price': int((acc['min_price'] + acc['max_price']) / 2 * 0.6 * 1.5)},
-                {'name': 'Phòng Suite', 'room_type': 'Suite', 'max_adults': 4, 'max_children': 2,
-                 'base_price': int(acc['max_price'] * 0.6), 'weekend_price': int(acc['max_price'] * 0.6 * 1.2), 'holiday_price': int(acc['max_price'] * 0.6 * 1.5)}
+                # Standard Rooms (2 people each)
+                {
+                    'name': 'Phòng Standard Giường Đôi',
+                    'room_type': 'Standard',
+                    'bed_type': 'Double',
+                    'description': 'Phòng tiêu chuẩn với giường đôi, view thành phố, đầy đủ tiện nghi cơ bản.',
+                    'max_adults': 2,
+                    'max_children': 1,
+                    'base_price': standard_price,
+                    'weekend_price': int(standard_price * 1.2),
+                    'holiday_price': int(standard_price * 1.5),
+                    'deluxe_upgrade_price': deluxe_upgrade,
+                    'suite_upgrade_price': suite_upgrade
+                },
+                {
+                    'name': 'Phòng Standard Giường Queen',
+                    'room_type': 'Standard',
+                    'bed_type': 'Queen',
+                    'description': 'Phòng tiêu chuẩn với giường queen, không gian rộng rãi, view đẹp.',
+                    'max_adults': 2,
+                    'max_children': 1,
+                    'base_price': standard_price,
+                    'weekend_price': int(standard_price * 1.2),
+                    'holiday_price': int(standard_price * 1.5),
+                    'deluxe_upgrade_price': deluxe_upgrade,
+                    'suite_upgrade_price': suite_upgrade
+                },
+                {
+                    'name': 'Phòng Standard Giường King',
+                    'room_type': 'Standard',
+                    'bed_type': 'King',
+                    'description': 'Phòng tiêu chuẩn với giường king size, thoải mái và sang trọng.',
+                    'max_adults': 2,
+                    'max_children': 1,
+                    'base_price': int(standard_price * 1.1),
+                    'weekend_price': int(standard_price * 1.1 * 1.2),
+                    'holiday_price': int(standard_price * 1.1 * 1.5),
+                    'deluxe_upgrade_price': deluxe_upgrade,
+                    'suite_upgrade_price': suite_upgrade
+                },
+                # Standard Quad Rooms (4 people each)
+                {
+                    'name': 'Phòng Standard Quad - Family',
+                    'room_type': 'Standard Quad',
+                    'bed_type': 'Twin',
+                    'description': 'Phòng gia đình 4 người với 2 giường đôi, tiện nghi đầy đủ, phù hợp cho gia đình.',
+                    'max_adults': 4,
+                    'max_children': 2,
+                    'base_price': int(standard_price * 1.8),
+                    'weekend_price': int(standard_price * 1.8 * 1.2),
+                    'holiday_price': int(standard_price * 1.8 * 1.5),
+                    'deluxe_upgrade_price': int(deluxe_upgrade * 1.5),
+                    'suite_upgrade_price': int(suite_upgrade * 1.5)
+                },
+                {
+                    'name': 'Phòng Standard Quad - Deluxe View',
+                    'room_type': 'Standard Quad',
+                    'bed_type': 'Twin',
+                    'description': 'Phòng gia đình 4 người với view đẹp, không gian rộng, 2 giường lớn.',
+                    'max_adults': 4,
+                    'max_children': 2,
+                    'base_price': int(standard_price * 1.9),
+                    'weekend_price': int(standard_price * 1.9 * 1.2),
+                    'holiday_price': int(standard_price * 1.9 * 1.5),
+                    'deluxe_upgrade_price': int(deluxe_upgrade * 1.5),
+                    'suite_upgrade_price': int(suite_upgrade * 1.5)
+                }
             ]
             
             for room in rooms_data:
                 cur.execute("""
                     INSERT INTO accommodation_rooms
-                    (accommodation_id, name, room_type, max_adults, max_children, base_price, weekend_price, holiday_price, is_available)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE)
-                """, (acc_id, room['name'], room['room_type'], room['max_adults'], room['max_children'],
-                      room['base_price'], room['weekend_price'], room['holiday_price']))
+                    (accommodation_id, name, room_type, description, bed_type, max_adults, max_children, 
+                     base_price, weekend_price, holiday_price, deluxe_upgrade_price, suite_upgrade_price, is_available)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
+                """, (acc_id, room['name'], room['room_type'], room['description'], room['bed_type'],
+                      room['max_adults'], room['max_children'], room['base_price'], 
+                      room['weekend_price'], room['holiday_price'], 
+                      room['deluxe_upgrade_price'], room['suite_upgrade_price']))
             
             print(f"✅ Created accommodation: {acc['name']} with {len(rooms_data)} rooms")
         
@@ -1499,10 +1571,86 @@ def create_restaurants(user_ids):
                     INSERT INTO restaurant_menu_items
                     (restaurant_id, name, description, category, price, meal_types, is_available, is_popular)
                     VALUES (%s, %s, %s, %s, %s, %s::jsonb, TRUE, %s)
+                    RETURNING id
                 """, (rest_id, item['name'], item['description'], item['category'], item['price'],
                       meal_types_json, item.get('is_popular', False)))
+                item['id'] = cur.fetchone()[0]
             
-            print(f"✅ Created restaurant: {rest['name']} with {len(menu_items)} menu items")
+            # Create set meals for each session (morning, noon, evening)
+            # Each set meal contains multiple dishes and is for 2 people
+            set_meals = []
+            
+            # Morning set meals (if restaurant has breakfast items)
+            morning_items = [item for item in menu_items if item.get('meal_types', {}).get('breakfast', False)]
+            if len(morning_items) >= 2:
+                set_meals.append({
+                    'name': 'Set Sáng Đặc Biệt',
+                    'description': 'Set ăn sáng đầy đủ cho 2 người',
+                    'meal_session': 'morning',
+                    'item_ids': [item['id'] for item in morning_items[:3]]  # Take first 3 items
+                })
+            
+            # Noon set meals (lunch)
+            noon_items = [item for item in menu_items if item.get('meal_types', {}).get('lunch', False)]
+            if len(noon_items) >= 2:
+                # Create 2 different noon sets
+                set_meals.append({
+                    'name': 'Set Trưa A',
+                    'description': 'Set ăn trưa phong phú cho 2 người',
+                    'meal_session': 'noon',
+                    'item_ids': [item['id'] for item in noon_items[:3]]  # Take first 3 items
+                })
+                if len(noon_items) >= 4:
+                    set_meals.append({
+                        'name': 'Set Trưa B',
+                        'description': 'Set ăn trưa đa dạng cho 2 người',
+                        'meal_session': 'noon',
+                        'item_ids': [item['id'] for item in noon_items[1:4]]  # Take items 2-4
+                    })
+            
+            # Evening set meals (dinner)
+            evening_items = [item for item in menu_items if item.get('meal_types', {}).get('dinner', False)]
+            if len(evening_items) >= 2:
+                # Create 2 different evening sets
+                set_meals.append({
+                    'name': 'Set Tối A',
+                    'description': 'Set ăn tối thịnh soạn cho 2 người',
+                    'meal_session': 'evening',
+                    'item_ids': [item['id'] for item in evening_items[:3]]  # Take first 3 items
+                })
+                if len(evening_items) >= 4:
+                    set_meals.append({
+                        'name': 'Set Tối B',
+                        'description': 'Set ăn tối hấp dẫn cho 2 người',
+                        'meal_session': 'evening',
+                        'item_ids': [item['id'] for item in evening_items[1:4]]  # Take items 2-4
+                    })
+            
+            # Insert set meals
+            for set_meal in set_meals:
+                # Calculate total price from menu items
+                total_price = sum(menu_items[i-1]['price'] for i in range(len(menu_items)) 
+                                if menu_items[i].get('id') in set_meal['item_ids'])
+                
+                cur.execute("""
+                    INSERT INTO restaurant_set_meals
+                    (restaurant_id, name, description, meal_session, total_price, currency, is_available)
+                    VALUES (%s, %s, %s, %s, %s, 'VND', TRUE)
+                    RETURNING id
+                """, (rest_id, set_meal['name'], set_meal['description'], 
+                      set_meal['meal_session'], total_price))
+                
+                set_meal_id = cur.fetchone()[0]
+                
+                # Link menu items to this set meal
+                for item_id in set_meal['item_ids']:
+                    cur.execute("""
+                        INSERT INTO restaurant_set_meal_items (set_meal_id, menu_item_id)
+                        VALUES (%s, %s)
+                        ON CONFLICT DO NOTHING
+                    """, (set_meal_id, item_id))
+            
+            print(f"✅ Created restaurant: {rest['name']} with {len(menu_items)} menu items and {len(set_meals)} set meals")
         
         conn.commit()
         print(f"\n✅ Created {len(restaurants)} restaurants successfully!")
@@ -2283,6 +2431,64 @@ def _validate_tour_services(cur, destination_city_id, departure_city_id, num_day
     
     return (accommodation_id, restaurant_ids, transportation_id)
 
+def _calculate_tour_price(cur, tour_id, num_days, number_of_members):
+    """Calculate tour price based on actual services"""
+    accommodation_cost = 0
+    restaurant_cost = 0
+    transportation_cost = 0
+    
+    # Calculate number of nights (days - 1, minimum 1)
+    num_nights = max(1, num_days - 1)
+    
+    # Get accommodation cost from room bookings
+    cur.execute("""
+        SELECT ar.base_price, ar.bed_type, trb.quantity
+        FROM tour_room_bookings trb
+        JOIN accommodation_rooms ar ON trb.room_id = ar.id
+        WHERE trb.tour_id = %s
+    """, (tour_id,))
+    room_bookings = cur.fetchall()
+    
+    for base_price, bed_type, quantity in room_bookings:
+        if base_price:
+            # Cost = base_price × quantity × num_nights
+            accommodation_cost += float(base_price) * quantity * num_nights
+    
+    # Get restaurant cost from selected set meals
+    cur.execute("""
+        SELECT rsm.total_price
+        FROM tour_selected_set_meals tssm
+        JOIN restaurant_set_meals rsm ON tssm.set_meal_id = rsm.id
+        WHERE tssm.tour_id = %s
+    """, (tour_id,))
+    set_meal_prices = cur.fetchall()
+    
+    # Each set meal is for 2 people, multiply by number of meals needed
+    meals_needed = (number_of_members + 1) // 2  # Ceiling division
+    for price_tuple in set_meal_prices:
+        if price_tuple[0]:
+            restaurant_cost += float(price_tuple[0]) * meals_needed
+    
+    # Get transportation cost
+    cur.execute("""
+        SELECT ts.base_price
+        FROM tour_services tsv
+        JOIN transportation_services ts ON tsv.transportation_id = ts.id
+        WHERE tsv.tour_id = %s AND tsv.service_type = 'transportation'
+    """, (tour_id,))
+    trans_result = cur.fetchone()
+    
+    if trans_result and trans_result[0]:
+        # Transportation cost per person, multiply by members, round trip
+        price_per_person = float(trans_result[0])
+        transportation_cost = price_per_person * number_of_members * 2
+    
+    # Calculate total and round to nearest 10,000
+    total_price = accommodation_cost + restaurant_cost + transportation_cost
+    total_price = round(total_price / 10000) * 10000
+    
+    return max(total_price, 100000)  # Minimum 100,000 VND
+
 def _create_tour_itinerary_and_services(cur, tour_id, num_days, destination_city_id, departure_city_id, number_of_members):
     """Create daily itinerary, time checkpoints, and link services for a tour"""
     try:
@@ -2682,61 +2888,50 @@ def _create_tour_itinerary_and_services(cur, tour_id, num_days, destination_city
         
         # Link accommodation (one for the whole trip)
         if accommodation_id:
-            # Select enough rooms to accommodate all members
-            # Get all available rooms with their capacity
+            # Select ONE Standard room type and set quantity based on members
             cur.execute("""
-                SELECT id, max_adults, max_children, base_price 
+                SELECT id, room_type, base_price 
                 FROM accommodation_rooms 
-                WHERE accommodation_id = %s AND is_available = TRUE
-                ORDER BY base_price ASC
+                WHERE accommodation_id = %s AND is_available = TRUE AND room_type = 'Standard'
+                ORDER BY bed_type = 'Double' DESC, base_price ASC
+                LIMIT 1
             """, (accommodation_id,))
-            all_rooms = cur.fetchall()
+            room = cur.fetchone()
             
-            if not all_rooms:
-                print(f"   ⚠️  Warning: No available rooms for accommodation {accommodation_id}")
+            if not room:
+                print(f"   ⚠️  Warning: No Standard rooms available for accommodation {accommodation_id}")
             else:
-                # Select rooms to accommodate all members
-                selected_rooms = []
-                total_capacity = 0
-                total_cost = 0
+                room_id, room_type, base_price = room
                 
-                for room in all_rooms:
-                    room_id, max_adults, max_children, base_price = room
-                    room_capacity = max_adults + max_children
-                    
-                    if total_capacity < number_of_members:
-                        selected_rooms.append((room_id, base_price, room_capacity))
-                        total_capacity += room_capacity
-                        # Calculate cost per room: base_price * num_days, but cap at reasonable limit
-                        room_cost = float(base_price) * num_days
-                        # Cap individual room cost to prevent overflow (max 99,999,999.99)
-                        if room_cost > 99999999.99:
-                            room_cost = 99999999.99
-                        total_cost += room_cost
-                    
-                    if total_capacity >= number_of_members:
-                        break
+                # Calculate quantity needed: Standard = 2 people per room, Standard Quad = 4 people per room
+                people_per_room = 4 if room_type == 'Standard Quad' else 2
+                quantity = (number_of_members + people_per_room - 1) // people_per_room  # Ceiling division
                 
-                if total_capacity < number_of_members:
-                    print(f"   ⚠️  Warning: Not enough room capacity for {number_of_members} members. Selected {total_capacity} capacity.")
+                # Ensure we have at least 1 room
+                if quantity < 1:
+                    quantity = 1
                 
-                # Insert accommodation service with total cost (cap to prevent overflow)
-                service_cost = min(total_cost, 99999999.99)
+                print(f"   📊 Calculating rooms: {number_of_members} people ÷ {people_per_room} people/room = {quantity} rooms")
+                
+                # Insert room booking with quantity
+                cur.execute("""
+                    INSERT INTO tour_room_bookings (tour_id, room_id, quantity)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (tour_id, room_id) DO UPDATE SET quantity = EXCLUDED.quantity
+                """, (tour_id, room_id, quantity))
+                
+                # Calculate total accommodation cost
+                service_cost = float(base_price) * quantity * num_days
+                service_cost = min(service_cost, 99999999.99)  # Cap to prevent overflow
+                
+                # Insert accommodation service with total cost
                 cur.execute("""
                     INSERT INTO tour_services
                     (tour_id, service_type, accommodation_id, service_cost)
                     VALUES (%s, 'accommodation', %s, %s)
                 """, (tour_id, accommodation_id, service_cost))
                 
-                # Insert selected rooms
-                for room_id, _, _ in selected_rooms:
-                    cur.execute("""
-                        INSERT INTO tour_selected_rooms (tour_id, room_id)
-                        VALUES (%s, %s)
-                        ON CONFLICT (tour_id, room_id) DO NOTHING
-                    """, (tour_id, room_id))
-                
-                print(f"   ✓ Selected {len(selected_rooms)} room(s) with total capacity {total_capacity} for {number_of_members} members")
+                print(f"   ✓ Booked {quantity} {room_type} room(s) for {number_of_members} members ({people_per_room} people/room)")
         else:
             print(f"   ⚠️  Warning: No accommodation found for tour {tour_id}")
         
@@ -2756,7 +2951,7 @@ def _create_tour_itinerary_and_services(cur, tour_id, num_days, destination_city
         else:
             print(f"   ⚠️  Warning: No transportation found for tour {tour_id}")
         
-        # Select menu items for each day - only if restaurant is assigned for that day
+        # Select set meals for each day and session - only if restaurant is assigned for that day
         for day_num in range(1, num_days + 1):
             # Get the restaurant assigned for this day
             cur.execute("""
@@ -2776,25 +2971,34 @@ def _create_tour_itinerary_and_services(cur, tour_id, num_days, destination_city
                 rest_name_result = cur.fetchone()
                 rest_name = rest_name_result[0] if rest_name_result else f"Restaurant {restaurant_id}"
                 
-                cur.execute("""
-                    SELECT id FROM restaurant_menu_items 
-                    WHERE restaurant_id = %s AND is_available = TRUE 
-                    LIMIT 2
-                """, (restaurant_id,))
-                menu_item_ids = [row[0] for row in cur.fetchall()]
+                # Get set meals for each session (morning, noon, evening)
+                sessions = ['morning', 'noon', 'evening']
+                selected_count = 0
                 
-                if menu_item_ids:
-                    for menu_item_id in menu_item_ids:
+                for session in sessions:
+                    cur.execute("""
+                        SELECT id FROM restaurant_set_meals 
+                        WHERE restaurant_id = %s AND meal_session = %s AND is_available = TRUE 
+                        ORDER BY RANDOM()
+                        LIMIT 1
+                    """, (restaurant_id, session))
+                    set_meal = cur.fetchone()
+                    
+                    if set_meal:
+                        set_meal_id = set_meal[0]
                         cur.execute("""
-                            INSERT INTO tour_selected_menu_items (tour_id, menu_item_id, day_number)
-                            VALUES (%s, %s, %s)
-                            ON CONFLICT (tour_id, menu_item_id, day_number) DO NOTHING
-                        """, (tour_id, menu_item_id, day_num))
-                    print(f"   ✓ Selected {len(menu_item_ids)} menu items from {rest_name} for day {day_num}")
+                            INSERT INTO tour_selected_set_meals (tour_id, set_meal_id, day_number, meal_session)
+                            VALUES (%s, %s, %s, %s)
+                            ON CONFLICT (tour_id, set_meal_id, day_number, meal_session) DO NOTHING
+                        """, (tour_id, set_meal_id, day_num, session))
+                        selected_count += 1
+                
+                if selected_count > 0:
+                    print(f"   ✓ Selected {selected_count} set meal(s) from {rest_name} for day {day_num}")
                 else:
-                    print(f"   ⚠️  Warning: No menu items available for restaurant {rest_name} (ID: {restaurant_id}) on day {day_num}")
+                    print(f"   ⚠️  Warning: No set meals available for restaurant {rest_name} (ID: {restaurant_id}) on day {day_num}")
             else:
-                print(f"   ⚠️  Warning: No restaurant assigned for day {day_num}, skipping menu items")
+                print(f"   ⚠️  Warning: No restaurant assigned for day {day_num}, skipping set meals")
         
     except Exception as e:
         print(f"   ⚠️  Warning: Could not create itinerary/services for tour {tour_id}: {e}")
@@ -2853,7 +3057,7 @@ def create_tours(user_ids):
                 'description': 'Khám phá Đà Lạt với khí hậu mát mẻ, cảnh quan đẹp như tranh. Tham quan Hồ Xuân Hương, Thung lũng Tình Yêu, Vườn hoa, Đồi chè Cầu Đất.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Lâm Đồng',
-                'number_of_members': 8,
+                'number_of_members': 12,
                 'total_price': 6000000
             },
             {
@@ -2862,7 +3066,7 @@ def create_tours(user_ids):
                 'description': 'Nghỉ dưỡng tại Nha Trang với bãi biển đẹp, nước trong xanh. Tham quan Vinpearl, Đảo Hòn Mun, Tháp Bà Ponagar, tắm biển, lặn biển.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Khánh Hòa',
-                'number_of_members': 8,
+                'number_of_members': 12,  # 6 rooms × 2 people
                 'total_price': 4500000
             },
             {
@@ -2871,7 +3075,7 @@ def create_tours(user_ids):
                 'description': 'Tham quan Cố đô Huế với các di tích lịch sử: Đại Nội, Lăng Tự Đức, Chùa Thiên Mụ, Sông Hương. Thưởng thức ẩm thực cung đình.',
                 'departure_city': 'Đà Nẵng',
                 'destination_city': 'Thừa Thiên Huế',
-                'number_of_members': 6,
+                'number_of_members': 8,
                 'total_price': 2500000
             },
             {
@@ -2889,7 +3093,7 @@ def create_tours(user_ids):
                 'description': 'Nghỉ dưỡng tại Mũi Né với đồi cát đỏ, bãi biển đẹp. Tham quan Suối Tiên, Làng chài, thưởng thức hải sản tươi sống.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Bình Thuận',
-                'number_of_members': 8,
+                'number_of_members': 10,
                 'total_price': 2800000
             },
             {
@@ -2898,7 +3102,7 @@ def create_tours(user_ids):
                 'description': 'Khám phá miền Tây sông nước. Đi chợ nổi Cái Răng, vườn trái cây, làng nghề, thưởng thức đặc sản miền Tây.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Cần Thơ',
-                'number_of_members': 8,
+                'number_of_members': 12,
                 'total_price': 2000000
             },
             {
@@ -2916,7 +3120,7 @@ def create_tours(user_ids):
                 'description': 'Tham quan Ninh Bình với cảnh quan non nước hữu tình. Đi thuyền Tam Cốc, thăm Chùa Bái Đính, Tràng An, Hang Múa.',
                 'departure_city': 'Hà Nội',
                 'destination_city': 'Ninh Bình',
-                'number_of_members': 6,
+                'number_of_members': 8,
                 'total_price': 1800000
             },
             {
@@ -2925,7 +3129,7 @@ def create_tours(user_ids):
                 'description': 'Khám phá Đà Nẵng và Bà Nà Hills. Đi cáp treo, tham quan Cầu Vàng, Làng Pháp, tắm biển Mỹ Khê, thưởng thức ẩm thực địa phương.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Đà Nẵng',
-                'number_of_members': 10,
+                'number_of_members': 6,
                 'total_price': 3200000
             },
             {
@@ -2934,7 +3138,7 @@ def create_tours(user_ids):
                 'description': 'Khám phá Cao Bằng với cảnh quan núi non hùng vĩ. Tham quan Thác Bản Giốc, Động Ngườm Ngao, Pác Bó, văn hóa dân tộc đặc sắc.',
                 'departure_city': 'Hà Nội',
                 'destination_city': 'Cao Bằng',
-                'number_of_members': 6,
+                'number_of_members': 10,
                 'total_price': 4500000
             }
         ]
@@ -2981,6 +3185,14 @@ def create_tours(user_ids):
                 
                 # Create daily itinerary and services for this tour
                 _create_tour_itinerary_and_services(cur, tour_id, num_days, dest_city_id, dep_city_id, tour['number_of_members'])
+                
+                # Calculate actual price based on services
+                actual_price = _calculate_tour_price(cur, tour_id, num_days, tour['number_of_members'])
+                
+                # Update tour with calculated price
+                cur.execute("""
+                    UPDATE tours_admin SET total_price = %s WHERE id = %s
+                """, (actual_price, tour_id))
                 
                 # Verify services were assigned
                 cur.execute("""
@@ -3387,12 +3599,12 @@ def main():
     user_ids = create_users()
     print()
     
-    # Create partner services
+    # Create partner services FIRST (tours need these to be available)
     print("🏨 Creating accommodation services...")
     create_accommodations(user_ids)
     print()
     
-    print("🍽️  Creating restaurant services...")
+    print("🍽️  Creating restaurant services (with set meals)...")
     create_restaurants(user_ids)
     print()
     
@@ -3400,8 +3612,8 @@ def main():
     create_transportation(user_ids)
     print()
     
-    # Create tours
-    print("🗺️  Creating tours...")
+    # Create tours AFTER services are ready
+    print("🗺️  Creating tours (linking to services and set meals)...")
     create_tours(user_ids)
     print()
     

@@ -348,6 +348,49 @@ export default function ViewBookings() {
                         </div>
                       )}
 
+                      {/* Revenue Breakdown */}
+                      {booking.service_revenue !== undefined && (
+                        <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                          <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                            <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                            {t.revenueBreakdown || 'Revenue Breakdown'}
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                {t.bookingTotal || 'Booking Total'}
+                              </p>
+                              <p className="text-lg font-bold text-gray-900 dark:text-white">
+                                {formatPrice(booking.total_price || 0)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                {t.partnerPool || 'Partner Pool (90%)'}
+                              </p>
+                              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                {formatPrice(booking.partner_pool || 0)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                {t.yourRevenue || 'Your Revenue'}
+                              </p>
+                              <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                                {formatPrice(booking.service_revenue || 0)}
+                              </p>
+                            </div>
+                          </div>
+                          {booking.partner_service_cost !== undefined && booking.total_service_costs > 0 && (
+                            <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800">
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                {t.revenueCalculation || 'Calculation'}: {formatPrice(booking.partner_pool || 0)} × ({formatPrice(booking.partner_service_cost)} / {formatPrice(booking.total_service_costs)}) = {formatPrice(booking.service_revenue || 0)}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Booking Date */}
                       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <p className="text-xs text-gray-500 dark:text-gray-400">

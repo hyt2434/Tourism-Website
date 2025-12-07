@@ -10,8 +10,12 @@ const RestaurantManagement = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showMenuForm, setShowMenuForm] = useState(false);
+  const [showSetMealForm, setShowSetMealForm] = useState(false);
   const [selectedMenuItem, setSelectedMenuItem] = useState(null);
+  const [selectedSetMeal, setSelectedSetMeal] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
+  const [setMeals, setSetMeals] = useState([]);
+  const [viewMode, setViewMode] = useState('menu'); // 'menu' or 'setMeals'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -41,6 +45,13 @@ const RestaurantManagement = () => {
       dinner: false,
     },
     images: [],
+  });
+
+  const [setMealFormData, setSetMealFormData] = useState({
+    name: '',
+    description: '',
+    mealSession: 'noon',
+    menuItemIds: [],
   });
 
   useEffect(() => {
@@ -234,8 +245,71 @@ const RestaurantManagement = () => {
   };
 
   const removeMenuImage = (index) => {
-    const updatedImages = menuFormData.images.filter((_, i) => i !== index);
-    setMenuFormData({ ...menuFormData, images: updatedImages });
+    const newImages = menuFormData.images.filter((_, i) => i !== index);
+    setMenuFormData({ ...menuFormData, images: newImages });
+  };
+
+  // Set Meal Management Functions
+  const loadSetMeals = async (restaurantId) => {
+    try {
+      const data = await restaurantAPI.setMeals.getAll(restaurantId);
+      setSetMeals(data);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSetMealSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (!selectedRestaurant) return;
+      
+      if (selectedSetMeal) {
+        await restaurantAPI.setMeals.update(selectedRestaurant.id, selectedSetMeal.id, setMealFormData);
+      } else {
+        await restaurantAPI.setMeals.create(selectedRestaurant.id, setMealFormData);
+      }
+      
+      setShowSetMealForm(false);
+      setSelectedSetMeal(null);
+      resetSetMealForm();
+      loadSetMeals(selectedRestaurant.id);
+      alert('Set meal saved successfully');
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  };
+
+  const handleSetMealDelete = async (setMealId) => {
+    if (!confirm('Are you sure you want to delete this set meal?')) return;
+    try {
+      await restaurantAPI.setMeals.delete(selectedRestaurant.id, setMealId);
+      loadSetMeals(selectedRestaurant.id);
+      alert('Set meal deleted successfully');
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSetMealEdit = (setMeal) => {
+    setSelectedSetMeal(setMeal);
+    setSetMealFormData({
+      name: setMeal.name,
+      description: setMeal.description || '',
+      mealSession: setMeal.mealSession || 'noon',
+      menuItemIds: setMeal.menuItems?.map(item => item.id) || [],
+    });
+    setShowSetMealForm(true);
+  };
+
+  const resetSetMealForm = () => {
+    setSelectedSetMeal(null);
+    setSetMealFormData({
+      name: '',
+      description: '',
+      mealSession: 'noon',
+      menuItemIds: [],
+    });
   };
 
   const cuisineTypes = ['vietnamese', 'chinese', 'japanese', 'korean', 'italian', 'french', 'thai', 'indian', 'western', 'seafood'];
@@ -290,11 +364,13 @@ const RestaurantManagement = () => {
                 <button
                   onClick={() => {
                     setSelectedRestaurant(restaurant);
+                    setViewMode('menu');
                     loadMenuItems(restaurant.id);
+                    loadSetMeals(restaurant.id);
                   }}
                   className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
                 >
-                  {t.serviceManagement.menuItems}
+                  Manage Menu
                 </button>
                 <button
                   onClick={() => handleDelete(restaurant.id)}
@@ -433,28 +509,59 @@ const RestaurantManagement = () => {
         </div>
       )}
 
-      {/* Menu Items Modal */}
+      {/* Menu Management Modal with Tabs */}
       {selectedRestaurant && !showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6">
+          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">{t.serviceManagement.menuItems} - {selectedRestaurant.name}</h3>
+              <h3 className="text-xl font-bold">Menu Management - {selectedRestaurant.name}</h3>
               <button
-                onClick={() => setSelectedRestaurant(null)}
+                onClick={() => {
+                  setSelectedRestaurant(null);
+                  setViewMode('menu');
+                }}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
                 ×
               </button>
             </div>
-            <button
-              onClick={() => setShowMenuForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700"
-            >
-              {t.serviceManagement.addMenuItem}
-            </button>
-            
-            {/* Menu Item List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+            {/* Tabs */}
+            <div className="flex border-b mb-4">
+              <button
+                onClick={() => setViewMode('menu')}
+                className={`px-4 py-2 font-medium ${
+                  viewMode === 'menu'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Menu Items
+              </button>
+              <button
+                onClick={() => setViewMode('setMeals')}
+                className={`px-4 py-2 font-medium ${
+                  viewMode === 'setMeals'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Set Meals (For Tours)
+              </button>
+            </div>
+
+            {/* Menu Items View */}
+            {viewMode === 'menu' && (
+              <>
+                <button
+                  onClick={() => setShowMenuForm(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700"
+                >
+                  {t.serviceManagement.addMenuItem || 'Add Menu Item'}
+                </button>
+                
+                {/* Menu Item List */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {menuItems.map((item) => (
                 <div key={item.id} className="border rounded p-4">
                   {/* Display menu item images */}
@@ -670,6 +777,172 @@ const RestaurantManagement = () => {
                   </div>
                 </form>
               </div>
+            )}
+            </>
+            )}
+
+            {/* Set Meals View */}
+            {viewMode === 'setMeals' && (
+              <>
+                <button
+                  onClick={() => setShowSetMealForm(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700"
+                >
+                  Add Set Meal
+                </button>
+
+                {/* Set Meal List */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {setMeals.map((setMeal) => (
+                    <div key={setMeal.id} className="border rounded p-4 bg-gradient-to-br from-blue-50 to-white">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-lg">{setMeal.name}</h4>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          setMeal.mealSession === 'morning' ? 'bg-yellow-100 text-yellow-800' :
+                          setMeal.mealSession === 'noon' ? 'bg-orange-100 text-orange-800' :
+                          'bg-purple-100 text-purple-800'
+                        }`}>
+                          {setMeal.mealSession === 'morning' ? 'Breakfast' : 
+                           setMeal.mealSession === 'noon' ? 'Lunch' : 'Dinner'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">{setMeal.description}</p>
+                      <div className="bg-white rounded p-2 mb-3">
+                        <p className="text-xs font-medium text-gray-500 mb-1">Includes:</p>
+                        <ul className="text-sm space-y-1">
+                          {setMeal.menuItems && setMeal.menuItems.map((item) => (
+                            <li key={item.id} className="flex justify-between">
+                              <span>• {item.name}</span>
+                              <span className="text-gray-500 text-xs">{item.price?.toLocaleString()} VND</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <p className="text-lg font-bold text-green-600 mb-2">
+                        {setMeal.totalPrice?.toLocaleString()} VND
+                        <span className="text-xs text-gray-500 font-normal"> (for 2 people)</span>
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleSetMealEdit(setMeal)}
+                          className="flex-1 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleSetMealDelete(setMeal.id)}
+                          className="flex-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Set Meal Form */}
+                {showSetMealForm && (
+                  <div className="mt-6 border-t pt-4">
+                    <h4 className="font-bold mb-3">
+                      {selectedSetMeal ? 'Edit Set Meal' : 'Create New Set Meal'}
+                    </h4>
+                    <form onSubmit={handleSetMealSubmit}>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Set Meal Name *</label>
+                          <input
+                            type="text"
+                            value={setMealFormData.name}
+                            onChange={(e) => setSetMealFormData({ ...setMealFormData, name: e.target.value })}
+                            className="w-full border rounded px-3 py-2"
+                            required
+                            placeholder="e.g., Set Trưa A, Breakfast Combo"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Meal Session *</label>
+                          <select
+                            value={setMealFormData.mealSession}
+                            onChange={(e) => setSetMealFormData({ ...setMealFormData, mealSession: e.target.value })}
+                            className="w-full border rounded px-3 py-2"
+                            required
+                          >
+                            <option value="morning">Morning (Breakfast)</option>
+                            <option value="noon">Noon (Lunch)</option>
+                            <option value="evening">Evening (Dinner)</option>
+                          </select>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-medium mb-1">Description</label>
+                          <textarea
+                            value={setMealFormData.description}
+                            onChange={(e) => setSetMealFormData({ ...setMealFormData, description: e.target.value })}
+                            className="w-full border rounded px-3 py-2"
+                            rows="2"
+                            placeholder="Describe the set meal..."
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-sm font-medium mb-2">Select Dishes for this Set *</label>
+                          <div className="border rounded p-3 max-h-60 overflow-y-auto bg-gray-50">
+                            {menuItems.length === 0 ? (
+                              <p className="text-gray-500 text-sm">No menu items available. Please create menu items first.</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {menuItems.map((item) => (
+                                  <label key={item.id} className="flex items-start gap-2 p-2 hover:bg-white rounded cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={setMealFormData.menuItemIds.includes(item.id)}
+                                      onChange={(e) => {
+                                        const newIds = e.target.checked
+                                          ? [...setMealFormData.menuItemIds, item.id]
+                                          : setMealFormData.menuItemIds.filter(id => id !== item.id);
+                                        setSetMealFormData({ ...setMealFormData, menuItemIds: newIds });
+                                      }}
+                                      className="mt-1"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="font-medium text-sm">{item.name}</div>
+                                      <div className="text-xs text-gray-500">{item.category} - {item.price?.toLocaleString()} VND</div>
+                                    </div>
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Selected: {setMealFormData.menuItemIds.length} dish(es). 
+                            Total: {menuItems
+                              .filter(item => setMealFormData.menuItemIds.includes(item.id))
+                              .reduce((sum, item) => sum + (item.price || 0), 0)
+                              .toLocaleString()} VND (for 2 people)
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-4">
+                        <button 
+                          type="submit" 
+                          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                          disabled={setMealFormData.menuItemIds.length === 0}
+                        >
+                          Save Set Meal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowSetMealForm(false);
+                            resetSetMealForm();
+                          }}
+                          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

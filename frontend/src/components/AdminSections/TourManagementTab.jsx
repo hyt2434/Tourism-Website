@@ -131,11 +131,12 @@ export default function TourManagementTab() {
   
   const [selectedAccommodationRooms, setSelectedAccommodationRooms] = useState([]);
   const [selectedRestaurantMenus, setSelectedRestaurantMenus] = useState({}); // dayNumber -> menu items
+  const [selectedRestaurantSetMeals, setSelectedRestaurantSetMeals] = useState({}); // restaurantId -> set meals array
   const [loadingServiceDetails, setLoadingServiceDetails] = useState(false);
   
   // State for selected items (persists across tab switches)
-  const [selectedRoomIds, setSelectedRoomIds] = useState([]);
-  const [selectedMenuItemIds, setSelectedMenuItemIds] = useState({}); // dayNumber -> array of item IDs
+  const [roomBooking, setRoomBooking] = useState({ room_id: null, quantity: 1 }); // Single room + quantity
+  const [selectedSetMeals, setSelectedSetMeals] = useState([]); // Array of {set_meal_id, day_number, meal_session}
 
   // Form state
   const [formData, setFormData] = useState({
@@ -193,35 +194,31 @@ export default function TourManagementTab() {
     }
   }, [formData.destination_city_id, formData.departure_city_id]);
 
-  // Auto-calculate number of members from selected rooms
+  // Auto-calculate number of members from room booking
   useEffect(() => {
-    if (selectedRoomIds.length > 0 && selectedAccommodationRooms.length > 0) {
-      let totalMembers = 0;
-      selectedRoomIds.forEach(roomId => {
-        const room = selectedAccommodationRooms.find(r => r.id === roomId);
-        if (room) {
-          // 1 adult = 1 person, 2 children = 1 person
-          const adults = room.maxAdults || 0;
-          const children = room.maxChildren || 0;
-          totalMembers += adults + Math.floor(children / 2);
-        }
-      });
+    if (roomBooking.room_id && roomBooking.quantity > 0 && selectedAccommodationRooms.length > 0) {
+      const room = selectedAccommodationRooms.find(r => r.id === roomBooking.room_id);
+      if (room) {
+        // Standard room = 2 people, Standard Quad = 4 people
+        const peoplePerRoom = room.roomType === 'Standard Quad' ? 4 : 2;
+        const totalMembers = peoplePerRoom * roomBooking.quantity;
 
-      if (totalMembers !== formData.number_of_members) {
-        console.log(`Auto-calculating members: ${totalMembers} from ${selectedRoomIds.length} rooms`);
-        setFormData(prev => ({
-          ...prev,
-          number_of_members: totalMembers
-        }));
+        if (totalMembers !== formData.number_of_members) {
+          console.log(`Auto-calculating members: ${totalMembers} from ${roomBooking.quantity} rooms`);
+          setFormData(prev => ({
+            ...prev,
+            number_of_members: totalMembers
+          }));
+        }
       }
-    } else if (selectedRoomIds.length === 0 && formData.number_of_members !== 0) {
-      // Reset to 0 when no rooms selected
+    } else if (!roomBooking.room_id && formData.number_of_members !== 0) {
+      // Reset to 0 when no room selected
       setFormData(prev => ({
         ...prev,
         number_of_members: 0
       }));
     }
-  }, [selectedRoomIds, selectedAccommodationRooms, formData.number_of_members]);
+  }, [roomBooking, selectedAccommodationRooms, formData.number_of_members]);
 
   // Scroll to top when creating, editing, or canceling tour form
   useEffect(() => {
@@ -231,17 +228,16 @@ export default function TourManagementTab() {
   useEffect(() => {
     console.log('Services changed, triggering price calculation');
     console.log('Current services:', formData.services);
-    console.log('Selected rooms:', selectedRoomIds);
-    console.log('Selected menu items:', selectedMenuItemIds);
+    console.log('Room booking:', roomBooking);
+    console.log('Selected set meals:', selectedSetMeals);
     
-    // Calculate if we have any services selected OR any room/menu selections
-    const hasAccommodationWithRooms = formData.services?.accommodation && selectedRoomIds.length > 0;
-    const hasRestaurantsWithMenus = formData.services?.restaurants?.length > 0 && 
-      Object.keys(selectedMenuItemIds).some(day => selectedMenuItemIds[day]?.length > 0);
+    // Calculate if we have any services selected OR any room/meal selections
+    const hasAccommodationWithRoom = formData.services?.accommodation && roomBooking.room_id && roomBooking.quantity > 0;
+    const hasRestaurantsWithSetMeals = formData.services?.restaurants?.length > 0 && selectedSetMeals.length > 0;
     const hasTransportation = formData.services?.transportation;
     
-    // Calculate if ANY service is selected (even without room/menu details)
-    const hasAnyService = hasAccommodationWithRooms || hasRestaurantsWithMenus || hasTransportation;
+    // Calculate if ANY service is selected (even without room/set meal details)
+    const hasAnyService = hasAccommodationWithRoom || hasRestaurantsWithSetMeals || hasTransportation;
     
     if (hasAnyService) {
       calculatePrice();
@@ -252,8 +248,8 @@ export default function TourManagementTab() {
     }
   }, [
     JSON.stringify(formData.services),
-    JSON.stringify(selectedRoomIds),
-    JSON.stringify(selectedMenuItemIds)
+    JSON.stringify(roomBooking),
+    JSON.stringify(selectedSetMeals)
   ]);
 
   const loadTours = async (page = 1, search = '') => {
@@ -390,21 +386,69 @@ export default function TourManagementTab() {
     }
   };
 
-  const calculatePrice = async () => {
+  const loadRestaurantSetMeals = async (restaurantId, dayNumber) => {
+    setLoadingServiceDetails(true);
     try {
-      console.log('Calculating price for services:', formData.services);
-      console.log('With selected rooms:', selectedRoomIds);
-      console.log('With selected menu items:', selectedMenuItemIds);
-      console.log('Duration:', formData.duration);
-      console.log('Number of members:', formData.number_of_members);
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const userId = user?.id || '';
+      const userEmail = user?.email || '';
+      
+      console.log('Loading set meals for restaurant:', restaurantId);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/tours/restaurants/${restaurantId}/set-meals`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-ID': userId,
+          'X-User-Email': userEmail
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to load set meals');
+      }
+      
+      const data = await response.json();
+      console.log('Set meals data:', data);
+      setSelectedRestaurantSetMeals(prev => ({
+        ...prev,
+        [restaurantId]: data || []
+      }));
+    } catch (error) {
+      console.error('Error loading restaurant set meals:', error);
+      alert('Failed to load restaurant set meals: ' + error.message);
+    } finally {
+      setLoadingServiceDetails(false);
+    }
+  };
+
+  const calculatePrice = async (overrideData = null) => {
+    try {
+      // Use override data if provided (for handleEdit), otherwise use current state
+      const services = overrideData?.services || formData.services;
+      const roomBookingData = overrideData?.roomBooking || roomBooking;
+      const setMealsData = overrideData?.selectedSetMeals || selectedSetMeals;
+      const duration = overrideData?.duration || formData.duration;
+      const members = overrideData?.number_of_members || formData.number_of_members;
+      
+      console.log('Calculating price for services:', services);
+      console.log('Room booking:', roomBookingData);
+      console.log('Selected set meals:', setMealsData);
+      console.log('Duration:', duration);
+      console.log('Number of members:', members);
       
       // Send all data to the API including duration for nights calculation and number of members
       const requestData = {
-        services: formData.services,
-        selectedRooms: selectedRoomIds,
-        selectedMenuItems: selectedMenuItemIds,
-        duration: formData.duration,  // Include duration to calculate number of nights
-        number_of_members: formData.number_of_members  // Include number of members for transportation pricing
+        services: services,
+        roomBookings: roomBookingData.room_id ? [{
+          room_id: roomBookingData.room_id,
+          quantity: roomBookingData.quantity
+        }] : [],
+        selectedSetMeals: setMealsData,
+        duration: duration,  // Include duration to calculate number of nights
+        number_of_members: members  // Include number of members for transportation pricing
       };
       
       console.log('Sending to API:', requestData);
@@ -440,17 +484,29 @@ export default function TourManagementTab() {
     setShowForm(false);
     setCalculatedPrice(0);
     setPriceBreakdown(null);
-    setSelectedRoomIds([]);
-    setSelectedMenuItemIds({});
+    setRoomBooking({ room_id: null, quantity: 1 });
+    setSelectedSetMeals([]);
     setSelectedAccommodationRooms([]);
     setSelectedRestaurantMenus({});
+    setSelectedRestaurantSetMeals({});
   };
 
   const handleEdit = async (tour) => {
     try {
       const detail = await getTourDetail(tour.id);
-      setEditingTour(detail);
-      setFormData({
+      
+      // Prepare room booking data
+      const roomBookingData = detail.roomBookings && detail.roomBookings.length > 0
+        ? {
+            room_id: detail.roomBookings[0].room_id,
+            quantity: detail.roomBookings[0].quantity
+          }
+        : { room_id: null, quantity: 1 };
+      
+      const setMealsData = detail.selectedSetMeals || [];
+      
+      // Prepare form data
+      const formDataToSet = {
         name: detail.name,
         duration: detail.duration,
         description: detail.description,
@@ -466,25 +522,35 @@ export default function TourManagementTab() {
           accommodation: null,
           transportation: null
         }
-      });
+      };
       
-      // Set selected rooms and menu items
-      setSelectedRoomIds(detail.selectedRooms || []);
-      setSelectedMenuItemIds(detail.selectedMenuItems || {});
+      setEditingTour(detail);
+      setFormData(formDataToSet);
+      setRoomBooking(roomBookingData);
+      setSelectedSetMeals(setMealsData);
       
       // Load room details if accommodation is selected
       if (detail.services?.accommodation?.service_id) {
         await loadAccommodationRooms(detail.services.accommodation.service_id);
       }
       
-      // Load menu details for each restaurant
+      // Load set meal details for each restaurant
       if (detail.services?.restaurants) {
         for (const restaurant of detail.services.restaurants) {
-          await loadRestaurantMenu(restaurant.service_id, restaurant.day_number);
+          await loadRestaurantSetMeals(restaurant.service_id, restaurant.day_number);
         }
       }
       
       setShowForm(true);
+      
+      // Calculate price with the loaded data immediately
+      await calculatePrice({
+        services: formDataToSet.services,
+        roomBooking: roomBookingData,
+        selectedSetMeals: setMealsData,
+        duration: formDataToSet.duration,
+        number_of_members: formDataToSet.number_of_members
+      });
     } catch (error) {
       console.error('Error loading tour details:', error);
       alert('Failed to load tour details');
@@ -716,12 +782,17 @@ export default function TourManagementTab() {
     setLoading(true);
 
     try {
-      // Prepare data with selected items
+      // Prepare data with room bookings and set meals
       const tourData = {
         ...formData,
-        selectedRooms: selectedRoomIds,
-        selectedMenuItems: selectedMenuItemIds
+        roomBookings: roomBooking.room_id ? [{
+          room_id: roomBooking.room_id,
+          quantity: roomBooking.quantity
+        }] : [],
+        selectedSetMeals: selectedSetMeals
       };
+      
+      console.log('Submitting tour data:', tourData);
       
       if (editingTour) {
         await updateTour(editingTour.id, tourData);
@@ -1130,7 +1201,7 @@ export default function TourManagementTab() {
                     <div className="space-y-2">
                       <Label htmlFor="number_of_members" className="text-sm font-medium">
                         {translations.numberOfMembers || "Number of Members"} *
-                        {selectedRoomIds.length > 0 && (
+                        {roomBooking.room_id && (
                           <span className="text-xs text-gray-500 ml-2">(Auto-calculated from rooms)</span>
                         )}
                       </Label>
@@ -1143,8 +1214,8 @@ export default function TourManagementTab() {
                         required
                         className="h-11"
                         placeholder={translations.numberOfMembersPlaceholder || "e.g., 4"}
-                        readOnly={selectedRoomIds.length > 0}
-                        disabled={selectedRoomIds.length > 0}
+                        readOnly={roomBooking.room_id !== null}
+                        disabled={roomBooking.room_id !== null}
                       />
                     </div>
                     <div className="space-y-2">
@@ -1350,17 +1421,17 @@ export default function TourManagementTab() {
                   itinerary={formData.itinerary}
                   onChange={(services) => setFormData({...formData, services})}
                   onLoadAccommodationRooms={loadAccommodationRooms}
-                  onLoadRestaurantMenu={loadRestaurantMenu}
+                  onLoadRestaurantSetMeals={loadRestaurantSetMeals}
                   selectedRooms={selectedAccommodationRooms}
-                  selectedMenus={selectedRestaurantMenus}
+                  selectedRestaurantSetMeals={selectedRestaurantSetMeals}
                   loadingDetails={loadingServiceDetails}
                   departureCityId={formData.departure_city_id}
                   destinationCityId={formData.destination_city_id}
                   cities={cities}
-                  selectedRoomIds={selectedRoomIds}
-                  setSelectedRoomIds={setSelectedRoomIds}
-                  selectedMenuItemIds={selectedMenuItemIds}
-                  setSelectedMenuItemIds={setSelectedMenuItemIds}
+                  roomBooking={roomBooking}
+                  setRoomBooking={setRoomBooking}
+                  selectedSetMeals={selectedSetMeals}
+                  setSelectedSetMeals={setSelectedSetMeals}
                   numberOfMembers={formData.number_of_members}
                 />
               ) : (
@@ -2029,17 +2100,17 @@ function ServicesEditor({
   itinerary, 
   onChange, 
   onLoadAccommodationRooms,
-  onLoadRestaurantMenu,
+  onLoadRestaurantSetMeals,
   selectedRooms,
-  selectedMenus,
+  selectedRestaurantSetMeals,
   loadingDetails,
   departureCityId,
   destinationCityId,
   cities,
-  selectedRoomIds,
-  setSelectedRoomIds,
-  selectedMenuItemIds,
-  setSelectedMenuItemIds,
+  roomBooking,
+  setRoomBooking,
+  selectedSetMeals,
+  setSelectedSetMeals,
   numberOfMembers
 }) {
   const { translations } = useLanguage();
@@ -2061,7 +2132,7 @@ function ServicesEditor({
     
     if (serviceId) {
       await onLoadAccommodationRooms(parseInt(serviceId));
-      setSelectedRoomIds([]);
+      setRoomBooking({ room_id: null, quantity: 1 });
     }
   };
   
@@ -2073,26 +2144,76 @@ function ServicesEditor({
         day_number: dayNumber,
         notes: ''
       });
-      await onLoadRestaurantMenu(parseInt(serviceId), dayNumber);
+      await onLoadRestaurantSetMeals(parseInt(serviceId), dayNumber);
+      
+      // Auto-select first set meal for each session if none selected yet
+      setTimeout(() => {
+        const restaurantSetMeals = selectedRestaurantSetMeals[parseInt(serviceId)] || [];
+        const sessions = ['morning', 'noon', 'evening'];
+        
+        sessions.forEach(session => {
+          // Check if this day+session already has a selection
+          const alreadySelected = selectedSetMeals.some(sm => 
+            sm.day_number === dayNumber && sm.meal_session === session
+          );
+          
+          if (!alreadySelected) {
+            // Find first set meal for this session
+            const firstSetMeal = restaurantSetMeals.find(sm => sm.mealSession === session);
+            if (firstSetMeal) {
+              setSelectedSetMeals(prev => [...prev, {
+                set_meal_id: firstSetMeal.id,
+                day_number: dayNumber,
+                meal_session: session
+              }]);
+            }
+          }
+        });
+      }, 500); // Wait for set meals to load
     }
     onChange({...services, restaurants: updated});
   };
   
-  const toggleRoomSelection = (roomId) => {
-    setSelectedRoomIds(prev => 
-      prev.includes(roomId) 
-        ? prev.filter(id => id !== roomId)
-        : [...prev, roomId]
-    );
+  const handleRoomSelection = (roomId) => {
+    // Find Standard Double room by default
+    const room = selectedRooms.find(r => r.id === roomId);
+    if (room) {
+      setRoomBooking({ room_id: roomId, quantity: 1 });
+    }
   };
   
-  const toggleMenuItem = (dayNumber, itemId) => {
-    setSelectedMenuItemIds(prev => ({
-      ...prev,
-      [dayNumber]: prev[dayNumber]?.includes(itemId)
-        ? prev[dayNumber].filter(id => id !== itemId)
-        : [...(prev[dayNumber] || []), itemId]
-    }));
+  const handleQuantityChange = (quantity) => {
+    setRoomBooking(prev => ({ ...prev, quantity: Math.max(1, parseInt(quantity) || 1) }));
+  };
+  
+  const toggleSetMeal = (dayNumber, mealSession, setMealId) => {
+    setSelectedSetMeals(prev => {
+      const key = `${dayNumber}-${mealSession}`;
+      const existing = prev.find(sm => sm.day_number === dayNumber && sm.meal_session === mealSession);
+      
+      if (existing && existing.set_meal_id === setMealId) {
+        // Deselect
+        return prev.filter(sm => !(sm.day_number === dayNumber && sm.meal_session === mealSession));
+      } else if (existing) {
+        // Replace
+        return prev.map(sm => 
+          sm.day_number === dayNumber && sm.meal_session === mealSession
+            ? { set_meal_id: setMealId, day_number: dayNumber, meal_session: mealSession }
+            : sm
+        );
+      } else {
+        // Add new
+        return [...prev, { set_meal_id: setMealId, day_number: dayNumber, meal_session: mealSession }];
+      }
+    });
+  };
+  
+  const isSetMealSelected = (dayNumber, mealSession, setMealId) => {
+    return selectedSetMeals.some(sm => 
+      sm.day_number === dayNumber && 
+      sm.meal_session === mealSession && 
+      sm.set_meal_id === setMealId
+    );
   };
   
   const getDepartureCityName = () => {
@@ -2102,6 +2223,11 @@ function ServicesEditor({
   const getDestinationCityName = () => {
     return cities.find(c => c.id === destinationCityId)?.name || 'Destination';
   };
+  
+  // Find default Standard Double bed room
+  const defaultRoom = selectedRooms.find(r => 
+    r.roomType === 'Standard' && r.bedType === 'Double'
+  ) || selectedRooms.find(r => r.roomType === 'Standard') || selectedRooms[0];
   
   return (
     <div className="space-y-8">
@@ -2127,55 +2253,133 @@ function ServicesEditor({
             ))}
           </select>
           
-          {/* Room Selection */}
+          {/* Room Booking - Quantity First, then auto-select Standard Double */}
           {services.accommodation && selectedRooms.length > 0 && (
             <div className="mt-6 border-t border-gray-200 pt-6">
               <h4 className="font-semibold text-lg mb-5 flex items-center gap-3">
                 <Users className="w-5 h-5 text-purple-600" />
-                {translations.availableRooms || "Available Rooms"} - {translations.selectRoomsForTour || "Select rooms for this tour"}
+                {translations.roomBooking || "Room Booking"}
               </h4>
               {loadingDetails ? (
                 <p className="text-center py-8 text-gray-500">{translations.loadingRooms || "Loading rooms..."}</p>
               ) : (
-                <div className="grid grid-cols-2 gap-6">
-                  {selectedRooms.map(room => (
-                    <div 
-                      key={room.id}
-                      className={`border-2 rounded-xl p-5 cursor-pointer transition-all ${
-                        selectedRoomIds.includes(room.id)
-                          ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg'
-                          : 'border-gray-200 hover:border-purple-300 hover:shadow-md'
-                      }`}
-                      onClick={() => toggleRoomSelection(room.id)}
-                    >
-                      {room.images && room.images.length > 0 && (
-                        <img 
-                          src={room.images[0]} 
-                          alt={room.roomType || room.name}
-                          className="w-full h-36 object-cover rounded-lg mb-4"
-                        />
-                      )}
-                      <h5 className="font-semibold text-lg mb-3">{room.roomType || room.name}</h5>
-                      <div className="space-y-2 text-sm">
-                        <p className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-purple-600" />
-                          {translations.capacity || "Capacity"}: {room.maxAdults || 0} {translations.adults || "adults"}{room.maxChildren ? ` + ${room.maxChildren} ${translations.children || "children"}` : ''}
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-green-600" />
-                          {(room.basePrice || 0).toLocaleString()} {room.currency || 'VND'}{translations.perNight || "/night"}
-                        </p>
-                        {room.bedType && (
-                          <p className="text-gray-600">🛏️ {room.bedType}</p>
-                        )}
-                      </div>
-                      {selectedRoomIds.includes(room.id) && (
-                        <div className="mt-4 bg-purple-100 rounded-lg p-2.5 text-center text-sm font-semibold text-purple-700">
-                          ✓ {translations.selected || "Selected"}
+                <div className="space-y-6">
+                  {/* Quantity Input - Primary Field */}
+                  <div>
+                    <Label className="font-medium mb-3 block">{translations.numberOfRooms || "Number of Rooms"} *</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={roomBooking.quantity}
+                      onChange={(e) => {
+                        const quantity = parseInt(e.target.value) || 1;
+                        handleQuantityChange(quantity);
+                        // Auto-select default room if not selected yet
+                        if (!roomBooking.room_id && defaultRoom) {
+                          handleRoomSelection(defaultRoom.id);
+                        }
+                      }}
+                      className="w-full h-12 text-lg font-semibold"
+                      placeholder="Enter number of rooms needed"
+                    />
+                    <p className="mt-2 text-sm text-gray-600">
+                      {translations.roomQuantityHint || "How many rooms do you need for this tour?"}
+                    </p>
+                  </div>
+                  
+                  {/* Auto-calculated participants display */}
+                  {roomBooking.quantity > 0 && roomBooking.room_id && numberOfMembers > 0 && (
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg p-4 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Users className="w-6 h-6 text-purple-600" />
+                          <div>
+                            <p className="text-sm text-gray-700 font-medium">{translations.totalParticipants || "Total Participants"}</p>
+                            <p className="text-2xl font-bold text-purple-700">{numberOfMembers} {translations.people || "people"}</p>
+                          </div>
                         </div>
-                      )}
+                        <div className="text-right text-sm text-gray-600">
+                          <p>{roomBooking.quantity} {translations.rooms || "rooms"} × {
+                            selectedRooms.find(r => r.id === roomBooking.room_id)?.roomType === 'Standard Quad' ? '4' : '2'
+                          } {translations.people || "people"}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            ({selectedRooms.find(r => r.id === roomBooking.room_id)?.roomType || 'Standard'})
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  ))}
+                  )}
+                  
+                  {/* Room Type Selection - Secondary (Optional Override) */}
+                  <div>
+                    <Label className="font-medium mb-3 block">
+                      {translations.roomType || "Room Type"} 
+                      <span className="text-xs text-gray-500 ml-2">(Default: Standard - Double Bed)</span>
+                    </Label>
+                    <select
+                      value={roomBooking.room_id || defaultRoom?.id || ''}
+                      onChange={(e) => handleRoomSelection(parseInt(e.target.value))}
+                      className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                    >
+                      {selectedRooms
+                        .filter(r => r.roomType === 'Standard') // Only show Standard rooms
+                        .map(room => (
+                          <option key={room.id} value={room.id}>
+                            {room.roomType} - {room.bedType} - {room.maxAdults || 0} adults
+                            {room.maxChildren ? ` + ${room.maxChildren} children` : ''} - 
+                            {' '}{(room.basePrice || 0).toLocaleString()} VND/night
+                          </option>
+                        ))}
+                    </select>
+                    <p className="mt-2 text-xs text-gray-500">
+                      {translations.changeRoomTypeHint || "You can change the room type if needed. Standard rooms have 2 people capacity."}
+                    </p>
+                  </div>
+                  
+                  {/* Selected Room Preview */}
+                  {roomBooking.room_id && selectedRooms.find(r => r.id === roomBooking.room_id) && (
+                    <div className="border-2 border-purple-500 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 shadow-lg">
+                      {(() => {
+                        const room = selectedRooms.find(r => r.id === roomBooking.room_id);
+                        return (
+                          <>
+                            {room.images && room.images.length > 0 && (
+                              <img 
+                                src={room.images[0]} 
+                                alt={room.roomType || room.name}
+                                className="w-full h-48 object-cover rounded-lg mb-4"
+                              />
+                            )}
+                            <h5 className="font-semibold text-xl mb-3">{room.roomType || room.name}</h5>
+                            <div className="space-y-2 text-sm">
+                              <p className="flex items-center gap-2">
+                                <Users className="w-4 h-4 text-purple-600" />
+                                {translations.capacity || "Capacity"}: {room.maxAdults || 0} {translations.adults || "adults"}
+                                {room.maxChildren ? ` + ${room.maxChildren} ${translations.children || "children"}` : ''}
+                              </p>
+                              <p className="flex items-center gap-2">
+                                <DollarSign className="w-4 h-4 text-green-600" />
+                                {(room.basePrice || 0).toLocaleString()} {room.currency || 'VND'}{translations.perNight || "/night"}
+                              </p>
+                              {room.bedType && (
+                                <p className="text-gray-700">🛏️ {room.bedType} Bed</p>
+                              )}
+                              {room.deluxeUpgradePrice && (
+                                <p className="text-sm text-blue-700">
+                                  💎 Deluxe Upgrade: +{room.deluxeUpgradePrice.toLocaleString()} VND
+                                </p>
+                              )}
+                              {room.suiteUpgradePrice && (
+                                <p className="text-sm text-blue-700">
+                                  👑 Suite Upgrade: +{room.suiteUpgradePrice.toLocaleString()} VND
+                                </p>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2252,7 +2456,7 @@ function ServicesEditor({
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-3 text-xl">
             <UtensilsCrossed className="w-5 h-5 text-orange-500" />
-            {translations.restaurants || "Restaurants"} {translations.onePerDay || "(one per day)"}
+            {translations.restaurants || "Restaurants"} - {translations.selectSetMeals || "Select Set Meals Per Day"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -2262,7 +2466,7 @@ function ServicesEditor({
               <select
                 value={services.restaurants.find(r => r.day_number === day.day_number)?.service_id || ''}
                 onChange={(e) => handleRestaurantChange(day.day_number, e.target.value)}
-                className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors mb-6"
               >
                 <option value="">{translations.selectRestaurant || "Select restaurant"}</option>
                 {availableServices.restaurants?.map(r => (
@@ -2272,47 +2476,74 @@ function ServicesEditor({
                 ))}
               </select>
               
-              {/* Menu Selection */}
+              {/* Set Meal Selection per Session */}
               {services.restaurants.find(r => r.day_number === day.day_number) && 
-               selectedMenus[day.day_number]?.length > 0 && (
+               selectedRestaurantSetMeals[services.restaurants.find(r => r.day_number === day.day_number).service_id]?.length > 0 && (
                 <div className="mt-6 border-t border-gray-200 pt-6">
                   <h5 className="font-semibold text-base mb-4 flex items-center gap-3">
                     <Utensils className="w-5 h-5 text-orange-600" />
-                    {translations.menuItems || "Menu Items"} - {translations.selectDishesForDay || "Select dishes for this day"}
+                    {translations.selectSetMeals || "Select Set Meals by Session"}
                   </h5>
                   {loadingDetails ? (
-                    <p className="text-center py-8 text-gray-500">{translations.loadingMenu || "Loading menu..."}</p>
+                    <p className="text-center py-8 text-gray-500">{translations.loadingSetMeals || "Loading set meals..."}</p>
                   ) : (
-                    <div className="grid grid-cols-3 gap-4">
-                      {selectedMenus[day.day_number].map(item => (
-                        <div
-                          key={item.id}
-                          className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
-                            selectedMenuItemIds[day.day_number]?.includes(item.id)
-                              ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-amber-50 shadow-lg'
-                              : 'border-gray-200 hover:border-orange-300 hover:shadow-md'
-                          }`}
-                          onClick={() => toggleMenuItem(day.day_number, item.id)}
-                        >
-                          {item.image && (
-                            <img 
-                              src={item.image} 
-                              alt={item.name}
-                              className="w-full h-28 object-cover rounded-lg mb-3"
-                            />
-                          )}
-                          <h6 className="font-semibold text-sm mb-1">{item.name}</h6>
-                          <p className="text-xs text-gray-600 mb-2 line-clamp-2">{item.description}</p>
-                          <p className="text-sm font-bold text-orange-600">
-                            {(item.price || 0).toLocaleString()} {item.currency || 'VND'}
-                          </p>
-                          {selectedMenuItemIds[day.day_number]?.includes(item.id) && (
-                            <div className="mt-3 bg-orange-100 rounded-lg p-2 text-center text-xs font-semibold text-orange-700">
-                              ✓ {translations.selected || "Selected"}
+                    <div className="space-y-6">
+                      {TIME_PERIODS.map(session => {
+                        const sessionSetMeals = selectedRestaurantSetMeals[
+                          services.restaurants.find(r => r.day_number === day.day_number).service_id
+                        ]?.filter(sm => sm.mealSession === session) || [];
+                        
+                        return sessionSetMeals.length > 0 && (
+                          <div key={session} className="border border-orange-200 rounded-lg p-4 bg-orange-50/50">
+                            <h6 className="font-semibold text-sm mb-3 capitalize text-orange-800">
+                              {session === 'morning' && '🌅 Morning'}
+                              {session === 'noon' && '☀️ Noon'}
+                              {session === 'evening' && '🌙 Evening'}
+                            </h6>
+                            <div className="grid grid-cols-2 gap-4">
+                              {sessionSetMeals.map(setMeal => (
+                                <div
+                                  key={setMeal.id}
+                                  className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                                    isSetMealSelected(day.day_number, session, setMeal.id)
+                                      ? 'border-orange-500 bg-gradient-to-br from-orange-100 to-amber-100 shadow-lg'
+                                      : 'border-gray-300 hover:border-orange-300 hover:shadow-md bg-white'
+                                  }`}
+                                  onClick={() => toggleSetMeal(day.day_number, session, setMeal.id)}
+                                >
+                                  <h6 className="font-semibold text-base mb-2">{setMeal.name}</h6>
+                                  <p className="text-xs text-gray-600 mb-3 line-clamp-2">{setMeal.description}</p>
+                                  
+                                  {/* Display included dishes */}
+                                  {setMeal.menuItems && setMeal.menuItems.length > 0 && (
+                                    <div className="mb-3 text-xs text-gray-700">
+                                      <p className="font-medium mb-1">{translations.includes || "Includes"}:</p>
+                                      <ul className="list-disc list-inside space-y-0.5">
+                                        {setMeal.menuItems.map(item => (
+                                          <li key={item.id} className="truncate">{item.name}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  
+                                  <p className="text-sm font-bold text-orange-600 mb-1">
+                                    {(setMeal.totalPrice || 0).toLocaleString()} VND
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {translations.perPerson || "Per person"}
+                                  </p>
+                                  
+                                  {isSetMealSelected(day.day_number, session, setMeal.id) && (
+                                    <div className="mt-3 bg-orange-500 text-white rounded-lg p-2 text-center text-xs font-semibold">
+                                      ✓ {translations.selected || "Selected"}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
                             </div>
-                          )}
-                        </div>
-                      ))}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

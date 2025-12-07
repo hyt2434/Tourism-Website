@@ -30,9 +30,9 @@ const AccommodationManagement = () => {
 
   const [roomFormData, setRoomFormData] = useState({
     name: '',
-    roomType: '',
+    roomType: 'Standard',
     description: '',
-    bedType: 'double',
+    bedType: 'Double',
     maxAdults: 2,
     maxChildren: 1,
     totalRooms: 1,
@@ -42,6 +42,8 @@ const AccommodationManagement = () => {
     basePrice: 0,
     weekendPrice: 0,
     holidayPrice: 0,
+    deluxeUpgradePrice: 0,
+    suiteUpgradePrice: 0,
     currency: 'VND',
     images: [],
   });
@@ -172,9 +174,9 @@ const AccommodationManagement = () => {
       setSelectedRoom(null);
       setRoomFormData({
         name: '',
-        roomType: '',
+        roomType: 'Standard',
         description: '',
-        bedType: 'double',
+        bedType: 'Double',
         maxAdults: 2,
         maxChildren: 1,
         totalRooms: 1,
@@ -184,6 +186,8 @@ const AccommodationManagement = () => {
         basePrice: 0,
         weekendPrice: 0,
         holidayPrice: 0,
+        deluxeUpgradePrice: 0,
+        suiteUpgradePrice: 0,
         currency: 'VND',
         images: [],
       });
@@ -198,9 +202,9 @@ const AccommodationManagement = () => {
     setSelectedRoom(room);
     setRoomFormData({
       name: room.name || '',
-      roomType: room.roomType || '',
+      roomType: room.roomType || 'Standard',
       description: room.description || '',
-      bedType: room.bedType || 'double',
+      bedType: room.bedType || 'Double',
       maxAdults: room.maxAdults || 2,
       maxChildren: room.maxChildren || 1,
       totalRooms: room.totalRooms || 1,
@@ -210,6 +214,8 @@ const AccommodationManagement = () => {
       basePrice: room.basePrice || 0,
       weekendPrice: room.weekendPrice || 0,
       holidayPrice: room.holidayPrice || 0,
+      deluxeUpgradePrice: room.deluxeUpgradePrice || 0,
+      suiteUpgradePrice: room.suiteUpgradePrice || 0,
       currency: room.currency || 'VND',
       images: room.images || [],
     });
@@ -553,11 +559,31 @@ const AccommodationManagement = () => {
                         onChange={(e) => setRoomFormData({ ...roomFormData, bedType: e.target.value })}
                         className="w-full border rounded px-3 py-2"
                       >
-                        <option value="single">{t.serviceManagement.singleBed}</option>
-                        <option value="double">{t.serviceManagement.doubleBed}</option>
-                        <option value="queen">{t.serviceManagement.queenBed}</option>
-                        <option value="king">{t.serviceManagement.kingBed}</option>
+                        <option value="Double">{t.serviceManagement.doubleBed || 'Double Bed'}</option>
+                        <option value="Queen">{t.serviceManagement.queenBed || 'Queen Bed'}</option>
+                        <option value="King">{t.serviceManagement.kingBed || 'King Bed'}</option>
+                        <option value="Twin">Twin Beds</option>
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Room Type</label>
+                      <select
+                        value={roomFormData.roomType}
+                        onChange={(e) => {
+                          const newRoomType = e.target.value;
+                          setRoomFormData({ 
+                            ...roomFormData, 
+                            roomType: newRoomType,
+                            maxAdults: newRoomType === 'Standard Quad' ? 4 : 2,
+                            maxChildren: newRoomType === 'Standard Quad' ? 2 : 1
+                          });
+                        }}
+                        className="w-full border rounded px-3 py-2"
+                      >
+                        <option value="Standard">Standard (2 people)</option>
+                        <option value="Standard Quad">Standard Quad (4 people)</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">Partners can only create Standard rooms</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">{t.serviceManagement.maxAdults || 'Max Adults'}</label>
@@ -620,6 +646,28 @@ const AccommodationManagement = () => {
                         min="0"
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Deluxe Upgrade Price (VND)</label>
+                      <input
+                        type="number"
+                        value={roomFormData.deluxeUpgradePrice}
+                        onChange={(e) => setRoomFormData({ ...roomFormData, deluxeUpgradePrice: parseFloat(e.target.value) })}
+                        className="w-full border rounded px-3 py-2"
+                        min="0"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Additional cost to upgrade to Deluxe</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Suite Upgrade Price (VND)</label>
+                      <input
+                        type="number"
+                        value={roomFormData.suiteUpgradePrice}
+                        onChange={(e) => setRoomFormData({ ...roomFormData, suiteUpgradePrice: parseFloat(e.target.value) })}
+                        className="w-full border rounded px-3 py-2"
+                        min="0"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Additional cost to upgrade to Suite</p>
+                    </div>
                     <div className="col-span-2">
                       <label className="block text-sm font-medium mb-1">{t.serviceManagement.uploadImages || 'Upload Room Images'}</label>
                       <input
@@ -661,9 +709,9 @@ const AccommodationManagement = () => {
                         setSelectedRoom(null);
                         setRoomFormData({
                           name: '',
-                          roomType: '',
+                          roomType: 'Standard',
                           description: '',
-                          bedType: 'double',
+                          bedType: 'Double',
                           maxAdults: 2,
                           maxChildren: 1,
                           totalRooms: 1,
@@ -673,6 +721,8 @@ const AccommodationManagement = () => {
                           basePrice: 0,
                           weekendPrice: 0,
                           holidayPrice: 0,
+                          deluxeUpgradePrice: 0,
+                          suiteUpgradePrice: 0,
                           currency: 'VND',
                           images: [],
                         });

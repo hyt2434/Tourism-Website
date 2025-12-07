@@ -76,3 +76,47 @@ export async function getPartnerBookings(partnerId) {
   }
 }
 
+// Get all bookings for admin
+export async function getAllBookings() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/admin/all`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to fetch all bookings");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching all bookings:", error);
+    throw error;
+  }
+}
+
+// Create a new booking
+export async function createBooking(bookingData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(bookingData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to create booking");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error creating booking:", error);
+    throw error;
+  }
+}
