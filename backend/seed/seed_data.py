@@ -3508,6 +3508,185 @@ def create_promotions():
         cur.close()
         conn.close()
 
+def create_tour_schedules():
+    """Create tour schedules for the next 30 days"""
+    import json
+    from datetime import datetime, timedelta
+    
+    conn = get_connection()
+    if not conn:
+        print("❌ Cannot create tour schedules: Database connection failed.")
+        return
+    
+    cur = conn.cursor()
+    
+    try:
+        # Get all tours
+        cur.execute("SELECT id, number_of_members, duration FROM tours_admin WHERE is_active = TRUE")
+        tours = cur.fetchall()
+        
+        if not tours:
+            print("⚠️  No tours found. Skipping schedule creation.")
+            return
+        
+        schedules_created = 0
+        
+        for tour_id, max_slots, duration in tours:
+            # Parse duration
+            try:
+                duration_int = int(duration) if isinstance(duration, str) else duration
+            except:
+                duration_int = int(''.join(filter(str.isdigit, str(duration))))
+            
+            # Create 3 schedules for each tour (weekly departures)
+            for week in range(3):
+                departure = datetime.now() + timedelta(days=7 * week + 3)  # Start 3 days from now
+                return_date = departure + timedelta(days=duration_int)
+                
+                cur.execute("""
+                    INSERT INTO tour_schedules 
+                    (tour_id, departure_datetime, return_datetime, max_slots, status)
+                    VALUES (%s, %s, %s, %s, 'pending')
+                    RETURNING id
+                """, (tour_id, departure, return_date, max_slots))
+                
+                schedule_id = cur.fetchone()[0]
+                schedules_created += 1
+        
+        conn.commit()
+        print(f"✅ Created {schedules_created} tour schedules successfully!")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Error creating tour schedules: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        cur.close()
+        conn.close()
+
+def create_sample_bookings(user_ids):
+    """Create sample bookings with customizations"""
+    import json
+    from datetime import datetime, timedelta
+    
+    conn = get_connection()
+    if not conn:
+        print("❌ Cannot create bookings: Database connection failed.")
+        return
+    
+    cur = conn.cursor()
+    
+    try:
+        # Get pending schedules with slots available
+        cur.execute("""
+            SELECT ts.id, ts.tour_id, ts.departure_datetime, ts.return_datetime, 
+                   ts.max_slots, t.total_price, t.name
+            FROM tour_schedules ts
+            INNER JOIN tours_admin t ON ts.tour_id = t.id
+            WHERE ts.status = 'pending' AND ts.slots_available > 0
+            ORDER BY ts.departure_datetime
+            LIMIT 10
+        """)
+        
+        schedules = cur.fetchall()
+        
+        if not schedules:
+            print("⚠️  No available schedules found. Skipping booking creation.")
+            return
+        
+        # Get client user IDs
+        client_users = [uid for key, uid in user_ids.items() if 'client' in key]
+        if not client_users:
+            print("⚠️  No client users found. Skipping booking creation.")
+            return
+        
+        bookings_created = 0
+        
+        for i, schedule in enumerate(schedules[:5]):  # Create bookings for first 5 schedules
+            schedule_id, tour_id, departure, return_date, max_slots, total_price, tour_name = schedule
+            
+            # Get tour services to build customizations
+            cur.execute("""
+                SELECT tsr.room_id, ar.base_price
+                FROM tour_selected_rooms tsr
+                INNER JOIN accommodation_rooms ar ON tsr.room_id = ar.id
+                WHERE tsr.tour_id = %s
+                LIMIT 1
+            """, (tour_id,))
+            
+            room_info = cur.fetchone()
+            
+            cur.execute("""
+                SELECT day_number, meal_session
+                FROM tour_selected_set_meals
+                WHERE tour_id = %s
+                ORDER BY day_number, meal_session
+            """, (tour_id,))
+            
+            meals = cur.fetchall()
+            
+            # Create customizations
+            customizations = {
+                'default_room': {
+                    'room_id': room_info[0] if room_info else None,
+                    'room_price': float(room_info[1]) if room_info else 0
+                },
+                'room_upgrade': None,
+                'selected_meals': [
+                    {'day_number': meal[0], 'meal_session': meal[1]}
+                    for meal in meals
+                ],
+                'transport_options': {
+                    'outbound': True,
+                    'return': True
+                },
+                'actual_people_count': 2
+            }
+            
+            # Calculate total price - use the tour's total price for 2 people
+            booking_total_price = total_price
+            
+            # Create booking
+            client_id = client_users[i % len(client_users)]
+            
+            cur.execute("""
+                INSERT INTO bookings 
+                (tour_id, tour_schedule_id, user_id, full_name, email, phone,
+                 departure_date, return_date, number_of_guests, total_price, 
+                 payment_method, customizations, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'confirmed')
+                RETURNING id
+            """, (
+                tour_id, schedule_id, client_id,
+                f'Customer {i+1}', f'customer{i+1}@example.com', f'090{i+1}234567',
+                departure.date(), return_date.date(), 2, booking_total_price,
+                'credit_card', json.dumps(customizations)
+            ))
+            
+            booking_id = cur.fetchone()[0]
+            
+            # Update schedule slots_booked
+            cur.execute("""
+                UPDATE tour_schedules
+                SET slots_booked = slots_booked + 2
+                WHERE id = %s
+            """, (schedule_id,))
+            
+            bookings_created += 1
+        
+        conn.commit()
+        print(f"✅ Created {bookings_created} sample bookings with customizations!")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Error creating bookings: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        cur.close()
+        conn.close()
+
 def main():
     """Main function to seed all data"""
     print("=" * 60)
@@ -3622,6 +3801,16 @@ def main():
     create_promotions()
     print()
     
+    # Create tour schedules
+    print("📅 Creating tour schedules...")
+    create_tour_schedules()
+    print()
+    
+    # Create sample bookings with customizations
+    print("📝 Creating sample bookings...")
+    create_sample_bookings(user_ids)
+    print()
+    
     print("=" * 60)
     print("✅ SEED DATA COMPLETED SUCCESSFULLY!")
     print("=" * 60)
@@ -3631,6 +3820,8 @@ def main():
     print(f"  - Users created: {len(user_ids)}")
     print("  - Accommodations, restaurants, transportation created")
     print("  - Tours created: 12")
+    print("  - Tour schedules created")
+    print("  - Sample bookings created with customizations")
     print("  - Promotions created: 10 promo codes + 10 banners")
     print()
     print("Note: Image URLs are placeholders. Please update them with actual images.")

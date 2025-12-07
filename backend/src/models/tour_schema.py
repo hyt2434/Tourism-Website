@@ -258,6 +258,7 @@ def create_tour_tables():
                 
                 -- Status
                 is_active BOOLEAN DEFAULT TRUE, -- Can be deactivated without deletion
+                status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'ongoing', 'completed', 'cancelled')),
                 
                 -- Metadata
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -328,6 +329,36 @@ def create_tour_tables():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(tour_id, room_id)
             );
+        """)
+        
+        # =====================================================================
+        # PARTNER REVENUE PENDING TABLE (Track revenue distributions to partners)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS partner_revenue_pending (
+                id SERIAL PRIMARY KEY,
+                schedule_id INTEGER NOT NULL REFERENCES tour_schedules(id) ON DELETE CASCADE,
+                partner_id INTEGER NOT NULL,
+                partner_type VARCHAR(50) NOT NULL,
+                amount DECIMAL(10, 2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'failed')),
+                paid_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                CONSTRAINT unique_schedule_partner UNIQUE (schedule_id, partner_id, partner_type)
+            );
+        """)
+        
+        # Create indexes for partner revenue
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_partner_revenue_partner 
+            ON partner_revenue_pending(partner_id, status);
+        """)
+        
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_partner_revenue_schedule 
+            ON partner_revenue_pending(schedule_id);
         """)
         
         conn.commit()

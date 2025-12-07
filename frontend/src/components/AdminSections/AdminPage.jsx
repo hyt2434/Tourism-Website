@@ -20,6 +20,7 @@ import PartnerManagementTab from "./PartnerManagementTab";
 import SocialModerationTab from "./SocialModerationTab";
 import TourManagementTab from "./TourManagementTab";
 import BookingManagementTab from "./BookingManagementTab";
+import ScheduleManagementTab from "./ScheduleManagementTab";
 import { useLanguage } from "../../context/LanguageContext";
 import { getDashboardStats } from "../../api/admin";
 
@@ -172,7 +173,35 @@ export default function AdminPage() {
             </TabsContent>
 
             <TabsContent value="bookings" className="mt-0">
-              <BookingManagementTab />
+              <div className="space-y-6">
+                {/* Sub-tabs for Bookings and Schedules */}
+                <Tabs defaultValue="bookings" className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 h-auto">
+                    <TabsTrigger
+                      value="bookings"
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow transition-all"
+                    >
+                      <Package className="w-4 h-4" />
+                      Individual Bookings
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="schedules"
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow transition-all"
+                    >
+                      <Clock className="w-4 h-4" />
+                      Schedule Management
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="bookings" className="mt-0">
+                    <BookingManagementTab />
+                  </TabsContent>
+
+                  <TabsContent value="schedules" className="mt-0">
+                    <ScheduleManagementTab />
+                  </TabsContent>
+                </Tabs>
+              </div>
             </TabsContent>
           </div>
         </Tabs>

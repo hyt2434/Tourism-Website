@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getAllBookings } from '../../api/bookings';
-import { Calendar, User, Phone, Mail, DollarSign, TrendingUp, CheckCircle, XCircle, AlertCircle, Package } from 'lucide-react';
+import { Calendar, User, Phone, Mail, DollarSign, TrendingUp, CheckCircle, XCircle, AlertCircle, Package, Play, CheckSquare, Users } from 'lucide-react';
 
 export default function BookingManagementTab() {
   const { translations: t } = useLanguage();

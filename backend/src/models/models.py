@@ -321,6 +321,7 @@ def create_tables():
             payment_intent_id VARCHAR(200),
             promotion_code VARCHAR(50),
             notes TEXT,
+            customizations JSONB,
             status VARCHAR(20) DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -346,6 +347,15 @@ def create_tables():
             ) THEN
                 ALTER TABLE bookings 
                 ADD COLUMN number_of_adults INTEGER DEFAULT 1;
+            END IF;
+            
+            -- Add customizations column
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'bookings' AND column_name = 'customizations'
+            ) THEN
+                ALTER TABLE bookings 
+                ADD COLUMN customizations JSONB;
             END IF;
             
             -- Add number_of_children column
