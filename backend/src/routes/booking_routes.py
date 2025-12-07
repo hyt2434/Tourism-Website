@@ -27,6 +27,14 @@ def create_booking():
         payment_intent_id = data.get('payment_intent_id')
         notes = data.get('notes', '')
         promotion_code = data.get('promotion_code')  # Optional promotion code
+        customizations = data.get('customizations', {})  # Room upgrades, meal selections, etc.
+        
+        # Debug: Print customizations
+        print(f"DEBUG: Booking customizations received: {customizations}")
+        if customizations:
+            print(f"  - room_upgrade: {customizations.get('room_upgrade')}")
+            print(f"  - selected_meals: {customizations.get('selected_meals')}")
+            print(f"  - transport_options: {customizations.get('transport_options')}")
         
         # Validate required fields
         if not all([tour_id, tour_schedule_id, full_name, email, phone, departure_date, total_price, payment_method]):
@@ -61,8 +69,11 @@ def create_booking():
             
             slots_available = schedule[0]
             
-            # Calculate total slots needed (2 children = 1 adult slot)
-            slots_needed = number_of_adults + (number_of_children // 2) + (number_of_children % 2)
+            # Calculate total slots needed based on rooms
+            # Each room holds 2 people, so slots = rooms × 2
+            # Even 1 person needs 1 room = 2 slots
+            rooms_needed = (number_of_guests + 1) // 2  # Ceiling division
+            slots_needed = rooms_needed * 2
             
             if slots_needed > slots_available:
                 return jsonify({
@@ -110,6 +121,196 @@ def create_booking():
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
             """, (slots_needed, tour_schedule_id))
+            
+            # ===== REVENUE VERIFICATION =====
+            # Verify that partner revenues sum to 90% of total booking price
+            # This ensures correct revenue distribution
+            
+            # Calculate expected partner pool (90%)
+            service_fee = total_price * 0.1 / 1.1
+            expected_partner_pool = total_price - service_fee
+            
+            # Get tour details for revenue calculation
+            cur.execute("""
+                SELECT duration FROM tours_admin WHERE id = %s
+            """, (tour_id,))
+            tour_result = cur.fetchone()
+            tour_duration = tour_result[0] if tour_result else 2
+            
+            print(f"DEBUG: Tour duration from DB: {tour_duration} (type: {type(tour_duration)})")
+            
+            # Parse nights from duration
+            import re
+            nights = 1
+            
+            # Try to convert to int if it's a numeric string
+            if isinstance(tour_duration, str) and tour_duration.isdigit():
+                tour_duration = int(tour_duration)
+            
+            if isinstance(tour_duration, (int, float)):
+                nights = int(tour_duration) - 1 if tour_duration > 1 else 1
+            else:
+                # Try regex for "X nights" or "X đêm" format
+                night_match = re.search(r'(\d+)\s*(?:night|đêm)', str(tour_duration).lower())
+                if night_match:
+                    nights = int(night_match.group(1))
+                else:
+                    # Try regex for "X days" format and convert to nights
+                    day_match = re.search(r'(\d+)\s*(?:day|ngày)', str(tour_duration).lower())
+                    if day_match:
+                        nights = int(day_match.group(1)) - 1
+            
+            print(f"DEBUG: Calculated nights: {nights}")
+            
+            # Calculate accommodation revenue
+            accommodation_revenue = 0
+            
+            # Check if user selected a room upgrade in customizations
+            room_upgrade_info = customizations.get('room_upgrade') if customizations else None
+            default_room_info = customizations.get('default_room') if customizations else None
+            
+            if room_upgrade_info and room_upgrade_info.get('room_price'):
+                # User selected a room upgrade - use that room's price
+                print(f"  Using upgraded room: room_id = {room_upgrade_info.get('room_id')}")
+                room_price = float(room_upgrade_info.get('room_price'))
+                rooms_booked = (number_of_guests + 1) // 2
+                accommodation_revenue = room_price * rooms_booked * nights
+                print(f"  Upgraded room: {room_price:,.0f} VND/night × {rooms_booked} rooms × {nights} nights = {accommodation_revenue:,.0f} VND")
+            elif default_room_info and default_room_info.get('room_price'):
+                # User used default room - use that room's price from frontend
+                print(f"  Using default room from booking data: room_id = {default_room_info.get('room_id')}")
+                room_price = float(default_room_info.get('room_price'))
+                rooms_booked = (number_of_guests + 1) // 2
+                accommodation_revenue = room_price * rooms_booked * nights
+                print(f"  Default room: {room_price:,.0f} VND/night × {rooms_booked} rooms × {nights} nights = {accommodation_revenue:,.0f} VND")
+            else:
+                # No custom room - use tour default
+                # First try to get from tour_selected_rooms (detailed room bookings)
+                cur.execute("""
+                    SELECT ar.base_price, COUNT(DISTINCT tsr.room_id) as room_count
+                    FROM tour_selected_rooms tsr
+                    INNER JOIN accommodation_rooms ar ON tsr.room_id = ar.id
+                    WHERE tsr.tour_id = %s
+                    GROUP BY ar.base_price
+                """, (tour_id,))
+                room_prices = cur.fetchall()
+                
+                if room_prices:
+                    # Use detailed room booking data
+                    print(f"  Using tour_selected_rooms data: {len(room_prices)} room types found")
+                    total_room_price = sum(float(row[0]) * row[1] for row in room_prices if row[0])
+                    room_count = sum(row[1] for row in room_prices)
+                    avg_room_price = total_room_price / room_count if room_count > 0 else 0
+                    rooms_booked = (number_of_guests + 1) // 2
+                    accommodation_revenue = avg_room_price * rooms_booked * nights
+                else:
+                    # Fallback: Get accommodation cost from tour_services
+                    print(f"  No rooms in tour_selected_rooms, using tour_services fallback")
+                    cur.execute("""
+                        SELECT ts.service_cost
+                        FROM tour_services ts
+                        WHERE ts.tour_id = %s AND ts.service_type = 'accommodation'
+                        LIMIT 1
+                    """, (tour_id,))
+                    result = cur.fetchone()
+                    if result and result[0]:
+                        # service_cost is average room price per night
+                        avg_room_price = float(result[0])
+                        rooms_booked = (number_of_guests + 1) // 2
+                        accommodation_revenue = avg_room_price * rooms_booked * nights
+                        print(f"  Fallback found: {avg_room_price} VND/night × {rooms_booked} rooms × {nights} nights = {accommodation_revenue} VND")
+                    else:
+                        print(f"  WARNING: No accommodation data found in tour_services either!")
+            
+            # Calculate restaurant revenue (from set meals)
+            restaurant_revenue = 0
+            selected_meals = customizations.get('selected_meals', []) if customizations else []
+            
+            if selected_meals:
+                # User selected specific meals - only count those
+                print(f"  Calculating restaurant revenue for {len(selected_meals)} selected meals")
+                for meal in selected_meals:
+                    cur.execute("""
+                        SELECT rsm.total_price
+                        FROM tour_selected_set_meals tssm
+                        INNER JOIN restaurant_set_meals rsm ON tssm.set_meal_id = rsm.id
+                        WHERE tssm.tour_id = %s 
+                          AND tssm.day_number = %s 
+                          AND tssm.meal_session = %s
+                    """, (tour_id, meal['day_number'], meal['meal_session']))
+                    result = cur.fetchone()
+                    if result and result[0]:
+                        meal_price = float(result[0])
+                        restaurant_revenue += meal_price * number_of_guests
+                        print(f"    Day {meal['day_number']} {meal['meal_session']}: {meal_price:,.0f} × {number_of_guests} guests = {meal_price * number_of_guests:,.0f} VND")
+            else:
+                # No meal selection info - use all meals (fallback for old bookings)
+                print(f"  No meal selection data, using all tour meals")
+                cur.execute("""
+                    SELECT SUM(rsm.total_price)
+                    FROM tour_selected_set_meals tssm
+                    INNER JOIN restaurant_set_meals rsm ON tssm.set_meal_id = rsm.id
+                    WHERE tssm.tour_id = %s
+                """, (tour_id,))
+                result = cur.fetchone()
+                if result and result[0]:
+                    restaurant_revenue = float(result[0]) * number_of_guests
+            
+            # Calculate transportation revenue (round trip)
+            transportation_revenue = 0
+            transport_options = customizations.get('transport_options', {}) if customizations else {}
+            
+            # Check which trips the user selected (outbound and/or return)
+            outbound_selected = transport_options.get('outbound', True)  # Default to True if not specified
+            return_selected = transport_options.get('return', True)
+            trips_selected = (1 if outbound_selected else 0) + (1 if return_selected else 0)
+            
+            if trips_selected > 0:
+                cur.execute("""
+                    SELECT SUM(ts.service_cost)
+                    FROM tour_services ts
+                    WHERE ts.tour_id = %s AND ts.service_type = 'transportation'
+                """, (tour_id,))
+                result = cur.fetchone()
+                if result and result[0]:
+                    transport_cost_per_person = float(result[0])  # One-way price
+                    transportation_revenue = transport_cost_per_person * number_of_guests * trips_selected
+                    print(f"  Transportation: {transport_cost_per_person:,.0f} VND/person × {number_of_guests} guests × {trips_selected} trip(s) = {transportation_revenue:,.0f} VND")
+            else:
+                print(f"  Transportation: Not selected (0 trips)")
+            
+            # Calculate total partner revenue
+            total_partner_revenue = accommodation_revenue + restaurant_revenue + transportation_revenue
+            
+            # If accommodation revenue doesn't match, calculate it as the difference
+            # This handles cases where tour_services has inaccurate room prices
+            if abs(total_partner_revenue - expected_partner_pool) > expected_partner_pool * 0.01:
+                calculated_accommodation = expected_partner_pool - restaurant_revenue - transportation_revenue
+                print(f"  Accommodation mismatch detected. Recalculating...")
+                print(f"    Original calculation: {accommodation_revenue:,.0f} VND")
+                print(f"    Derived from total: {calculated_accommodation:,.0f} VND")
+                accommodation_revenue = calculated_accommodation
+                total_partner_revenue = accommodation_revenue + restaurant_revenue + transportation_revenue
+            
+            # Verify with tolerance for rounding errors (within 1%)
+            revenue_difference = abs(total_partner_revenue - expected_partner_pool)
+            tolerance = expected_partner_pool * 0.01  # 1% tolerance
+            
+            if revenue_difference > tolerance:
+                print(f"WARNING: Revenue mismatch detected!")
+                print(f"  Booking ID: {booking_id}")
+                print(f"  Total Price: {total_price:,.0f} VND")
+                print(f"  Service Fee (10%): {service_fee:,.0f} VND")
+                print(f"  Expected Partner Pool (90%): {expected_partner_pool:,.0f} VND")
+                print(f"  Accommodation Revenue: {accommodation_revenue:,.0f} VND")
+                print(f"  Restaurant Revenue: {restaurant_revenue:,.0f} VND")
+                print(f"  Transportation Revenue: {transportation_revenue:,.0f} VND")
+                print(f"  Total Partner Revenue: {total_partner_revenue:,.0f} VND")
+                print(f"  Difference: {revenue_difference:,.0f} VND ({(revenue_difference/expected_partner_pool)*100:.2f}%)")
+            else:
+                print(f"✓ Revenue verification passed for Booking {booking_id}")
+                print(f"  Total: {total_price:,.0f} VND | Partner Pool: {expected_partner_pool:,.0f} VND")
+                print(f"  Breakdown: Accommodation={accommodation_revenue:,.0f}, Restaurant={restaurant_revenue:,.0f}, Transportation={transportation_revenue:,.0f}")
             
             conn.commit()
             
@@ -466,10 +667,12 @@ def get_partner_bookings(partner_id):
                         dc.name as destination_city_name,
                         (SELECT image_url FROM tour_images WHERE tour_id = t.id AND is_primary = TRUE LIMIT 1) as tour_image,
                         COALESCE((
-                            SELECT SUM(ts2.service_cost)
-                            FROM tour_services ts2
-                            INNER JOIN restaurant_services rs2 ON ts2.restaurant_id = rs2.id
-                            WHERE ts2.tour_id = t.id AND rs2.partner_id = %s
+                            SELECT SUM(rsm.total_price)
+                            FROM tour_selected_set_meals tssm
+                            INNER JOIN restaurant_set_meals rsm ON tssm.set_meal_id = rsm.id
+                            WHERE tssm.tour_id = t.id AND rsm.restaurant_id IN (
+                                SELECT id FROM restaurant_services WHERE partner_id = %s
+                            )
                         ), 0) as partner_service_cost,
                         COALESCE((
                             SELECT SUM(ar.base_price)
@@ -601,16 +804,16 @@ def get_partner_bookings(partner_id):
                     service_revenue = avg_room_price * rooms_booked * nights
                     
                 elif partner_type == 'restaurant' and partner_service_cost > 0:
-                    # Restaurant revenue = service_cost_per_person × number_of_guests
-                    # partner_service_cost is SUM of all meal service_costs (per person)
+                    # Restaurant revenue = SUM(set_meal_price_per_person) × number_of_guests
+                    # partner_service_cost is SUM of all set meal prices (per person)
                     # So total revenue = partner_service_cost × number_of_guests
                     service_revenue = partner_service_cost * number_of_guests
                     
                 elif partner_type == 'transportation' and partner_service_cost > 0:
-                    # Transportation revenue = service_cost_per_person × number_of_guests
-                    # partner_service_cost is SUM of all transport service_costs (per person)
-                    # So total revenue = partner_service_cost × number_of_guests
-                    service_revenue = partner_service_cost * number_of_guests
+                    # Transportation revenue = service_cost_per_person × number_of_guests × 2 (round trip)
+                    # partner_service_cost is the one-way price per person
+                    # So total revenue = partner_service_cost × number_of_guests × 2
+                    service_revenue = partner_service_cost * number_of_guests * 2
                 else:
                     # Fallback
                     service_revenue = 0

@@ -416,8 +416,8 @@ function EnhancedBookingForm({
                 phone: userInfo.phone,
                 departure_date: selectedSchedule.departure_datetime,
                 return_date: selectedSchedule.return_datetime,
-                number_of_guests: slotsNeeded, // Use slots instead of actual people count
-                number_of_adults: slotsNeeded, // Backend expects this for slot calculation
+                number_of_guests: numberOfPeople, // Actual number of people
+                number_of_adults: numberOfPeople, // Actual number of people
                 number_of_children: 0,
                 total_price: calculatedPrice,
                 payment_method: paymentMethod,
@@ -426,7 +426,12 @@ function EnhancedBookingForm({
                 customizations: {
                     room_upgrade: roomUpgrade ? {
                         room_id: roomUpgrade.id,
+                        room_price: roomUpgrade.base_price,
                         upgrade_price: roomUpgrade.upgrade_price
+                    } : null,
+                    default_room: !roomUpgrade && tourData.roomBookings?.[0] ? {
+                        room_id: tourData.roomBookings[0].room_id,
+                        room_price: tourData.roomBookings[0].base_price
                     } : null,
                     selected_meals: Object.entries(selectedMeals)
                         .filter(([_, selected]) => selected)
