@@ -1,4 +1,3 @@
-import React from "react";
 import { useLanguage } from "../../context/LanguageContext";
 
 export default function HeroSection({ children }) {
@@ -27,16 +26,14 @@ export default function HeroSection({ children }) {
           <h1 className="text-white text-center text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-6 leading-tight drop-shadow-2xl max-w-5xl tracking-tight">
             {translations.heroTitle}
           </h1>
-          
+
           {/* Subtitle */}
           <p className="text-white/90 text-center text-lg md:text-xl lg:text-2xl font-light mb-16 drop-shadow-lg max-w-3xl">
             {translations.heroSubtitle}
           </p>
 
           {/* Search form */}
-          <div className="w-full max-w-6xl">
-            {children}
-          </div>
+          <div className="w-full max-w-6xl">{children}</div>
         </div>
       </div>
     </section>

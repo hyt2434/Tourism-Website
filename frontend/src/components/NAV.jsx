@@ -22,18 +22,53 @@ export default function NAV() {
 
   // All navigation items with role restrictions
   const allNavItems = [
-    { name: translations.home, path: "/", roles: ["admin", "partner", "client"], public: true },
-    { name: translations.tour, path: "/tour", roles: ["admin", "partner", "client"], public: true },
-    { name: translations.social, path: "/social", roles: ["admin", "partner", "client"], public: true },
-    { name: translations.partner, path: "/partner", roles: ["admin", "partner", "client"], public: true },
-    { name: translations.about, path: "/aboutus", roles: ["admin", "partner", "client"], public: true },
+    {
+      name: translations.home,
+      path: "/",
+      roles: ["admin", "partner", "client"],
+      public: true,
+    },
+    {
+      name: translations.tour,
+      path: "/tour",
+      roles: ["admin", "partner", "client"],
+      public: true,
+    },
+    {
+      name: translations.social,
+      path: "/social",
+      roles: ["admin", "partner", "client"],
+      public: true,
+    },
+    {
+      name: translations.partner,
+      path: "/partner",
+      roles: ["admin", "partner", "client"],
+      public: true,
+    },
+    {
+      name: translations.about,
+      path: "/aboutus",
+      roles: ["admin", "partner", "client"],
+      public: true,
+    },
     { name: "Admin", path: "/admin", roles: ["admin"], public: false },
-    { name: translations.partnerManagePage || "Partner Manage", path: "/partner-manage", roles: ["partner"], public: false },
-    { name: translations.myAccount, path: "/account", roles: ["client"], public: false },
+    {
+      name: translations.partnerManagePage || "Partner Manage",
+      path: "/partner-manage",
+      roles: ["partner"],
+      public: false,
+    },
+    {
+      name: translations.myAccount,
+      path: "/account",
+      roles: ["client"],
+      public: false,
+    },
   ];
 
   // Filter navigation items based on user role
-  const navItems = allNavItems.filter(item => {
+  const navItems = allNavItems.filter((item) => {
     if (!userRole) return item.public; // Show only public items when not logged in
     return item.roles.includes(userRole);
   });
@@ -88,7 +123,7 @@ export default function NAV() {
 
   return (
     <header className="sticky top-0 z-[80] bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
-      <div className=" container mx-auto px-24">
+      <div className="container mx-auto px-4 md:px-6 lg:px-12 xl:px-24">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div
@@ -192,79 +227,60 @@ export default function NAV() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200 dark:border-gray-700 transition-colors">
+          <div className="md:hidden py-4 px-4 border-t border-gray-200 dark:border-gray-700 transition-colors bg-white dark:bg-gray-900">
             <nav className="flex flex-col gap-4">
+              {/* 1. Render các items trong Menu */}
               {navItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white transition-colors px-2 py-1 whitespace-nowrap"
+                  className="text-body dark:text-gray-300 hover:text-title dark:hover:text-white transition-colors py-2 whitespace-nowrap block"
                 >
                   {item.name}
                 </Link>
               ))}
 
-              {/* Login / User (Mobile) */}
-              {isLoggedIn ? (
-                <button
-                  onClick={() => {
-                    navigate("/profile");
-                    setMobileMenuOpen(false);
-                  }}
-                  className="mt-2  flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  <AccountCircleIcon
-                    fontSize="large"
-                    className="text-title dark:text-white"
-                  />
-                </button>
-              ) : (
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="mt-2 px-4 py-2 bg-black text-white rounded-full hover:opacity-90 block text-center whitespace-nowrap"
-                >
-                  {translations.login}
-                </Link>
-              )}
-            </nav>
-            <div className="relative account-dropdown">
-              <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="bg-black text-white px-5 py-2 rounded-lg shadow hover:bg-gray-800 transition"
-              >
-                <AccountCircleIcon fontSize="medium" />
-              </button>
+              {/* Đường kẻ phân cách cho đẹp */}
+              <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
 
-              {showDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+              {/* 2. Xử lý Logic Login / User (Mobile Layout) */}
+              {isLoggedIn ? (
+                <div className="flex flex-col gap-3">
+                  {/* Link đến Profile */}
                   <button
                     onClick={() => {
-                      setShowDropdown(false);
                       navigate("/profile");
+                      setMobileMenuOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2 text-black hover:bg-gray-100 transition"
+                    className="flex items-center gap-2 text-body dark:text-gray-300 hover:text-title dark:hover:text-white py-2 text-left"
                   >
-                    Thông tin cá nhân
+                    <AccountCircleIcon fontSize="medium" />
+                    <span>Thông tin cá nhân</span>
                   </button>
+
+                  {/* Nút Đăng xuất */}
                   <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-black hover:bg-gray-100 transition"
+                    onClick={() => {
+                      handleLogout(); // Đảm bảo bạn có hàm này
+                      setMobileMenuOpen(false);
+                    }}
+                    className="text-left text-red-500 hover:text-red-600 py-2 font-medium"
                   >
                     Đăng xuất
                   </button>
                 </div>
+              ) : (
+                /* Nút Đăng nhập khi chưa login */
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="mt-2 w-full text-center px-4 py-2 bg-black text-white rounded-lg hover:opacity-90 block transition shadow-md"
+                >
+                  {translations.login || "Đăng nhập"}
+                </Link>
               )}
-            </div>
-            ) : (
-            <Link
-              to="/login"
-              className="bg-black text-white px-6 py-2 rounded-lg shadow hover:bg-gray-800 transition"
-            >
-              Đăng nhập
-            </Link>
-            )
+            </nav>
           </div>
         )}
       </div>

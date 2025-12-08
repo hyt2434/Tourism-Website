@@ -226,7 +226,7 @@ export default function UserManagementTab() {
           />
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant={filterRole === "all" ? "default" : "outline"}
             onClick={() => setFilterRole("all")}

@@ -54,7 +54,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Enhanced Stats Cards */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <Card className="relative overflow-hidden bg-white dark:bg-gray-900 border-2 border-blue-100 dark:border-blue-900 hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-transparent rounded-bl-full" />
@@ -115,7 +115,7 @@ export default function AdminPage() {
           className="space-y-6"
         >
           <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700 p-2">
-            <TabsList className="grid w-full grid-cols-3 bg-gray-100 dark:bg-gray-800 rounded-xl p-1.5 h-auto gap-2">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 bg-gray-100 dark:bg-gray-800 rounded-xl p-1.5 h-auto gap-2">
               <TabsTrigger
                 value="users"
                 className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
@@ -143,7 +143,7 @@ export default function AdminPage() {
             </TabsList>
           </div>
 
-          <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <TabsContent value="users" className="mt-0">
               <UserManagementTab />
             </TabsContent>
