@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from '../context/LanguageContext';
+import { useToast } from '../context/ToastContext';
 import { Calendar, Heart, Settings, Package, Clock, MapPin, Star, X, Eye, MessageSquare } from "lucide-react";
 import { getUserBookings, getBookingDetails } from "../api/bookings";
 import { getUserFavorites } from "../api/favorites";
@@ -97,7 +98,7 @@ export default function AccountPage() {
       }
     } catch (error) {
       console.error("Failed to load booking details:", error);
-      alert("Failed to load booking details");
+      toast.error("Failed to load booking details");
     } finally {
       setLoadingDetail(false);
     }
@@ -123,7 +124,7 @@ export default function AccountPage() {
       console.log('Token value:', token ? token.substring(0, 20) + '...' : 'null');
       
       if (!token) {
-        alert('Please login to write a review');
+        toast.warning('Please login to write a review');
         return;
       }
 
@@ -133,7 +134,7 @@ export default function AccountPage() {
       console.log('Can review result:', result);
       
       if (!result) {
-        alert('Không nhận được phản hồi từ server');
+        toast.error('Không nhận được phản hồi từ server');
         return;
       }
       
@@ -145,20 +146,20 @@ export default function AccountPage() {
         });
         setShowReviewDialog(true);
       } else if (result.success && result.has_review) {
-        alert('Bạn đã đánh giá tour này rồi');
+        toast.warning('Bạn đã đánh giá tour này rồi');
       } else {
-        alert(result.message || 'Bạn chưa thể đánh giá tour này');
+        toast.warning(result.message || 'Bạn chưa thể đánh giá tour này');
       }
     } catch (error) {
       console.error('Error checking review eligibility:', error);
-      alert('Không thể kiểm tra trạng thái đánh giá: ' + error.message);
+      toast.error('Không thể kiểm tra trạng thái đánh giá: ' + error.message);
     }
   };
 
   const handleReviewSuccess = (review) => {
     setShowReviewDialog(false);
     setReviewBooking(null);
-    alert("Review submitted successfully!");
+    toast.success("Review submitted successfully!");
     // Refresh bookings to update review status
     if (userId) loadBookings(userId);
   };

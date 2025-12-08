@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { useToast } from '../context/ToastContext';
 import { transportationAPI } from '../api/partnerServices';
 import { processImages } from '../utils/imageUpload';
 import { getCities } from '../api/cities';
 
 const TransportationManagement = () => {
   const { translations: t } = useLanguage();
+  const toast = useToast();
   const [vehicles, setVehicles] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
@@ -64,7 +66,7 @@ const TransportationManagement = () => {
       const base64Images = await processImages(files);
       setFormData({ ...formData, images: [...formData.images, ...base64Images] });
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -73,9 +75,9 @@ const TransportationManagement = () => {
     try {
       await transportationAPI.delete(id);
       loadVehicles();
-      alert(t.serviceManagement.deleteSuccess);
+      toast.success(t.serviceManagement.deleteSuccess);
     } catch (err) {
-      alert(t.serviceManagement.errorOccurred + ': ' + err.message);
+      toast.error(t.serviceManagement.errorOccurred + ': ' + err.message);
     }
   };
 
@@ -144,9 +146,9 @@ const TransportationManagement = () => {
       setShowForm(false);
       resetForm();
       loadVehicles();
-      alert(t.serviceManagement.saveSuccess);
+      toast.success(t.serviceManagement.saveSuccess);
     } catch (err) {
-      alert(t.serviceManagement.errorOccurred + ': ' + err.message);
+      toast.error(t.serviceManagement.errorOccurred + ': ' + err.message);
     } finally {
       setLoading(false);
     }

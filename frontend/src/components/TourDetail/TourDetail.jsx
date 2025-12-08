@@ -9,6 +9,7 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { useLanguage } from "../../context/LanguageContext";
+import { useToast } from "../../context/ToastContext";
 import { getPublicTourDetail } from "../../api/tours";
 import { getAvailableSchedules } from "../../api/tours";
 import TourReviews from "../TourReviews";
@@ -40,6 +41,7 @@ import TourMap from "./TourMap";
 
 export default function TourDetail() {
   const { translations } = useLanguage();
+  const toast = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
   const [tourData, setTourData] = useState(null);
@@ -66,7 +68,7 @@ export default function TourDetail() {
       return;
     }
     if (userRole === "partner") {
-      alert(translations.partnersCannotBook || "Đối tác không thể đặt tour.");
+      toast.warning(translations.partnersCannotBook || "Đối tác không thể đặt tour.");
       return;
     }
     setIsBookingPanelOpen(true);
@@ -91,7 +93,7 @@ export default function TourDetail() {
       setAvailableSchedules(schedules);
     } catch (error) {
       console.error('Error loading tour:', error);
-      alert('Failed to load tour details');
+      toast.error('Failed to load tour details');
     } finally {
       setLoading(false);
     }

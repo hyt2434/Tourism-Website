@@ -9,6 +9,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useLanguage } from "../context/LanguageContext"; // 👈 import context
+import { useToast } from "../context/ToastContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -18,6 +19,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { translations } = useLanguage(); // 👈 lấy translations
+  const toast = useToast();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -62,11 +64,11 @@ export default function Login() {
           navigate("/"); // client goes to home
         }
       } else {
-        alert(result.error || translations.loginError);
+        toast.error(result.error || translations.loginError);
       }
     } catch (error) {
       setIsLoading(false);
-      alert(translations.networkError);
+      toast.error(translations.networkError);
       console.error(error);
     }
   };

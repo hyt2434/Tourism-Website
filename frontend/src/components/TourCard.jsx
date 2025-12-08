@@ -2,6 +2,7 @@ import { Heart, MapPin, Calendar, Users } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
+import { useToast } from "../context/ToastContext";
 import { checkFavorite, addFavorite, removeFavorite } from "../api/favorites";
 
 export default function TourCard({ tour, viewMode = "grid" }) {
@@ -10,6 +11,7 @@ export default function TourCard({ tour, viewMode = "grid" }) {
   const [userId, setUserId] = useState(null);
   const [loadingFavorite, setLoadingFavorite] = useState(false);
   const { translations } = useLanguage();
+  const toast = useToast();
 
   // Check user role and load favorite status from localStorage
   useEffect(() => {
@@ -56,7 +58,7 @@ export default function TourCard({ tour, viewMode = "grid" }) {
       }
     } catch (error) {
       console.error("Error toggling favorite:", error);
-      alert("Failed to update favorite. Please try again.");
+      toast.error("Failed to update favorite. Please try again.");
     } finally {
       setLoadingFavorite(false);
     }

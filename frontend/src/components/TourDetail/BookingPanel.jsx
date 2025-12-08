@@ -17,6 +17,7 @@ import {
     Wallet,
 } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
+import { useToast } from "../../context/ToastContext";
 import { validatePromotionCode } from "../../api/promotions";
 import { Tag, Check, X } from "lucide-react";
 
@@ -35,6 +36,7 @@ const formatDate = (date, translations) => {
 
 // Inner component that uses Stripe hooks
 function BookingForm({ basePrice, onClose, duration, tourId, translations, availableSchedules }) {
+    const toast = useToast();
     const stripe = useStripe();
     const elements = useElements();
 
@@ -296,44 +298,44 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations, avail
     const handleBookNow = async () => {
         // Prevent non-logged-in users from booking tours
         if (!isLoggedIn) {
-            alert(translations.pleaseLoginToBook || "Vui lòng đăng nhập để đặt tour.");
+            toast.warning(translations.pleaseLoginToBook || "Vui lòng đăng nhập để đặt tour.");
             return;
         }
 
         // Prevent partners from booking tours
         if (isPartner) {
-            alert(translations.partnersCannotBook || "Đối tác không thể đặt tour. Vui lòng đăng nhập bằng tài khoản khách hàng.");
+            toast.warning(translations.partnersCannotBook || "Đối tác không thể đặt tour. Vui lòng đăng nhập bằng tài khoản khách hàng.");
             return;
         }
 
         // Validate schedule selection
         if (!selectedSchedule) {
-            alert("Please select a departure date");
+            toast.warning("Please select a departure date");
             return;
         }
 
         // Validate passenger count
         if (numberOfAdults < 1) {
-            alert("At least 1 adult is required");
+            toast.warning("At least 1 adult is required");
             return;
         }
 
         // Validate slots availability
         const slotsNeeded = calculateSlotsNeeded();
         if (slotsNeeded > selectedSchedule.slots_available) {
-            alert(`Not enough slots available. You need ${slotsNeeded} slots but only ${selectedSchedule.slots_available} are available.`);
+            toast.warning(`Not enough slots available. You need ${slotsNeeded} slots but only ${selectedSchedule.slots_available} are available.`);
             return;
         }
 
         // Validate user info
         if (!userInfo.fullName || !userInfo.email || !userInfo.phone) {
-            alert(translations.pleaseFillAllFields || "Vui lòng điền đầy đủ thông tin");
+            toast.warning(translations.pleaseFillAllFields || "Vui lòng điền đầy đủ thông tin");
             return;
         }
 
         // Validate payment method
         if (!paymentMethod) {
-            alert(translations.pleaseSelectPaymentMethod || "Vui lòng chọn phương thức thanh toán");
+            toast.warning(translations.pleaseSelectPaymentMethod || "Vui lòng chọn phương thức thanh toán");
             return;
         }
 
@@ -342,14 +344,14 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations, avail
         // Validate card info if credit card is selected
         if (paymentMethod === "card") {
             if (!validateCardInfo()) {
-                alert(translations.pleaseFixCardErrors || "Vui lòng sửa các lỗi trong thông tin thẻ");
+                toast.warning(translations.pleaseFixCardErrors || "Vui lòng sửa các lỗi trong thông tin thẻ");
                 return;
             }
 
             // Process Stripe payment
             const result = await processStripePayment();
             if (!result.success) {
-                alert(translations.paymentFailed || "Thanh toán thất bại: " + result.error);
+                toast.error(translations.paymentFailed || "Thanh toán thất bại: " + result.error);
                 return;
             }
             paymentIntentId = result.payment_intent_id;
@@ -403,11 +405,11 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations, avail
             }
 
             const bookingData = await bookingResponse.json();
-            alert(translations.bookingSuccess || "Đặt tour thành công! Mã đặt tour: " + bookingData.booking_id);
+            toast.success(translations.bookingSuccess || "Đặt tour thành công! Mã đặt tour: " + bookingData.booking_id, 8000);
             onClose();
         } catch (error) {
             console.error('Error saving booking:', error);
-            alert(translations.bookingSaveError || "Thanh toán thành công nhưng lưu đặt tour thất bại. Vui lòng liên hệ hỗ trợ.");
+            toast.error(translations.bookingSaveError || "Thanh toán thành công nhưng lưu đặt tour thất bại. Vui lòng liên hệ hỗ trợ.");
         }
     };
 

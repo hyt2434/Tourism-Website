@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
 import { createBooking } from "../../api/bookings";
+import { useToast } from "../../context/ToastContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -36,6 +37,7 @@ function EnhancedBookingForm({
     basePrice 
 }) {
     const { translations } = useLanguage();
+    const toast = useToast();
     const stripe = useStripe();
     const elements = useElements();
     
@@ -338,11 +340,11 @@ function EnhancedBookingForm({
     const handleNext = () => {
         if (currentStep === 1) {
             if (!selectedSchedule || numberOfPeople < 1) {
-                alert(translations.pleaseSelectDateAndPeople || "Please select departure date and number of people");
+                toast.warning(translations.pleaseSelectDateAndPeople || "Please select departure date and number of people");
                 return;
             }
             if (numberOfPeople > selectedSchedule.slots_available) {
-                alert(`Chỉ còn ${selectedSchedule.slots_available} chỗ trống`);
+                toast.warning(`Chỉ còn ${selectedSchedule.slots_available} chỗ trống`);
                 return;
             }
         }
@@ -356,24 +358,24 @@ function EnhancedBookingForm({
     const handleSubmit = async () => {
         // Validate user info
         if (!userInfo.fullName || !userInfo.email || !userInfo.phone) {
-            alert(translations.pleaseFillAllInfo || "Please fill in all information");
+            toast.warning(translations.pleaseFillAllInfo || "Please fill in all information");
             return;
         }
         
         // Validate payment method
         if (!paymentMethod) {
-            alert(translations.pleaseSelectPaymentMethod || "Please select payment method");
+            toast.warning(translations.pleaseSelectPaymentMethod || "Please select payment method");
             return;
         }
 
         // Validate card details if card payment
         if (paymentMethod === "card") {
             if (!cardholderName.trim()) {
-                alert(translations.pleaseEnterCardholderName || "Please enter cardholder name");
+                toast.warning(translations.pleaseEnterCardholderName || "Please enter cardholder name");
                 return;
             }
             if (!stripe || !elements) {
-                alert(translations.stripeNotInitialized || "Stripe not initialized. Please try again.");
+                toast.error(translations.stripeNotInitialized || "Stripe not initialized. Please try again.");
                 return;
             }
         }
@@ -465,7 +467,7 @@ function EnhancedBookingForm({
             const result = await createBooking(bookingData);
             
             if (result.success) {
-                alert(`Đặt tour thành công!\n\nMã đặt tour: ${result.booking_id}\nChúng tôi đã gửi email xác nhận đến ${userInfo.email}`);
+                toast.success(`Đặt tour thành công!\n\nMã đặt tour: ${result.booking_id}\nChúng tôi đã gửi email xác nhận đến ${userInfo.email}`, 8000);
                 onClose();
                 // Optionally redirect to booking confirmation page
                 // window.location.href = `/bookings/${result.booking_id}`;
@@ -474,7 +476,7 @@ function EnhancedBookingForm({
             }
         } catch (error) {
             console.error('Booking error:', error);
-            alert(`Đặt tour thất bại: ${error.message}`);
+            toast.error(`Đặt tour thất bại: ${error.message}`);
         }
     };
 
@@ -768,7 +770,7 @@ function Step2Customize({
     const toggleMeal = (key) => {
         // Can't modify meals if transport is opted out
         if (hasOptedOutTransport()) {
-            alert(translations.cannotRemoveMealsAlert || 'You cannot remove meals when you have deselected some transport. Please select all transport first.');
+            toast.warning(translations.cannotRemoveMealsAlert || 'You cannot remove meals when you have deselected some transport. Please select all transport first.');
             return;
         }
         
@@ -781,7 +783,7 @@ function Step2Customize({
     const toggleTransport = (trip) => {
         // Can't modify transport if meals are opted out
         if (hasOptedOutMeals()) {
-            alert(translations.cannotRemoveTransportAlert || 'You cannot remove transport when you have deselected some meals. Please select all meals first.');
+            toast.warning(translations.cannotRemoveTransportAlert || 'You cannot remove transport when you have deselected some meals. Please select all meals first.');
             return;
         }
         

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "../ui/dialog";
 import { useLanguage } from "../../context/LanguageContext";
+import { useToast } from "../../context/ToastContext";
 import { 
   getPendingPartnerRegistrations, 
   approvePartnerRegistration, 
@@ -27,6 +28,7 @@ import {
 
 export default function PartnerApprovalTab() {
   const { translations: t } = useLanguage();
+  const toast = useToast();
   const [pendingPartners, setPendingPartners] = useState([]);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -43,7 +45,7 @@ export default function PartnerApprovalTab() {
       setPendingPartners(data);
     } catch (error) {
       console.error("Error fetching pending partners:", error);
-      alert("Failed to load pending partner registrations. Please try again.");
+      toast.error("Failed to load pending partner registrations. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -60,10 +62,10 @@ export default function PartnerApprovalTab() {
       setPendingPartners(prev => prev.filter(p => p.id !== partnerId));
       
       // Show credentials to admin
-      alert(`Partner approved successfully!\n\nUser account created:\nEmail: ${result.email}\nTemporary Password: ${result.temporaryPassword}\n\nPlease send these credentials to the partner via email.`);
+      toast.success(`Partner approved successfully!\n\nUser account created:\nEmail: ${result.email}\nTemporary Password: ${result.temporaryPassword}\n\nPlease send these credentials to the partner via email.`);
     } catch (error) {
       console.error("Error approving partner:", error);
-      alert(`Failed to approve partner: ${error.message}`);
+      toast.error(`Failed to approve partner: ${error.message}`);
     }
   };
 
@@ -75,10 +77,10 @@ export default function PartnerApprovalTab() {
       await rejectPartnerRegistration(partnerId, reason);
       
       setPendingPartners(prev => prev.filter(p => p.id !== partnerId));
-      alert("Partner registration rejected successfully.");
+      toast.success("Partner registration rejected successfully.");
     } catch (error) {
       console.error("Error rejecting partner:", error);
-      alert(`Failed to reject partner: ${error.message}`);
+      toast.error(`Failed to reject partner: ${error.message}`);
     }
   };
 

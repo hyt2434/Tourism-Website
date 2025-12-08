@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useToast } from '../../context/ToastContext';
 import { 
   Calendar, 
   Play, 
@@ -14,6 +15,7 @@ import {
 
 export default function ScheduleManagementTab() {
   const { t, language } = useLanguage();
+  const toast = useToast();
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -71,14 +73,14 @@ export default function ScheduleManagementTab() {
       const data = await response.json();
       
       if (data.success) {
-        alert('Tour started successfully!');
+        toast.success('Tour started successfully!');
         loadSchedules();
       } else {
         throw new Error(data.message || 'Failed to start tour');
       }
     } catch (err) {
       console.error('Error starting tour:', err);
-      alert(`Error: ${err.message}`);
+      toast.error(`Error: ${err.message}`);
     } finally {
       setActionLoading(null);
     }
@@ -100,14 +102,14 @@ export default function ScheduleManagementTab() {
       const data = await response.json();
       
       if (data.success) {
-        alert(`Tour completed! Revenue distributed: ${formatPrice(data.total_revenue_distributed)}`);
+        toast.success(`Tour completed! Revenue distributed: ${formatPrice(data.total_revenue_distributed)}`);
         loadSchedules();
       } else {
         throw new Error(data.message || 'Failed to complete tour');
       }
     } catch (err) {
       console.error('Error completing tour:', err);
-      alert(`Error: ${err.message}`);
+      toast.error(`Error: ${err.message}`);
     } finally {
       setActionLoading(null);
     }
@@ -129,14 +131,14 @@ export default function ScheduleManagementTab() {
       const data = await response.json();
       
       if (data.success) {
-        alert(`Tour cancelled. ${data.cancelled_bookings_count} bookings refunded.`);
+        toast.success(`Tour cancelled. ${data.cancelled_bookings_count} bookings refunded.`);
         loadSchedules();
       } else {
         throw new Error(data.message || 'Failed to cancel tour');
       }
     } catch (err) {
       console.error('Error cancelling tour:', err);
-      alert(`Error: ${err.message}`);
+      toast.error(`Error: ${err.message}`);
     } finally {
       setActionLoading(null);
     }

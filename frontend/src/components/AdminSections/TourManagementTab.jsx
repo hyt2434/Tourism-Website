@@ -40,6 +40,7 @@ import {
 } from '../../api/tours';
 import { getCities } from '../../api/cities';
 import { useLanguage } from '../../context/LanguageContext';
+import { useToast } from '../../context/ToastContext';
 import { 
   getAllPromotions, 
   createPromotion, 
@@ -77,6 +78,7 @@ const TIME_PERIODS = ['morning', 'noon', 'evening'];
 
 export default function TourManagementTab() {
   const { translations } = useLanguage();
+  const toast = useToast();
   const [activeSection, setActiveSection] = useState('tours'); // 'tours' or 'promotions'
   const [tours, setTours] = useState([]);
   const [cities, setCities] = useState([]);
@@ -261,7 +263,7 @@ export default function TourManagementTab() {
       setTotalTours(data.total || 0);
     } catch (error) {
       console.error('Error loading tours:', error);
-      alert('Failed to load tours');
+      toast.error('Failed to load tours');
     } finally {
       setLoading(false);
     }
@@ -330,7 +332,7 @@ export default function TourManagementTab() {
       setSelectedAccommodationRooms(data || []);
     } catch (error) {
       console.error('Error loading accommodation rooms:', error);
-      alert('Failed to load accommodation rooms: ' + error.message);
+      toast.error('Failed to load accommodation rooms: ' + error.message);
     } finally {
       setLoadingServiceDetails(false);
     }
@@ -380,7 +382,7 @@ export default function TourManagementTab() {
       }));
     } catch (error) {
       console.error('Error loading restaurant menu:', error);
-      alert('Failed to load restaurant menu: ' + error.message);
+      toast.error('Failed to load restaurant menu: ' + error.message);
     } finally {
       setLoadingServiceDetails(false);
     }
@@ -418,7 +420,7 @@ export default function TourManagementTab() {
       }));
     } catch (error) {
       console.error('Error loading restaurant set meals:', error);
-      alert('Failed to load restaurant set meals: ' + error.message);
+      toast.error('Failed to load restaurant set meals: ' + error.message);
     } finally {
       setLoadingServiceDetails(false);
     }
@@ -553,7 +555,7 @@ export default function TourManagementTab() {
       });
     } catch (error) {
       console.error('Error loading tour details:', error);
-      alert('Failed to load tour details');
+      toast.error('Failed to load tour details');
     }
   };
 
@@ -562,11 +564,11 @@ export default function TourManagementTab() {
     
     try {
       await deleteTour(tourId);
-      alert('Tour deleted successfully');
+      toast.success('Tour deleted successfully');
       loadTours(currentPage, searchQuery);
     } catch (error) {
       console.error('Error deleting tour:', error);
-      alert('Failed to delete tour');
+      toast.error('Failed to delete tour');
     }
   };
 
@@ -589,7 +591,7 @@ export default function TourManagementTab() {
       setSchedules(data || []);
     } catch (error) {
       console.error('Error loading schedules:', error);
-      alert('Failed to load schedules');
+      toast.error('Failed to load schedules');
     } finally {
       setLoadingSchedules(false);
     }
@@ -597,7 +599,7 @@ export default function TourManagementTab() {
 
   const handleAddSchedule = async () => {
     if (!newSchedule.departure_datetime) {
-      alert('Please select a departure date and time');
+      toast.warning('Please select a departure date and time');
       return;
     }
 
@@ -607,10 +609,10 @@ export default function TourManagementTab() {
       });
       setNewSchedule({ departure_datetime: '' });
       await loadSchedules(currentScheduleTour.id);
-      alert('Schedule added successfully');
+      toast.success('Schedule added successfully');
     } catch (error) {
       console.error('Error adding schedule:', error);
-      alert('Failed to add schedule');
+      toast.error('Failed to add schedule');
     }
   };
 
@@ -620,10 +622,10 @@ export default function TourManagementTab() {
     try {
       await deleteTourSchedule(currentScheduleTour.id, scheduleId);
       await loadSchedules(currentScheduleTour.id);
-      alert('Schedule deleted successfully');
+      toast.success('Schedule deleted successfully');
     } catch (error) {
       console.error('Error deleting schedule:', error);
-      alert(error.message || 'Failed to delete schedule');
+      toast.error(error.message || 'Failed to delete schedule');
     }
   };
 
@@ -635,7 +637,7 @@ export default function TourManagementTab() {
       await loadSchedules(currentScheduleTour.id);
     } catch (error) {
       console.error('Error updating schedule:', error);
-      alert('Failed to update schedule');
+      toast.error('Failed to update schedule');
     }
   };
 
@@ -657,11 +659,11 @@ export default function TourManagementTab() {
     setLoading(true);
     try {
       const result = await syncAllTourPrices();
-      alert(`Successfully synced ${result.updated_count} out of ${result.total_tours} tours.${result.errors ? `\n\nErrors: ${result.errors.join('\n')}` : ''}`);
+      toast.success(`Successfully synced ${result.updated_count} out of ${result.total_tours} tours.${result.errors ? `\n\nErrors: ${result.errors.join('\n')}` : ''}`);
       loadTours(currentPage, searchQuery); // Reload tours to show updated data
     } catch (error) {
       console.error('Error syncing tours:', error);
-      alert('Failed to sync tours: ' + (error.message || 'Unknown error'));
+      toast.error('Failed to sync tours: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -674,7 +676,7 @@ export default function TourManagementTab() {
       setPromotions(data);
     } catch (error) {
       console.error('Error loading promotions:', error);
-      alert('Failed to load promotions');
+      toast.error('Failed to load promotions');
     }
   };
 
@@ -728,11 +730,11 @@ export default function TourManagementTab() {
     
     try {
       await deletePromotion(promotionId);
-      alert('Promotion deleted successfully');
+      toast.success('Promotion deleted successfully');
       loadPromotions();
     } catch (error) {
       console.error('Error deleting promotion:', error);
-      alert('Failed to delete promotion');
+      toast.error('Failed to delete promotion');
     }
   };
 
@@ -743,10 +745,10 @@ export default function TourManagementTab() {
     try {
       if (editingPromotion) {
         await updatePromotion(editingPromotion.id, promotionFormData);
-        alert('Promotion updated successfully');
+        toast.success('Promotion updated successfully');
       } else {
         await createPromotion(promotionFormData);
-        alert('Promotion created successfully');
+        toast.success('Promotion created successfully');
       }
       
       setShowPromotionForm(false);
@@ -771,7 +773,7 @@ export default function TourManagementTab() {
       loadPromotions();
     } catch (error) {
       console.error('Error saving promotion:', error);
-      alert('Failed to save promotion: ' + (error.message || 'Unknown error'));
+      toast.error('Failed to save promotion: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -796,17 +798,17 @@ export default function TourManagementTab() {
       
       if (editingTour) {
         await updateTour(editingTour.id, tourData);
-        alert('Tour updated successfully');
+        toast.success('Tour updated successfully');
       } else {
         await createTour(tourData);
-        alert('Tour created successfully');
+        toast.success('Tour created successfully');
       }
       
       resetForm();
       loadTours(currentPage, searchQuery);
     } catch (error) {
       console.error('Error saving tour:', error);
-      alert('Failed to save tour: ' + (error.response?.data?.error || error.message));
+      toast.error('Failed to save tour: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -913,7 +915,7 @@ export default function TourManagementTab() {
       });
     } catch (error) {
       console.error('Error processing images:', error);
-      alert('Failed to process images');
+      toast.error('Failed to process images');
     }
   };
 

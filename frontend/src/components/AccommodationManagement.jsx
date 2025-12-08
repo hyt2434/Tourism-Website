@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { useToast } from '../context/ToastContext';
 import { accommodationAPI } from '../api/partnerServices';
 import { processImages } from '../utils/imageUpload';
 
 const AccommodationManagement = () => {
   const { translations: t } = useLanguage();
+  const toast = useToast();
   const [accommodations, setAccommodations] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedAccommodation, setSelectedAccommodation] = useState(null);
@@ -80,7 +82,7 @@ const AccommodationManagement = () => {
       const base64Images = await processImages(files);
       setFormData({ ...formData, images: [...formData.images, ...base64Images] });
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -96,9 +98,9 @@ const AccommodationManagement = () => {
       setShowForm(false);
       resetForm();
       loadAccommodations();
-      alert(t.serviceManagement.saveSuccess);
+      toast.success(t.serviceManagement.saveSuccess);
     } catch (err) {
-      alert(t.serviceManagement.errorOccurred + ': ' + err.message);
+      toast.error(t.serviceManagement.errorOccurred + ': ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -109,9 +111,9 @@ const AccommodationManagement = () => {
     try {
       await accommodationAPI.delete(id);
       loadAccommodations();
-      alert(t.serviceManagement.deleteSuccess);
+      toast.success(t.serviceManagement.deleteSuccess);
     } catch (err) {
-      alert(t.serviceManagement.errorOccurred + ': ' + err.message);
+      toast.error(t.serviceManagement.errorOccurred + ': ' + err.message);
     }
   };
 
@@ -153,7 +155,7 @@ const AccommodationManagement = () => {
       const data = await accommodationAPI.rooms.getAll(accommodationId);
       setRooms(data);
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -192,9 +194,9 @@ const AccommodationManagement = () => {
         images: [],
       });
       loadRooms(selectedAccommodation.id);
-      alert(t.serviceManagement.saveSuccess);
+      toast.success(t.serviceManagement.saveSuccess);
     } catch (err) {
-      alert(t.serviceManagement.errorOccurred + ': ' + err.message);
+      toast.error(t.serviceManagement.errorOccurred + ': ' + err.message);
     }
   };
 
@@ -228,9 +230,9 @@ const AccommodationManagement = () => {
     try {
       await accommodationAPI.rooms.delete(selectedAccommodation.id, roomId);
       loadRooms(selectedAccommodation.id);
-      alert('Room deleted successfully');
+      toast.success('Room deleted successfully');
     } catch (err) {
-      alert('Error deleting room: ' + err.message);
+      toast.error('Error deleting room: ' + err.message);
     }
   };
 
@@ -240,7 +242,7 @@ const AccommodationManagement = () => {
       const base64Images = await processImages(files);
       setRoomFormData({ ...roomFormData, images: [...roomFormData.images, ...base64Images] });
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 

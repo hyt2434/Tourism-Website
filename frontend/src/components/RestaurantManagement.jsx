@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { useToast } from '../context/ToastContext';
 import { restaurantAPI } from '../api/partnerServices';
 import { processImages } from '../utils/imageUpload';
 
 const RestaurantManagement = () => {
   const { translations: t } = useLanguage();
+  const toast = useToast();
   const [restaurants, setRestaurants] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
@@ -86,7 +88,7 @@ const RestaurantManagement = () => {
       const base64Images = await processImages(files);
       setFormData({ ...formData, images: [...formData.images, ...base64Images] });
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -102,9 +104,9 @@ const RestaurantManagement = () => {
       setShowForm(false);
       resetForm();
       loadRestaurants();
-      alert(t.serviceManagement.saveSuccess);
+      toast.success(t.serviceManagement.saveSuccess);
     } catch (err) {
-      alert(t.serviceManagement.errorOccurred + ': ' + err.message);
+      toast.error(t.serviceManagement.errorOccurred + ': ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -115,9 +117,9 @@ const RestaurantManagement = () => {
     try {
       await restaurantAPI.delete(id);
       loadRestaurants();
-      alert(t.serviceManagement.deleteSuccess);
+      toast.success(t.serviceManagement.deleteSuccess);
     } catch (err) {
-      alert(t.serviceManagement.errorOccurred + ': ' + err.message);
+      toast.error(t.serviceManagement.errorOccurred + ': ' + err.message);
     }
   };
 
@@ -157,7 +159,7 @@ const RestaurantManagement = () => {
       const data = await restaurantAPI.menu.getAll(restaurantId);
       setMenuItems(data);
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -178,9 +180,9 @@ const RestaurantManagement = () => {
       setSelectedMenuItem(null);
       resetMenuForm();
       loadMenuItems(selectedRestaurant.id);
-      alert(t.serviceManagement.saveSuccess);
+      toast.success(t.serviceManagement.saveSuccess);
     } catch (err) {
-      alert(t.serviceManagement.errorOccurred + ': ' + err.message);
+      toast.error(t.serviceManagement.errorOccurred + ': ' + err.message);
     }
   };
 
@@ -189,9 +191,9 @@ const RestaurantManagement = () => {
     try {
       await restaurantAPI.menu.delete(selectedRestaurant.id, itemId);
       loadMenuItems(selectedRestaurant.id);
-      alert(t.serviceManagement.deleteSuccess);
+      toast.success(t.serviceManagement.deleteSuccess);
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -240,7 +242,7 @@ const RestaurantManagement = () => {
       const base64Images = await processImages(files);
       setMenuFormData({ ...menuFormData, images: [...menuFormData.images, ...base64Images] });
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -255,7 +257,7 @@ const RestaurantManagement = () => {
       const data = await restaurantAPI.setMeals.getAll(restaurantId);
       setSetMeals(data);
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -274,9 +276,9 @@ const RestaurantManagement = () => {
       setSelectedSetMeal(null);
       resetSetMealForm();
       loadSetMeals(selectedRestaurant.id);
-      alert('Set meal saved successfully');
+      toast.success('Set meal saved successfully');
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error('Error: ' + err.message);
     }
   };
 
@@ -285,9 +287,9 @@ const RestaurantManagement = () => {
     try {
       await restaurantAPI.setMeals.delete(selectedRestaurant.id, setMealId);
       loadSetMeals(selectedRestaurant.id);
-      alert('Set meal deleted successfully');
+      toast.success('Set meal deleted successfully');
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
