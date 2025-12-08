@@ -3120,7 +3120,7 @@ def create_tours(user_ids):
                 'description': 'Tham quan Ninh Bình với cảnh quan non nước hữu tình. Đi thuyền Tam Cốc, thăm Chùa Bái Đính, Tràng An, Hang Múa.',
                 'departure_city': 'Hà Nội',
                 'destination_city': 'Ninh Bình',
-                'number_of_members': 8,
+                'number_of_members': 4,
                 'total_price': 1800000
             },
             {
@@ -3129,7 +3129,7 @@ def create_tours(user_ids):
                 'description': 'Khám phá Đà Nẵng và Bà Nà Hills. Đi cáp treo, tham quan Cầu Vàng, Làng Pháp, tắm biển Mỹ Khê, thưởng thức ẩm thực địa phương.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Đà Nẵng',
-                'number_of_members': 6,
+                'number_of_members': 8,
                 'total_price': 3200000
             },
             {
@@ -3749,15 +3749,15 @@ def main():
             create_tour_tables()
             print("✅ Tour tables created/verified")
             
-            # Create tour reviews table
-            from src.models.tour_reviews_schema import create_tour_reviews_table
-            create_tour_reviews_table()
-            print("✅ Tour reviews table created/verified")
-            
             # Create remaining core tables (posts, comments, bookings, etc.)
             from src.models.models import create_tables
             create_tables()
             print("✅ Core tables created/verified")
+            
+            # Create tour reviews table (requires bookings table to exist)
+            from src.models.tour_reviews_schema import create_tour_reviews_table
+            create_tour_reviews_table()
+            print("✅ Tour reviews table created/verified")
             
             # Initialize cities
             from src.services.city_init import init_cities

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Star, User, Calendar } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const TourReviews = ({ tourId }) => {
+    const { translations } = useLanguage();
     const [reviews, setReviews] = useState([]);
     const [averageRating, setAverageRating] = useState(0);
     const [totalReviews, setTotalReviews] = useState(0);
@@ -66,20 +68,20 @@ const TourReviews = ({ tourId }) => {
     }
 
     return (
-        <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Đánh giá từ khách hàng</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">{translations?.customerReviews || "Đánh giá từ khách hàng"}</h2>
 
             {/* Rating Summary */}
             {totalReviews > 0 ? (
-                <div className="bg-blue-50 rounded-lg p-6 mb-6">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 mb-6">
                     <div className="flex items-center gap-6">
                         <div className="text-center">
-                            <div className="text-5xl font-bold text-blue-600">{averageRating.toFixed(1)}</div>
+                            <div className="text-5xl font-bold text-blue-600 dark:text-blue-400">{averageRating.toFixed(1)}</div>
                             <div className="flex justify-center mt-2">
                                 {renderStars(Math.round(averageRating))}
                             </div>
-                            <div className="text-sm text-gray-600 mt-1">
-                                {totalReviews} đánh giá
+                            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                {totalReviews} {translations?.reviews || "đánh giá"}
                             </div>
                         </div>
                         
@@ -90,14 +92,14 @@ const TourReviews = ({ tourId }) => {
                                 
                                 return (
                                     <div key={star} className="flex items-center gap-2 mb-2">
-                                        <span className="text-sm text-gray-600 w-12">{star} sao</span>
-                                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                        <span className="text-sm text-gray-600 dark:text-gray-400 w-12">{star} {translations?.stars || "sao"}</span>
+                                        <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                             <div
                                                 className="bg-yellow-400 h-2 rounded-full transition-all"
                                                 style={{ width: `${percentage}%` }}
                                             />
                                         </div>
-                                        <span className="text-sm text-gray-600 w-12 text-right">{count}</span>
+                                        <span className="text-sm text-gray-600 dark:text-gray-400 w-12 text-right">{count}</span>
                                     </div>
                                 );
                             })}

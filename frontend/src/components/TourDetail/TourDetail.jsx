@@ -676,7 +676,7 @@ export default function TourDetail() {
                         {tourData.roomBookings && tourData.roomBookings.length > 0 && (
                           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                             <h6 className="font-medium text-gray-900 dark:text-white mb-3">
-                              Chi tiết phòng ({tourData.roomBookings.reduce((sum, r) => sum + r.quantity, 0)} phòng)
+                              {translations.roomDetails || "Room Details"} ({tourData.roomBookings.reduce((sum, r) => sum + r.quantity, 0)} {translations.rooms || "rooms"})
                             </h6>
                             <div className="grid md:grid-cols-2 gap-3">
                               {tourData.roomBookings.map((room, idx) => (
@@ -757,7 +757,7 @@ export default function TourDetail() {
                           return (
                           <div key={day} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                             <h5 className="font-semibold text-gray-900 dark:text-white mb-3">
-                              Ngày {day}
+                              {translations.day || "Day"} {day}
                             </h5>
                             <div className="space-y-3">
                               {sortedMeals.map((meal, idx) => (
@@ -766,9 +766,9 @@ export default function TourDetail() {
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-1">
                                         <Badge variant="secondary" className="text-xs">
-                                          {meal.meal_session === 'morning' ? '🌅 Sáng' : 
-                                           meal.meal_session === 'noon' ? '☀️ Trưa' : 
-                                           '🌙 Tối'}
+                                          {meal.meal_session === 'morning' ? '🌅 ' + (translations.morning || 'Morning') : 
+                                           meal.meal_session === 'noon' ? '☀️ ' + (translations.noon || 'Noon') : 
+                                           '🌙 ' + (translations.evening || 'Evening')}
                                         </Badge>
                                       </div>
                                       <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1">

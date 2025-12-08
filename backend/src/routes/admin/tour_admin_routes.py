@@ -773,6 +773,40 @@ def update_tour(tour_id):
                     VALUES (%s, %s, %s)
                     ON CONFLICT (tour_id, room_id) DO UPDATE SET quantity = EXCLUDED.quantity
                 """, (tour_id, booking['room_id'], booking['quantity']))
+            
+            # Recalculate number of members from room bookings and update schedules
+            cur.execute("""
+                SELECT ar.bed_type, trb.quantity
+                FROM tour_room_bookings trb
+                JOIN accommodation_rooms ar ON trb.room_id = ar.id
+                WHERE trb.tour_id = %s
+            """, (tour_id,))
+            room_bookings = cur.fetchall()
+            
+            # Calculate number of members from room bookings
+            # Formula: quantity × people_per_room
+            # Double bed = 2 people, Queen bed = 2 people, King bed = 3 people
+            calculated_members = 0
+            if room_bookings:
+                for bed_type, quantity in room_bookings:
+                    people_per_room = 3 if bed_type == 'King' else 2
+                    calculated_members += quantity * people_per_room
+            
+            # Default to 1 if no rooms selected
+            if calculated_members == 0:
+                calculated_members = 1
+            
+            # Update number of members in tours table
+            cur.execute("""
+                UPDATE tours_admin SET number_of_members = %s WHERE id = %s
+            """, (calculated_members, tour_id))
+            
+            # Update max_slots in all schedules for this tour
+            cur.execute("""
+                UPDATE tour_schedules 
+                SET max_slots = %s 
+                WHERE tour_id = %s
+            """, (calculated_members, tour_id))
         
         # Update selected set meals if provided
         if 'selectedSetMeals' in data:

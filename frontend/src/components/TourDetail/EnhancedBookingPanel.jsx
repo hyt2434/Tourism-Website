@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, Fragment, useRef } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Button } from "../ui/button";
@@ -39,8 +39,18 @@ function EnhancedBookingForm({
     const stripe = useStripe();
     const elements = useElements();
     
+    // Ref for content container
+    const contentRef = useRef(null);
+    
     // Booking flow steps
     const [currentStep, setCurrentStep] = useState(1); // 1: Date & People, 2: Customize, 3: Confirm
+    
+    // Scroll to top when step changes
+    useEffect(() => {
+        if (contentRef.current) {
+            contentRef.current.scrollTop = 0;
+        }
+    }, [currentStep]);
     
     // Step 1: Date and People Selection
     const [schedules, setSchedules] = useState([]);
@@ -189,9 +199,9 @@ function EnhancedBookingForm({
                 
                 let description = '';
                 if (numQuadRooms > 0 && numStandardRooms > 0) {
-                    description = `${numQuadRooms} phòng Quad (4 người) + ${numStandardRooms} phòng Standard (2 người)`;
+                    description = `${numQuadRooms} ${translations.quadRooms || "Quad rooms"} (4 ${translations.people || "people"}) + ${numStandardRooms} ${translations.standardRooms || "Standard rooms"} (2 ${translations.people || "people"})`;
                 } else if (numQuadRooms > 0) {
-                    description = `${numQuadRooms} phòng Quad (4 người)`;
+                    description = `${numQuadRooms} ${translations.quadRooms || "Quad rooms"} (4 ${translations.people || "people"})`;
                 }
                 
                 upgrades.push({
@@ -328,7 +338,7 @@ function EnhancedBookingForm({
     const handleNext = () => {
         if (currentStep === 1) {
             if (!selectedSchedule || numberOfPeople < 1) {
-                alert("Vui lòng chọn ngày khởi hành và số lượng người");
+                alert(translations.pleaseSelectDateAndPeople || "Please select departure date and number of people");
                 return;
             }
             if (numberOfPeople > selectedSchedule.slots_available) {
@@ -346,24 +356,24 @@ function EnhancedBookingForm({
     const handleSubmit = async () => {
         // Validate user info
         if (!userInfo.fullName || !userInfo.email || !userInfo.phone) {
-            alert("Vui lòng điền đầy đủ thông tin");
+            alert(translations.pleaseFillAllInfo || "Please fill in all information");
             return;
         }
         
         // Validate payment method
         if (!paymentMethod) {
-            alert("Vui lòng chọn phương thức thanh toán");
+            alert(translations.pleaseSelectPaymentMethod || "Please select payment method");
             return;
         }
 
         // Validate card details if card payment
         if (paymentMethod === "card") {
             if (!cardholderName.trim()) {
-                alert("Vui lòng nhập tên chủ thẻ");
+                alert(translations.pleaseEnterCardholderName || "Please enter cardholder name");
                 return;
             }
             if (!stripe || !elements) {
-                alert("Stripe chưa được khởi tạo. Vui lòng thử lại.");
+                alert(translations.stripeNotInitialized || "Stripe not initialized. Please try again.");
                 return;
             }
         }
@@ -495,9 +505,9 @@ function EnhancedBookingForm({
                 <div className="flex items-center justify-center px-6 py-4 bg-gray-50 dark:bg-gray-800/50">
                     <div className="flex items-center gap-2 max-w-2xl w-full">
                     {[
-                        { num: 1, label: 'Ngày & Số người' },
-                        { num: 2, label: 'Tùy chỉnh' },
-                        { num: 3, label: 'Xác nhận' }
+                        { num: 1, label: translations.dateAndPeople || 'Date & People' },
+                        { num: 2, label: translations.customizeTrip || 'Customize' },
+                        { num: 3, label: translations.confirmPayment || 'Confirm' }
                     ].map((step, idx) => (
                         <Fragment key={step.num}>
                             <div className="flex flex-col items-center" style={{ width: '100px' }}>
@@ -525,7 +535,7 @@ function EnhancedBookingForm({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div ref={contentRef} className="flex-1 overflow-y-auto p-6">
                     {currentStep === 1 && (
                         <Step1DatePeople
                             schedules={schedules}
@@ -535,6 +545,7 @@ function EnhancedBookingForm({
                             setNumberOfPeople={setNumberOfPeople}
                             loadingSchedules={loadingSchedules}
                             tourData={tourData}
+                            translations={translations}
                         />
                     )}
 
@@ -550,6 +561,7 @@ function EnhancedBookingForm({
                             transportOptions={transportOptions}
                             setTransportOptions={setTransportOptions}
                             priceBreakdown={priceBreakdown}
+                            translations={translations}
                         />
                     )}
 
@@ -570,6 +582,7 @@ function EnhancedBookingForm({
                             transportOptions={transportOptions}
                             priceBreakdown={priceBreakdown}
                             tourData={tourData}
+                            translations={translations}
                         />
                     )}
                 </div>
@@ -577,7 +590,7 @@ function EnhancedBookingForm({
                 {/* Footer */}
                 <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                     <div className="text-left">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Tổng tiền</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{translations.total || "Total"}</p>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white">
                             {calculatedPrice.toLocaleString()} VND
                         </p>
@@ -589,12 +602,12 @@ function EnhancedBookingForm({
                                 onClick={handleBack}
                             >
                                 <ChevronLeft className="w-4 h-4 mr-2" />
-                                Quay lại
+                                {translations.back || "Back"}
                             </Button>
                         )}
                         {currentStep < 3 ? (
                             <Button onClick={handleNext}>
-                                Tiếp tục
+                                {translations.continue || "Continue"}
                                 <ChevronRight className="w-4 h-4 ml-2" />
                             </Button>
                         ) : (
@@ -617,16 +630,17 @@ function Step1DatePeople({
     numberOfPeople, 
     setNumberOfPeople,
     loadingSchedules,
-    tourData
+    tourData,
+    translations
 }) {
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-lg font-semibold mb-4 text-center">Chọn ngày khởi hành</h3>
+                <h3 className="text-lg font-semibold mb-4 text-center">{translations.selectDepartureDate || "Select departure date"}</h3>
                 {loadingSchedules ? (
-                    <p className="text-gray-500 text-center">Đang tải lịch trình...</p>
+                    <p className="text-gray-500 text-center">{translations.loadingSchedules || "Loading schedules..."}</p>
                 ) : schedules.length === 0 ? (
-                    <p className="text-gray-500 text-center">Không có lịch trình khả dụng</p>
+                    <p className="text-gray-500 text-center">{translations.noSchedulesAvailable || "No schedules available"}</p>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
                         {schedules.map((schedule) => {
@@ -668,7 +682,7 @@ function Step1DatePeople({
 
             <div>
                 <Label htmlFor="numberOfPeople" className="text-base font-semibold mb-2 block text-center">
-                    Số lượng người
+                    {translations.numberOfPeople || "Number of People"}
                 </Label>
                 {selectedSchedule && (
                     <div className="text-center mb-3">
@@ -680,7 +694,7 @@ function Step1DatePeople({
                                 border: 'none'
                             }}
                         >
-                            Còn {selectedSchedule.slots_available} chỗ trống
+                            {selectedSchedule.slots_available} {translations.slotsAvailable || "slots available"}
                         </div>
                     </div>
                 )}
@@ -701,7 +715,7 @@ function Step1DatePeople({
                         max={selectedSchedule?.slots_available || 100}
                         value={numberOfPeople}
                         onChange={(e) => setNumberOfPeople(parseInt(e.target.value) || 1)}
-                        className="w-24 text-center text-lg font-semibold"
+                        className="w-24 text-center text-lg font-semibold bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
                     />
                     <Button
                         type="button"
@@ -714,12 +728,12 @@ function Step1DatePeople({
                     </Button>
                     <span className="text-gray-600 dark:text-gray-400">
                         <Users className="w-5 h-5 inline mr-1" />
-                        người
+                        {translations.people || "people"}
                     </span>
                 </div>
                 {selectedSchedule && numberOfPeople > selectedSchedule.slots_available && (
                     <p className="text-red-500 text-sm mt-2 text-center">
-                        Chỉ còn {selectedSchedule.slots_available} chỗ trống
+                        {translations.onlyXSlotsLeft || `Only ${selectedSchedule.slots_available} slots left`}
                     </p>
                 )}
             </div>
@@ -738,7 +752,8 @@ function Step2Customize({
     setSelectedMeals,
     transportOptions,
     setTransportOptions,
-    priceBreakdown
+    priceBreakdown,
+    translations
 }) {
     // Check if user has opted out of any meals
     const hasOptedOutMeals = () => {
@@ -753,7 +768,7 @@ function Step2Customize({
     const toggleMeal = (key) => {
         // Can't modify meals if transport is opted out
         if (hasOptedOutTransport()) {
-            alert('Bạn không thể bỏ bữa ăn khi đã chọn không dùng một số chuyến xe. Vui lòng chọn lại tất cả chuyến xe trước.');
+            alert(translations.cannotRemoveMealsAlert || 'You cannot remove meals when you have deselected some transport. Please select all transport first.');
             return;
         }
         
@@ -766,7 +781,7 @@ function Step2Customize({
     const toggleTransport = (trip) => {
         // Can't modify transport if meals are opted out
         if (hasOptedOutMeals()) {
-            alert('Bạn không thể bỏ chuyến xe khi đã chọn bỏ một số bữa ăn. Vui lòng chọn lại tất cả bữa ăn trước.');
+            alert(translations.cannotRemoveTransportAlert || 'You cannot remove transport when you have deselected some meals. Please select all meals first.');
             return;
         }
         
@@ -789,7 +804,7 @@ function Step2Customize({
                 </p>
                 
                 {availableRoomUpgrades.length === 0 ? (
-                    <p className="text-gray-500 text-sm">Không có tùy chọn nâng cấp</p>
+                    <p className="text-gray-500 text-sm">{translations.noUpgradeOptions || "No upgrade options available"}</p>
                 ) : (
                     <div className="space-y-3">
                         {/* Current room */}
@@ -803,7 +818,7 @@ function Step2Customize({
                         >
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="font-medium">Phòng hiện tại (Standard)</p>
+                                    <p className="font-medium">{translations.currentRoom || "Current Room (Standard)"}</p>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">
                                         Đã bao gồm trong giá tour
                                     </p>
@@ -867,13 +882,13 @@ function Step2Customize({
             <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-4">
                     <Utensils className="w-5 h-5 text-orange-500" />
-                    <h3 className="text-lg font-semibold">Chọn bữa ăn</h3>
-                    <p className="text-sm text-gray-500">(Bỏ chọn để giảm giá)</p>
+                    <h3 className="text-lg font-semibold">{translations.selectMeals || "Select Meals"}</h3>
+                    <p className="text-sm text-gray-500">{translations.unselectToReduce || "(Unselect to reduce price)"}</p>
                 </div>
                 
                 {hasOptedOutTransport() && (
                     <p className="text-sm text-red-600 dark:text-red-400 mb-3 p-2 bg-red-50 dark:bg-red-900/20 rounded">
-                        ⚠️ Không thể bỏ bữa ăn khi đã bỏ chuyến xe
+                        {translations.cannotRemoveMeals || "⚠️ Cannot remove meals when transport has been deselected"}
                     </p>
                 )}
                 
@@ -893,7 +908,7 @@ function Step2Customize({
 
                             return (
                                 <div key={day} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
-                                    <p className="font-medium mb-2">Ngày {day}</p>
+                                    <p className="font-medium mb-2">{translations.day || "Day"} {day}</p>
                                     <div className="space-y-2">
                                         {sortedMeals.map((meal) => {
                                             const key = `day_${meal.day_number}_${meal.meal_session}`;
@@ -914,13 +929,18 @@ function Step2Customize({
                                                     <div className="flex-1">
                                                         <div className="flex flex-col">
                                                             <span className="text-sm font-medium">
-                                                                {meal.meal_session === 'morning' ? '🌅 Sáng' : 
-                                                                 meal.meal_session === 'noon' ? '☀️ Trưa' : 
-                                                                 '🌙 Tối'} - {meal.set_meal_name}
+                                                                {meal.meal_session === 'morning' ? '🌅 ' + (translations.morning || 'Morning') : 
+                                                                 meal.meal_session === 'noon' ? '☀️ ' + (translations.noon || 'Noon') : 
+                                                                 '🌙 ' + (translations.evening || 'Evening')}
                                                             </span>
                                                             <span className="text-xs text-gray-600 dark:text-gray-400">
                                                                 {meal.restaurant_name}
                                                             </span>
+                                                            {meal.menu_items && meal.menu_items.length > 0 && (
+                                                                <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                                                    {meal.menu_items.map((item, idx) => item.name).join(', ')}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </label>
@@ -938,8 +958,8 @@ function Step2Customize({
             <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-4">
                     <Car className="w-5 h-5 text-blue-500" />
-                    <h3 className="text-lg font-semibold">Phương tiện di chuyển</h3>
-                    <p className="text-sm text-gray-500">(Bỏ chọn để giảm giá)</p>
+                    <h3 className="text-lg font-semibold">{translations.transportation || "Transportation"}</h3>
+                    <p className="text-sm text-gray-500">{translations.unselectToReduce || "(Unselect to reduce price)"}</p>
                 </div>
                 
                 {tourData?.services?.transportation && (
@@ -958,7 +978,7 @@ function Step2Customize({
                                 className="w-4 h-4 rounded border-gray-300 disabled:opacity-50"
                             />
                             <div className="flex-1">
-                                <p className="font-medium">🚌 Chuyến đi ({tourData.departure_city?.name || tourData.departure_city} → {tourData.destination_city?.name || tourData.destination_city})</p>
+                                <p className="font-medium">🚌 {translations.outboundTrip || "Outbound Trip"} ({tourData.departure_city?.name || tourData.departure_city} → {tourData.destination_city?.name || tourData.destination_city})</p>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
                                     Từ {tourData.departure_city?.name || tourData.departure_city} đến {tourData.destination_city?.name || tourData.destination_city}
                                 </p>
@@ -975,7 +995,7 @@ function Step2Customize({
                                 className="w-4 h-4 rounded border-gray-300 disabled:opacity-50"
                             />
                             <div className="flex-1">
-                                <p className="font-medium">🚌 Chuyến về ({tourData.destination_city?.name || tourData.destination_city} → {tourData.departure_city?.name || tourData.departure_city})</p>
+                                <p className="font-medium">🚌 {translations.returnTrip || "Return Trip"} ({tourData.destination_city?.name || tourData.destination_city} → {tourData.departure_city?.name || tourData.departure_city})</p>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
                                     Từ {tourData.destination_city?.name || tourData.destination_city} về {tourData.departure_city?.name || tourData.departure_city}
                                 </p>
@@ -984,13 +1004,13 @@ function Step2Customize({
                         
                         {(!transportOptions.outbound || !transportOptions.return) && (
                             <p className="text-sm text-orange-600 dark:text-orange-400 mt-2 p-2 bg-orange-50 dark:bg-orange-900/20 rounded">
-                                ⚠️ Bạn sẽ tự lo phương tiện cho chuyến đã bỏ chọn
+                                {translations.youWillArrangeTransport || "⚠️ You will arrange your own transport for unselected trips"}
                             </p>
                         )}
                         
                         {hasOptedOutMeals() && (
                             <p className="text-sm text-red-600 dark:text-red-400 mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded">
-                                ⚠️ Không thể bỏ chuyến xe khi đã bỏ bữa ăn
+                                {translations.cannotRemoveTransport || "⚠️ Cannot remove transport when meals have been deselected"}
                             </p>
                         )}
                     </div>
@@ -999,39 +1019,39 @@ function Step2Customize({
 
             {/* Price Summary */}
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                <h4 className="font-semibold mb-3">Chi tiết giá</h4>
+                <h4 className="font-semibold mb-3">{translations.priceDetails || "Price Details"}</h4>
                 <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                        <span>Giá cơ bản ({numberOfPeople} người)</span>
+                        <span>{translations.basePrice || "Base Price"} ({numberOfPeople} {translations.people || "people"})</span>
                         <span>{priceBreakdown.base.toLocaleString()} VND</span>
                     </div>
                     {priceBreakdown.roomUpgrade > 0 && (
                         <div className="flex justify-between text-green-600 dark:text-green-400">
-                            <span>+ Nâng cấp phòng</span>
+                            <span>{translations.roomUpgrade || "+ Room Upgrade"}</span>
                             <span>+{priceBreakdown.roomUpgrade.toLocaleString()} VND</span>
                         </div>
                     )}
                     {priceBreakdown.meals < 0 && (
                         <div className="flex justify-between text-orange-600 dark:text-orange-400">
-                            <span>- Bỏ bớt bữa ăn</span>
+                            <span>{translations.removedMeals || "- Removed Meals"}</span>
                             <span>{priceBreakdown.meals.toLocaleString()} VND</span>
                         </div>
                     )}
                     {priceBreakdown.transportation < 0 && (
                         <div className="flex justify-between text-orange-600 dark:text-orange-400">
-                            <span>- Không dùng xe tour</span>
+                            <span>{translations.removedTransport || "- Removed Transport"}</span>
                             <span>{priceBreakdown.transportation.toLocaleString()} VND</span>
                         </div>
                     )}
                     {priceBreakdown.serviceFee > 0 && (
                         <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                            <span>+ Phí dịch vụ (10%)</span>
+                            <span>+ {translations.serviceFee || "Service Fee"} (10%)</span>
                             <span>+{priceBreakdown.serviceFee.toLocaleString()} VND</span>
                         </div>
                     )}
                     <div className="border-t border-gray-300 dark:border-gray-600 pt-2 mt-2">
                         <div className="flex justify-between font-bold text-base">
-                            <span>Tổng cộng</span>
+                            <span>{translations.total || "Total"}</span>
                             <span className="text-blue-600 dark:text-blue-400">
                                 {priceBreakdown.total.toLocaleString()} VND
                             </span>
@@ -1059,7 +1079,8 @@ function Step3Confirm({
     selectedMeals,
     transportOptions,
     priceBreakdown,
-    tourData
+    tourData,
+    translations
 }) {
     const depDate = selectedSchedule ? new Date(selectedSchedule.departure_datetime) : null;
     const retDate = selectedSchedule ? new Date(selectedSchedule.return_datetime) : null;
@@ -1067,24 +1088,26 @@ function Step3Confirm({
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-lg font-semibold mb-4">Thông tin liên hệ</h3>
+                <h3 className="text-lg font-semibold mb-4">{translations.contactInformation || "Contact Information"}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <Label htmlFor="fullName">Họ và tên *</Label>
+                        <Label htmlFor="fullName">{translations.fullName || "Full Name"} *</Label>
                         <Input
                             id="fullName"
                             value={userInfo.fullName}
                             onChange={(e) => setUserInfo({...userInfo, fullName: e.target.value})}
                             placeholder="Nguyễn Văn A"
+                            className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
                         />
                     </div>
                     <div>
-                        <Label htmlFor="phone">Số điện thoại *</Label>
+                        <Label htmlFor="phone">{translations.phone || "Phone"} *</Label>
                         <Input
                             id="phone"
                             value={userInfo.phone}
                             onChange={(e) => setUserInfo({...userInfo, phone: e.target.value})}
                             placeholder="0912345678"
+                            className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
                         />
                     </div>
                     <div className="md:col-span-2">
@@ -1095,17 +1118,18 @@ function Step3Confirm({
                             value={userInfo.email}
                             onChange={(e) => setUserInfo({...userInfo, email: e.target.value})}
                             placeholder="email@example.com"
+                            className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
                         />
                     </div>
                     <div className="md:col-span-2">
-                        <Label htmlFor="notes">Ghi chú</Label>
+                        <Label htmlFor="notes">{translations.notes || "Notes"}</Label>
                         <textarea
                             id="notes"
                             value={userInfo.notes}
                             onChange={(e) => setUserInfo({...userInfo, notes: e.target.value})}
-                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md"
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                             rows="3"
-                            placeholder="Yêu cầu đặc biệt..."
+                            placeholder={translations.specialRequests || "Special requests..."}
                         />
                     </div>
                 </div>
@@ -1115,7 +1139,7 @@ function Step3Confirm({
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <Wallet className="w-5 h-5" />
-                    Phương thức thanh toán <span className="text-red-500">*</span>
+                    {translations.paymentMethod || "Payment Method"} <span className="text-red-500">*</span>
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Card Payment */}
@@ -1140,10 +1164,10 @@ function Step3Confirm({
                             <CreditCard className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                             <div>
                                 <p className="font-semibold text-gray-900 dark:text-white">
-                                    Thẻ tín dụng/Ghi nợ
+                                    {translations.cardPayment || "Credit/Debit Card"}
                                 </p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Visa, Mastercard, JCB
+                                    {translations.cardPaymentDesc || "Visa, Mastercard, JCB"}
                                 </p>
                             </div>
                         </div>
@@ -1173,10 +1197,10 @@ function Step3Confirm({
                             </div>
                             <div>
                                 <p className="font-semibold text-gray-900 dark:text-white">
-                                    Ví MoMo
+                                    {translations.momoPayment || "MoMo Wallet"}
                                 </p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Thanh toán qua ví điện tử
+                                    {translations.momoPaymentDesc || "Pay via e-wallet"}
                                 </p>
                             </div>
                         </div>
@@ -1187,29 +1211,29 @@ function Step3Confirm({
                 {paymentMethod === "card" && (
                     <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                         <h5 className="text-sm font-semibold mb-4 text-gray-900 dark:text-white">
-                            Thông tin thẻ
+                            {translations.cardInformation || "Card Information"}
                         </h5>
                         <div className="space-y-4">
                             <div>
                                 <Label htmlFor="cardholderName" className="text-sm font-medium mb-2">
-                                    Tên chủ thẻ <span className="text-red-500">*</span>
+                                    {translations.cardholderName || "Cardholder Name"} <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                     id="cardholderName"
                                     type="text"
-                                    placeholder="Nhập tên chủ thẻ"
+                                    placeholder={translations.enterCardholderName || "Enter cardholder name"}
                                     value={cardholderName}
                                     onChange={(e) => {
                                         setCardholderName(e.target.value);
                                         if (cardError) setCardError(null);
                                     }}
-                                    className="h-11"
+                                    className="h-11 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
                                 />
                             </div>
 
                             <div>
                                 <Label className="text-sm font-medium mb-2">
-                                    Thông tin thẻ <span className="text-red-500">*</span>
+                                    {translations.cardDetails || "Card Details"} <span className="text-red-500">*</span>
                                 </Label>
                                 <div className="h-11 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700">
                                     <CardElement
@@ -1217,9 +1241,9 @@ function Step3Confirm({
                                             style: {
                                                 base: {
                                                     fontSize: '16px',
-                                                    color: '#424770',
+                                                    color: document.documentElement.classList.contains('dark') ? '#ffffff' : '#424770',
                                                     '::placeholder': {
-                                                        color: '#aab7c4',
+                                                        color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#aab7c4',
                                                     },
                                                 },
                                                 invalid: {
@@ -1246,33 +1270,33 @@ function Step3Confirm({
             </div>
 
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <h3 className="text-lg font-semibold mb-4">Xác nhận đặt tour</h3>
+                <h3 className="text-lg font-semibold mb-4">{translations.confirmBooking || "Confirm Booking"}</h3>
                 <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-3">
                     <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Ngày khởi hành:</span>
+                        <span className="text-gray-600 dark:text-gray-400">{translations.departureDate || "Departure Date"}:</span>
                         <span className="font-medium">{depDate?.toLocaleDateString('vi-VN')}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Ngày về:</span>
+                        <span className="text-gray-600 dark:text-gray-400">{translations.returnDate || "Return Date"}:</span>
                         <span className="font-medium">{retDate?.toLocaleDateString('vi-VN')}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Số người:</span>
-                        <span className="font-medium">{numberOfPeople} người</span>
+                        <span className="text-gray-600 dark:text-gray-400">{translations.numberOfPeople || "Number of People"}:</span>
+                        <span className="font-medium">{numberOfPeople} {translations.people || "people"}</span>
                     </div>
                     {roomUpgrade && (
                         <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Phòng:</span>
+                            <span className="text-gray-600 dark:text-gray-400">{translations.room || "Room"}:</span>
                             <span className="font-medium">{roomUpgrade.room_type}</span>
                         </div>
                     )}
                     {(!transportOptions.outbound || !transportOptions.return) && (
                         <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Phương tiện:</span>
+                            <span className="text-gray-600 dark:text-gray-400">{translations.transportation || "Transportation"}:</span>
                             <span className="font-medium text-orange-600">
-                                {!transportOptions.outbound && !transportOptions.return ? 'Tự túc cả 2 chiều' : 
-                                 !transportOptions.outbound ? 'Tự túc chiều đi' : 
-                                 'Tự túc chiều về'}
+                                {!transportOptions.outbound && !transportOptions.return ? (translations.selfArrangeBoth || 'Self-arrange both ways') : 
+                                 !transportOptions.outbound ? (translations.selfArrangeOutbound || 'Self-arrange outbound') : 
+                                 (translations.selfArrangeReturn || 'Self-arrange return')}
                             </span>
                         </div>
                     )}

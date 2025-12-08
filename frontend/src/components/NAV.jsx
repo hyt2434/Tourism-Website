@@ -24,7 +24,6 @@ export default function NAV() {
   const allNavItems = [
     { name: translations.home, path: "/", roles: ["admin", "partner", "client"], public: true },
     { name: translations.tour, path: "/tour", roles: ["admin", "partner", "client"], public: true },
-    { name: translations.social, path: "/social", roles: ["admin", "partner", "client"], public: true },
     { name: translations.partner, path: "/partner", roles: ["admin", "partner", "client"], public: true },
     { name: translations.about, path: "/aboutus", roles: ["admin", "partner", "client"], public: true },
     { name: "Admin", path: "/admin", roles: ["admin"], public: false },
