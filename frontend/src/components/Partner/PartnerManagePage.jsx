@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "../../context/LanguageContext";
 import { 
-  Briefcase, Calendar, Banknote, Star, TrendingUp, 
+  Briefcase, Calendar, Star, TrendingUp, 
   Package, Clock, CheckCircle, AlertCircle, ArrowUpRight, Headphones
 } from "lucide-react";
 import AccommodationManagement from "../AccommodationManagement";
@@ -25,10 +25,6 @@ export default function PartnerManagePage() {
   const [stats, setStats] = useState({
     totalServices: 0,
     activeBookings: 0,
-    monthlyRevenue: 0,
-    averageRating: 0,
-    totalReviews: 0,
-    responseRate: 0,
   });
 
 
@@ -64,7 +60,6 @@ export default function PartnerManagePage() {
       if (statsResult.success) {
         setStats(prev => ({
           ...prev,
-          monthlyRevenue: statsResult.monthlyRevenue,
           totalServices: statsResult.totalServices,
           activeBookings: statsResult.activeBookings
         }));
@@ -188,45 +183,7 @@ export default function PartnerManagePage() {
             </div>
           </div>
 
-          {/* Stats Overview Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
 
-            {/* Monthly Revenue */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-105 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-500/5 dark:to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <Banknote className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm font-semibold">
-                  </div>
-                </div>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                  {stats.monthlyRevenue.toLocaleString('vi-VN')}₫
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t.partnerMonthlyRevenue || "Monthly Revenue"}</p>
-              </div>
-            </div>
-
-            {/* Average Rating */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-105 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 dark:from-purple-500/5 dark:to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <Star className="w-6 h-6 text-white fill-white" />
-                  </div>
-                  <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm font-semibold">
-                  </div>
-                </div>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                  {stats.averageRating}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t.partnerAverageRating || "Average Rating"} ({stats.totalReviews} {t.partnerReviews || "reviews"})</p>
-              </div>
-            </div>
-          </div>
 
           {/* Main Content Grid - 3 cards on same line: My Services, View Bookings, Reviews */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
