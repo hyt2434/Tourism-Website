@@ -468,6 +468,19 @@ function EnhancedBookingForm({
             
             if (result.success) {
                 toast.success(`Đặt tour thành công!\n\nMã đặt tour: ${result.booking_id}\nChúng tôi đã gửi email xác nhận đến ${userInfo.email}`, 8000);
+                
+                // Clear card information after successful booking
+                if (paymentMethod === "card" && elements) {
+                    const cardElement = elements.getElement(CardElement);
+                    if (cardElement) {
+                        cardElement.clear();
+                    }
+                    setCardholderName("");
+                }
+                
+                // Reset payment method selection
+                setPaymentMethod(null);
+                
                 onClose();
                 // Optionally redirect to booking confirmation page
                 // window.location.href = `/bookings/${result.booking_id}`;
@@ -738,6 +751,9 @@ function Step1DatePeople({
                         {translations.onlyXSlotsLeft || `Only ${selectedSchedule.slots_available} slots left`}
                     </p>
                 )}
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center italic">
+                    {translations.childAgePolicy || "Note: Children 12 years and older are considered 1 adult"}
+                </p>
             </div>
         </div>
     );

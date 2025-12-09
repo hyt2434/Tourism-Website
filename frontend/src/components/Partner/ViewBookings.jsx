@@ -9,6 +9,7 @@ export default function ViewBookings() {
   const { translations: t } = useLanguage();
   const [bookings, setBookings] = useState([]);
   const [revenue, setRevenue] = useState({ total_pending: 0, total_paid: 0, total_revenue: 0 });
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all'); // all, confirmed, cancelled, completed
@@ -16,6 +17,7 @@ export default function ViewBookings() {
   useEffect(() => {
     loadBookings();
     loadRevenue();
+    loadMonthlyRevenue();
   }, []);
 
   const loadRevenue = async () => {
@@ -41,6 +43,25 @@ export default function ViewBookings() {
       }
     } catch (err) {
       console.error('Error loading revenue:', err);
+    }
+  };
+
+  const loadMonthlyRevenue = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const partnerId = user.id;
+      
+      if (!partnerId) return;
+
+      const url = `${API_BASE_URL}/api/partner/${partnerId}/revenue/monthly`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.success) {
+        setMonthlyRevenue(data.monthly_revenue || 0);
+      }
+    } catch (err) {
+      console.error('Error loading monthly revenue:', err);
     }
   };
 
@@ -184,6 +205,20 @@ export default function ViewBookings() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t.monthlyRevenue || 'Monthly Revenue'}</p>
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
+                  {formatPrice(monthlyRevenue)}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{t.confirmedBookings || 'Confirmed'}</p>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
                   {bookings.filter(b => b.status === 'confirmed').length}
@@ -205,20 +240,6 @@ export default function ViewBookings() {
               </div>
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                 <CheckCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t.totalRevenue || 'Total Revenue'}</p>
-                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
-                  {formatPrice(revenue.total_revenue || 0)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
           </div>

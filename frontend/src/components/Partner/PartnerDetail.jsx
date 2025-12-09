@@ -1,11 +1,10 @@
 import { useParams, Link } from "react-router-dom";
-import { mockPartners } from "./PartnerData";
 import { Button } from "../ui/button";
 import { Star, MapPin, Phone, Globe, Mail, Award, Users, TrendingUp, CheckCircle2, ArrowRight, Calendar, DollarSign, Clock, MessageCircle, Heart, Share2, Sparkles } from "lucide-react";
 
 export default function PartnerDetail() {
   const { id } = useParams();
-  const partner = mockPartners.find((p) => p.id === parseInt(id));
+  const partner = null;
 
   if (!partner) {
     return (

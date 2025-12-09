@@ -406,6 +406,19 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations, avail
 
             const bookingData = await bookingResponse.json();
             toast.success(translations.bookingSuccess || "Đặt tour thành công! Mã đặt tour: " + bookingData.booking_id, 8000);
+            
+            // Clear card information after successful booking
+            if (paymentMethod === "card" && elements) {
+                const cardElement = elements.getElement(CardElement);
+                if (cardElement) {
+                    cardElement.clear();
+                }
+                setCardholderName("");
+            }
+            
+            // Reset payment method selection
+            setPaymentMethod(null);
+            
             onClose();
         } catch (error) {
             console.error('Error saving booking:', error);
@@ -582,6 +595,9 @@ function BookingForm({ basePrice, onClose, duration, tourId, translations, avail
                                     </p>
                                 )}
                             </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                                {translations.childAgePolicy || "Note: Children 12 years and older are considered 1 adult"}
+                            </p>
                         </div>
                     )}
 

@@ -248,6 +248,7 @@ export default {
   selfArrangeOutbound: "Tự túc chiều đi",
   selfArrangeReturn: "Tự túc chiều về",
   onlyXSlotsLeft: "chỗ trống",
+  childAgePolicy: "Lưu ý: Trẻ em từ 12 tuổi trở lên được tính là 1 người lớn",
 
   // Common
   bookNow: "Đặt ngay",

@@ -1,4 +1,3 @@
-import { mockPartners } from "./PartnerData";
 import { useState } from "react";
 import { Card, CardTitle, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
@@ -16,7 +15,7 @@ import AccommodationRegistration from "./AccommodationRegistration";
 
 export default function PartnerPage() {
   const { translations: t } = useLanguage();
-  const [partners] = useState([...mockPartners]);
+  const [partners] = useState([]);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [registrationStep, setRegistrationStep] = useState("selection"); // "selection", "transportation", "restaurant", "accommodation"
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);

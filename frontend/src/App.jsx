@@ -12,7 +12,7 @@ import Profile from "./components/Profile";
 import SocialPage from "./components/social/SocialPage";
 import ToursPage from "./components/ToursPage";
 import AdminPage from "./components/AdminSections/AdminPage";
-import PartnerManagePage from "./components/PartnerManagePage";
+import PartnerManagePage from "./components/Partner/PartnerManagePage";
 import AccountPage from "./components/AccountPage";
 import WeatherBanner from "./components/home/WeatherBanner";
 import TourDetail from "./components/TourDetail/TourDetail";

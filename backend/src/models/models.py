@@ -15,6 +15,7 @@ def create_table():
             email VARCHAR(100) UNIQUE NOT NULL,
             password VARCHAR(200) NOT NULL,
             role VARCHAR(20) DEFAULT 'client' CHECK (role IN ('admin', 'client')),
+            partner_type VARCHAR(50) CHECK (partner_type IN ('accommodation', 'transportation', 'restaurant')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)

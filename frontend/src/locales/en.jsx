@@ -246,6 +246,7 @@ export default {
   selfArrangeOutbound: "Self-arrange outbound",
   selfArrangeReturn: "Self-arrange return",
   onlyXSlotsLeft: "slots left",
+  childAgePolicy: "Note: Children 12 years and older are considered 1 adult",
 
   reviewHelpful: "Helpful",
 
@@ -401,10 +402,10 @@ export default {
   cuisineFastFood: "Fast Food",
   priceRangeLabel: "Price Range",
   selectPriceRange: "Select Price Range",
-  priceBudget: "Budget (< $10)",
-  priceModerate: "Moderate ($10 - $25)",
-  pricePremium: "Premium ($25 - $50)",
-  priceLuxury: "Luxury (> $50)",
+  priceBudget: "Budget (< 200,000₫)",
+  priceModerate: "Moderate (200,000₫ - 500,000₫)",
+  pricePremium: "Premium (500,000₫ - 1,000,000₫)",
+  priceLuxury: "Luxury (> 1,000,000₫)",
   restaurantDescriptionPlaceholder: "Describe your restaurant, specialties, ambiance, services...",
 
   // Accommodation Registration

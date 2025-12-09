@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { 
-  Briefcase, Calendar, DollarSign, Star, TrendingUp, 
+  Briefcase, Calendar, Banknote, Star, TrendingUp, 
   Package, Clock, CheckCircle, AlertCircle, ArrowUpRight, Headphones
 } from "lucide-react";
-import AccommodationManagement from "./AccommodationManagement";
-import RestaurantManagement from "./RestaurantManagement";
-import TransportationManagement from "./TransportationManagement";
-import ViewBookings from "./Partner/ViewBookings";
+import AccommodationManagement from "../AccommodationManagement";
+import RestaurantManagement from "../RestaurantManagement";
+import TransportationManagement from "../TransportationManagement";
+import ViewBookings from "./ViewBookings";
+import { partnerStatsAPI } from "../../api/partnerManagePage";
 
 export default function PartnerManagePage() {
   const navigate = useNavigate();
@@ -18,15 +19,16 @@ export default function PartnerManagePage() {
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
   const [currentView, setCurrentView] = useState('dashboard'); // dashboard, accommodations, restaurants, transportation, bookings
+  const [partnerId, setPartnerId] = useState(null);
 
-  // Mock statistics - in production, fetch from API
+  // Statistics - fetched from API
   const [stats, setStats] = useState({
-    totalServices: 12,
-    activeBookings: 28,
-    monthlyRevenue: 15420,
-    averageRating: 4.8,
-    totalReviews: 156,
-    responseRate: 98,
+    totalServices: 0,
+    activeBookings: 0,
+    monthlyRevenue: 0,
+    averageRating: 0,
+    totalReviews: 0,
+    responseRate: 0,
   });
 
 
@@ -38,10 +40,14 @@ export default function PartnerManagePage() {
       setUserRole(user.role);
       setUserName(user.username || "Partner");
       setPartnerType(user.partnerType || null);
+      setPartnerId(user.id);
       
       if (user.role !== "partner") {
         // Redirect to home if not partner
         navigate("/");
+      } else {
+        // Fetch statistics for partner
+        fetchPartnerStats(user.id);
       }
     } else {
       // Redirect to login if not logged in
@@ -49,6 +55,25 @@ export default function PartnerManagePage() {
     }
     setLoading(false);
   }, [navigate]);
+
+  const fetchPartnerStats = async (partnerId) => {
+    try {
+      // Use the new API to fetch all stats at once
+      const statsResult = await partnerStatsAPI.getAllStats(partnerId);
+      
+      if (statsResult.success) {
+        setStats(prev => ({
+          ...prev,
+          monthlyRevenue: statsResult.monthlyRevenue,
+          totalServices: statsResult.totalServices,
+          activeBookings: statsResult.activeBookings
+        }));
+      }
+      
+    } catch (error) {
+      console.error('Error fetching partner stats:', error);
+    }
+  };
 
   // Helper function to check if a service type is allowed for this partner
   const canManageServiceType = (serviceType) => {
@@ -164,62 +189,21 @@ export default function PartnerManagePage() {
           </div>
 
           {/* Stats Overview Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* Total Services */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-105 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 dark:from-blue-500/5 dark:to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <Package className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm font-semibold">
-                    <ArrowUpRight className="w-4 h-4" />
-                    <span>12%</span>
-                  </div>
-                </div>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                  {stats.totalServices}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t.partnerTotalServices || "Total Services"}</p>
-              </div>
-            </div>
-
-            {/* Active Bookings */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-105 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10 dark:from-green-500/5 dark:to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <Calendar className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm font-semibold">
-                    <ArrowUpRight className="w-4 h-4" />
-                    <span>8%</span>
-                  </div>
-                </div>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                  {stats.activeBookings}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t.partnerActiveBookings || "Active Bookings"}</p>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
 
             {/* Monthly Revenue */}
             <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200 dark:border-gray-700 p-6 transition-all duration-300 hover:scale-105 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-500/5 dark:to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <DollarSign className="w-6 h-6 text-white" />
+                  <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Banknote className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm font-semibold">
-                    <ArrowUpRight className="w-4 h-4" />
-                    <span>24%</span>
                   </div>
                 </div>
                 <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                  ${stats.monthlyRevenue.toLocaleString()}
+                  {stats.monthlyRevenue.toLocaleString('vi-VN')}₫
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{t.partnerMonthlyRevenue || "Monthly Revenue"}</p>
               </div>
@@ -230,12 +214,10 @@ export default function PartnerManagePage() {
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 dark:from-purple-500/5 dark:to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <Star className="w-6 h-6 text-white fill-white" />
                   </div>
                   <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm font-semibold">
-                    <ArrowUpRight className="w-4 h-4" />
-                    <span>0.3</span>
                   </div>
                 </div>
                 <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
