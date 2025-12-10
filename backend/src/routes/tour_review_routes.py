@@ -34,6 +34,63 @@ def token_required(f):
         return f(*args, **kwargs)
     return decorated
 
+@tour_review_routes.route('/reviews/latest', methods=['GET'])
+def get_latest_reviews():
+    """Get the latest reviews across all tours for homepage display"""
+    try:
+        limit = request.args.get('limit', 4, type=int)
+        
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        # Get latest reviews with tour and user information
+        cur.execute("""
+            SELECT 
+                tr.id, tr.tour_id, tr.rating, tr.review_text,
+                tr.is_anonymous, tr.review_images, tr.created_at,
+                t.name as tour_name,
+                u.username, u.email
+            FROM tour_reviews tr
+            JOIN tours_admin t ON tr.tour_id = t.id
+            JOIN users u ON tr.user_id = u.id
+            WHERE tr.rating IS NOT NULL
+            ORDER BY tr.created_at DESC
+            LIMIT %s
+        """, (limit,))
+        
+        reviews = cur.fetchall()
+        
+        reviews_list = []
+        for review in reviews:
+            # Get user's first name or username
+            username = review[8] if not review[4] else "Anonymous"  # is_anonymous check
+            
+            reviews_list.append({
+                'id': review[0],
+                'tour_id': review[1],
+                'rating': review[2],
+                'review_text': review[3],
+                'is_anonymous': review[4],
+                'review_images': review[5] or [],
+                'created_at': review[6].isoformat() if review[6] else None,
+                'tour_name': review[7],
+                'username': username,
+                'user_email': review[9] if not review[4] else None
+            })
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'reviews': reviews_list,
+            'total': len(reviews_list)
+        })
+        
+    except Exception as e:
+        print(f"Error getting latest reviews: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @tour_review_routes.route('/tours/<int:tour_id>/reviews', methods=['GET'])
 def get_tour_reviews(tour_id):
     """Get all reviews for a specific tour including service-level reviews"""
