@@ -209,16 +209,24 @@ export default function TourDetail() {
                 {tourData.title}
               </h1>
               <div className="flex items-center gap-4 flex-wrap">
-                <div className="flex items-center gap-1 text-lg font-semibold">
-                  <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  <span className="text-gray-900 dark:text-white">
-                    {tourData.rating}
-                  </span>
-                  <span className="text-gray-600 dark:text-gray-400 font-normal">
-                    ({tourData.reviewCount} {translations.reviews || "đánh giá"}
-                    )
-                  </span>
-                </div>
+                {tourData.reviewCount > 0 ? (
+                  <div className="flex items-center gap-1 text-lg font-semibold">
+                    <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                    <span className="text-gray-900 dark:text-white">
+                      {tourData.rating}
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-400 font-normal">
+                      ({tourData.reviewCount} {translations.reviews || "đánh giá"})
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                    <Star className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm font-normal">
+                      (0 {translations.reviews || "đánh giá"})
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-medium">
                   <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   <span>{tourData.location}</span>

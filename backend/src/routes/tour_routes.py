@@ -195,9 +195,6 @@ def get_tour_detail(tour_id):
             'created_at': tour_row[11].isoformat() if tour_row[11] else None,
             'updated_at': tour_row[12].isoformat() if tour_row[12] else None,
             # Default values for features not yet implemented
-            'rating': 4.5,
-            'reviewCount': 0,
-            'reviews': [],
             'tags': [],
             'highlights': [],
             'included': [],
@@ -206,6 +203,19 @@ def get_tour_detail(tour_id):
             'tourLocations': [],
             'centerCoordinates': None
         }
+        
+        # Get real review statistics
+        cur.execute("""
+            SELECT 
+                COUNT(*) as review_count,
+                COALESCE(AVG(rating), 0) as avg_rating
+            FROM tour_reviews
+            WHERE tour_id = %s
+        """, (tour_id,))
+        
+        review_stats = cur.fetchone()
+        tour_data['reviewCount'] = review_stats[0] if review_stats else 0
+        tour_data['rating'] = round(float(review_stats[1]), 1) if review_stats and review_stats[1] else 0
         
         # Get images
         cur.execute("""
