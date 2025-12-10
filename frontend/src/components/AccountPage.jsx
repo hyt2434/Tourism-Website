@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
-import { Calendar, Heart, Settings, Package, Clock, MapPin, Star, X, Eye, MessageSquare } from "lucide-react";
+import { Calendar, Heart, Settings, Package, Clock, MapPin, Star, X, Eye, MessageSquare, ListChecks } from "lucide-react";
 import { getUserBookings, getBookingDetails } from "../api/bookings";
 import { getUserFavorites } from "../api/favorites";
-import { checkCanReview } from "../api/reviews";
+import { checkCanReview, checkCanReviewServices } from "../api/reviews";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import TourReviewForm from "./TourReviewForm";
+import ServiceReviewForm from "./ServiceReviewForm";
 
 export default function AccountPage() {
   const navigate = useNavigate();
@@ -27,6 +28,9 @@ export default function AccountPage() {
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [reviewBooking, setReviewBooking] = useState(null);
   const [bookingReviewStatus, setBookingReviewStatus] = useState({});
+  const [showServiceReviewDialog, setShowServiceReviewDialog] = useState(false);
+  const [serviceReviewBooking, setServiceReviewBooking] = useState(null);
+  const [bookingServiceReviewStatus, setBookingServiceReviewStatus] = useState({});
 
   useEffect(() => {
     // Check if user is a client
@@ -72,6 +76,7 @@ export default function AccountPage() {
         );
         completedBookings.forEach(booking => {
           checkBookingReviewStatus(booking.id);
+          checkBookingServiceReviewStatus(booking.id);
         });
       }
     } catch (error) {
@@ -123,6 +128,18 @@ export default function AccountPage() {
     }
   };
 
+  const checkBookingServiceReviewStatus = async (bookingId) => {
+    try {
+      const result = await checkCanReviewServices(bookingId);
+      setBookingServiceReviewStatus(prev => ({
+        ...prev,
+        [bookingId]: result
+      }));
+    } catch (error) {
+      console.error("Failed to check service review status:", error);
+    }
+  };
+
   const handleWriteReview = async (booking) => {
     // Check if can review first
     try {
@@ -168,6 +185,23 @@ export default function AccountPage() {
     setReviewBooking(null);
     toast.success("Review submitted successfully!");
     // Refresh bookings to update review status
+    if (userId) loadBookings(userId);
+  };
+
+  const handleWriteServiceReview = (booking) => {
+    setServiceReviewBooking({
+      bookingId: booking.id,
+      tourId: booking.tour_id,
+      tourName: booking.tour_name
+    });
+    setShowServiceReviewDialog(true);
+  };
+
+  const handleServiceReviewSuccess = (data) => {
+    setShowServiceReviewDialog(false);
+    setServiceReviewBooking(null);
+    toast.success("Đánh giá dịch vụ đã được gửi thành công!");
+    // Refresh service review status
     if (userId) loadBookings(userId);
   };
 
@@ -350,6 +384,23 @@ export default function AccountPage() {
                                 >
                                   <MessageSquare size={18} />
                                   Viết đánh giá
+                                </button>
+                              )}
+                              {bookingServiceReviewStatus[booking.id]?.has_reviewed_all ? (
+                                <button
+                                  disabled
+                                  className="flex-1 bg-gray-400 text-white py-2.5 px-4 rounded-lg cursor-not-allowed font-medium flex items-center justify-center gap-2 opacity-70"
+                                >
+                                  <ListChecks size={18} />
+                                  Đã đánh giá DV
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleWriteServiceReview(booking)}
+                                  className="flex-1 bg-purple-600 text-white py-2.5 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
+                                >
+                                  <ListChecks size={18} />
+                                  Đánh giá DV
                                 </button>
                               )}
                             </>
@@ -572,6 +623,23 @@ export default function AccountPage() {
               onCancel={() => {
                 setShowReviewDialog(false);
                 setReviewBooking(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Service Review Dialog */}
+      <Dialog open={showServiceReviewDialog} onOpenChange={setShowServiceReviewDialog}>
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto bg-white dark:bg-gray-900 p-0">
+          {serviceReviewBooking && (
+            <ServiceReviewForm
+              bookingId={serviceReviewBooking.bookingId}
+              tourId={serviceReviewBooking.tourId}
+              onSuccess={handleServiceReviewSuccess}
+              onCancel={() => {
+                setShowServiceReviewDialog(false);
+                setServiceReviewBooking(null);
               }}
             />
           )}

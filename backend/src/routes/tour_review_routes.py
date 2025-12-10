@@ -68,7 +68,7 @@ def get_tour_reviews(tour_id):
                     -- Get service details based on type
                     CASE 
                         WHEN sr.service_type = 'accommodation' THEN acs.name
-                        WHEN sr.service_type = 'transportation' THEN ts.name
+                        WHEN sr.service_type = 'transportation' THEN ts.license_plate
                         WHEN sr.service_type = 'restaurant' THEN rs.name
                     END as service_name
                 FROM service_reviews sr
@@ -273,9 +273,15 @@ def create_review():
             if len(svc_review_images) > 5:
                 svc_review_images = svc_review_images[:5]
             
-            # Get service type from tour_services
+            # Get service type and service_id from tour_services
             cur.execute("""
-                SELECT service_type FROM tour_services 
+                SELECT service_type,
+                    CASE 
+                        WHEN service_type = 'accommodation' THEN accommodation_id
+                        WHEN service_type = 'transportation' THEN transportation_id
+                        WHEN service_type = 'restaurant' THEN restaurant_id
+                    END as service_id
+                FROM tour_services 
                 WHERE id = %s AND tour_id = %s
             """, (tour_service_id, tour_id))
             
@@ -284,16 +290,17 @@ def create_review():
                 continue  # Skip if service doesn't exist or doesn't belong to this tour
             
             service_type = service_row[0]
+            service_id = service_row[1]
             
             # Insert service review
             cur.execute("""
                 INSERT INTO service_reviews 
                 (tour_review_id, tour_service_id, tour_id, user_id, booking_id, 
-                 service_type, rating, review_text, review_images)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 service_type, service_id, rating, review_text, review_images)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (review_id, tour_service_id, tour_id, request.user_id, booking_id,
-                  service_type, svc_rating, svc_review_text, svc_review_images))
+                  service_type, service_id, svc_rating, svc_review_text, svc_review_images))
             
             svc_review_id = cur.fetchone()[0]
             created_service_reviews.append({
@@ -516,7 +523,7 @@ def get_booking_services(booking_id):
                 ts.id, ts.service_type, ts.day_number, ts.service_cost,
                 CASE 
                     WHEN ts.service_type = 'accommodation' THEN acs.name
-                    WHEN ts.service_type = 'transportation' THEN trs.name
+                    WHEN ts.service_type = 'transportation' THEN trs.license_plate
                     WHEN ts.service_type = 'restaurant' THEN rs.name
                 END as service_name,
                 CASE 
@@ -652,7 +659,7 @@ def get_partner_reviews(partner_id):
                     sr.created_at,
                     CASE 
                         WHEN sr.service_type = 'accommodation' THEN acs.name
-                        WHEN sr.service_type = 'transportation' THEN ts2.name
+                        WHEN sr.service_type = 'transportation' THEN ts2.license_plate
                         WHEN sr.service_type = 'restaurant' THEN rs.name
                     END as service_name
                 FROM service_reviews sr
@@ -714,7 +721,100 @@ def get_partner_reviews(partner_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
-@tour_review_routes.route('/services', methods=['POST'])
+@tour_review_routes.route('/bookings/<int:booking_id>/can-review-services', methods=['GET'])
+@token_required
+def check_can_review_services(booking_id):
+    """Check if user can review services for this booking"""
+    try:
+        print(f"DEBUG: Checking service review eligibility for booking_id: {booking_id}, user_id: {request.user_id}")
+        
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        # Check if booking exists, belongs to user, and tour is completed
+        cur.execute("""
+            SELECT b.id, b.tour_id, ts.status
+            FROM bookings b
+            JOIN tour_schedules ts ON b.tour_schedule_id = ts.id
+            WHERE b.id = %s AND b.user_id = %s
+        """, (booking_id, request.user_id))
+        
+        booking = cur.fetchone()
+        
+        print(f"DEBUG: Booking query result: {booking}")
+        
+        if not booking:
+            return jsonify({'success': False, 'message': 'Booking not found or unauthorized'}), 404
+        
+        if booking[2] != 'completed':
+            return jsonify({
+                'success': False,
+                'can_review': False,
+                'message': 'Tour must be completed before reviewing services'
+            })
+        
+        tour_id = booking[1]
+        
+        # Get all services for this tour
+        cur.execute("""
+            SELECT ts.id, ts.service_type,
+                CASE 
+                    WHEN ts.service_type = 'accommodation' THEN acs.name
+                    WHEN ts.service_type = 'transportation' THEN trs.license_plate
+                    WHEN ts.service_type = 'restaurant' THEN rs.name
+                END as service_name
+            FROM tour_services ts
+            LEFT JOIN accommodation_services acs ON ts.accommodation_id = acs.id
+            LEFT JOIN transportation_services trs ON ts.transportation_id = trs.id
+            LEFT JOIN restaurant_services rs ON ts.restaurant_id = rs.id
+            WHERE ts.tour_id = %s
+        """, (tour_id,))
+        
+        services = cur.fetchall()
+        
+        print(f"DEBUG: Found {len(services)} services for tour {tour_id}")
+        
+        # Check which services have been reviewed
+        services_status = []
+        for service in services:
+            tour_service_id = service[0]
+            
+            cur.execute("""
+                SELECT id FROM service_reviews 
+                WHERE tour_service_id = %s AND booking_id = %s
+            """, (tour_service_id, booking_id))
+            
+            has_review = cur.fetchone() is not None
+            
+            print(f"DEBUG: Service {tour_service_id} ({service[2]}) has_review: {has_review}")
+            
+            services_status.append({
+                'tour_service_id': tour_service_id,
+                'service_type': service[1],
+                'service_name': service[2],
+                'has_review': has_review
+            })
+        
+        all_reviewed = all(s['has_review'] for s in services_status) if services_status else False
+        
+        print(f"DEBUG: All services reviewed: {all_reviewed}")
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'can_review': True,
+            'has_reviewed_all': all_reviewed,
+            'services': services_status
+        })
+        
+    except Exception as e:
+        print(f"Error checking service review eligibility: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@tour_review_routes.route('/reviews/services', methods=['POST'])
 @token_required
 def create_service_reviews():
     """Create service-only reviews without tour review"""
@@ -723,6 +823,10 @@ def create_service_reviews():
         booking_id = data.get('booking_id')
         tour_id = data.get('tour_id')
         service_reviews = data.get('service_reviews', [])
+        
+        print(f"DEBUG: Create service reviews - booking_id: {booking_id}, tour_id: {tour_id}, user_id: {request.user_id}")
+        print(f"DEBUG: Number of service reviews: {len(service_reviews)}")
+        print(f"DEBUG: Service reviews data: {service_reviews}")
         
         if not booking_id or not tour_id:
             return jsonify({'success': False, 'message': 'booking_id and tour_id are required'}), 400
@@ -739,10 +843,13 @@ def create_service_reviews():
         """, (booking_id,))
         booking_row = cur.fetchone()
         
+        print(f"DEBUG: Booking row: {booking_row}")
+        
         if not booking_row:
             return jsonify({'success': False, 'message': 'Booking not found'}), 404
         
         if booking_row[0] != request.user_id:
+            print(f"DEBUG: User mismatch - booking user: {booking_row[0]}, request user: {request.user_id}")
             return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         
         # Check if tour review exists for this booking
@@ -751,8 +858,11 @@ def create_service_reviews():
         """, (booking_id,))
         tour_review_row = cur.fetchone()
         
+        print(f"DEBUG: Existing tour review: {tour_review_row}")
+        
         # If no tour review exists, create a minimal one
         if not tour_review_row:
+            print(f"DEBUG: Creating minimal tour review")
             cur.execute("""
                 INSERT INTO tour_reviews (
                     tour_id, user_id, booking_id, rating, review_text, is_anonymous
@@ -760,8 +870,10 @@ def create_service_reviews():
                 RETURNING id
             """, (tour_id, request.user_id, booking_id, 5, 'Đánh giá dịch vụ', False))
             tour_review_id = cur.fetchone()[0]
+            print(f"DEBUG: Created tour review with id: {tour_review_id}")
         else:
             tour_review_id = tour_review_row[0]
+            print(f"DEBUG: Using existing tour review id: {tour_review_id}")
         
         # Insert service reviews
         created_reviews = []
@@ -771,20 +883,33 @@ def create_service_reviews():
             review_text = svc_review.get('review_text', '')
             review_images = svc_review.get('review_images', [])
             
+            print(f"DEBUG: Processing service review - tour_service_id: {tour_service_id}, rating: {rating}")
+            
             if not tour_service_id or not rating:
+                print(f"DEBUG: Skipping service review - missing required fields")
                 continue
             
-            # Verify service belongs to tour
+            # Verify service belongs to tour and get service details
             cur.execute("""
-                SELECT service_type FROM tour_services 
+                SELECT service_type, 
+                    CASE 
+                        WHEN service_type = 'accommodation' THEN accommodation_id
+                        WHEN service_type = 'transportation' THEN transportation_id
+                        WHEN service_type = 'restaurant' THEN restaurant_id
+                    END as service_id
+                FROM tour_services 
                 WHERE id = %s AND tour_id = %s
             """, (tour_service_id, tour_id))
             
             service_row = cur.fetchone()
+            print(f"DEBUG: Service row: {service_row}")
+            
             if not service_row:
+                print(f"DEBUG: Service not found for tour_service_id: {tour_service_id}")
                 continue
             
             service_type = service_row[0]
+            service_id = service_row[1]
             
             # Check if service review already exists
             cur.execute("""
@@ -793,9 +918,11 @@ def create_service_reviews():
             """, (tour_review_id, tour_service_id))
             
             existing_review = cur.fetchone()
+            print(f"DEBUG: Existing service review: {existing_review}")
             
             if existing_review:
                 # Update existing review
+                print(f"DEBUG: Updating existing service review id: {existing_review[0]}")
                 cur.execute("""
                     UPDATE service_reviews 
                     SET rating = %s, review_text = %s, review_images = %s, updated_at = CURRENT_TIMESTAMP
@@ -805,15 +932,20 @@ def create_service_reviews():
                 review_id = existing_review[0]
             else:
                 # Insert new review
+                print(f"DEBUG: Inserting new service review")
+                print(f"DEBUG: Values - tour_review_id: {tour_review_id}, tour_service_id: {tour_service_id}, tour_id: {tour_id}, user_id: {request.user_id}, booking_id: {booking_id}")
+                print(f"DEBUG: Values - service_type: {service_type}, service_id: {service_id}, rating: {rating}, review_text: {review_text}, review_images: {review_images}")
+                
                 cur.execute("""
                     INSERT INTO service_reviews (
                         tour_review_id, tour_service_id, tour_id, user_id, booking_id,
-                        service_type, rating, review_text, review_images
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        service_type, service_id, rating, review_text, review_images
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (tour_review_id, tour_service_id, tour_id, request.user_id, booking_id,
-                      service_type, rating, review_text, review_images))
+                      service_type, service_id, rating, review_text, review_images))
                 review_id = cur.fetchone()[0]
+                print(f"DEBUG: Inserted service review with id: {review_id}")
             
             created_reviews.append({
                 'id': review_id,
@@ -822,6 +954,7 @@ def create_service_reviews():
             })
         
         conn.commit()
+        print(f"DEBUG: Successfully committed {len(created_reviews)} service reviews")
         cur.close()
         conn.close()
         
@@ -833,5 +966,7 @@ def create_service_reviews():
         }), 201
         
     except Exception as e:
-        print(f"Error creating service reviews: {e}")
+        print(f"ERROR creating service reviews: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500

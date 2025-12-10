@@ -65,6 +65,9 @@ try:
     from src.models.tour_reviews_schema import create_tour_reviews_table
     create_tour_reviews_table()
 
+    from migrate_service_reviews import migrate_service_reviews_table
+    migrate_service_reviews_table()
+
 except Exception as e:
     print(f"[WARNING] Could not initialize database tables: {e}")
 
