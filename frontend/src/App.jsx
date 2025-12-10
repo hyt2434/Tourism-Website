@@ -20,7 +20,6 @@ import TourDetail from "./components/TourDetail/TourDetail";
 import HeroSection from "./components/home/HeroSection";
 import FlightSearchForm from "./components/home/FlightSearchForm";
 import Promotions from "./components/home/Promotions";
-import FlightDeals from "./components/home/FlightDeals";
 import Reviews from "./components/home/Reviews";
 import PartnerPage from "./components/Partner/PartnerPage";
 import PartnerDetail from "./components/Partner/PartnerDetail";
@@ -57,7 +56,6 @@ export default function App() {
                   <TourCarousel />
                   <Promotions />
                   <Reviews />
-                  <FlightDeals />
                   <WeatherBanner />
                 </div>
               )}
