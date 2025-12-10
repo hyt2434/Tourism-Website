@@ -13,6 +13,7 @@ import SocialPage from "./components/social/SocialPage";
 import ToursPage from "./components/ToursPage";
 import AdminPage from "./components/AdminSections/AdminPage";
 import PartnerManagePage from "./components/Partner/PartnerManagePage";
+import ServiceReviewsPage from "./components/Partner/ServiceReviewsPage";
 import AccountPage from "./components/AccountPage";
 import WeatherBanner from "./components/home/WeatherBanner";
 import TourDetail from "./components/TourDetail/TourDetail";
@@ -110,7 +111,8 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/admin" element={<AdminPage />} />
-            <Route path="/partner-manage" element={<PartnerManagePage />} />
+            <Route path="/partner/manage" element={<PartnerManagePage />} />
+            <Route path="/partner/reviews" element={<ServiceReviewsPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/register" element={<Register />} />
             <Route path="/aboutus" element={<AboutUs />} />

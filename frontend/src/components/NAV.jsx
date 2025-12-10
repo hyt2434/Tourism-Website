@@ -27,7 +27,7 @@ export default function NAV() {
     { name: translations.partner, path: "/partner", roles: ["admin", "partner", "client"], public: true },
     { name: translations.about, path: "/aboutus", roles: ["admin", "partner", "client"], public: true },
     { name: "Admin", path: "/admin", roles: ["admin"], public: false },
-    { name: translations.partnerManagePage || "Partner Manage", path: "/partner-manage", roles: ["partner"], public: false },
+    { name: translations.partnerManagePage || "Partner Manage", path: "/partner/manage", roles: ["partner"], public: false },
     { name: translations.myAccount, path: "/account", roles: ["client"], public: false },
   ];
 

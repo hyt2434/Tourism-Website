@@ -59,7 +59,7 @@ export default function Login() {
         if (result.user.role === "admin") {
           navigate("/admin");
         } else if (result.user.role === "partner") {
-          navigate("/partner-manage");
+          navigate("/partner/manage");
         } else {
           navigate("/"); // client goes to home
         }
