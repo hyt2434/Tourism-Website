@@ -31,49 +31,6 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 export default function App() {
-  const tours = [
-    {
-      id: 1,
-      name: "Ha Long Bay Cruise",
-      image: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=800&h=600&fit=crop&q=80",
-      price: "$299",
-      duration: "2 Days",
-      description: "Explore the stunning limestone karsts and emerald waters",
-    },
-    {
-      id: 2,
-      name: "Da Nang Beach Tour",
-      image: "https://images.unsplash.com/photo-1587474260584-136574528ed5?w=800&h=600&fit=crop&q=80",
-      price: "$199",
-      duration: "1 Day",
-      description: "Relax on pristine beaches and enjoy water activities",
-    },
-    {
-      id: 3,
-      name: "Hoi An Ancient Town",
-      image: "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800&h=600&fit=crop&q=80",
-      price: "$149",
-      duration: "1 Day",
-      description: "Walk through lantern-lit streets and historic architecture",
-    },
-    {
-      id: 4,
-      name: "Phu Quoc Island",
-      image: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=800&h=600&fit=crop&q=80",
-      price: "$399",
-      duration: "3 Days",
-      description: "Paradise beaches and tropical island adventures",
-    },
-    {
-      id: 5,
-      name: "Nha Trang Bay",
-      image: "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?w=800&h=600&fit=crop&q=80",
-      price: "$249",
-      duration: "2 Days",
-      description: "Crystal waters, island hopping, and vibrant nightlife",
-    },
-  ];
-
   return (
     <ToastProvider>
       <BrowserRouter>
@@ -97,7 +54,7 @@ export default function App() {
                   <HeroSection>
                     <FlightSearchForm />
                   </HeroSection>
-                  <TourCarousel tours={tours} />
+                  <TourCarousel />
                   <Promotions />
                   <Reviews />
                   <FlightDeals />
@@ -106,7 +63,7 @@ export default function App() {
               )}
             />
             {/* ✅ Thêm route chi tiết tour */}
-            <Route path="/tours/:id" element={<TourDetail tours={tours} />} />
+            <Route path="/tours/:id" element={<TourDetail />} />
             <Route path="/tour" element={<ToursPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

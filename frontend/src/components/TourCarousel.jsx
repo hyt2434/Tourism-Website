@@ -1,20 +1,69 @@
+import { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from "@heroicons/react/24/outline";
+import { Loader } from "lucide-react";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 
-export default function TourCarousel({ tours }) {
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+export default function TourCarousel() {
   const { translations } = useLanguage();
+  const [tours, setTours] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchHighlightedTours();
+  }, []);
+
+  const fetchHighlightedTours = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/api/tours/highlights?limit=6`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setTours(data.tours);
+      } else {
+        console.error('Failed to fetch highlighted tours:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching highlighted tours:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatPrice = (price, currency) => {
+    if (currency === 'VND') {
+      return `${price.toLocaleString('vi-VN')} ₫`;
+    }
+    return `$${price}`;
+  };
+
+  if (loading) {
+    return (
+      <section className="py-8 px-4 md:px-8 lg:px-36 bg-white dark:bg-gray-900 transition-colors duration-300">
+        <div className="flex items-center justify-center py-12">
+          <Loader className="w-12 h-12 animate-spin text-blue-600" />
+        </div>
+      </section>
+    );
+  }
+
+  if (tours.length === 0) {
+    return null;
+  }
 
   return (
-    <section className="py-8 px-4 md:px-8 lg:px-36 bg-white dark:bg-gray-900 transition-colors duration-300">
+    <section className="py-8 px-4 md:px-8 lg:px-36 bg-section dark:bg-gray-900 transition-colors duration-300">
       <div>
         {/* Tiêu đề */}
-        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8">
+        <h2 className="text-3xl md:text-4xl font-bold text-title dark:text-white mb-8">
           {translations.highlights}
         </h2>
 
@@ -48,25 +97,46 @@ export default function TourCarousel({ tours }) {
             {tours.map((tour) => (
               <SwiperSlide key={tour.id}>
                 <Link to={`/tours/${tour.id}`}>
-                  <div className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shine-effect">
-                    <img
-                      src={tour.image}
-                      alt={tour.name}
-                      className="w-full h-60 object-cover"
-                    />
+                  <div className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shine-effect group">
+                    <div className="relative">
+                      <img
+                        src={tour.image}
+                        alt={tour.name}
+                        className="w-full h-60 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {tour.booking_count > 0 && (
+                        <div className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                          🔥 {tour.booking_count} {translations.bookings || 'bookings'}
+                        </div>
+                      )}
+                    </div>
                     <div className="p-4">
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white line-clamp-2 min-h-[3.5rem]">
                         {tour.name}
                       </h3>
-                      <p className="text-gray-600 dark:text-gray-400 mt-2">
+                      <p className="text-gray-600 dark:text-gray-400 mt-2 line-clamp-2 text-sm">
                         {tour.description}
                       </p>
-                      <p className="mt-3 font-medium text-blue-600 dark:text-blue-400">
-                        {tour.price}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {tour.duration}
-                      </p>
+                      <div className="mt-3 flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-blue-600 dark:text-blue-400">
+                            {formatPrice(tour.price, tour.currency)}
+                          </p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <CalendarIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {tour.duration}
+                            </p>
+                          </div>
+                        </div>
+                        {tour.rating > 0 && (
+                          <div className="flex items-center gap-1 text-sm">
+                            <span className="text-yellow-400">⭐</span>
+                            <span className="text-gray-700 dark:text-gray-300 font-medium">{tour.rating}</span>
+                            <span className="text-gray-500 dark:text-gray-400">({tour.reviews})</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </Link>

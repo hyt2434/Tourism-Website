@@ -67,6 +67,14 @@ try:
 
     from migrate_service_reviews import migrate_service_reviews_table
     migrate_service_reviews_table()
+    
+    # Create tour highlights table
+    try:
+        from create_tour_highlights import create_tour_highlights_table
+        print("\n[INFO] Checking tour_highlights table...")
+        create_tour_highlights_table()
+    except Exception as e:
+        print(f"[WARNING] Could not create tour_highlights table: {e}")
 
 except Exception as e:
     print(f"[WARNING] Could not initialize database tables: {e}")

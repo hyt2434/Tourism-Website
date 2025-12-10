@@ -24,6 +24,84 @@ def extract_days_from_duration(duration):
         match = re.search(r'(\d+)', str(duration))
         return int(match.group(1)) if match else None
 
+@tour_routes.route('/highlights', methods=['GET'])
+def get_highlighted_tours():
+    """
+    API GET /api/tours/highlights to get top 6 most booked tours.
+    Returns tours ordered by booking count (descending).
+    """
+    limit = request.args.get('limit', 6, type=int)
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        cur = conn.cursor()
+        
+        # Get highlighted tours with their primary image and review stats
+        query = """
+            SELECT 
+                th.id, th.name, th.duration, th.description,
+                th.destination_city_id, dc.name as destination_city_name,
+                th.departure_city_id, dpc.name as departure_city_name,
+                th.total_price, th.currency, th.number_of_members,
+                th.booking_count,
+                ti.image_url,
+                COALESCE(AVG(tr.rating), 0) as avg_rating,
+                COUNT(DISTINCT tr.id) as review_count
+            FROM tour_highlights th
+            LEFT JOIN cities dc ON th.destination_city_id = dc.id
+            LEFT JOIN cities dpc ON th.departure_city_id = dpc.id
+            LEFT JOIN tour_images ti ON th.id = ti.tour_id AND ti.is_primary = TRUE
+            LEFT JOIN tour_reviews tr ON th.id = tr.tour_id
+            GROUP BY th.id, th.name, th.duration, th.description,
+                     th.destination_city_id, dc.name,
+                     th.departure_city_id, dpc.name,
+                     th.total_price, th.currency, th.number_of_members,
+                     th.booking_count, ti.image_url
+            ORDER BY th.booking_count DESC, avg_rating DESC
+            LIMIT %s
+        """
+        
+        cur.execute(query, (limit,))
+        rows = cur.fetchall()
+        
+        tours = []
+        for row in rows:
+            # Calculate price per person
+            price_per_person = round((float(row[8]) / row[10]) / 1000) * 1000 if row[8] and row[10] and row[10] > 0 else float(row[8]) if row[8] else 0
+            
+            tours.append({
+                'id': row[0],
+                'name': row[1],
+                'duration': row[2],
+                'description': row[3],
+                'destination_city': {'id': row[4], 'name': row[5]},
+                'departure_city': {'id': row[6], 'name': row[7]},
+                'price': price_per_person,
+                'total_price': float(row[8]) if row[8] else 0,
+                'currency': row[9],
+                'number_of_members': row[10],
+                'booking_count': row[11],
+                'image': row[12] or 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=800&h=600&fit=crop&q=80',
+                'rating': round(float(row[13]), 1) if row[13] else 0,
+                'reviews': row[14]
+            })
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'tours': tours,
+            'total': len(tours)
+        })
+        
+    except Exception as e:
+        print(f"Error getting highlighted tours: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @tour_routes.route('/', methods=['GET'])
 def get_tours():
     """
