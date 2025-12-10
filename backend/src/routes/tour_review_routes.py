@@ -36,7 +36,7 @@ def token_required(f):
 
 @tour_review_routes.route('/tours/<int:tour_id>/reviews', methods=['GET'])
 def get_tour_reviews(tour_id):
-    """Get all reviews for a specific tour"""
+    """Get all reviews for a specific tour including service-level reviews"""
     try:
         conn = get_connection()
         cur = conn.cursor()
@@ -57,6 +57,44 @@ def get_tour_reviews(tour_id):
         
         reviews_list = []
         for review in reviews:
+            review_id = review[0]
+            
+            # Get service reviews for this tour review
+            cur.execute("""
+                SELECT 
+                    sr.id, sr.tour_service_id, sr.service_type,
+                    sr.rating, sr.review_text, sr.review_images,
+                    sr.created_at,
+                    -- Get service details based on type
+                    CASE 
+                        WHEN sr.service_type = 'accommodation' THEN acs.name
+                        WHEN sr.service_type = 'transportation' THEN ts.name
+                        WHEN sr.service_type = 'restaurant' THEN rs.name
+                    END as service_name
+                FROM service_reviews sr
+                LEFT JOIN tour_services tsv ON sr.tour_service_id = tsv.id
+                LEFT JOIN accommodation_services acs ON tsv.accommodation_id = acs.id
+                LEFT JOIN transportation_services ts ON tsv.transportation_id = ts.id
+                LEFT JOIN restaurant_services rs ON tsv.restaurant_id = rs.id
+                WHERE sr.tour_review_id = %s
+                ORDER BY sr.created_at ASC
+            """, (review_id,))
+            
+            service_reviews_rows = cur.fetchall()
+            service_reviews = []
+            
+            for svc_review in service_reviews_rows:
+                service_reviews.append({
+                    'id': svc_review[0],
+                    'tour_service_id': svc_review[1],
+                    'service_type': svc_review[2],
+                    'rating': svc_review[3],
+                    'review_text': svc_review[4],
+                    'review_images': svc_review[5] or [],
+                    'created_at': svc_review[6].isoformat() if svc_review[6] else None,
+                    'service_name': svc_review[7]
+                })
+            
             reviews_list.append({
                 'id': review[0],
                 'tour_id': review[1],
@@ -69,7 +107,8 @@ def get_tour_reviews(tour_id):
                 'created_at': review[8].isoformat() if review[8] else None,
                 'updated_at': review[9].isoformat() if review[9] else None,
                 'username': 'Người dùng ẩn danh' if review[6] else review[10],
-                'email': None if review[6] else review[11]
+                'email': None if review[6] else review[11],
+                'service_reviews': service_reviews
             })
         
         # Calculate average rating
@@ -152,7 +191,7 @@ def check_can_review(booking_id):
 @tour_review_routes.route('/reviews', methods=['POST'])
 @token_required
 def create_review():
-    """Create a new tour review"""
+    """Create a new tour review with optional service-level reviews"""
     try:
         data = request.json
         booking_id = data.get('booking_id')
@@ -160,6 +199,7 @@ def create_review():
         review_text = data.get('review_text', '')
         is_anonymous = data.get('is_anonymous', False)
         review_images = data.get('review_images', [])
+        service_reviews = data.get('service_reviews', [])  # NEW: Array of service reviews
         
         if not booking_id or not rating:
             return jsonify({'success': False, 'message': 'Booking ID and rating are required'}), 400
@@ -202,7 +242,7 @@ def create_review():
             conn.close()
             return jsonify({'success': False, 'message': 'You have already reviewed this tour'}), 400
         
-        # Create review
+        # Create main tour review
         cur.execute("""
             INSERT INTO tour_reviews 
             (tour_id, user_id, booking_id, rating, review_text, is_anonymous, review_images)
@@ -213,6 +253,57 @@ def create_review():
         result = cur.fetchone()
         review_id = result[0]
         created_at = result[1]
+        
+        # Create service-level reviews if provided
+        created_service_reviews = []
+        for svc_review in service_reviews:
+            tour_service_id = svc_review.get('tour_service_id')
+            svc_rating = svc_review.get('rating')
+            svc_review_text = svc_review.get('review_text', '')
+            svc_review_images = svc_review.get('review_images', [])
+            
+            # Validate service review
+            if not tour_service_id or not svc_rating:
+                continue  # Skip invalid service reviews
+            
+            if svc_rating < 1 or svc_rating > 5:
+                continue
+            
+            # Validate images (max 5)
+            if len(svc_review_images) > 5:
+                svc_review_images = svc_review_images[:5]
+            
+            # Get service type from tour_services
+            cur.execute("""
+                SELECT service_type FROM tour_services 
+                WHERE id = %s AND tour_id = %s
+            """, (tour_service_id, tour_id))
+            
+            service_row = cur.fetchone()
+            if not service_row:
+                continue  # Skip if service doesn't exist or doesn't belong to this tour
+            
+            service_type = service_row[0]
+            
+            # Insert service review
+            cur.execute("""
+                INSERT INTO service_reviews 
+                (tour_review_id, tour_service_id, tour_id, user_id, booking_id, 
+                 service_type, rating, review_text, review_images)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (review_id, tour_service_id, tour_id, request.user_id, booking_id,
+                  service_type, svc_rating, svc_review_text, svc_review_images))
+            
+            svc_review_id = cur.fetchone()[0]
+            created_service_reviews.append({
+                'id': svc_review_id,
+                'tour_service_id': tour_service_id,
+                'service_type': service_type,
+                'rating': svc_rating,
+                'review_text': svc_review_text,
+                'review_images': svc_review_images
+            })
         
         conn.commit()
         cur.close()
@@ -229,7 +320,8 @@ def create_review():
                 'review_text': review_text,
                 'is_anonymous': is_anonymous,
                 'review_images': review_images,
-                'created_at': created_at.isoformat() if created_at else None
+                'created_at': created_at.isoformat() if created_at else None,
+                'service_reviews': created_service_reviews
             }
         }), 201
         
@@ -396,4 +488,350 @@ def get_user_reviews():
         
     except Exception as e:
         print(f"Error getting user reviews: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@tour_review_routes.route('/bookings/<int:booking_id>/services', methods=['GET'])
+@token_required
+def get_booking_services(booking_id):
+    """Get all services for a booking (for review form)"""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        # Verify booking belongs to user
+        cur.execute("""
+            SELECT tour_id FROM bookings 
+            WHERE id = %s AND user_id = %s
+        """, (booking_id, request.user_id))
+        
+        booking_row = cur.fetchone()
+        if not booking_row:
+            return jsonify({'success': False, 'message': 'Booking not found or unauthorized'}), 404
+        
+        tour_id = booking_row[0]
+        
+        # Get all services for this tour
+        cur.execute("""
+            SELECT 
+                ts.id, ts.service_type, ts.day_number, ts.service_cost,
+                CASE 
+                    WHEN ts.service_type = 'accommodation' THEN acs.name
+                    WHEN ts.service_type = 'transportation' THEN trs.name
+                    WHEN ts.service_type = 'restaurant' THEN rs.name
+                END as service_name,
+                CASE 
+                    WHEN ts.service_type = 'accommodation' THEN acs.id
+                    WHEN ts.service_type = 'transportation' THEN trs.id
+                    WHEN ts.service_type = 'restaurant' THEN rs.id
+                END as service_id
+            FROM tour_services ts
+            LEFT JOIN accommodation_services acs ON ts.accommodation_id = acs.id
+            LEFT JOIN transportation_services trs ON ts.transportation_id = trs.id
+            LEFT JOIN restaurant_services rs ON ts.restaurant_id = rs.id
+            WHERE ts.tour_id = %s
+            ORDER BY ts.service_type, ts.day_number NULLS FIRST
+        """, (tour_id,))
+        
+        services_rows = cur.fetchall()
+        services = []
+        
+        for svc in services_rows:
+            services.append({
+                'tour_service_id': svc[0],
+                'service_type': svc[1],
+                'day_number': svc[2],
+                'service_cost': float(svc[3]) if svc[3] else 0,
+                'service_name': svc[4] or 'Unknown Service',
+                'service_id': svc[5]
+            })
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'booking_id': booking_id,
+            'tour_id': tour_id,
+            'services': services
+        })
+        
+    except Exception as e:
+        print(f"Error getting booking services: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@tour_review_routes.route('/partner/<int:partner_id>/reviews', methods=['GET'])
+@token_required
+def get_partner_reviews(partner_id):
+    """Get all reviews containing services belonging to a partner"""
+    try:
+        # Verify partner owns this account
+        if request.user_id != partner_id:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+        
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        # Get user's partner type
+        cur.execute("""
+            SELECT partner_type FROM users WHERE id = %s AND role = 'partner'
+        """, (partner_id,))
+        
+        user_row = cur.fetchone()
+        if not user_row:
+            return jsonify({'success': False, 'message': 'Partner not found'}), 404
+        
+        partner_type = user_row[0]
+        
+        # Get reviews containing services belonging to this partner
+        cur.execute("""
+            SELECT DISTINCT
+                tr.id, tr.tour_id, tr.user_id, tr.booking_id, tr.rating,
+                tr.review_text, tr.is_anonymous, tr.review_images,
+                tr.created_at, tr.updated_at,
+                u.username, u.email,
+                t.name as tour_name
+            FROM tour_reviews tr
+            JOIN users u ON tr.user_id = u.id
+            JOIN tours_admin t ON tr.tour_id = t.id
+            WHERE EXISTS (
+                SELECT 1 FROM service_reviews sr
+                JOIN tour_services ts ON sr.tour_service_id = ts.id
+                WHERE sr.tour_review_id = tr.id
+                AND (
+                    (ts.service_type = 'accommodation' AND ts.accommodation_id IN (
+                        SELECT id FROM accommodation_services WHERE partner_id = %s
+                    ))
+                    OR
+                    (ts.service_type = 'transportation' AND ts.transportation_id IN (
+                        SELECT id FROM transportation_services WHERE partner_id = %s
+                    ))
+                    OR
+                    (ts.service_type = 'restaurant' AND ts.restaurant_id IN (
+                        SELECT id FROM restaurant_services WHERE partner_id = %s
+                    ))
+                )
+            )
+            ORDER BY tr.created_at DESC
+        """, (partner_id, partner_id, partner_id))
+        
+        reviews_rows = cur.fetchall()
+        reviews_list = []
+        
+        for review in reviews_rows:
+            review_id = review[0]
+            
+            # Get service reviews for this partner only
+            if partner_type == 'accommodation':
+                service_filter = """
+                    AND ts.service_type = 'accommodation' 
+                    AND ts.accommodation_id IN (
+                        SELECT id FROM accommodation_services WHERE partner_id = %s
+                    )
+                """
+            elif partner_type == 'transportation':
+                service_filter = """
+                    AND ts.service_type = 'transportation' 
+                    AND ts.transportation_id IN (
+                        SELECT id FROM transportation_services WHERE partner_id = %s
+                    )
+                """
+            elif partner_type == 'restaurant':
+                service_filter = """
+                    AND ts.service_type = 'restaurant' 
+                    AND ts.restaurant_id IN (
+                        SELECT id FROM restaurant_services WHERE partner_id = %s
+                    )
+                """
+            else:
+                service_filter = " AND 1=0"  # No results if unknown type
+            
+            query = f"""
+                SELECT 
+                    sr.id, sr.tour_service_id, sr.service_type,
+                    sr.rating, sr.review_text, sr.review_images,
+                    sr.created_at,
+                    CASE 
+                        WHEN sr.service_type = 'accommodation' THEN acs.name
+                        WHEN sr.service_type = 'transportation' THEN ts2.name
+                        WHEN sr.service_type = 'restaurant' THEN rs.name
+                    END as service_name
+                FROM service_reviews sr
+                JOIN tour_services ts ON sr.tour_service_id = ts.id
+                LEFT JOIN accommodation_services acs ON ts.accommodation_id = acs.id
+                LEFT JOIN transportation_services ts2 ON ts.transportation_id = ts2.id
+                LEFT JOIN restaurant_services rs ON ts.restaurant_id = rs.id
+                WHERE sr.tour_review_id = %s
+                {service_filter}
+                ORDER BY sr.created_at ASC
+            """
+            
+            cur.execute(query, (review_id, partner_id))
+            service_reviews_rows = cur.fetchall()
+            
+            service_reviews = []
+            for svc_review in service_reviews_rows:
+                service_reviews.append({
+                    'id': svc_review[0],
+                    'tour_service_id': svc_review[1],
+                    'service_type': svc_review[2],
+                    'rating': svc_review[3],
+                    'review_text': svc_review[4],
+                    'review_images': svc_review[5] or [],
+                    'created_at': svc_review[6].isoformat() if svc_review[6] else None,
+                    'service_name': svc_review[7]
+                })
+            
+            # Only include reviews that have service reviews for this partner
+            if service_reviews:
+                reviews_list.append({
+                    'id': review[0],
+                    'tour_id': review[1],
+                    'tour_name': review[12],
+                    'user_id': review[2],
+                    'booking_id': review[3],
+                    'rating': review[4],
+                    'review_text': review[5],
+                    'is_anonymous': review[6],
+                    'review_images': review[7] or [],
+                    'created_at': review[8].isoformat() if review[8] else None,
+                    'updated_at': review[9].isoformat() if review[9] else None,
+                    'username': 'Người dùng ẩn danh' if review[6] else review[10],
+                    'email': None if review[6] else review[11],
+                    'service_reviews': service_reviews
+                })
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'reviews': reviews_list,
+            'total_reviews': len(reviews_list)
+        })
+        
+    except Exception as e:
+        print(f"Error getting partner reviews: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@tour_review_routes.route('/services', methods=['POST'])
+@token_required
+def create_service_reviews():
+    """Create service-only reviews without tour review"""
+    try:
+        data = request.get_json()
+        booking_id = data.get('booking_id')
+        tour_id = data.get('tour_id')
+        service_reviews = data.get('service_reviews', [])
+        
+        if not booking_id or not tour_id:
+            return jsonify({'success': False, 'message': 'booking_id and tour_id are required'}), 400
+        
+        if not service_reviews or len(service_reviews) == 0:
+            return jsonify({'success': False, 'message': 'At least one service review is required'}), 400
+        
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        # Verify booking belongs to user
+        cur.execute("""
+            SELECT user_id FROM bookings WHERE id = %s
+        """, (booking_id,))
+        booking_row = cur.fetchone()
+        
+        if not booking_row:
+            return jsonify({'success': False, 'message': 'Booking not found'}), 404
+        
+        if booking_row[0] != request.user_id:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+        
+        # Check if tour review exists for this booking
+        cur.execute("""
+            SELECT id FROM tour_reviews WHERE booking_id = %s
+        """, (booking_id,))
+        tour_review_row = cur.fetchone()
+        
+        # If no tour review exists, create a minimal one
+        if not tour_review_row:
+            cur.execute("""
+                INSERT INTO tour_reviews (
+                    tour_id, user_id, booking_id, rating, review_text, is_anonymous
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (tour_id, request.user_id, booking_id, 5, 'Đánh giá dịch vụ', False))
+            tour_review_id = cur.fetchone()[0]
+        else:
+            tour_review_id = tour_review_row[0]
+        
+        # Insert service reviews
+        created_reviews = []
+        for svc_review in service_reviews:
+            tour_service_id = svc_review.get('tour_service_id')
+            rating = svc_review.get('rating')
+            review_text = svc_review.get('review_text', '')
+            review_images = svc_review.get('review_images', [])
+            
+            if not tour_service_id or not rating:
+                continue
+            
+            # Verify service belongs to tour
+            cur.execute("""
+                SELECT service_type FROM tour_services 
+                WHERE id = %s AND tour_id = %s
+            """, (tour_service_id, tour_id))
+            
+            service_row = cur.fetchone()
+            if not service_row:
+                continue
+            
+            service_type = service_row[0]
+            
+            # Check if service review already exists
+            cur.execute("""
+                SELECT id FROM service_reviews 
+                WHERE tour_review_id = %s AND tour_service_id = %s
+            """, (tour_review_id, tour_service_id))
+            
+            existing_review = cur.fetchone()
+            
+            if existing_review:
+                # Update existing review
+                cur.execute("""
+                    UPDATE service_reviews 
+                    SET rating = %s, review_text = %s, review_images = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                    RETURNING id
+                """, (rating, review_text, review_images, existing_review[0]))
+                review_id = existing_review[0]
+            else:
+                # Insert new review
+                cur.execute("""
+                    INSERT INTO service_reviews (
+                        tour_review_id, tour_service_id, tour_id, user_id, booking_id,
+                        service_type, rating, review_text, review_images
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                """, (tour_review_id, tour_service_id, tour_id, request.user_id, booking_id,
+                      service_type, rating, review_text, review_images))
+                review_id = cur.fetchone()[0]
+            
+            created_reviews.append({
+                'id': review_id,
+                'tour_service_id': tour_service_id,
+                'rating': rating
+            })
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Service reviews created successfully',
+            'tour_review_id': tour_review_id,
+            'service_reviews': created_reviews
+        }), 201
+        
+    except Exception as e:
+        print(f"Error creating service reviews: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500

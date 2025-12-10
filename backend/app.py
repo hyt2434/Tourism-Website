@@ -61,6 +61,10 @@ try:
     from src.models.tour_schema import create_tour_tables
     create_tour_tables()
 
+    # Create tour reviews table
+    from src.models.tour_reviews_schema import create_tour_reviews_table
+    create_tour_reviews_table()
+
 except Exception as e:
     print(f"[WARNING] Could not initialize database tables: {e}")
 

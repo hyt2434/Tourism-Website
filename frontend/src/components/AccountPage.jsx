@@ -66,6 +66,13 @@ export default function AccountPage() {
       const result = await getUserBookings(userId);
       if (result.success) {
         setBookings(result.bookings || []);
+        // Check review status for each completed booking
+        const completedBookings = (result.bookings || []).filter(
+          b => b.tour_schedule_status === 'completed'
+        );
+        completedBookings.forEach(booking => {
+          checkBookingReviewStatus(booking.id);
+        });
       }
     } catch (error) {
       console.error("Failed to load bookings:", error);
@@ -327,13 +334,25 @@ export default function AccountPage() {
                             {translations.accountPage.viewDetails}
                           </button>
                           {booking.tour_schedule_status === 'completed' && (
-                            <button
-                              onClick={() => handleWriteReview(booking)}
-                              className="flex-1 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
-                            >
-                              <MessageSquare size={18} />
-                              Viết đánh giá
-                            </button>
+                            <>
+                              {bookingReviewStatus[booking.id]?.has_review ? (
+                                <button
+                                  disabled
+                                  className="flex-1 bg-gray-400 text-white py-2.5 px-4 rounded-lg cursor-not-allowed font-medium flex items-center justify-center gap-2 opacity-70"
+                                >
+                                  <Star size={18} className="fill-white" />
+                                  Đã đánh giá
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleWriteReview(booking)}
+                                  className="flex-1 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+                                >
+                                  <MessageSquare size={18} />
+                                  Viết đánh giá
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
