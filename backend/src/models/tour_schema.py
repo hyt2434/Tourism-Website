@@ -340,7 +340,7 @@ def create_tour_tables():
                 schedule_id INTEGER NOT NULL REFERENCES tour_schedules(id) ON DELETE CASCADE,
                 partner_id INTEGER NOT NULL,
                 partner_type VARCHAR(50) NOT NULL,
-                amount DECIMAL(10, 2) NOT NULL,
+                amount DECIMAL(14, 2) NOT NULL,
                 status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'failed')),
                 paid_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -368,10 +368,38 @@ def create_tour_tables():
             CREATE TABLE IF NOT EXISTS partner_revenue (
                 id SERIAL PRIMARY KEY,
                 partner_id INTEGER NOT NULL UNIQUE,
-                amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+                amount DECIMAL(18, 2) NOT NULL DEFAULT 0.00,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+        """)
+
+        # Ensure existing tables have sufficient precision for large payouts
+        cur.execute("""
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'partner_revenue_pending'
+                      AND column_name = 'amount'
+                      AND (numeric_precision IS NULL OR numeric_precision < 14)
+                ) THEN
+                    ALTER TABLE partner_revenue_pending
+                    ALTER COLUMN amount TYPE DECIMAL(14,2)
+                    USING amount::DECIMAL(14,2);
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'partner_revenue'
+                      AND column_name = 'amount'
+                      AND (numeric_precision IS NULL OR numeric_precision < 14)
+                ) THEN
+                    ALTER TABLE partner_revenue
+                    ALTER COLUMN amount TYPE DECIMAL(14,2)
+                    USING amount::DECIMAL(14,2);
+                END IF;
+            END $$;
         """)
         
         # Create index for partner revenue sorting

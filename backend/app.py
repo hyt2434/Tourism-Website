@@ -39,20 +39,12 @@ from src.routes.favorites_routes import favorites_routes
 from src.routes.schedule_status_routes import schedule_status_routes
 from src.routes.partner_revenue_routes import partner_revenue_routes
 from src.routes.tour_review_routes import tour_review_routes
+from src.models.models import ensure_base_tables
 
 try:
-    # Create all database tables (users, posts, comments, likes, stories, tags, cities, partner_registrations, bookings, promotions)
-    from src.models.models import create_tables
-    create_tables()
-    print("[OK] Database tables checked/created successfully.")
-    
-    # Ensure default admin exists
-    ensure_default_admin()
-    
-    # Initialize cities
-    from src.services.city_init import init_cities
-    init_cities()
-    
+    # Create foundational tables (cities, users) before other schemas that depend on them
+    ensure_base_tables()
+
     # Create partner service tables (accommodations, restaurants, transportation)
     from src.models.partner_services_schema import create_partner_service_tables
     create_partner_service_tables()
@@ -61,6 +53,18 @@ try:
     from src.models.tour_schema import create_tour_tables
     create_tour_tables()
 
+    # Create all remaining database tables (posts, comments, likes, stories, tags, cities, partner_registrations, bookings, promotions)
+    from src.models.models import create_tables
+    create_tables()
+    print("[OK] Database tables checked/created successfully.")
+
+    # Ensure default admin exists
+    ensure_default_admin()
+
+    # Initialize cities
+    from src.services.city_init import init_cities
+    init_cities()
+    
     # Create tour reviews table
     from src.models.tour_reviews_schema import create_tour_reviews_table
     create_tour_reviews_table()

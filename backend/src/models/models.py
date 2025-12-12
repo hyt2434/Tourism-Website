@@ -1,6 +1,51 @@
 from config.database import get_connection
 from .tour_reviews_schema import create_tour_reviews_table
 
+
+def ensure_base_tables():
+    """Create base tables that other schemas depend on (cities, users)."""
+    conn = get_connection()
+    if conn is None:
+        print("❌ Cannot create base tables: Database connection failed.")
+        return
+
+    cur = conn.cursor()
+    try:
+        # Cities table (used by tours and other modules)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS cities (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL UNIQUE,
+                code VARCHAR(10),
+                region VARCHAR(50)
+            );
+        """)
+
+        # Users table (referenced by many schemas)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(100) NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                password VARCHAR(255),
+                phone VARCHAR(20),
+                avatar_url TEXT,
+                role VARCHAR(20) DEFAULT 'client' CHECK (role IN ('admin', 'client', 'partner')),
+                partner_type VARCHAR(50) CHECK (partner_type IN ('accommodation', 'transportation', 'restaurant') OR partner_type IS NULL),
+                status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended', 'pending')),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
+        conn.commit()
+        print("✅ Base tables created/verified.")
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Error creating base tables: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
 def create_table():
     conn = get_connection()
     if conn is None:

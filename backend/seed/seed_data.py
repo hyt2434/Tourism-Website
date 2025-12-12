@@ -25,6 +25,11 @@ sys.path.insert(0, backend_dir)
 
 from config.database import get_connection
 from seed.import_tour_images import import_tour_images
+from src.models.models import ensure_base_tables, create_tables
+from src.models.partner_services_schema import create_partner_service_tables
+from src.models.tour_schema import create_tour_tables
+from src.models.tour_reviews_schema import create_tour_reviews_table
+from src.services.city_init import init_cities
 
 bcrypt = Bcrypt()
 
@@ -3729,6 +3734,35 @@ def create_sample_bookings(user_ids):
         cur.close()
         conn.close()
 
+def ensure_tables_for_seed():
+    """Create all required tables so seed_data can run standalone."""
+    print("📦 Creating database tables (standalone seed)...")
+    try:
+        # Base tables first (cities, users)
+        ensure_base_tables()
+
+        # Partner services tables (needed by tours)
+        create_partner_service_tables()
+
+        # Tour tables (depend on cities/users and partner services)
+        create_tour_tables()
+
+        # Remaining core tables (bookings, favorites, social, etc.)
+        create_tables()
+
+        # Tour reviews table (depends on bookings)
+        create_tour_reviews_table()
+
+        # Initialize cities data if missing
+        init_cities()
+
+        print("✅ All tables created/verified for seed run.")
+    except Exception as e:
+        print(f"❌ Error ensuring tables for seed: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
 def main():
     """Main function to seed all data"""
     print("=" * 60)
@@ -3736,84 +3770,10 @@ def main():
     print("=" * 60)
     print()
     
-    # First, ensure all tables are created
-    print("📦 Creating database tables...")
-    try:
-        # Create a minimal Flask app context for table creation
-        from flask import Flask
-        app = Flask(__name__)
-        app.bcrypt = bcrypt
-        
-        with app.app_context():
-            # Create cities and users tables first (needed by everything)
-            conn = get_connection()
-            if conn:
-                cur = conn.cursor()
-                
-                # Create cities table
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS cities (
-                        id SERIAL PRIMARY KEY,
-                        name VARCHAR(100) NOT NULL UNIQUE,
-                        code VARCHAR(10),
-                        region VARCHAR(50)
-                    );
-                """)
-                
-                # Create users table (needed by tours_admin and partner services)
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id SERIAL PRIMARY KEY,
-                        username VARCHAR(100) NOT NULL,
-                        email VARCHAR(100) UNIQUE NOT NULL,
-                        password VARCHAR(255),
-                        phone VARCHAR(20),
-                        avatar_url TEXT,
-                        role VARCHAR(20) DEFAULT 'client' CHECK (role IN ('admin', 'client', 'partner')),
-                        partner_type VARCHAR(50) CHECK (partner_type IN ('accommodation', 'transportation', 'restaurant') OR partner_type IS NULL),
-                        status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended', 'pending')),
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """)
-                
-                conn.commit()
-                cur.close()
-                conn.close()
-                print("✅ Cities and users tables created/verified")
-            
-            # Create partner service tables FIRST (needed by tour_services)
-            from src.models.partner_services_schema import create_partner_service_tables
-            create_partner_service_tables()
-            print("✅ Partner service tables created/verified")
-            
-            # Create tour tables (tours_admin references cities and users, tour_services references partner services)
-            from src.models.tour_schema import create_tour_tables
-            create_tour_tables()
-            print("✅ Tour tables created/verified")
-            
-            # Create remaining core tables (posts, comments, bookings, etc.)
-            from src.models.models import create_tables
-            create_tables()
-            print("✅ Core tables created/verified")
-            
-            # Create tour reviews table (requires bookings table to exist)
-            from src.models.tour_reviews_schema import create_tour_reviews_table
-            create_tour_reviews_table()
-            print("✅ Tour reviews table created/verified")
-            
-            # Initialize cities
-            from src.services.city_init import init_cities
-            init_cities()
-            print("✅ Cities initialized")
-        
-    except Exception as e:
-        print(f"❌ Error creating tables: {e}")
-        import traceback
-        traceback.print_exc()
-        return
-    
+    # Ensure schema exists so this script can run standalone
+    ensure_tables_for_seed()
     print()
-    
+
     # Load city IDs
     print("📋 Loading city IDs...")
     load_city_ids()

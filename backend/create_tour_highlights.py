@@ -31,7 +31,7 @@ def create_tour_highlights_table():
                 COALESCE(COUNT(DISTINCT b.id), 0) as booking_count
             FROM tours_admin t
             LEFT JOIN bookings b ON t.id = b.tour_id 
-                AND b.status = 'completed'
+                AND b.status IN ('confirmed', 'completed')
             WHERE t.is_active = TRUE 
                 AND t.is_published = TRUE
             GROUP BY t.id
@@ -113,7 +113,7 @@ def refresh_tour_highlights():
                 COALESCE(COUNT(DISTINCT b.id), 0) as booking_count
             FROM tours_admin t
             LEFT JOIN bookings b ON t.id = b.tour_id 
-                AND b.status = 'completed'
+                AND b.status IN ('confirmed', 'completed')
             WHERE t.is_active = TRUE 
                 AND t.is_published = TRUE
             GROUP BY t.id
