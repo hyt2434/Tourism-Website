@@ -1,19 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { Star, User, Calendar } from 'lucide-react';
+import { Star, User, Calendar, Trash2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useToast } from '../context/ToastContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const TourReviews = ({ tourId }) => {
     const { translations } = useLanguage();
+    const { toast } = useToast();
     const [reviews, setReviews] = useState([]);
     const [averageRating, setAverageRating] = useState(0);
     const [totalReviews, setTotalReviews] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [deletingId, setDeletingId] = useState(null);
 
     useEffect(() => {
         loadReviews();
+        checkAdminStatus();
     }, [tourId]);
+
+    const checkAdminStatus = () => {
+        const user = localStorage.getItem('user');
+        if (user) {
+            const userData = JSON.parse(user);
+            setIsAdmin(userData.role === 'admin');
+        }
+    };
 
     const loadReviews = async () => {
         try {
@@ -29,6 +42,40 @@ const TourReviews = ({ tourId }) => {
             console.error('Error loading reviews:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteReview = async (reviewId) => {
+        if (!window.confirm('Are you sure you want to delete this review?')) {
+            return;
+        }
+
+        try {
+            setDeletingId(reviewId);
+            const token = localStorage.getItem('token');
+            
+            const response = await fetch(`${API_URL}/api/reviews/${reviewId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                toast.success('Review deleted successfully');
+                // Reload reviews to update the list and statistics
+                loadReviews();
+            } else {
+                toast.error(data.message || 'Failed to delete review');
+            }
+        } catch (error) {
+            console.error('Error deleting review:', error);
+            toast.error('Failed to delete review');
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -115,30 +162,41 @@ const TourReviews = ({ tourId }) => {
             {/* Reviews List */}
             <div className="space-y-6">
                 {reviews.map((review) => (
-                    <div key={review.id} className="border-b border-gray-200 pb-6 last:border-0">
+                    <div key={review.id} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0 relative">
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <User size={24} className="text-blue-600" />
+                            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                                <User size={24} className="text-blue-600 dark:text-blue-400" />
                             </div>
                             
                             <div className="flex-1">
                                 <div className="flex items-center justify-between mb-2">
                                     <div>
-                                        <h4 className="font-semibold text-gray-800">
+                                        <h4 className="font-semibold text-gray-800 dark:text-white">
                                             {review.username}
                                         </h4>
                                         <div className="flex items-center gap-3 mt-1">
                                             {renderStars(review.rating)}
-                                            <span className="text-sm text-gray-500 flex items-center gap-1">
+                                            <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                                 <Calendar size={14} />
                                                 {formatDate(review.created_at)}
                                             </span>
                                         </div>
                                     </div>
+                                    {/* Admin Delete Button */}
+                                    {isAdmin && (
+                                        <button
+                                            onClick={() => handleDeleteReview(review.id)}
+                                            disabled={deletingId === review.id}
+                                            className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg transition-colors disabled:opacity-50"
+                                            title="Delete review"
+                                        >
+                                            <Trash2 size={18} className={deletingId === review.id ? 'animate-pulse' : ''} />
+                                        </button>
+                                    )}
                                 </div>
                                 
                                 {review.review_text && (
-                                    <p className="text-gray-700 mt-3 leading-relaxed">
+                                    <p className="text-gray-700 dark:text-gray-300 mt-3 leading-relaxed">
                                         {review.review_text}
                                     </p>
                                 )}

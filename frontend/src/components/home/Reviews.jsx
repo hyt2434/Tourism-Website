@@ -1,21 +1,34 @@
 import { useState, useEffect } from "react";
-import { Star, Loader } from "lucide-react";
+import { Star, Loader, Trash2 } from "lucide-react";
 import Card from "./Card";
 import { useLanguage } from "../../context/LanguageContext";
+import { useToast } from "../../context/ToastContext";
 import TourReviewDetailPanel from "./TourReviewDetailPanel";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function Reviews() {
   const { translations } = useLanguage();
+  const { toast } = useToast();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedReview, setSelectedReview] = useState(null);
   const [showDetailPanel, setShowDetailPanel] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     fetchLatestReviews();
+    checkAdminStatus();
   }, []);
+
+  const checkAdminStatus = () => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      const userData = JSON.parse(user);
+      setIsAdmin(userData.role === 'admin');
+    }
+  };
 
   const fetchLatestReviews = async () => {
     try {
@@ -43,6 +56,46 @@ export default function Reviews() {
   const handleClosePanel = () => {
     setShowDetailPanel(false);
     setSelectedReview(null);
+  };
+
+  const handleDeleteReview = async (reviewId, e) => {
+    e.stopPropagation(); // Prevent card click event
+    
+    if (!window.confirm('Are you sure you want to delete this review?')) {
+      return;
+    }
+
+    try {
+      setDeletingId(reviewId);
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/api/reviews/${reviewId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success('Review deleted successfully');
+        // Remove review from list
+        setReviews(reviews.filter(r => r.id !== reviewId));
+        // Close panel if this review is currently shown
+        if (selectedReview?.id === reviewId) {
+          handleClosePanel();
+        }
+      } else {
+        toast.error(data.message || 'Failed to delete review');
+      }
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      toast.error('Failed to delete review');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const renderStars = (rating) => {
@@ -98,10 +151,22 @@ export default function Reviews() {
             <Card key={review.id} hover={false}>
               <div 
                 onClick={() => handleReviewClick(review)}
-                className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shine-effect cursor-pointer hover:shadow-lg transition-shadow"
+                className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shine-effect cursor-pointer hover:shadow-lg transition-shadow relative"
               >
+                {/* Admin Delete Button */}
+                {isAdmin && (
+                  <button
+                    onClick={(e) => handleDeleteReview(review.id, e)}
+                    disabled={deletingId === review.id}
+                    className="absolute top-4 right-4 p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg transition-colors z-10 disabled:opacity-50"
+                    title="Delete review"
+                  >
+                    <Trash2 size={18} className={deletingId === review.id ? 'animate-pulse' : ''} />
+                  </button>
+                )}
+
                 {/* Tour Name */}
-                <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400 mb-2 line-clamp-1">
+                <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400 mb-2 line-clamp-1 pr-12">
                   {review.tour_name}
                 </h3>
 
@@ -153,6 +218,8 @@ export default function Reviews() {
         <TourReviewDetailPanel
           review={selectedReview}
           onClose={handleClosePanel}
+          isAdmin={isAdmin}
+          onDelete={handleDeleteReview}
         />
       )}
     </section>

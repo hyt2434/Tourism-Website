@@ -472,17 +472,30 @@ def update_review(review_id):
 @tour_review_routes.route('/reviews/<int:review_id>', methods=['DELETE'])
 @token_required
 def delete_review(review_id):
-    """Delete a review"""
+    """Delete a review (user can delete own, admin can delete any)"""
     try:
         conn = get_connection()
         cur = conn.cursor()
         
-        # Verify review belongs to user
-        cur.execute("""
-            DELETE FROM tour_reviews 
-            WHERE id = %s AND user_id = %s
-            RETURNING id
-        """, (review_id, request.user_id))
+        # Check if user is admin
+        cur.execute("SELECT role FROM users WHERE id = %s", (request.user_id,))
+        user_role = cur.fetchone()
+        is_admin = user_role and user_role[0] == 'admin'
+        
+        if is_admin:
+            # Admin can delete any review
+            cur.execute("""
+                DELETE FROM tour_reviews 
+                WHERE id = %s
+                RETURNING id
+            """, (review_id,))
+        else:
+            # Regular user can only delete their own review
+            cur.execute("""
+                DELETE FROM tour_reviews 
+                WHERE id = %s AND user_id = %s
+                RETURNING id
+            """, (review_id, request.user_id))
         
         result = cur.fetchone()
         

@@ -1,12 +1,20 @@
-import { X, Star, Calendar, User, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { X, Star, Calendar, User, ArrowRight, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-export default function TourReviewDetailPanel({ review, onClose }) {
+export default function TourReviewDetailPanel({ review, onClose, isAdmin, onDelete }) {
   const navigate = useNavigate();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleNavigateToTour = () => {
     navigate(`/tours/${review.tour_id}`);
     onClose();
+  };
+
+  const handleDelete = async (e) => {
+    setIsDeleting(true);
+    await onDelete(review.id, e);
+    setIsDeleting(false);
   };
 
   const formatDate = (dateString) => {
@@ -52,12 +60,24 @@ export default function TourReviewDetailPanel({ review, onClose }) {
           {/* Header */}
           <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10 rounded-t-2xl">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Review Details</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <X size={24} className="text-gray-600 dark:text-gray-400" />
-            </button>
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg transition-colors disabled:opacity-50"
+                  title="Delete review"
+                >
+                  <Trash2 size={20} className={isDeleting ? 'animate-pulse' : ''} />
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X size={24} className="text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
           </div>
 
           <div className="p-6 space-y-6">
