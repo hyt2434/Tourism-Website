@@ -361,6 +361,25 @@ def create_tour_tables():
             ON partner_revenue_pending(schedule_id);
         """)
         
+        # =====================================================================
+        # PARTNER REVENUE TABLE (Aggregated revenue per partner - no duplicates)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS partner_revenue (
+                id SERIAL PRIMARY KEY,
+                partner_id INTEGER NOT NULL UNIQUE,
+                amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
+        # Create index for partner revenue sorting
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_partner_revenue_amount 
+            ON partner_revenue(amount DESC);
+        """)
+        
         conn.commit()
         print("[OK] Tour tables created successfully!")
         return True

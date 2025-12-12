@@ -22,6 +22,7 @@ def create_tour_reviews_table():
                 is_anonymous BOOLEAN DEFAULT FALSE,
                 review_images TEXT[], -- Array of image URLs
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(booking_id) -- One review per booking
             )

@@ -291,3 +291,59 @@ def get_partner_active_bookings(partner_id):
             'success': False,
             'message': f'Error fetching active bookings: {str(e)}'
         }), 500
+
+@partner_revenue_routes.route('/partner-revenue/all', methods=['GET'])
+def get_all_partner_revenue():
+    """Get all partners' aggregated revenue sorted by amount (highest to lowest)"""
+    try:
+        conn = get_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cur = conn.cursor()
+        
+        # Get all partner revenue sorted by amount (descending)
+        cur.execute("""
+            SELECT 
+                pr.id,
+                pr.partner_id,
+                pr.amount,
+                pr.created_at,
+                pr.updated_at,
+                u.username as partner_name,
+                u.partner_type,
+                u.email
+            FROM partner_revenue pr
+            INNER JOIN users u ON pr.partner_id = u.id
+            ORDER BY pr.amount DESC
+        """)
+        
+        rows = cur.fetchall()
+        revenues = []
+        
+        for row in rows:
+            revenues.append({
+                'id': row[0],
+                'partner_id': row[1],
+                'amount': float(row[2]),
+                'created_at': row[3].isoformat() if row[3] else None,
+                'updated_at': row[4].isoformat() if row[4] else None,
+                'partner_name': row[5],
+                'partner_type': row[6],
+                'email': row[7]
+            })
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'revenues': revenues,
+            'total_partners': len(revenues)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error fetching partner revenues: {str(e)}'
+        }), 500

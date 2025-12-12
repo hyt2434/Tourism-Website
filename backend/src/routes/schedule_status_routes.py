@@ -279,6 +279,34 @@ def complete_tour_schedule(schedule_id):
                         updated_at = CURRENT_TIMESTAMP
                 """, (schedule_id, partner_id, revenue_info['partner_type'], revenue_info['amount']))
             
+            # Mark all partner_revenue_pending records for this tour as 'paid'
+            # and add the amounts to partner_revenue table
+            cur.execute("""
+                SELECT partner_id, amount FROM partner_revenue_pending
+                WHERE schedule_id = %s
+            """, (schedule_id,))
+            pending_revenues = cur.fetchall()
+            
+            for partner_id, amount in pending_revenues:
+                # Update partner_revenue table (add to existing amount)
+                cur.execute("""
+                    INSERT INTO partner_revenue (partner_id, amount, created_at, updated_at)
+                    VALUES (%s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    ON CONFLICT (partner_id) 
+                    DO UPDATE SET 
+                        amount = partner_revenue.amount + EXCLUDED.amount,
+                        updated_at = CURRENT_TIMESTAMP
+                """, (partner_id, amount))
+            
+            # Mark all records as 'paid' in partner_revenue_pending
+            cur.execute("""
+                UPDATE partner_revenue_pending
+                SET status = 'paid',
+                    paid_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE schedule_id = %s
+            """, (schedule_id,))
+            
             conn.commit()
             
             return jsonify({

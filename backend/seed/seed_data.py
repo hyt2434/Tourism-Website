@@ -55,6 +55,48 @@ def load_city_ids():
         cur.close()
         conn.close()
 
+def initialize_partner_revenue():
+    """Initialize partner_revenue table with all partner IDs set to 0 amount"""
+    conn = get_connection()
+    if not conn:
+        print("❌ Cannot initialize partner_revenue: Database connection failed.")
+        return
+    
+    cur = conn.cursor()
+    try:
+        # Check if partner_revenue already has data
+        cur.execute("SELECT COUNT(*) FROM partner_revenue")
+        if cur.fetchone()[0] > 0:
+            print("ℹ️  Partner revenue table already initialized. Skipping.")
+            return
+        
+        # Get all partner IDs from users table
+        cur.execute("""
+            SELECT id FROM users 
+            WHERE role = 'partner' AND partner_type IS NOT NULL
+        """)
+        partner_ids = [row[0] for row in cur.fetchall()]
+        
+        # Insert all partners with 0 amount
+        for partner_id in partner_ids:
+            cur.execute("""
+                INSERT INTO partner_revenue (partner_id, amount, created_at, updated_at)
+                VALUES (%s, 0.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT (partner_id) DO NOTHING
+            """, (partner_id,))
+        
+        conn.commit()
+        print(f"✅ Initialized partner_revenue table with {len(partner_ids)} partners")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Error initializing partner_revenue: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        cur.close()
+        conn.close()
+
 def create_users():
     """Create 16 users: 4 clients, 12 partners (4 each type), 1 admin"""
     conn = get_connection()
@@ -3799,6 +3841,11 @@ def main():
     # Create tours AFTER services are ready
     print("🗺️  Creating tours (linking to services and set meals)...")
     create_tours(user_ids)
+    print()
+    
+    # Initialize partner revenue table
+    print("💰 Initializing partner revenue table...")
+    initialize_partner_revenue()
     print()
     
     # Create promotions

@@ -15,7 +15,9 @@ def migrate_service_reviews_table():
             ADD COLUMN IF NOT EXISTS tour_id INTEGER REFERENCES tours_admin(id) ON DELETE CASCADE,
             ADD COLUMN IF NOT EXISTS booking_id INTEGER REFERENCES bookings(id) ON DELETE CASCADE,
             ADD COLUMN IF NOT EXISTS tour_service_id INTEGER,
-            ADD COLUMN IF NOT EXISTS review_text TEXT
+            ADD COLUMN IF NOT EXISTS review_text TEXT,
+            ADD COLUMN IF NOT EXISTS review_images TEXT[] -- Array of image URLs
+            
         """)
         
         # Update review_text from comment if it exists
