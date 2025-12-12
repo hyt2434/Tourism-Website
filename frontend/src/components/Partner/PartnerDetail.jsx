@@ -1,17 +1,54 @@
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "../ui/button";
-import { Star, MapPin, Phone, Globe, Mail, Award, Users, TrendingUp, CheckCircle2, ArrowRight, Calendar, DollarSign, Clock, MessageCircle, Heart, Share2, Sparkles } from "lucide-react";
+import { Star, Phone, Globe, Mail, Award, Users, TrendingUp, CheckCircle2, ArrowRight, Calendar, Clock, MessageCircle, Heart, Share2, Sparkles } from "lucide-react";
+import { getPartnerDetail } from "../../api/partners";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function PartnerDetail() {
   const { id } = useParams();
-  const partner = null;
+  const { translations: t } = useLanguage();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [data, setData] = useState({
+    partner: null,
+    tours: [],
+    services: { accommodations: [], restaurants: [], transportations: [] },
+    reviews: []
+  });
+
+  useEffect(() => {
+    const fetchDetail = async () => {
+      try {
+        const res = await getPartnerDetail(id);
+        if (res?.success) {
+          setData({
+            partner: res.partner,
+            tours: res.tours || [],
+            services: res.services || { accommodations: [], restaurants: [], transportations: [] },
+            reviews: res.reviews || []
+          });
+        } else {
+          setError(res?.message || "Failed to load partner detail");
+        }
+      } catch (err) {
+        setError(err.message || "Failed to load partner detail");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetail();
+  }, [id]);
+
+  const partner = data.partner;
+  const avatar = partner?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(partner?.name || "Partner")}&background=0D8ABC&color=fff`;
 
   if (!partner) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="text-6xl">❌</div>
-          <p className="text-xl text-gray-600 font-medium">Partner not found</p>
+          <div className="text-6xl">{loading ? "⏳" : "❌"}</div>
+          <p className="text-xl text-gray-600 font-medium">{loading ? "Loading..." : (error || "Partner not found")}</p>
           <Link to="/partner">
             <Button className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600">
               <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
@@ -48,7 +85,7 @@ export default function PartnerDetail() {
             <div className="relative flex-shrink-0">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full blur-2xl opacity-40"></div>
               <img
-                src={partner.logo}
+                src={avatar}
                 alt={partner.name}
                 className="relative w-48 h-48 rounded-full object-cover border-8 border-white shadow-2xl ring-4 ring-blue-100"
               />
@@ -71,7 +108,7 @@ export default function PartnerDetail() {
                   {partner.name}
                 </h1>
                 <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
-                  {partner.description || partner.tourCore}
+                  {partner.description || partner.tourCore || t?.partnerSubtitle || ""}
                 </p>
               </div>
 
@@ -81,22 +118,22 @@ export default function PartnerDetail() {
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
                       key={i}
-                      className={`w-6 h-6 ${i < (partner.rating || 4) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
+                      className={`w-6 h-6 ${i < Math.round(partner.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
                     />
                   ))}
                 </div>
                 <span className="text-gray-600 font-semibold">
-                  {partner.rating || 4}.0
+                  {(partner.rating ?? 0).toFixed ? (partner.rating ?? 0).toFixed(1) : (partner.rating ?? 0)}
                 </span>
               </div>
 
               {/* Quick Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                {[
-                  { icon: Users, label: "Guests", value: "15K+" },
-                  { icon: Calendar, label: "Since", value: partner.date },
-                  { icon: TrendingUp, label: "Growth", value: "+45%" },
-                  { icon: Award, label: "Rating", value: "5.0★" }
+                {[ 
+                  { icon: Users, label: t?.supportTour || "Support Tour", value: data.tours.length },
+                  { icon: Calendar, label: t?.partnerTypeLabel || "Type", value: partner.partner_type || "Partner" },
+                  { icon: TrendingUp, label: t?.partnerStats4 || "Growth", value: "+45%" },
+                  { icon: Award, label: t?.partnerStats3 || "Rating", value: `${(partner.rating ?? 0).toFixed ? (partner.rating ?? 0).toFixed(1) : (partner.rating ?? 0)}★` }
                 ].map((stat, idx) => (
                   <div key={idx} className="bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
                     <stat.icon className="w-5 h-5 text-blue-600 mx-auto mb-1" />
@@ -105,38 +142,22 @@ export default function PartnerDetail() {
                   </div>
                 ))}
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3 justify-center md:justify-start pt-4">
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 h-11 px-6">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Book Now
-                </Button>
-                <Button variant="outline" className="h-11 px-6 border-2 hover:bg-white/80">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Contact
-                </Button>
-                <Button variant="outline" className="h-11 w-11 p-0 border-2 hover:bg-white/80">
-                  <Heart className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" className="h-11 w-11 p-0 border-2 hover:bg-white/80">
-                  <Share2 className="w-4 h-4" />
-                </Button>
-              </div>
             </div>
           </div>
         </div>
 
         {/* Contact Information Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 p-2.5 flex-shrink-0">
                 <Mail className="w-full h-full text-white" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-500 mb-1">Email</p>
-                <p className="font-semibold text-gray-900 text-sm">contact@{partner.name.replace(/\s+/g, "").toLowerCase()}.com</p>
+                <p className="text-sm text-gray-500 mb-1">{t?.email || "Email"}</p>
+                <p className="font-semibold text-gray-900">
+                  {partner.email || t?.notAvailable || "N/A"}
+                </p>
               </div>
             </div>
           </div>
@@ -147,28 +168,10 @@ export default function PartnerDetail() {
                 <Phone className="w-full h-full text-white" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-500 mb-1">Phone</p>
-                <p className="font-semibold text-gray-900">+84 123 456 789</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 p-2.5 flex-shrink-0">
-                <Globe className="w-full h-full text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-500 mb-1">Website</p>
-                <a 
-                  href={`https://www.${partner.name.replace(/\s+/g, "").toLowerCase()}.com`} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  className="font-semibold text-blue-600 hover:text-blue-700 hover:underline text-sm flex items-center gap-1"
-                >
-                  Visit site
-                  <ArrowRight className="w-3 h-3" />
-                </a>
+                <p className="text-sm text-gray-500 mb-1">{t?.phone || "Phone"}</p>
+                <p className="font-semibold text-gray-900">
+                  {partner.phone || t?.notAvailable || "N/A"}
+                </p>
               </div>
             </div>
           </div>
@@ -215,16 +218,19 @@ export default function PartnerDetail() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
+            {data.tours.length === 0 && (
+              <div className="text-gray-500">No tours linked to this partner yet.</div>
+            )}
+            {data.tours.map((tour) => (
               <div 
-                key={i} 
+                key={tour.tour_id} 
                 className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]"
               >
                 {/* Tour Image */}
                 <div className="relative overflow-hidden h-48">
                   <img
-                    src={`https://source.unsplash.com/600x400/?travel,vietnam,${i}`}
-                    alt="Tour"
+                    src={tour.image_url || `https://source.unsplash.com/600x400/?travel,vietnam,${tour.tour_id}`}
+                    alt={tour.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
@@ -238,10 +244,10 @@ export default function PartnerDetail() {
                   
                   <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
                     <div>
-                      <h3 className="text-white font-bold text-lg">Tour Package #{i}</h3>
+                      <h3 className="text-white font-bold text-lg">{tour.name}</h3>
                       <p className="text-white/90 text-sm flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {2 + i} days / {1 + i} nights
+                        {tour.duration || t?.tourDuration || "Flexible"}
                       </p>
                     </div>
                   </div>
@@ -250,18 +256,18 @@ export default function PartnerDetail() {
                 {/* Tour Details */}
                 <div className="p-5 space-y-4">
                   <p className="text-gray-600 text-sm leading-relaxed">
-                    A specially curated travel experience with {partner.name}. Enjoy breathtaking landscapes and cultural immersion.
+                    {t?.partnerToursCompleted || "Completed bookings"}: {tour.completed_bookings}
                   </p>
 
                   <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                     <div>
-                      <p className="text-xs text-gray-500">Starting from</p>
+                      <p className="text-xs text-gray-500">{t?.startingFrom || "Starting from"}</p>
                       <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        ${299 * i}
+                        {tour.total_price ? `$${tour.total_price}` : t?.contactForPrice || "Contact"}
                       </p>
                     </div>
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg">
-                      Book Now
+                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg" onClick={() => window.location.href = `/tours/${tour.tour_id}`}>
+                      {t?.bookNow || "Book Now"}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </div>
@@ -271,36 +277,41 @@ export default function PartnerDetail() {
           </div>
         </section>
 
-        {/* Contact CTA Section */}
-        <section className="relative bg-gradient-to-br from-white/90 to-blue-50/90 backdrop-blur-xl rounded-3xl shadow-2xl p-10 border border-white/20 text-center overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-pink-600/5 rounded-3xl"></div>
-          
-          <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
-              <MessageCircle className="w-4 h-4" />
-              We're here to help
-            </div>
-
-            <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-900 bg-clip-text text-transparent">
-              Get in Touch with {partner.name}
+        {/* Reviews Section */}
+        <section className="bg-white/70 backdrop-blur-xl rounded-3xl p-8 md:p-10 shadow-xl border border-white/20 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
+              {t?.reviews || "Reviews"}
             </h2>
-            
-            <p className="text-gray-600 text-lg leading-relaxed">
-              Have questions or special requests? Contact {partner.name} directly or message through our platform.
-              Our team is available 24/7 to assist you.
-            </p>
-
-            <div className="flex flex-wrap gap-4 justify-center pt-4">
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 h-12 px-8">
-                <MessageCircle className="w-5 h-5 mr-2" />
-                Contact Partner
-              </Button>
-              <Button variant="outline" className="h-12 px-8 border-2">
-                <Phone className="w-5 h-5 mr-2" />
-                Call Now
-              </Button>
-            </div>
           </div>
+          {data.reviews.length === 0 ? (
+            <p className="text-gray-500">{t?.noReviews || "No reviews yet."}</p>
+          ) : (
+            <div className="space-y-4">
+              {data.reviews.map((rev) => (
+                <div key={rev.id} className="border border-gray-200 rounded-2xl p-4 bg-white shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{rev.tour_name}</h4>
+                      <p className="text-xs text-gray-500">{rev.created_at?.replace('T',' ').slice(0,16)}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`w-4 h-4 ${i < (rev.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-gray-700 mt-2">{rev.comment}</p>
+                  <button
+                    className="text-sm text-blue-600 hover:underline mt-2"
+                    onClick={() => window.location.href = `/tours/${rev.tour_id}`}
+                  >
+                    {t?.seeTour || "See tour"} →
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </div>

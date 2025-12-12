@@ -35,21 +35,23 @@ export default function PartnerManagePage() {
       const user = JSON.parse(currentUser);
       setUserRole(user.role);
       setUserName(user.username || "Partner");
-      setPartnerType(user.partnerType || null);
+      // Support both camelCase and snake_case keys from backend/localStorage
+      setPartnerType(user.partnerType || user.partner_type || null);
       setPartnerId(user.id);
       
       if (user.role !== "partner") {
         // Redirect to home if not partner
         navigate("/");
+        setLoading(false);
       } else {
         // Fetch statistics for partner
-        fetchPartnerStats(user.id);
+        fetchPartnerStats(user.id).finally(() => setLoading(false));
       }
     } else {
       // Redirect to login if not logged in
       navigate("/login");
+      setLoading(false);
     }
-    setLoading(false);
   }, [navigate]);
 
   const fetchPartnerStats = async (partnerId) => {
@@ -63,6 +65,10 @@ export default function PartnerManagePage() {
           totalServices: statsResult.totalServices,
           activeBookings: statsResult.activeBookings
         }));
+        // If partnerType was missing from localStorage, fall back to API response
+        if (!partnerType && statsResult.partnerType) {
+          setPartnerType(statsResult.partnerType);
+        }
       }
       
     } catch (error) {
@@ -72,7 +78,8 @@ export default function PartnerManagePage() {
 
   // Helper function to check if a service type is allowed for this partner
   const canManageServiceType = (serviceType) => {
-    if (!partnerType) return false; // If no partner type, don't allow any service
+    // If we don't know the partner type yet, don't render any gated cards
+    if (!partnerType) return false;
     
     // Map service types to partner types
     const serviceMapping = {

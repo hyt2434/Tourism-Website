@@ -307,7 +307,7 @@ export default function AccountPage() {
                       {translations.accountPage.noOtherBookings}
                     </p>
                     <button
-                      onClick={() => navigate("/tour")}
+                      onClick={() => navigate("/tours")}
                       className="mt-4 bg-indigo-600 text-white px-6 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
                     >
                       {translations.exploreTours}
@@ -447,7 +447,7 @@ export default function AccountPage() {
                     {favorites.map((favorite) => (
                       <Link
                         key={favorite.id}
-                        to={`/tour/${favorite.tour_id}`}
+                        to={`/tours/${favorite.tour_id}`}
                         className="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700"
                       >
                         {favorite.tour.image && (

@@ -537,7 +537,7 @@ export default {
   registerFail: "Đăng ký thất bại!",
 
   slotsLeft: "chỗ còn lại",
-  reviews: "đánh giá",
+  reviews: "Đánh giá",
   from: "Từ",
 
   highlights: "Điểm nhấn",

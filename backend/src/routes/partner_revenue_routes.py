@@ -347,3 +347,241 @@ def get_all_partner_revenue():
             'success': False,
             'message': f'Error fetching partner revenues: {str(e)}'
         }), 500
+
+
+@partner_revenue_routes.route('/partners/summary', methods=['GET'])
+def get_partners_summary():
+    """
+    List all partners with avatar, type, and count of completed tours participated.
+    A completed tour count is derived from paid partner_revenue_pending entries
+    joined to tour_schedules -> tours_admin.
+    """
+    try:
+        conn = get_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+                SELECT
+                    u.id AS partner_id,
+                    u.username AS partner_name,
+                    u.avatar_url,
+                    u.partner_type,
+                    COALESCE(tour_counts.support_tours, 0) AS support_tours
+                FROM users u
+                LEFT JOIN (
+                    SELECT
+                        p.id AS partner_id,
+                        COUNT(DISTINCT ts.tour_id) AS support_tours
+                    FROM users p
+                    LEFT JOIN tour_services ts ON
+                        (ts.accommodation_id IN (SELECT id FROM accommodation_services WHERE partner_id = p.id))
+                        OR (ts.restaurant_id IN (SELECT id FROM restaurant_services WHERE partner_id = p.id))
+                        OR (ts.transportation_id IN (SELECT id FROM transportation_services WHERE partner_id = p.id))
+                    WHERE p.role = 'partner'
+                    GROUP BY p.id
+                ) tour_counts ON tour_counts.partner_id = u.id
+                WHERE u.role = 'partner'
+                ORDER BY u.username;
+            """)
+
+            rows = cur.fetchall()
+            partners = [{
+                'partner_id': row[0],
+                'partner_name': row[1],
+                'avatar_url': row[2],
+                'partner_type': row[3],
+                'support_tours': int(row[4]) if row[4] is not None else 0
+            } for row in rows]
+
+            return jsonify({
+                'success': True,
+                'partners': partners,
+                'total_partners': len(partners)
+            })
+
+        except Exception as e:
+            conn.rollback()
+            return jsonify({'success': False, 'message': f'Error fetching partners: {str(e)}'}), 500
+        finally:
+            cur.close()
+            conn.close()
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+
+@partner_revenue_routes.route('/partners/<int:partner_id>/detail', methods=['GET'])
+def get_partner_detail(partner_id):
+    """
+    Detailed partner view:
+    - partner profile
+    - tours supported by this partner (via tour_services)
+    - services owned by the partner
+    - reviews on tours the partner supports
+    """
+    try:
+        conn = get_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+        cur = conn.cursor()
+        try:
+            # Partner profile
+            cur.execute("""
+                SELECT id, username, avatar_url, partner_type, email, phone
+                FROM users
+                WHERE id = %s AND role = 'partner'
+            """, (partner_id,))
+            row = cur.fetchone()
+            if not row:
+                return jsonify({'success': False, 'message': 'Partner not found'}), 404
+
+            partner = {
+                'id': row[0],
+                'name': row[1],
+                'avatar_url': row[2],
+                'partner_type': row[3],
+                'email': row[4],
+                'phone': row[5],
+            }
+
+            # Calculate average rating from service_reviews for this partner's services
+            cur.execute("""
+                SELECT 
+                    COALESCE(AVG(sr.rating), 0) AS avg_rating,
+                    COUNT(sr.id) AS review_count
+                FROM service_reviews sr
+                WHERE (
+                    (sr.service_type = 'accommodation' AND sr.service_id IN (SELECT id FROM accommodation_services WHERE partner_id = %s))
+                    OR (sr.service_type = 'restaurant' AND sr.service_id IN (SELECT id FROM restaurant_services WHERE partner_id = %s))
+                    OR (sr.service_type = 'transportation' AND sr.service_id IN (SELECT id FROM transportation_services WHERE partner_id = %s))
+                );
+            """, (partner_id, partner_id, partner_id))
+            rating_row = cur.fetchone()
+            partner['rating'] = float(rating_row[0]) if rating_row and rating_row[0] is not None else 0.0
+            partner['review_count'] = int(rating_row[1]) if rating_row and rating_row[1] is not None else 0
+
+            # Collect tour ids supported by this partner via any service
+            cur.execute("""
+                WITH partner_tours AS (
+                    SELECT DISTINCT ts.tour_id
+                    FROM tour_services ts
+                    LEFT JOIN accommodation_services ac ON ts.accommodation_id = ac.id
+                    LEFT JOIN restaurant_services rs ON ts.restaurant_id = rs.id
+                    LEFT JOIN transportation_services tr ON ts.transportation_id = tr.id
+                    WHERE (ac.partner_id = %s) OR (rs.partner_id = %s) OR (tr.partner_id = %s)
+                )
+                SELECT 
+                    t.id,
+                    t.name,
+                    t.total_price,
+                    t.duration,
+                    t.is_published,
+                    (
+                        SELECT image_url 
+                        FROM tour_images ti 
+                        WHERE ti.tour_id = t.id
+                        ORDER BY ti.is_primary DESC, ti.display_order ASC, ti.id ASC
+                        LIMIT 1
+                    ) AS image_url,
+                    (
+                        SELECT COUNT(*) FROM bookings b 
+                        WHERE b.tour_id = t.id AND b.status = 'completed'
+                    ) AS completed_bookings
+                FROM tours_admin t
+                INNER JOIN partner_tours pt ON pt.tour_id = t.id
+                ORDER BY completed_bookings DESC, t.name
+            """, (partner_id, partner_id, partner_id))
+
+            tours = []
+            for tr in cur.fetchall():
+                tours.append({
+                    'tour_id': tr[0],
+                    'name': tr[1],
+                    'total_price': float(tr[2]) if tr[2] is not None else None,
+                    'duration': tr[3],
+                    'is_published': tr[4],
+                    'image_url': tr[5],
+                    'completed_bookings': tr[6] or 0,
+                })
+
+            # Services owned by partner (simple lists)
+            services = {
+                'accommodations': [],
+                'restaurants': [],
+                'transportations': []
+            }
+
+            cur.execute("""
+                SELECT id, name FROM accommodation_services WHERE partner_id = %s ORDER BY name
+            """, (partner_id,))
+            services['accommodations'] = [{'id': r[0], 'name': r[1]} for r in cur.fetchall()]
+
+            cur.execute("""
+                SELECT id, name FROM restaurant_services WHERE partner_id = %s ORDER BY name
+            """, (partner_id,))
+            services['restaurants'] = [{'id': r[0], 'name': r[1]} for r in cur.fetchall()]
+
+            cur.execute("""
+                SELECT id, license_plate FROM transportation_services WHERE partner_id = %s ORDER BY license_plate
+            """, (partner_id,))
+            services['transportations'] = [{'id': r[0], 'name': r[1]} for r in cur.fetchall()]
+
+            # Reviews on tours the partner supports
+            cur.execute("""
+                WITH partner_tours AS (
+                    SELECT DISTINCT ts.tour_id
+                    FROM tour_services ts
+                    LEFT JOIN accommodation_services ac ON ts.accommodation_id = ac.id
+                    LEFT JOIN restaurant_services rs ON ts.restaurant_id = rs.id
+                    LEFT JOIN transportation_services tr ON ts.transportation_id = tr.id
+                    WHERE (ac.partner_id = %s) OR (rs.partner_id = %s) OR (tr.partner_id = %s)
+                )
+                SELECT
+                    tr.id,
+                    tr.tour_id,
+                    t.name AS tour_name,
+                    tr.user_id,
+                    tr.rating,
+                    tr.review_text,
+                    tr.created_at
+                FROM tour_reviews tr
+                INNER JOIN partner_tours pt ON pt.tour_id = tr.tour_id
+                INNER JOIN tours_admin t ON t.id = tr.tour_id
+                ORDER BY tr.created_at DESC
+                LIMIT 50;
+            """, (partner_id, partner_id, partner_id))
+
+            reviews = []
+            for r in cur.fetchall():
+                reviews.append({
+                    'id': r[0],
+                    'tour_id': r[1],
+                    'tour_name': r[2],
+                    'user_id': r[3],
+                    'rating': float(r[4]) if r[4] is not None else None,
+                    'comment': r[5],
+                    'created_at': r[6].isoformat() if r[6] else None,
+                    'can_delete': True  # Admin can delete via existing review endpoints
+                })
+
+            return jsonify({
+                'success': True,
+                'partner': partner,
+                'tours': tours,
+                'services': services,
+                'reviews': reviews
+            })
+
+        except Exception as e:
+            conn.rollback()
+            return jsonify({'success': False, 'message': f'Error fetching partner detail: {str(e)}'}), 500
+        finally:
+            cur.close()
+            conn.close()
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
