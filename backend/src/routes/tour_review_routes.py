@@ -43,7 +43,7 @@ def get_latest_reviews():
         conn = get_connection()
         cur = conn.cursor()
         
-        # Get latest reviews with tour and user information
+        # Get latest active reviews with tour and user information (exclude soft-deleted)
         cur.execute("""
             SELECT 
                 tr.id, tr.tour_id, tr.rating, tr.review_text,
@@ -53,7 +53,7 @@ def get_latest_reviews():
             FROM tour_reviews tr
             JOIN tours_admin t ON tr.tour_id = t.id
             JOIN users u ON tr.user_id = u.id
-            WHERE tr.rating IS NOT NULL
+            WHERE tr.rating IS NOT NULL AND tr.deleted_at IS NULL
             ORDER BY tr.created_at DESC
             LIMIT %s
         """, (limit,))
@@ -93,7 +93,7 @@ def get_latest_reviews():
 
 @tour_review_routes.route('/tours/<int:tour_id>/reviews', methods=['GET'])
 def get_tour_reviews(tour_id):
-    """Get all reviews for a specific tour including service-level reviews"""
+    """Get all active reviews for a specific tour (excluding soft-deleted)"""
     try:
         conn = get_connection()
         cur = conn.cursor()
@@ -106,7 +106,7 @@ def get_tour_reviews(tour_id):
                 u.username, u.email
             FROM tour_reviews tr
             JOIN users u ON tr.user_id = u.id
-            WHERE tr.tour_id = %s
+            WHERE tr.tour_id = %s AND tr.deleted_at IS NULL
             ORDER BY tr.created_at DESC
         """, (tour_id,))
         
@@ -216,9 +216,9 @@ def check_can_review(booking_id):
                 'message': 'Tour must be completed before reviewing'
             })
         
-        # Check if review already exists
+        # Check if review already exists (including soft-deleted ones)
         cur.execute("""
-            SELECT id FROM tour_reviews WHERE booking_id = %s
+            SELECT id, deleted_at FROM tour_reviews WHERE booking_id = %s
         """, (booking_id,))
         
         existing_review = cur.fetchone()
@@ -227,12 +227,15 @@ def check_can_review(booking_id):
         conn.close()
         
         if existing_review:
+            # Review exists (even if deleted), user cannot review again
+            message = 'This tour has already been reviewed' if existing_review[1] else 'You have already reviewed this tour'
             return jsonify({
                 'success': True,
                 'can_review': False,
                 'has_review': True,
                 'review_id': existing_review[0],
-                'message': 'You have already reviewed this tour'
+                'was_deleted': existing_review[1] is not None,
+                'message': message
             })
         
         return jsonify({
@@ -472,7 +475,7 @@ def update_review(review_id):
 @tour_review_routes.route('/reviews/<int:review_id>', methods=['DELETE'])
 @token_required
 def delete_review(review_id):
-    """Delete a review (user can delete own, admin can delete any)"""
+    """Soft delete a review (user can delete own, admin can delete any)"""
     try:
         conn = get_connection()
         cur = conn.cursor()
@@ -483,19 +486,21 @@ def delete_review(review_id):
         is_admin = user_role and user_role[0] == 'admin'
         
         if is_admin:
-            # Admin can delete any review
+            # Admin can soft delete any review
             cur.execute("""
-                DELETE FROM tour_reviews 
-                WHERE id = %s
+                UPDATE tour_reviews 
+                SET deleted_at = CURRENT_TIMESTAMP, deleted_by = %s
+                WHERE id = %s AND deleted_at IS NULL
                 RETURNING id
-            """, (review_id,))
+            """, (request.user_id, review_id))
         else:
-            # Regular user can only delete their own review
+            # Regular user can only soft delete their own review
             cur.execute("""
-                DELETE FROM tour_reviews 
-                WHERE id = %s AND user_id = %s
+                UPDATE tour_reviews 
+                SET deleted_at = CURRENT_TIMESTAMP, deleted_by = %s
+                WHERE id = %s AND user_id = %s AND deleted_at IS NULL
                 RETURNING id
-            """, (review_id, request.user_id))
+            """, (request.user_id, review_id, request.user_id))
         
         result = cur.fetchone()
         
@@ -534,7 +539,7 @@ def get_user_reviews():
                 t.name as tour_name
             FROM tour_reviews tr
             JOIN tours_admin t ON tr.tour_id = t.id
-            WHERE tr.user_id = %s
+            WHERE tr.user_id = %s AND tr.deleted_at IS NULL
             ORDER BY tr.created_at DESC
         """, (request.user_id,))
         
@@ -904,6 +909,27 @@ def create_service_reviews():
         if not service_reviews or len(service_reviews) == 0:
             return jsonify({'success': False, 'message': 'At least one service review is required'}), 400
         
+        # Validate: Filter out services without any review data (no rating, no text, no images)
+        valid_service_reviews = []
+        for svc_review in service_reviews:
+            rating = svc_review.get('rating', 0)
+            review_text = svc_review.get('review_text', '').strip()
+            review_images = svc_review.get('review_images', [])
+            
+            # Only include services that have at least rating OR text OR images
+            if rating > 0 or review_text or (review_images and len(review_images) > 0):
+                valid_service_reviews.append(svc_review)
+        
+        # Check if at least one service has been reviewed
+        if len(valid_service_reviews) == 0:
+            return jsonify({
+                'success': False, 
+                'message': 'At least one service must be reviewed (provide rating, comment, or images)'
+            }), 400
+        
+        print(f"DEBUG: Filtered service reviews - original: {len(service_reviews)}, valid: {len(valid_service_reviews)}")
+        service_reviews = valid_service_reviews
+        
         conn = get_connection()
         cur = conn.cursor()
         
@@ -949,14 +975,25 @@ def create_service_reviews():
         created_reviews = []
         for svc_review in service_reviews:
             tour_service_id = svc_review.get('tour_service_id')
-            rating = svc_review.get('rating')
-            review_text = svc_review.get('review_text', '')
+            rating = svc_review.get('rating', 0)
+            review_text = svc_review.get('review_text', '').strip()
             review_images = svc_review.get('review_images', [])
             
             print(f"DEBUG: Processing service review - tour_service_id: {tour_service_id}, rating: {rating}")
             
-            if not tour_service_id or not rating:
-                print(f"DEBUG: Skipping service review - missing required fields")
+            # Skip if no tour_service_id
+            if not tour_service_id:
+                print(f"DEBUG: Skipping service review - missing tour_service_id")
+                continue
+            
+            # Skip if service has no content (no rating, no text, no images)
+            if rating == 0 and not review_text and (not review_images or len(review_images) == 0):
+                print(f"DEBUG: Skipping service review - no content provided")
+                continue
+            
+            # Ensure at least rating is provided
+            if rating == 0:
+                print(f"DEBUG: Skipping service review - rating is required")
                 continue
             
             # Verify service belongs to tour and get service details

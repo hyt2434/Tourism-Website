@@ -68,6 +68,13 @@ try:
     from migrate_service_reviews import migrate_service_reviews_table
     migrate_service_reviews_table()
     
+    # Add soft delete columns to reviews
+    try:
+        from backend.src.routes.add_soft_delete_to_reviews import add_soft_delete_columns
+        add_soft_delete_columns()
+    except Exception as e:
+        print(f"[WARNING] Could not add soft delete columns: {e}")
+    
     # Create tour highlights table
     try:
         from create_tour_highlights import create_tour_highlights_table
