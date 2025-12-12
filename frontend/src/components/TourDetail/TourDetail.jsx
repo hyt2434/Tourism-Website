@@ -12,6 +12,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import { useToast } from "../../context/ToastContext";
 import { getPublicTourDetail } from "../../api/tours";
 import { getAvailableSchedules } from "../../api/tours";
+import { addFavorite, removeFavorite, checkFavorite } from "../../api/favorites";
 import TourReviews from "../TourReviews";
 import {
   CheckCircle,
@@ -54,6 +55,9 @@ export default function TourDetail() {
   const [userRole, setUserRole] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [availableSchedules, setAvailableSchedules] = useState([]);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
   const headerButtonRef = useRef(null);
 
   // Helper function to check if user can book
@@ -105,17 +109,67 @@ export default function TourDetail() {
     if (currentUser) {
       const user = JSON.parse(currentUser);
       setUserRole(user.role);
+      setUserId(user.id);
       setIsLoggedIn(user.isLoggedIn || false);
       // Only allow booking if user is logged in and not a partner
       if (!user.isLoggedIn || user.role === "partner") {
         setIsBookingPanelOpen(false);
+      }
+      // Check if tour is favorited
+      if (user.id && id) {
+        checkIfFavorite(user.id, id);
       }
     } else {
       // No user logged in, close booking panel if open
       setIsLoggedIn(false);
       setIsBookingPanelOpen(false);
     }
-  }, []);
+  }, [id]);
+
+  // Check if tour is in favorites
+  const checkIfFavorite = async (userId, tourId) => {
+    try {
+      const result = await checkFavorite(userId, tourId);
+      setIsFavorite(result.is_favorite || false);
+    } catch (error) {
+      console.error('Error checking favorite:', error);
+    }
+  };
+
+  // Toggle favorite status
+  const handleToggleFavorite = async () => {
+    if (!isLoggedIn) {
+      toast.error(translations.pleaseLogin || "Vui lòng đăng nhập để thêm yêu thích");
+      navigate('/login');
+      return;
+    }
+
+    if (!userId) {
+      toast.error("User ID not found");
+      return;
+    }
+
+    try {
+      setFavoriteLoading(true);
+      
+      if (isFavorite) {
+        // Remove from favorites
+        await removeFavorite(userId, id);
+        setIsFavorite(false);
+        toast.success(translations.removedFromFavorites || "Đã xóa khỏi yêu thích");
+      } else {
+        // Add to favorites
+        await addFavorite(userId, id);
+        setIsFavorite(true);
+        toast.success(translations.addedToFavorites || "Đã thêm vào yêu thích");
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast.error(error.message || "Không thể cập nhật yêu thích");
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
 
   const tourImages = tourData?.images || [];
 
@@ -266,9 +320,22 @@ export default function TourDetail() {
               <Button
                 variant="outline"
                 size="icon"
-                className="rounded-full border-gray-300 dark:border-gray-600"
+                onClick={handleToggleFavorite}
+                disabled={favoriteLoading}
+                className={`rounded-full border-gray-300 dark:border-gray-600 transition-all ${
+                  isFavorite 
+                    ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700' 
+                    : ''
+                }`}
+                title={isFavorite ? translations.removeFromFavorites : translations.addToFavorites}
               >
-                <Heart className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <Heart 
+                  className={`w-5 h-5 transition-all ${
+                    isFavorite 
+                      ? 'fill-red-500 text-red-500' 
+                      : 'text-gray-700 dark:text-gray-300'
+                  } ${favoriteLoading ? 'animate-pulse' : ''}`}
+                />
               </Button>
             </div>
           </div>
