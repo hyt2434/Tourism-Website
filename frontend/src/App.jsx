@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useSearchParams, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import "leaflet/dist/leaflet.css";
 import "./utils/leaflet-setup";
 import NAV from "./components/NAV";
@@ -24,16 +25,80 @@ import Reviews from "./components/home/Reviews";
 import PartnerPage from "./components/Partner/PartnerPage";
 import PartnerDetail from "./components/Partner/PartnerDetail";
 import AboutUs from "./components/AboutUs";
-import { ToastProvider } from "./context/ToastContext";
+import { ToastProvider, useToast } from "./context/ToastContext";
+import { getUserProfile } from "./api/auth";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-export default function App() {
+// Component to handle OAuth callback
+function OAuthCallbackHandler() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const toast = useToast();
+
+  useEffect(() => {
+    const userEmail = searchParams.get("user");
+    const userRole = searchParams.get("role");
+
+    if (userEmail && userRole) {
+      // Fetch full user profile to get all user details
+      getUserProfile(userEmail)
+        .then((profileData) => {
+          if (profileData.error) {
+            toast.error("Failed to fetch user profile");
+            return;
+          }
+
+          // Store user info in localStorage
+          const currentUser = {
+            email: profileData.email,
+            username: profileData.name || profileData.email.split("@")[0],
+            name: profileData.name || profileData.email.split("@")[0],
+            role: profileData.role || userRole,
+            id: profileData.id,
+            isLoggedIn: true,
+          };
+
+          // Add partnerType if user is a partner
+          if (profileData.role === "partner" && profileData.partnerType) {
+            currentUser.partnerType = profileData.partnerType;
+          }
+
+          localStorage.setItem("user", JSON.stringify(currentUser));
+          window.dispatchEvent(new Event("storage"));
+
+          // Show success message
+          toast.success("Successfully signed in with Google!");
+
+          // Redirect based on role
+          if (profileData.role === "admin") {
+            navigate("/admin");
+          } else if (profileData.role === "partner") {
+            navigate("/partner/manage");
+          } else {
+            navigate("/");
+          }
+
+          // Clean up URL params
+          window.history.replaceState({}, document.title, "/");
+        })
+        .catch((error) => {
+          console.error("OAuth callback error:", error);
+          toast.error("Failed to complete Google sign-in");
+          navigate("/login");
+        });
+    }
+  }, [searchParams, navigate, toast]);
+
+  return null;
+}
+
+function AppContent() {
   return (
-    <ToastProvider>
-      <BrowserRouter>
-        <ScrollToTop />
+    <BrowserRouter>
+      <ScrollToTop />
+      <OAuthCallbackHandler />
         {/* 👇 Bọc toàn bộ app trong div hỗ trợ dark mode */}
         <div className="bg-white text-black dark:bg-gray-900 dark:text-white min-h-screen transition-colors duration-300">
           <NAV />
@@ -79,6 +144,13 @@ export default function App() {
           <Footer />
         </div>
       </BrowserRouter>
+  );
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
     </ToastProvider>
   );
 }

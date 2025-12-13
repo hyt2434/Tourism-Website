@@ -15,6 +15,9 @@ SECRET_KEY=MagicTourismSecretKey
 # Google OAuth
 GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE
 GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET_HERE
+# IMPORTANT: In Google Cloud Console, add this Authorized redirect URI:
+# http://127.0.0.1:5000/api/auth/google/callback
+# (or your production URL + /api/auth/google/callback)
 
 # Facebook OAuth
 FACEBOOK_CLIENT_ID=YOUR_FACEBOOK_CLIENT_ID_HERE

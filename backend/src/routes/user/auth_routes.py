@@ -128,9 +128,17 @@ def ensure_default_admin():
 # ---------------- GOOGLE LOGIN ----------------
 @auth_routes.route("/google")
 def google_login():
+    redirect_uri = f"{BACKEND_URL}/api/auth/google/callback"
+    # Remove trailing slash if present
+    redirect_uri = redirect_uri.rstrip('/')
+    
+    print(f"🔍 Google OAuth - Redirect URI: {redirect_uri}")
+    print(f"🔍 Google OAuth - BACKEND_URL from env: {BACKEND_URL}")
+    print(f"🔍 Google OAuth - Client ID from env: {GOOGLE_CLIENT_ID}")
+    
     google = OAuth2Session(
         GOOGLE_CLIENT_ID,
-        redirect_uri=f"{BACKEND_URL}/api/auth/google/callback",
+        redirect_uri=redirect_uri,
         scope=["openid", "email", "profile"]
     )
     auth_url, state = google.authorization_url(
@@ -139,15 +147,23 @@ def google_login():
         prompt="select_account"
     )
     session["oauth_state"] = state
+    print(f"🔍 Google OAuth - Auth URL: {auth_url}")
     return redirect(auth_url)
 
 
 @auth_routes.route("/google/callback")
 def google_callback():
+    redirect_uri = f"{BACKEND_URL}/api/auth/google/callback"
+    # Remove trailing slash if present
+    redirect_uri = redirect_uri.rstrip('/')
+    
+    print(f"🔍 Google OAuth Callback - Redirect URI: {redirect_uri}")
+    print(f"🔍 Google OAuth Callback - Request URL: {request.url}")
+    
     google = OAuth2Session(
         GOOGLE_CLIENT_ID,
         state=session.get("oauth_state"),
-        redirect_uri=f"{BACKEND_URL}/api/auth/google/callback"
+        redirect_uri=redirect_uri
     )
     token = google.fetch_token(
         "https://oauth2.googleapis.com/token",
