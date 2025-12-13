@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify
 from config.database import get_connection
 from datetime import datetime
+import os
 from src.services.email_service import (
     send_tour_schedule_cancelled_email,
-    send_booking_cancellation_email
+    send_booking_cancellation_email,
+    send_post_tour_followup_email
 )
 
 schedule_status_routes = Blueprint('schedule_status', __name__)
@@ -260,6 +262,14 @@ def complete_tour_schedule(schedule_id):
                 WHERE id = %s
             """, (schedule_id,))
             
+            # Get booking details before updating status (for email notifications)
+            cur.execute("""
+                SELECT b.id, b.full_name, b.email, b.tour_id
+                FROM bookings b
+                WHERE b.tour_schedule_id = %s AND b.status = 'confirmed'
+            """, (schedule_id,))
+            completed_bookings = cur.fetchall()
+            
             # Update all bookings status to 'completed'
             cur.execute("""
                 UPDATE bookings
@@ -312,6 +322,36 @@ def complete_tour_schedule(schedule_id):
             """, (schedule_id,))
             
             conn.commit()
+            
+            # Send post-tour follow-up emails to all customers
+            for booking_row in completed_bookings:
+                booking_id, customer_name, customer_email, booking_tour_id = booking_row
+                
+                if not customer_email:
+                    continue  # Skip if no email
+                
+                # Get tour name (use the one from schedule_info or fetch if different)
+                email_tour_name = tour_name
+                if booking_tour_id != tour_id:
+                    cur.execute("SELECT name FROM tours_admin WHERE id = %s", (booking_tour_id,))
+                    tour_result = cur.fetchone()
+                    if tour_result:
+                        email_tour_name = tour_result[0]
+                
+                # Send post-tour follow-up email
+                # The email will link to the account page (/account) where users can write reviews
+                try:
+                    send_post_tour_followup_email(
+                        customer_email,
+                        customer_name or "Customer",
+                        email_tour_name
+                    )
+                    print(f"✅ Post-tour follow-up email sent to {customer_email}")
+                except Exception as e:
+                    print(f"⚠️ Failed to send post-tour follow-up email to {customer_email}: {e}")
+            
+            cur.close()
+            conn.close()
             
             return jsonify({
                 'success': True,

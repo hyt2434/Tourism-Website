@@ -9,6 +9,7 @@ import TourCarousel from "./components/TourCarousel";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import ForgotPassword from "./components/ForgotPassword";
+import SetupPassword from "./components/SetupPassword";
 import Profile from "./components/Profile";
 import SocialPage from "./components/social/SocialPage";
 import ToursPage from "./components/ToursPage";
@@ -129,6 +130,7 @@ function AppContent() {
             <Route path="/tours/:id" element={<TourDetail />} />
             <Route path="/tour" element={<ToursPage />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/setup-password" element={<SetupPassword />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/partner/manage" element={<PartnerManagePage />} />

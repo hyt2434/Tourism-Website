@@ -648,7 +648,9 @@ def send_welcome_series_day7_email(user_email, username, special_offers=None):
 
 def send_post_tour_followup_email(customer_email, customer_name, tour_name, review_link=None):
     """Send follow-up email after tour completion"""
-    review_button = f'<p><a href="{review_link or FRONTEND_URL}" class="button">Write a Review</a></p>' if review_link else ''
+    # Link to account page where user can write reviews
+    account_page_link = f"{FRONTEND_URL}/account"
+    review_button = f'<p><a href="{account_page_link}" class="button">Write a Review</a></p>'
     
     content = f"""
         <h2>How Was Your Tour? ⭐</h2>

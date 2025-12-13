@@ -127,3 +127,17 @@ export async function uploadUserAvatar(email, avatarData) {
     return { error: "Network error" };
   }
 }
+
+export async function setupPassword(email, password) {
+  try {
+    const response = await fetch(`${BASE_URL}/setup-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Setup Password Error:", error);
+    return { error: "Network error" };
+  }
+}

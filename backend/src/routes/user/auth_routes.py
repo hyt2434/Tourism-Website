@@ -183,6 +183,21 @@ def google_callback():
     # Store user email in session for role-based access
     session['user_email'] = user_info['email']
     
+    # Check if user needs to set up password (OAuth user with NULL password)
+    conn = get_connection()
+    if conn:
+        cur = conn.cursor()
+        cur.execute("SELECT password FROM users WHERE email = %s", (user_info['email'],))
+        password_result = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        # If password is NULL, redirect to password setup page
+        if password_result and password_result[0] is None:
+            redirect_url = f"{FRONTEND_URL}/setup-password?email={user_info['email']}&from=google"
+            return redirect(redirect_url)
+    
+    # User has password or existing user, proceed normally
     redirect_url = f"{FRONTEND_URL}/?user={user_info['email']}&role={user.get('role', 'client')}"
     return redirect(redirect_url)
 
@@ -753,6 +768,86 @@ def update_profile():
     except Exception as e:
         conn.rollback()
         return jsonify({"error": f"Failed to update profile: {str(e)}"}), 500
+    
+    finally:
+        cur.close()
+        conn.close()
+
+
+@auth_routes.route('/setup-password', methods=['POST'])
+def setup_password():
+    """Set up password for OAuth users (users with NULL password)"""
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+    
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+    
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters long"}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        # Check if user exists and has NULL password (OAuth user)
+        cur.execute("SELECT id, username, password FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        # Check if password is already set
+        if user[2] is not None:
+            return jsonify({"error": "Password is already set. Use change-password endpoint instead."}), 400
+        
+        # Hash and set password
+        bcrypt = current_app.bcrypt
+        hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
+        
+        cur.execute("""
+            UPDATE users
+            SET password = %s
+            WHERE email = %s
+            RETURNING id, username, email, role
+        """, (hashed_pw, email))
+        
+        updated_user = cur.fetchone()
+        conn.commit()
+        
+        if not updated_user:
+            return jsonify({"error": "Failed to set password"}), 500
+        
+        # Generate JWT token for immediate login
+        import jwt
+        import datetime
+        SECRET_KEY = os.getenv('SECRET_KEY', 'your_secret_key')
+        
+        token = jwt.encode({
+            'user_id': updated_user[0],
+            'email': updated_user[2],
+            'role': updated_user[3],
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7)
+        }, SECRET_KEY, algorithm='HS256')
+        
+        return jsonify({
+            "message": "Password set successfully. You are now logged in.",
+            "user": {
+                "id": updated_user[0],
+                "username": updated_user[1],
+                "email": updated_user[2],
+                "role": updated_user[3]
+            },
+            "token": token
+        }), 200
+    
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": f"Failed to set password: {str(e)}"}), 500
     
     finally:
         cur.close()
