@@ -36,9 +36,7 @@ export const getPublishedTours = async (filters = {}) => {
     if (filters.max_duration) params.append('max_duration', filters.max_duration);
     if (filters.number_of_members) params.append('number_of_members', filters.number_of_members);
     
-    const url = params.toString() 
-      ? `${API_BASE_URL}/api/tours?${params.toString()}`
-      : `${API_BASE_URL}/api/tours`;
+    const url = `${API_BASE_URL}/api/tours${params.toString() ? `?${params.toString()}` : ''}`;
     
     const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to fetch published tours');

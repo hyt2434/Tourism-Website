@@ -55,20 +55,31 @@ def create_booking():
             cur = conn.cursor()
             
             # Validate schedule and check availability
+            # Exclude completed and cancelled schedules
             cur.execute("""
-                SELECT slots_available, max_slots, slots_booked
+                SELECT slots_available, max_slots, slots_booked, status
                 FROM tour_schedules
                 WHERE id = %s AND tour_id = %s AND is_active = TRUE
+                    AND status NOT IN ('completed', 'cancelled')
+                    AND departure_datetime > NOW()
             """, (tour_schedule_id, tour_id))
             
             schedule = cur.fetchone()
             if not schedule:
                 return jsonify({
                     'success': False,
-                    'message': 'Invalid or inactive tour schedule'
+                    'message': 'Invalid, inactive, completed, or cancelled tour schedule'
                 }), 400
             
             slots_available = schedule[0]
+            schedule_status = schedule[3] if len(schedule) > 3 else None
+            
+            # Double-check status
+            if schedule_status in ('completed', 'cancelled'):
+                return jsonify({
+                    'success': False,
+                    'message': 'This tour schedule is no longer available for booking'
+                }), 400
             
             # Calculate total slots needed based on rooms
             # Each room holds 2 people, so slots = rooms × 2

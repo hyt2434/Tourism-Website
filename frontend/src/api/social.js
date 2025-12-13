@@ -199,3 +199,12 @@ export const getPostsByTag = async (tagName) => {
   return response.json();
 };
 
+/**
+ * Search hashtags from social_hashtag table
+ */
+export const searchHashtags = async (query, limit = 20) => {
+  const response = await fetch(`${API_BASE_URL}/api/social/hashtags/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+  if (!response.ok) throw new Error('Failed to search hashtags');
+  return response.json();
+};
+

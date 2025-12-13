@@ -40,6 +40,7 @@ def get_highlighted_tours():
         cur = conn.cursor()
         
         # Get highlighted tours with their primary image and review stats
+        # Only include tours that have at least one available schedule
         query = """
             SELECT 
                 th.id, th.name, th.duration, th.description,
@@ -55,6 +56,14 @@ def get_highlighted_tours():
             LEFT JOIN cities dpc ON th.departure_city_id = dpc.id
             LEFT JOIN tour_images ti ON th.id = ti.tour_id AND ti.is_primary = TRUE
             LEFT JOIN tour_reviews tr ON th.id = tr.tour_id
+            WHERE EXISTS (
+                SELECT 1 FROM tour_schedules ts 
+                WHERE ts.tour_id = th.id 
+                AND ts.is_active = TRUE 
+                AND ts.departure_datetime > NOW()
+                AND ts.slots_available > 0
+                AND ts.status NOT IN ('completed', 'cancelled')
+            )
             GROUP BY th.id, th.name, th.duration, th.description,
                      th.destination_city_id, dc.name,
                      th.departure_city_id, dpc.name,
@@ -123,7 +132,7 @@ def get_tours():
     try:
         cur = conn.cursor()
         
-        # Build query for published tours only
+        # Build query for published tours only with available schedules
         query = """
             SELECT 
                 t.id, t.name, t.duration, t.description,
@@ -132,11 +141,25 @@ def get_tours():
                 t.total_price, t.currency, t.number_of_members,
                 t.created_at, t.updated_at,
                 (SELECT image_url FROM tour_images WHERE tour_id = t.id AND is_primary = TRUE LIMIT 1) as primary_image,
-                (SELECT COUNT(*) FROM tour_images WHERE tour_id = t.id) as image_count
+                (SELECT COUNT(*) FROM tour_images WHERE tour_id = t.id) as image_count,
+                (SELECT COUNT(*) FROM tour_schedules ts 
+                 WHERE ts.tour_id = t.id 
+                 AND ts.is_active = TRUE 
+                 AND ts.departure_datetime > NOW()
+                 AND ts.slots_available > 0
+                 AND ts.status NOT IN ('completed', 'cancelled')) as available_schedules_count
             FROM tours_admin t
             LEFT JOIN cities dc ON t.destination_city_id = dc.id
             LEFT JOIN cities dpc ON t.departure_city_id = dpc.id
             WHERE t.is_published = TRUE AND t.is_active = TRUE
+            AND EXISTS (
+                SELECT 1 FROM tour_schedules ts 
+                WHERE ts.tour_id = t.id 
+                AND ts.is_active = TRUE 
+                AND ts.departure_datetime > NOW()
+                AND ts.slots_available > 0
+                AND ts.status NOT IN ('completed', 'cancelled')
+            )
         """
         
         params = []
@@ -203,6 +226,7 @@ def get_tours():
                 'primary_image': row[13],
                 'image': row[13],  # For compatibility with TourCard component
                 'image_count': row[14],
+                'available_schedules_count': row[15] if len(row) > 15 else 0,  # Number of available schedules
                 # For compatibility with frontend
                 'destination': row[5],  # destination city name
                 'region': None,  # Can be added later if needed
@@ -595,16 +619,17 @@ def get_available_schedules(tour_id):
     try:
         cur = conn.cursor()
         
-        # Get only active schedules with available slots
+        # Get only active schedules with available slots that are not completed or cancelled
         cur.execute("""
             SELECT 
                 id, tour_id, departure_datetime, return_datetime,
-                max_slots, slots_booked, slots_available, is_active
+                max_slots, slots_booked, slots_available, is_active, status
             FROM tour_schedules
             WHERE tour_id = %s 
                 AND is_active = TRUE 
                 AND departure_datetime > NOW()
                 AND slots_available > 0
+                AND status NOT IN ('completed', 'cancelled')
             ORDER BY departure_datetime ASC
         """, (tour_id,))
         
@@ -619,7 +644,8 @@ def get_available_schedules(tour_id):
                 'max_slots': row[4],
                 'slots_booked': row[5],
                 'slots_available': row[6],
-                'is_active': row[7]
+                'is_active': row[7],
+                'status': row[8] if len(row) > 8 else 'pending'
             })
         
         return jsonify(schedules), 200

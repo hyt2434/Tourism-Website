@@ -104,10 +104,13 @@ function EnhancedBookingForm({
         try {
             const response = await fetch(`${API_URL}/api/tours/${tourId}/schedules`);
             const data = await response.json();
-            // Filter only future schedules with available slots
+            // Filter only future schedules with available slots that are not completed or cancelled
             const futureSchedules = data.filter(s => {
                 const depDate = new Date(s.departure_datetime);
-                return depDate > new Date() && s.slots_available > 0;
+                const isFuture = depDate > new Date();
+                const hasSlots = s.slots_available > 0;
+                const isAvailable = s.status && !['completed', 'cancelled'].includes(s.status);
+                return isFuture && hasSlots && isAvailable;
             });
             setSchedules(futureSchedules);
         } catch (error) {

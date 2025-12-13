@@ -3,6 +3,7 @@ from config.database import get_connection
 import jwt
 import os
 from functools import wraps
+from src.routes.social_routes import auto_post_from_tour_review, auto_post_from_service_review
 
 tour_review_routes = Blueprint('tour_review_routes', __name__)
 
@@ -314,6 +315,14 @@ def create_review():
         review_id = result[0]
         created_at = result[1]
         
+        # Auto-create post from tour review if it has images
+        if review_images and len(review_images) > 0:
+            try:
+                auto_post_from_tour_review(review_id, tour_id, request.user_id, review_images, review_text, conn)
+            except Exception as e:
+                print(f"⚠️  Warning: Failed to auto-post from tour review: {e}")
+                # Don't fail the review creation if auto-posting fails
+        
         # Create service-level reviews if provided
         created_service_reviews = []
         for svc_review in service_reviews:
@@ -371,6 +380,14 @@ def create_review():
                 'review_text': svc_review_text,
                 'review_images': svc_review_images
             })
+            
+            # Auto-create post from service review if it has images
+            if svc_review_images and len(svc_review_images) > 0:
+                try:
+                    auto_post_from_service_review(svc_review_id, tour_id, request.user_id, svc_review_images, svc_review_text, service_type, conn)
+                except Exception as e:
+                    print(f"⚠️  Warning: Failed to auto-post from service review: {e}")
+                    # Don't fail the review creation if auto-posting fails
         
         conn.commit()
         cur.close()
@@ -1103,6 +1120,14 @@ def create_service_reviews():
                       service_type, service_id, rating, review_text, review_images))
                 review_id = cur.fetchone()[0]
                 print(f"DEBUG: Inserted service review with id: {review_id}")
+            
+            # Auto-create post from service review if it has images (only for new reviews)
+            if not existing_review and review_images and len(review_images) > 0:
+                try:
+                    auto_post_from_service_review(review_id, tour_id, request.user_id, review_images, review_text, service_type, conn)
+                except Exception as e:
+                    print(f"⚠️  Warning: Failed to auto-post from service review: {e}")
+                    # Don't fail the review creation if auto-posting fails
             
             created_reviews.append({
                 'id': review_id,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -7,9 +7,9 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/input";
 import { Alert, AlertDescription } from "../ui/alert";
-import { Image, MapPin, X, Camera, AlertCircle } from "lucide-react";
+import { Image, MapPin, X, Camera, AlertCircle, Hash } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
-import { createPost, uploadImage } from "../../api/social";
+import { createPost, uploadImage, searchHashtags } from "../../api/social";
 import { useToast } from "../../context/ToastContext";
 
 // Get current user from localStorage
@@ -31,10 +31,50 @@ export default function CreatePostSection({ onSubmit }) {
   const [selectedImages, setSelectedImages] = useState([]);
   const [uploadedImageUrls, setUploadedImageUrls] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hashtagQuery, setHashtagQuery] = useState("");
+  const [hashtagSuggestions, setHashtagSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const hashtagInputRef = useRef(null);
+  const suggestionsRef = useRef(null);
 
-  const { translations } = useLanguage();
+  const { translations, language } = useLanguage();
   const { toast } = useToast();
   const currentUser = getCurrentUser();
+
+  // Search hashtags when query changes
+  useEffect(() => {
+    if (hashtagQuery.trim()) {
+      const timeoutId = setTimeout(async () => {
+        try {
+          const results = await searchHashtags(hashtagQuery, 10);
+          setHashtagSuggestions(results);
+          setShowSuggestions(true);
+        } catch (error) {
+          console.error("Failed to search hashtags:", error);
+        }
+      }, 300); // Debounce
+      return () => clearTimeout(timeoutId);
+    } else {
+      setHashtagSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [hashtagQuery]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target) &&
+        hashtagInputRef.current &&
+        !hashtagInputRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -86,8 +126,9 @@ export default function CreatePostSection({ onSubmit }) {
       const imageUrl = uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : null;
 
       await createPost({
-        content: fullContent,
+        content: caption,
         image_url: imageUrl,
+        hashtags: selectedHashtags,
       });
 
       toast.success("Post created successfully!");
@@ -99,6 +140,9 @@ export default function CreatePostSection({ onSubmit }) {
       setSelectedHashtags([]);
       setSelectedImages([]);
       setUploadedImageUrls([]);
+      setHashtagQuery("");
+      setHashtagSuggestions([]);
+      setShowSuggestions(false);
       setIsExpanded(false);
     } catch (error) {
       console.error("Failed to create post:", error);
@@ -267,13 +311,82 @@ export default function CreatePostSection({ onSubmit }) {
           </div>
         </div>
 
-        {/* Hashtags - Extract from caption */}
+        {/* Hashtags with Autocomplete */}
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-black dark:text-white">
             {translations.addHashtags || "Add Hashtags"}
           </Label>
+          <div className="relative">
+            <div className="relative">
+              <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
+              <Input
+                ref={hashtagInputRef}
+                placeholder={
+                  language === 'vi' 
+                    ? "Nhập hashtag (ví dụ: #HaNoi, #TourSapa)..."
+                    : "Enter hashtag (e.g., #HaNoi, #TourSapa)..."
+                }
+                value={hashtagQuery}
+                onChange={(e) => setHashtagQuery(e.target.value)}
+                onFocus={() => hashtagQuery.trim() && setShowSuggestions(true)}
+                className="pl-10 bg-gray-50 dark:bg-gray-900/50 text-black dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 border-gray-200 dark:border-gray-700 rounded-xl h-12 focus-visible:ring-1 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
+              />
+            </div>
+            {showSuggestions && hashtagSuggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+              >
+                {hashtagSuggestions.map((suggestion, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      const hashtag = suggestion.hashtag.startsWith('#') 
+                        ? suggestion.hashtag 
+                        : `#${suggestion.hashtag}`;
+                      if (!selectedHashtags.includes(hashtag)) {
+                        setSelectedHashtags([...selectedHashtags, hashtag]);
+                      }
+                      setHashtagQuery("");
+                      setShowSuggestions(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between"
+                  >
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
+                      {suggestion.hashtag}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {suggestion.usage_count} {translations.uses || "uses"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {/* Selected Hashtags */}
+          {selectedHashtags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedHashtags.map((tag, idx) => (
+                <Badge
+                  key={idx}
+                  variant="default"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 shadow-md cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => setSelectedHashtags(selectedHashtags.filter((_, i) => i !== idx))}
+                >
+                  {tag}
+                  <X className="w-3 h-3 ml-1" />
+                </Badge>
+              ))}
+            </div>
+          )}
+          
+          {/* Hint text */}
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {translations.hashtagHint || "Add hashtags in your caption using #"}
+            {language === 'vi' 
+              ? "💡 Gợi ý: Sử dụng hashtag tên thành phố (ví dụ: #HaNoi) hoặc tên tour (ví dụ: #TourSapa)"
+              : "💡 Tip: Use city name hashtags (e.g., #HaNoi) or tour name hashtags (e.g., #TourSapa)"}
           </p>
         </div>
       </div>

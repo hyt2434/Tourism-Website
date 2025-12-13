@@ -74,7 +74,7 @@ try:
     
     # Add soft delete columns to reviews
     try:
-        from backend.src.routes.add_soft_delete_to_reviews import add_soft_delete_columns
+        from src.routes.add_soft_delete_to_reviews import add_soft_delete_columns
         add_soft_delete_columns()
     except Exception as e:
         print(f"[WARNING] Could not add soft delete columns: {e}")
@@ -86,6 +86,15 @@ try:
         create_tour_highlights_table()
     except Exception as e:
         print(f"[WARNING] Could not create tour_highlights table: {e}")
+    
+    # Create social_hashtag table and update posts table
+    try:
+        from migrate_social_hashtag import create_social_hashtag_table, update_posts_table
+        print("\n[INFO] Checking social_hashtag table...")
+        create_social_hashtag_table()
+        update_posts_table()
+    except Exception as e:
+        print(f"[WARNING] Could not create social_hashtag table: {e}")
 
 except Exception as e:
     print(f"[WARNING] Could not initialize database tables: {e}")

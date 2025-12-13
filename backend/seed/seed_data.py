@@ -30,6 +30,10 @@ from src.models.partner_services_schema import create_partner_service_tables
 from src.models.tour_schema import create_tour_tables
 from src.models.tour_reviews_schema import create_tour_reviews_table
 from src.services.city_init import init_cities
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from migrate_social_hashtag import create_social_hashtag_table, update_posts_table
 
 bcrypt = Bcrypt()
 
@@ -3755,6 +3759,13 @@ def ensure_tables_for_seed():
 
         # Initialize cities data if missing
         init_cities()
+        
+        # Create social_hashtag table and update posts table
+        try:
+            create_social_hashtag_table()
+            update_posts_table()
+        except Exception as e:
+            print(f"⚠️  Warning: Could not create social_hashtag table: {e}")
 
         print("✅ All tables created/verified for seed run.")
     except Exception as e:

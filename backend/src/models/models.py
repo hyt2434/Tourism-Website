@@ -184,7 +184,8 @@ def create_tables():
             id SERIAL PRIMARY KEY,
             author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
             content TEXT,
-            image_url TEXT,
+            image_url TEXT, -- Can store base64 encoded images
+            hashtags TEXT[], -- Array of hashtags
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)

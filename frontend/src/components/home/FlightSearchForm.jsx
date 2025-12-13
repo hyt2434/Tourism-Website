@@ -118,7 +118,7 @@ export default function FlightSearchForm() {
       const params = new URLSearchParams({
         search: searchQuery.trim()
       });
-      navigate(`/tours?${params.toString()}`);
+      navigate(`/tour?${params.toString()}`);
       return;
     }
 
@@ -141,7 +141,7 @@ export default function FlightSearchForm() {
         params.append('number_of_members', totalMembers.toString());
       }
 
-      navigate(`/tours?${params.toString()}`);
+      navigate(`/tour?${params.toString()}`);
       return;
     }
 
