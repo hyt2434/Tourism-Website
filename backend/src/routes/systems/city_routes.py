@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from config.database import get_connection
+from src.models.models import get_connection
 
 city_bp = Blueprint('cities', __name__)
 
