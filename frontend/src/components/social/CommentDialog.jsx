@@ -1,55 +1,84 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Heart, Smile } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
+import { getPost, addComment } from "../../api/social";
+import { useToast } from "../../context/ToastContext";
 
-// 👈 MOCK CURRENT USER
-const currentUser = {
-  id: "user_123",
-  username: "current_user",
-  displayName: "Minh Hoàng",
+// Get current user from localStorage
+const getCurrentUser = () => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  try {
+    return JSON.parse(userStr);
+  } catch {
+    return null;
+  }
 };
 
 export default function CommentDialog({ open, onOpenChange, post }) {
   const [comment, setComment] = useState("");
-  const [comments, setComments] = useState([
-    {
-      id: 1,
-      username: "traveler_vn",
-      displayName: "Nguyễn Văn A",
-      text: "Đẹp quá! Mình cũng muốn đi đây",
-      timestamp: "2h",
-      likes: 5,
-    },
-    {
-      id: 2,
-      username: "explorer_sg",
-      displayName: "Sarah Lee",
-      text: "Amazing view! How was the weather?",
-      timestamp: "5h",
-      likes: 2,
-    },
-  ]);
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { translations } = useLanguage();
+  const { toast } = useToast();
+  const currentUser = getCurrentUser();
 
-  const handlePostComment = () => {
-    if (!comment.trim()) return;
+  // Fetch post details when dialog opens
+  useEffect(() => {
+    if (open && post?.id) {
+      fetchPostDetails();
+    }
+  }, [open, post?.id]);
 
-    const newComment = {
-      id: Date.now(),
-      username: currentUser.username,
-      displayName: currentUser.displayName,
-      text: comment,
-      timestamp: "Vừa xong",
-      likes: 0,
-    };
+  const fetchPostDetails = async () => {
+    if (!post?.id) return;
+    
+    try {
+      setLoading(true);
+      const postData = await getPost(post.id);
+      setComments(postData.comments || []);
+    } catch (error) {
+      console.error("Failed to fetch post details:", error);
+      toast.error("Failed to load comments");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    setComments([...comments, newComment]);
-    setComment("");
+  const handlePostComment = async () => {
+    if (!comment.trim() || !post?.id) return;
+    
+    if (!currentUser) {
+      toast.error("Please log in to comment");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const result = await addComment(post.id, comment);
+      
+      const newComment = {
+        id: result.id,
+        author: result.author,
+        content: result.content,
+        created_at: result.created_at,
+      };
+
+      setComments([...comments, newComment]);
+      setComment("");
+      toast.success("Comment added successfully");
+    } catch (error) {
+      console.error("Failed to post comment:", error);
+      toast.error(error.message || "Failed to add comment");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // 👈 Kiểm tra post có tồn tại không
@@ -129,43 +158,32 @@ export default function CommentDialog({ open, onOpenChange, post }) {
             </div>
 
             {/* User Comments */}
-            {comments.map((c) => (
-              <div key={c.id} className="flex gap-3">
-                <Avatar className="w-8 h-8 flex-shrink-0">
-                  <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white">
-                    {c.displayName[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-semibold text-black dark:text-white">
-                      {c.username}
-                    </span>
-                    <span className="text-muted-foreground dark:text-gray-400 text-xs">
-                      {c.timestamp}
-                    </span>
-                  </div>
-                  <p className="text-black dark:text-white mt-1">{c.text}</p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <button className="text-xs text-muted-foreground dark:text-gray-400 hover:text-black dark:hover:text-white">
-                      Trả lời
-                    </button>
-                    {c.likes > 0 && (
-                      <span className="text-xs text-muted-foreground dark:text-gray-400">
-                        {c.likes} lượt thích
+            {loading ? (
+              <div className="text-center py-4 text-gray-500">Loading comments...</div>
+            ) : comments.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">{translations.noComments || "No comments yet"}</div>
+            ) : (
+              comments.map((c) => (
+                <div key={c.id} className="flex gap-3">
+                  <Avatar className="w-8 h-8 flex-shrink-0">
+                    <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white">
+                      {c.author?.[0] || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-semibold text-black dark:text-white">
+                        {c.author || "Unknown"}
                       </span>
-                    )}
+                      <span className="text-muted-foreground dark:text-gray-400 text-xs">
+                        {c.created_at ? new Date(c.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ""}
+                      </span>
+                    </div>
+                    <p className="text-black dark:text-white mt-1">{c.content}</p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto p-0 hover:bg-transparent"
-                >
-                  <Heart className="w-3 h-3 text-muted-foreground dark:text-gray-400" />
-                </Button>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* Footer - Actions & Input */}
@@ -206,10 +224,10 @@ export default function CommentDialog({ open, onOpenChange, post }) {
                 variant="ghost"
                 size="sm"
                 onClick={handlePostComment}
-                disabled={!comment.trim()}
+                disabled={!comment.trim() || isSubmitting}
                 className="text-blue-600 dark:text-blue-400 font-semibold hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-30"
               >
-                Đăng
+                {isSubmitting ? (translations.posting || "Posting...") : (translations.post || "Post")}
               </Button>
             </div>
           </div>
@@ -218,3 +236,4 @@ export default function CommentDialog({ open, onOpenChange, post }) {
     </Dialog>
   );
 }
+

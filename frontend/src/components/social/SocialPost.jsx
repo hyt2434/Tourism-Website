@@ -21,23 +21,49 @@ import {
 import ImageWithFallback from "../../figma/ImageWithFallback.jsx";
 import { useLanguage } from "../../context/LanguageContext";
 import CommentDialog from "./CommentDialog";
-import UserProfileDialog from "./UserProfileDialog"; // 👈 import
+import UserProfileDialog from "./UserProfileDialog";
 import { Link } from "react-router-dom";
+import { toggleLike } from "../../api/social";
+import { useToast } from "../../context/ToastContext";
 
 export default function SocialPost({
   post,
   onServiceClick,
   onReport,
   getUserPosts,
+  onLikeUpdate, // Callback to update parent state
 }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [showUserProfile, setShowUserProfile] = useState(false); // 👈 thêm state
+  const [showUserProfile, setShowUserProfile] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
   const { translations } = useLanguage();
+  const { toast } = useToast();
 
   // 👈 Lấy tất cả posts của user này
   const userPosts = getUserPosts ? getUserPosts(post?.user?.id) : [post];
+
+  const handleLike = async () => {
+    if (!post?.id) return;
+
+    try {
+      setIsLiking(true);
+      const result = await toggleLike(post.id);
+      const newLiked = result.status === "liked";
+      setLiked(newLiked);
+      
+      // Update parent if callback provided
+      if (onLikeUpdate) {
+        onLikeUpdate(post.id, newLiked);
+      }
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
+      toast.error("Failed to like post");
+    } finally {
+      setIsLiking(false);
+    }
+  };
 
   return (
     <>
@@ -123,7 +149,8 @@ export default function SocialPost({
                 variant="ghost"
                 size="sm"
                 className="h-auto p-0 hover:bg-transparent hover:scale-110 transition-transform"
-                onClick={() => setLiked(!liked)}
+                onClick={handleLike}
+                disabled={isLiking}
               >
                 <Heart
                   className={`w-7 h-7 transition-all ${
@@ -167,7 +194,7 @@ export default function SocialPost({
 
           {/* Likes count */}
           <p className="mb-2 text-sm font-semibold text-black dark:text-white">
-            {(post.likes + (liked ? 1 : 0)).toLocaleString()}{" "}
+            {post.likes?.toLocaleString() || 0}{" "}
             {translations.likes}
           </p>
 

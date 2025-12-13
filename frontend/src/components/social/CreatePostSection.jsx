@@ -9,13 +9,18 @@ import { Input } from "../ui/input";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Image, MapPin, X, Camera, AlertCircle } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
-import { suggestedHashtags } from "./mockData";
+import { createPost, uploadImage } from "../../api/social";
+import { useToast } from "../../context/ToastContext";
 
-// 👈 MOCK CURRENT USER
-const currentUser = {
-  id: "user_123",
-  username: "current_user",
-  displayName: "Minh Hoàng",
+// Get current user from localStorage
+const getCurrentUser = () => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  try {
+    return JSON.parse(userStr);
+  } catch {
+    return null;
+  }
 };
 
 export default function CreatePostSection({ onSubmit }) {
@@ -24,33 +29,83 @@ export default function CreatePostSection({ onSubmit }) {
   const [location, setLocation] = useState("");
   const [selectedHashtags, setSelectedHashtags] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { translations } = useLanguage();
+  const { toast } = useToast();
+  const currentUser = getCurrentUser();
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
-    const imageUrls = files.map((file) => URL.createObjectURL(file));
-    setSelectedImages([...selectedImages, ...imageUrls]);
+    if (files.length === 0) return;
+
+    // Show preview immediately
+    const previewUrls = files.map((file) => URL.createObjectURL(file));
+    setSelectedImages([...selectedImages, ...previewUrls]);
+
+    // Upload images to server
+    try {
+      const uploadPromises = files.map(async (file) => {
+        const result = await uploadImage(file);
+        return result.url;
+      });
+      const urls = await Promise.all(uploadPromises);
+      setUploadedImageUrls([...uploadedImageUrls, ...urls]);
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+      toast.error("Failed to upload image");
+      // Remove previews on error
+      setSelectedImages(selectedImages.filter((_, i) => i < selectedImages.length));
+    }
   };
 
   const handleRemoveImage = (index) => {
     setSelectedImages(selectedImages.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
-    console.log("Submit post:", {
-      caption,
-      location,
-      selectedHashtags,
-      selectedImages,
-    });
-    onSubmit();
-    // Reset form
-    setCaption("");
-    setLocation("");
-    setSelectedHashtags([]);
-    setSelectedImages([]);
-    setIsExpanded(false);
+  const handleSubmit = async () => {
+    if (!currentUser) {
+      toast.error("Please log in to create a post");
+      return;
+    }
+
+    if (!caption.trim() && uploadedImageUrls.length === 0) {
+      toast.error("Please add a caption or image");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      // Combine caption with hashtags
+      const hashtagText = selectedHashtags.map(tag => tag.startsWith('#') ? tag : `#${tag}`).join(' ');
+      const fullContent = [caption, hashtagText, location ? `📍 ${location}` : ''].filter(Boolean).join('\n');
+
+      // Use first uploaded image URL (or empty if none)
+      const imageUrl = uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : null;
+
+      await createPost({
+        content: fullContent,
+        image_url: imageUrl,
+      });
+
+      toast.success("Post created successfully!");
+      onSubmit();
+      
+      // Reset form
+      setCaption("");
+      setLocation("");
+      setSelectedHashtags([]);
+      setSelectedImages([]);
+      setUploadedImageUrls([]);
+      setIsExpanded(false);
+    } catch (error) {
+      console.error("Failed to create post:", error);
+      toast.error(error.message || "Failed to create post");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -108,8 +163,8 @@ export default function CreatePostSection({ onSubmit }) {
           U
         </div>
         <div>
-          <p className="font-semibold text-sm text-black dark:text-white">current_user</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">@traveler</p>
+          <p className="font-semibold text-sm text-black dark:text-white">{currentUser?.username || "User"}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{currentUser?.email || ""}</p>
         </div>
       </div>
 
@@ -212,35 +267,14 @@ export default function CreatePostSection({ onSubmit }) {
           </div>
         </div>
 
-        {/* Hashtags */}
+        {/* Hashtags - Extract from caption */}
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-black dark:text-white">
             {translations.addHashtags || "Add Hashtags"}
           </Label>
-          <div className="flex flex-wrap gap-2">
-            {suggestedHashtags.map((tag) => (
-              <Badge
-                key={tag}
-                variant={selectedHashtags.includes(tag) ? "default" : "outline"}
-                className={`cursor-pointer transition-all text-sm py-1.5 px-3 rounded-full ${
-                  selectedHashtags.includes(tag)
-                    ? "bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white border-0 shadow-md shadow-blue-500/30"
-                    : "hover:bg-gray-100 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300"
-                }`}
-                onClick={() => {
-                  if (selectedHashtags.includes(tag)) {
-                    setSelectedHashtags(
-                      selectedHashtags.filter((t) => t !== tag)
-                    );
-                  } else {
-                    setSelectedHashtags([...selectedHashtags, tag]);
-                  }
-                }}
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {translations.hashtagHint || "Add hashtags in your caption using #"}
+          </p>
         </div>
       </div>
 
@@ -262,10 +296,10 @@ export default function CreatePostSection({ onSubmit }) {
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!caption.trim() && selectedImages.length === 0}
+            disabled={(!caption.trim() && uploadedImageUrls.length === 0) || isSubmitting}
             className="flex-1 bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white border-0 shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed h-10 rounded-xl font-semibold"
           >
-            {translations.post || "Post"}
+            {isSubmitting ? (translations.posting || "Posting...") : (translations.post || "Post")}
           </Button>
         </div>
       </div>

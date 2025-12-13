@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
@@ -11,8 +11,50 @@ import ReportDialog from "./ReportDialog";
 import { Dialog, DialogContent } from "../ui/dialog";
 
 import BottomNavigation from "./BottomNavigation";
-import { mockPosts } from "./mockData";
 import { useLanguage } from "../../context/LanguageContext";
+import { getPosts, searchPosts, toggleLike, addComment } from "../../api/social";
+import { useToast } from "../../context/ToastContext";
+
+/**
+ * Transform API post format to component expected format
+ */
+const transformPost = (apiPost) => {
+  const formatTimeAgo = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return "Vừa xong";
+    if (diffMins < 60) return `${diffMins} phút trước`;
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    if (diffDays < 7) return `${diffDays} ngày trước`;
+    return date.toLocaleDateString('vi-VN');
+  };
+
+  return {
+    id: apiPost.id,
+    user: {
+      id: apiPost.author?.email || "",
+      username: apiPost.author?.username || "Unknown",
+      displayName: apiPost.author?.username || "Unknown",
+      avatar: "",
+    },
+    image: apiPost.image_url || "",
+    caption: apiPost.content || "",
+    hashtags: (apiPost.tags || []).map(tag => `#${tag}`),
+    likes: apiPost.like_count || 0,
+    comments: apiPost.comment_count || 0,
+    timestamp: formatTimeAgo(apiPost.created_at),
+    location: "",
+    status: "approved",
+    // Store original API data for API calls
+    _apiData: apiPost,
+  };
+};
 
 export default function SocialPage() {
   const [activeTab, setActiveTab] = useState("home");
@@ -27,35 +69,103 @@ export default function SocialPage() {
   const [saved, setSaved] = useState(false);
   const [comment, setComment] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const { translations } = useLanguage();
+  const { toast } = useToast();
+
+  // Fetch posts on mount
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  // Search posts when query changes
+  useEffect(() => {
+    if (activeTab === "search" && searchQuery.trim()) {
+      const timeoutId = setTimeout(() => {
+        handleSearch(searchQuery);
+      }, 500); // Debounce search
+      return () => clearTimeout(timeoutId);
+    } else if (activeTab === "search" && !searchQuery.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+    }
+  }, [searchQuery, activeTab]);
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const apiPosts = await getPosts();
+      const transformedPosts = apiPosts.map(transformPost);
+      setPosts(transformedPosts);
+    } catch (error) {
+      console.error("Failed to fetch posts:", error);
+      toast.error("Failed to load posts");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const apiPosts = await searchPosts(query);
+      const transformedPosts = apiPosts.map(transformPost);
+      setSearchResults(transformedPosts);
+    } catch (error) {
+      console.error("Failed to search posts:", error);
+      toast.error("Failed to search posts");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSubmitPost = async () => {
+    // Refresh posts after creating
+    await fetchPosts();
+    setShowSubmitSuccess(true);
+    setShowCreatePost(false);
+    setTimeout(() => setShowSubmitSuccess(false), 3000);
+  };
 
   // Generate random layout pattern - memoized to prevent re-renders
   const gridPattern = useMemo(() => {
+    const postsToUse = activeTab === "search" ? searchResults : posts;
+    if (postsToUse.length === 0) return [];
+    
     const patterns = [];
     let index = 0;
     
-    while (index < mockPosts.length) {
+    while (index < postsToUse.length) {
       const rand = Math.random();
       
-      if (rand < 0.2 && index < mockPosts.length) {
+      if (rand < 0.2 && index < postsToUse.length) {
         // 20% chance: Vertical rectangle (tall, spans 2 rows)
-        patterns.push({ type: 'rect-tall', span: 2, posts: [mockPosts[index]] });
+        patterns.push({ type: 'rect-tall', span: 2, posts: [postsToUse[index]] });
         index += 1;
-      } else if (rand < 0.35 && index + 1 < mockPosts.length) {
+      } else if (rand < 0.35 && index + 1 < postsToUse.length) {
         // 15% chance: Two squares side by side
-        patterns.push({ type: 'square', span: 1, posts: [mockPosts[index]] });
-        patterns.push({ type: 'square', span: 1, posts: [mockPosts[index + 1]] });
+        patterns.push({ type: 'square', span: 1, posts: [postsToUse[index]] });
+        patterns.push({ type: 'square', span: 1, posts: [postsToUse[index + 1]] });
         index += 2;
       } else {
         // 65% chance: Regular square
-        patterns.push({ type: 'square', span: 1, posts: [mockPosts[index]] });
+        patterns.push({ type: 'square', span: 1, posts: [postsToUse[index]] });
         index += 1;
       }
     }
     
     return patterns;
-  }, []);
+  }, [posts, searchResults, activeTab]);
 
   const handleServiceClick = (serviceName) => {
     console.log("Navigate to service:", serviceName);
@@ -66,14 +176,59 @@ export default function SocialPage() {
     setShowReportDialog(true);
   };
 
-  const handleSubmitPost = () => {
-    setShowSubmitSuccess(true);
-    setShowCreatePost(false);
-    setTimeout(() => setShowSubmitSuccess(false), 3000);
+  const getUserPosts = (userId) => {
+    return posts.filter((p) => p?.user?.id === userId);
   };
 
-  const getUserPosts = (userId) => {
-    return mockPosts.filter((p) => p?.user?.id === userId);
+  const handleLike = async (post) => {
+    try {
+      const result = await toggleLike(post.id);
+      // Update local state
+      setPosts(prevPosts => 
+        prevPosts.map(p => {
+          if (p.id === post.id) {
+            const newLiked = result.status === "liked";
+            return {
+              ...p,
+              likes: newLiked ? p.likes + 1 : Math.max(0, p.likes - 1),
+            };
+          }
+          return p;
+        })
+      );
+      if (selectedPost?.id === post.id) {
+        setSelectedPost(prev => ({
+          ...prev,
+          likes: result.status === "liked" ? prev.likes + 1 : Math.max(0, prev.likes - 1),
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
+      toast.error("Failed to like post");
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!comment.trim() || !selectedPost) return;
+
+    try {
+      const result = await addComment(selectedPost.id, comment);
+      // Update selected post with new comment
+      setSelectedPost(prev => ({
+        ...prev,
+        comments: prev.comments + 1,
+        _apiData: {
+          ...prev._apiData,
+          comments: [...(prev._apiData?.comments || []), result],
+          comment_count: (prev._apiData?.comment_count || 0) + 1,
+        },
+      }));
+      setComment("");
+      toast.success("Comment added successfully");
+    } catch (error) {
+      console.error("Failed to add comment:", error);
+      toast.error("Failed to add comment");
+    }
   };
 
   const handlePostClick = (post) => {
@@ -139,17 +294,39 @@ export default function SocialPage() {
               className="pl-10 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 rounded-lg h-12"
             />
           </div>
-          {renderGrid(mockPosts)}
+          {loading || isSearching ? (
+            <div className="flex justify-center py-10">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+            </div>
+          ) : searchResults.length === 0 && searchQuery.trim() ? (
+            <div className="text-center py-10 text-gray-500">
+              {translations.noResults || "No posts found"}
+            </div>
+          ) : (
+            renderGrid(searchResults)
+          )}
         </div>
       );
     }
 
     // Home tab - Dynamic Photo grid
-    return (
-      <div>
-        {renderGrid(mockPosts)}
-      </div>
-    );
+    if (loading) {
+      return (
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
+    if (posts.length === 0) {
+      return (
+        <div className="text-center py-10 text-gray-500">
+          {translations.noPosts || "No posts yet"}
+        </div>
+      );
+    }
+
+    return <div>{renderGrid(posts)}</div>;
   };
 
   return (
@@ -299,20 +476,30 @@ export default function SocialPage() {
                     </div>
                   </div>
 
-                  {/* Mock Comments */}
+                  {/* Comments */}
                   <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex-shrink-0 flex items-center justify-center text-white text-xs font-semibold">
-                        J
+                    {selectedPost._apiData?.comments && selectedPost._apiData.comments.length > 0 ? (
+                      selectedPost._apiData.comments.map((comment) => (
+                        <div key={comment.id} className="flex gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex-shrink-0 flex items-center justify-center text-white text-xs font-semibold">
+                            {comment.author?.[0] || "U"}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm">
+                              <span className="font-semibold mr-2 text-gray-900 dark:text-gray-100">{comment.author || "Unknown"}</span>
+                              <span className="text-gray-800 dark:text-gray-200">{comment.content}</span>
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {comment.created_at ? new Date(comment.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ""}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500 text-center py-4">
+                        {translations.noComments || "No comments yet"}
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm">
-                          <span className="font-semibold mr-2 text-gray-900 dark:text-gray-100">john_traveler</span>
-                          <span className="text-gray-800 dark:text-gray-200">Amazing view! 😍</span>
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">2h</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
@@ -324,7 +511,10 @@ export default function SocialPage() {
                         variant="ghost"
                         size="sm"
                         className="h-auto p-0 hover:bg-transparent"
-                        onClick={() => setLiked(!liked)}
+                        onClick={() => {
+                          setLiked(!liked);
+                          if (selectedPost) handleLike(selectedPost);
+                        }}
                       >
                         <Heart className={`w-7 h-7 transition-all ${liked ? "fill-red-500 text-red-500" : "text-gray-700 dark:text-gray-300"}`} />
                       </Button>
@@ -365,7 +555,7 @@ export default function SocialPage() {
                         variant="ghost"
                         size="sm"
                         className="text-blue-600 hover:text-blue-700 font-semibold text-sm h-auto p-0"
-                        onClick={() => setComment("")}
+                        onClick={handleAddComment}
                       >
                         Post
                       </Button>
