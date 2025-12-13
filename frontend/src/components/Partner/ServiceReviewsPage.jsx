@@ -4,8 +4,7 @@ import { Star, Calendar, User, Image as ImageIcon, ArrowLeft, Loader, MessageSqu
 import { useLanguage } from "../../context/LanguageContext";
 import { useToast } from "../../context/ToastContext";
 import ReviewDetailPanel from "./ReviewDetailPanel";
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { getPartnerReviews } from "../../api/partnerManagePage";
 
 export default function ServiceReviewsPage() {
   const navigate = useNavigate();
@@ -36,15 +35,7 @@ export default function ServiceReviewsPage() {
   const fetchReviews = async (partnerId) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/partner/${partnerId}/reviews`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
+      const data = await getPartnerReviews(partnerId);
       
       if (data.success) {
         setReviews(data.reviews);

@@ -121,3 +121,20 @@ export const createServiceReviews = async (reviewData) => {
     return response.json();
 };
 
+export const deleteServiceReview = async (serviceReviewId) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/api/reviews/services/${serviceReviewId}`, {
+        method: 'DELETE',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+    return response.json();
+};
+
+export const getLatestReviews = async (limit = 4) => {
+    const response = await fetch(`${API_BASE_URL}/api/reviews/latest?limit=${limit}`);
+    return response.json();
+};
+

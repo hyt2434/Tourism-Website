@@ -530,28 +530,38 @@ def get_partner_detail(partner_id):
             """, (partner_id,))
             services['transportations'] = [{'id': r[0], 'name': r[1]} for r in cur.fetchall()]
 
-            # Reviews on tours the partner supports
+            # Service reviews for partner's services
             cur.execute("""
-                WITH partner_tours AS (
-                    SELECT DISTINCT ts.tour_id
-                    FROM tour_services ts
-                    LEFT JOIN accommodation_services ac ON ts.accommodation_id = ac.id
-                    LEFT JOIN restaurant_services rs ON ts.restaurant_id = rs.id
-                    LEFT JOIN transportation_services tr ON ts.transportation_id = tr.id
-                    WHERE (ac.partner_id = %s) OR (rs.partner_id = %s) OR (tr.partner_id = %s)
-                )
-                SELECT
-                    tr.id,
-                    tr.tour_id,
+                SELECT 
+                    sr.id,
+                    sr.service_type,
+                    sr.service_id,
+                    sr.user_id,
+                    u.username,
+                    sr.rating,
+                    sr.comment AS review_text,
+                    sr.created_at,
+                    sr.tour_id,
                     t.name AS tour_name,
-                    tr.user_id,
-                    tr.rating,
-                    tr.review_text,
-                    tr.created_at
-                FROM tour_reviews tr
-                INNER JOIN partner_tours pt ON pt.tour_id = tr.tour_id
-                INNER JOIN tours_admin t ON t.id = tr.tour_id
-                ORDER BY tr.created_at DESC
+                    CASE 
+                        WHEN sr.service_type = 'accommodation' THEN acs.name
+                        WHEN sr.service_type = 'restaurant' THEN rs.name
+                        WHEN sr.service_type = 'transportation' THEN trs.license_plate
+                        ELSE NULL
+                    END AS service_name
+                FROM service_reviews sr
+                LEFT JOIN users u ON sr.user_id = u.id
+                LEFT JOIN tours_admin t ON sr.tour_id = t.id
+                LEFT JOIN accommodation_services acs ON sr.service_type = 'accommodation' AND sr.service_id = acs.id
+                LEFT JOIN restaurant_services rs ON sr.service_type = 'restaurant' AND sr.service_id = rs.id
+                LEFT JOIN transportation_services trs ON sr.service_type = 'transportation' AND sr.service_id = trs.id
+                WHERE (
+                    (sr.service_type = 'accommodation' AND sr.service_id IN (SELECT id FROM accommodation_services WHERE partner_id = %s))
+                    OR (sr.service_type = 'restaurant' AND sr.service_id IN (SELECT id FROM restaurant_services WHERE partner_id = %s))
+                    OR (sr.service_type = 'transportation' AND sr.service_id IN (SELECT id FROM transportation_services WHERE partner_id = %s))
+                )
+                AND sr.deleted_at IS NULL
+                ORDER BY sr.created_at DESC
                 LIMIT 50;
             """, (partner_id, partner_id, partner_id))
 
@@ -559,13 +569,16 @@ def get_partner_detail(partner_id):
             for r in cur.fetchall():
                 reviews.append({
                     'id': r[0],
-                    'tour_id': r[1],
-                    'tour_name': r[2],
+                    'service_type': r[1],
+                    'service_id': r[2],
                     'user_id': r[3],
-                    'rating': float(r[4]) if r[4] is not None else None,
-                    'comment': r[5],
-                    'created_at': r[6].isoformat() if r[6] else None,
-                    'can_delete': True  # Admin can delete via existing review endpoints
+                    'username': r[4] or 'Anonymous',
+                    'rating': float(r[5]) if r[5] is not None else None,
+                    'review_text': r[6],
+                    'created_at': r[7].isoformat() if r[7] else None,
+                    'tour_id': r[8],
+                    'tour_name': r[9],
+                    'service_name': r[10]
                 })
 
             return jsonify({

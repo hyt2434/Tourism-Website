@@ -14,6 +14,14 @@ const getHeaders = () => {
   };
 };
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+};
+
 // =====================================================================
 // PARTNER STATS & REVENUE
 // =====================================================================
@@ -106,4 +114,21 @@ export const partnerStatsAPI = {
       };
     }
   },
+};
+
+// =====================================================================
+// PARTNER REVIEWS
+// =====================================================================
+
+/**
+ * Get all reviews containing services belonging to a partner
+ * @param {number} partnerId - The partner's user ID
+ * @returns {Promise<Object>} Response with reviews array
+ */
+export const getPartnerReviews = async (partnerId) => {
+  const response = await fetch(`${API_BASE_URL}/api/partner/${partnerId}/reviews`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error('Failed to fetch partner reviews');
+  return response.json();
 };

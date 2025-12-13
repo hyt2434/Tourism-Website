@@ -523,6 +523,53 @@ def delete_review(review_id):
         print(f"Error deleting review: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@tour_review_routes.route('/reviews/services/<int:service_review_id>', methods=['DELETE'])
+@token_required
+def delete_service_review(service_review_id):
+    """Soft delete a service review (admin can delete any)"""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        # Check if user is admin
+        cur.execute("SELECT role FROM users WHERE id = %s", (request.user_id,))
+        user_role = cur.fetchone()
+        is_admin = user_role and user_role[0] == 'admin'
+        
+        if not is_admin:
+            cur.close()
+            conn.close()
+            return jsonify({'success': False, 'message': 'Only admins can delete service reviews'}), 403
+        
+        # Admin can soft delete any service review
+        cur.execute("""
+            UPDATE service_reviews 
+            SET deleted_at = CURRENT_TIMESTAMP, deleted_by = %s
+            WHERE id = %s AND deleted_at IS NULL
+            RETURNING id
+        """, (request.user_id, service_review_id))
+        
+        result = cur.fetchone()
+        
+        if not result:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({'success': False, 'message': 'Service review not found'}), 404
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Service review deleted successfully'
+        })
+        
+    except Exception as e:
+        print(f"Error deleting service review: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @tour_review_routes.route('/users/my-reviews', methods=['GET'])
 @token_required
 def get_user_reviews():
@@ -664,7 +711,7 @@ def get_partner_reviews(partner_id):
         
         partner_type = user_row[0]
         
-        # Get reviews containing services belonging to this partner
+        # Get reviews containing services belonging to this partner (exclude deleted reviews)
         cur.execute("""
             SELECT DISTINCT
                 tr.id, tr.tour_id, tr.user_id, tr.booking_id, tr.rating,
@@ -675,10 +722,12 @@ def get_partner_reviews(partner_id):
             FROM tour_reviews tr
             JOIN users u ON tr.user_id = u.id
             JOIN tours_admin t ON tr.tour_id = t.id
-            WHERE EXISTS (
+            WHERE tr.deleted_at IS NULL
+            AND EXISTS (
                 SELECT 1 FROM service_reviews sr
                 JOIN tour_services ts ON sr.tour_service_id = ts.id
                 WHERE sr.tour_review_id = tr.id
+                AND sr.deleted_at IS NULL
                 AND (
                     (ts.service_type = 'accommodation' AND ts.accommodation_id IN (
                         SELECT id FROM accommodation_services WHERE partner_id = %s
@@ -743,6 +792,7 @@ def get_partner_reviews(partner_id):
                 LEFT JOIN transportation_services ts2 ON ts.transportation_id = ts2.id
                 LEFT JOIN restaurant_services rs ON ts.restaurant_id = rs.id
                 WHERE sr.tour_review_id = %s
+                AND sr.deleted_at IS NULL
                 {service_filter}
                 ORDER BY sr.created_at ASC
             """

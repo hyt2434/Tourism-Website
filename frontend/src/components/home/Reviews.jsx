@@ -4,8 +4,7 @@ import Card from "./Card";
 import { useLanguage } from "../../context/LanguageContext";
 import { useToast } from "../../context/ToastContext";
 import TourReviewDetailPanel from "./TourReviewDetailPanel";
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { getLatestReviews, deleteReview } from "../../api/reviews";
 
 export default function Reviews() {
   const { translations } = useLanguage();
@@ -33,8 +32,7 @@ export default function Reviews() {
   const fetchLatestReviews = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/reviews/latest?limit=4`);
-      const data = await response.json();
+      const data = await getLatestReviews(4);
       
       if (data.success) {
         setReviews(data.reviews);
@@ -67,17 +65,7 @@ export default function Reviews() {
 
     try {
       setDeletingId(reviewId);
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${API_URL}/api/reviews/${reviewId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
+      const data = await deleteReview(reviewId);
       
       if (data.success) {
         toast.success('Review deleted successfully');

@@ -1,15 +1,23 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
-import { Star, Phone, Globe, Mail, Award, Users, TrendingUp, CheckCircle2, ArrowRight, Calendar, Clock, MessageCircle, Heart, Share2, Sparkles } from "lucide-react";
+import { Star, Phone, Globe, Mail, Award, Users, TrendingUp, CheckCircle2, ArrowRight, Calendar, Clock, MessageCircle, Heart, Share2, Sparkles, X, MapPin, User, Trash2 } from "lucide-react";
 import { getPartnerDetail } from "../../api/partners";
+import { deleteServiceReview } from "../../api/reviews";
 import { useLanguage } from "../../context/LanguageContext";
+import { useToast } from "../../context/ToastContext";
 
 export default function PartnerDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { translations: t } = useLanguage();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedReview, setSelectedReview] = useState(null);
+  const [showDetailPanel, setShowDetailPanel] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [data, setData] = useState({
     partner: null,
     tours: [],
@@ -38,7 +46,50 @@ export default function PartnerDetail() {
       }
     };
     fetchDetail();
+    checkAdminStatus();
   }, [id]);
+
+  const checkAdminStatus = () => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      const userData = JSON.parse(user);
+      setIsAdmin(userData.role === 'admin');
+    }
+  };
+
+  const handleDeleteServiceReview = async (reviewId, e) => {
+    e.stopPropagation(); // Prevent card click event
+    
+    if (!window.confirm('Are you sure you want to delete this service review?')) {
+      return;
+    }
+
+    try {
+      setDeletingId(reviewId);
+      const data = await deleteServiceReview(reviewId);
+      
+      if (data.success) {
+        toast.success('Service review deleted successfully');
+        // Remove review from list
+        setData(prev => ({
+          ...prev,
+          reviews: prev.reviews.filter(r => r.id !== reviewId)
+        }));
+        // Close panel if this review is currently shown
+        if (selectedReview?.id === reviewId) {
+          setShowDetailPanel(false);
+          setSelectedReview(null);
+        }
+      } else {
+        toast.error(data.message || 'Failed to delete service review');
+      }
+    } catch (error) {
+      console.error('Error deleting service review:', error);
+      toast.error('Failed to delete service review');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const partner = data.partner;
   const avatar = partner?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(partner?.name || "Partner")}&background=0D8ABC&color=fff`;
@@ -281,39 +332,223 @@ export default function PartnerDetail() {
         <section className="bg-white/70 backdrop-blur-xl rounded-3xl p-8 md:p-10 shadow-xl border border-white/20 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
-              {t?.reviews || "Reviews"}
+              {t?.reviews || "Service Reviews"}
             </h2>
           </div>
           {data.reviews.length === 0 ? (
             <p className="text-gray-500">{t?.noReviews || "No reviews yet."}</p>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {data.reviews.map((rev) => (
-                <div key={rev.id} className="border border-gray-200 rounded-2xl p-4 bg-white shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-gray-900">{rev.tour_name}</h4>
-                      <p className="text-xs text-gray-500">{rev.created_at?.replace('T',' ').slice(0,16)}</p>
+                <div 
+                  key={rev.id} 
+                  onClick={() => {
+                    setSelectedReview(rev);
+                    setShowDetailPanel(true);
+                  }}
+                  className="border border-gray-200 rounded-2xl p-4 bg-white shadow-sm hover:shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.02] group relative"
+                >
+                  {/* Admin Delete Button */}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => handleDeleteServiceReview(rev.id, e)}
+                      disabled={deletingId === rev.id}
+                      className="absolute top-4 right-4 p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg transition-colors z-10 disabled:opacity-50"
+                      title="Delete service review"
+                    >
+                      <Trash2 size={18} className={deletingId === rev.id ? 'animate-pulse' : ''} />
+                    </button>
+                  )}
+                  {/* Tour Info */}
+                  <div className="mb-3 pb-3 border-b border-gray-200">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MapPin className="w-4 h-4 text-blue-600" />
+                      <h4 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{rev.tour_name || "Tour"}</h4>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className={`w-4 h-4 ${i < (rev.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
-                      ))}
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <Calendar className="w-3 h-3" />
+                      <span>{rev.created_at ? new Date(rev.created_at).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
                     </div>
                   </div>
-                  <p className="text-gray-700 mt-2">{rev.comment}</p>
-                  <button
-                    className="text-sm text-blue-600 hover:underline mt-2"
-                    onClick={() => window.location.href = `/tours/${rev.tour_id}`}
-                  >
-                    {t?.seeTour || "See tour"} →
-                  </button>
+
+                  {/* User Info */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">{rev.username || "Anonymous"}</span>
+                  </div>
+
+                  {/* Service Review */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm text-gray-900">{rev.service_name || "Service"}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          rev.service_type === 'accommodation' ? 'bg-blue-100 text-blue-700' :
+                          rev.service_type === 'restaurant' ? 'bg-orange-100 text-orange-700' :
+                          'bg-green-100 text-green-700'
+                        }`}>
+                          {rev.service_type === 'accommodation' ? 'Accommodation' :
+                           rev.service_type === 'restaurant' ? 'Restaurant' :
+                           'Transportation'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className={`w-3 h-3 ${i < (rev.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
+                        ))}
+                      </div>
+                    </div>
+                    {rev.review_text && (
+                      <p className="text-sm text-gray-600 line-clamp-2">{rev.review_text}</p>
+                    )}
+                  </div>
+
+                  {/* Click hint */}
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <p className="text-xs text-blue-600 text-center group-hover:underline">Click to view details</p>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </section>
+
+        {/* Review Detail Panel */}
+        {showDetailPanel && selectedReview && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
+              onClick={() => {
+                setShowDetailPanel(false);
+                setSelectedReview(null);
+              }}
+            />
+            <div className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white dark:bg-gray-800 shadow-2xl z-50 overflow-y-auto transform transition-transform">
+              <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Review Details</h2>
+                <div className="flex items-center gap-2">
+                  {/* Admin Delete Button */}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteServiceReview(selectedReview.id, e);
+                      }}
+                      disabled={deletingId === selectedReview.id}
+                      className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg transition-colors disabled:opacity-50"
+                      title="Delete service review"
+                    >
+                      <Trash2 size={20} className={deletingId === selectedReview.id ? 'animate-pulse' : ''} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowDetailPanel(false);
+                      setSelectedReview(null);
+                    }}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Tour Information */}
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-3 mb-3">
+                    <MapPin className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      {selectedReview.tour_name || "Tour"}
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Calendar className="w-4 h-4" />
+                    <span>Reviewed on {selectedReview.created_at ? new Date(selectedReview.created_at).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                  </div>
+                </div>
+
+                {/* Reviewer Information */}
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <User className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-lg text-gray-900 dark:text-white">
+                      {selectedReview.username || "Anonymous"}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Customer</p>
+                  </div>
+                </div>
+
+                {/* Service Review */}
+                <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                        {selectedReview.service_name || "Service"}
+                      </h4>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        selectedReview.service_type === 'accommodation' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                        selectedReview.service_type === 'restaurant' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                        'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      }`}>
+                        {selectedReview.service_type === 'accommodation' ? 'Accommodation' :
+                         selectedReview.service_type === 'restaurant' ? 'Restaurant' :
+                         'Transportation'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Service Rating */}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Rating</p>
+                    <div className="flex items-center gap-2">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-6 h-6 ${
+                            i < (selectedReview.rating || 0)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                      <span className="text-2xl font-bold text-gray-900 dark:text-white">{selectedReview.rating || 0}/5</span>
+                    </div>
+                  </div>
+
+                  {/* Service Review Text */}
+                  {selectedReview.review_text && (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Review</p>
+                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                        {selectedReview.review_text}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Navigate to Tour Button */}
+                {selectedReview.tour_id && (
+                  <div className="sticky bottom-0 bg-white dark:bg-gray-800 pt-4 pb-2 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => navigate(`/tours/${selectedReview.tour_id}`)}
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-4 px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
+                    >
+                      <span>View Tour Details</span>
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
+
