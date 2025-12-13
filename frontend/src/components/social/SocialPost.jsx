@@ -26,6 +26,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toggleLike, deletePost, getHashtagInfo } from "../../api/social";
 import { useToast } from "../../context/ToastContext";
 import { getTranslatedContent } from "../../utils/translation";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 
 export default function SocialPost({
   post,
@@ -40,8 +41,9 @@ export default function SocialPost({
   const [isLiking, setIsLiking] = useState(false);
   const [translatedCaption, setTranslatedCaption] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { translations, language } = useLanguage();
-  const { toast } = useToast();
+  const toast = useToast();
 
   // Get current user to check if admin
   const getCurrentUser = () => {
@@ -57,11 +59,11 @@ export default function SocialPost({
   const currentUser = getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
 
-  const handleDeletePost = async () => {
-    if (!window.confirm("Are you sure you want to delete this post?")) {
-      return;
-    }
+  const handleDeletePostClick = () => {
+    setShowDeleteConfirm(true);
+  };
 
+  const handleDeletePost = async () => {
     try {
       await deletePost(post.id);
       toast.success("Post deleted successfully");
@@ -74,6 +76,8 @@ export default function SocialPost({
     } catch (error) {
       console.error("Failed to delete post:", error);
       toast.error(error.message || "Failed to delete post");
+    } finally {
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -349,6 +353,18 @@ export default function SocialPost({
         onOpenChange={setShowUserProfile}
         user={post?.user}
         userPosts={userPosts}
+      />
+
+      {/* Delete Post Confirmation Dialog */}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title={translations.deletePost || "Delete Post"}
+        description={translations.deletePostConfirm || "Are you sure you want to delete this post? This action cannot be undone."}
+        onConfirm={handleDeletePost}
+        confirmText={translations.delete || "Delete"}
+        cancelText={translations.cancel || "Cancel"}
+        variant="danger"
       />
     </>
   );

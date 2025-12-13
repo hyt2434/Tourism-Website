@@ -37,7 +37,7 @@ export default function CreatePostSection({ onSubmit }) {
   const suggestionsRef = useRef(null);
 
   const { translations, language } = useLanguage();
-  const { toast } = useToast();
+  const toast = useToast();
   const currentUser = getCurrentUser();
 
   // Search hashtags when query changes
@@ -127,16 +127,15 @@ export default function CreatePostSection({ onSubmit }) {
       // Use first uploaded image as base64 (or empty if none)
       const imageUrl = uploadedImageBase64.length > 0 ? uploadedImageBase64[0] : null;
 
-      await createPost({
+      const result = await createPost({
         content: caption,
         image_url: imageUrl,
         hashtags: selectedHashtags,
       });
 
       toast.success("Post created successfully!");
-      onSubmit();
       
-      // Reset form
+      // Reset form first
       setCaption("");
       setSelectedHashtags([]);
       setSelectedImages([]);
@@ -145,6 +144,11 @@ export default function CreatePostSection({ onSubmit }) {
       setHashtagSuggestions([]);
       setShowSuggestions(false);
       setIsExpanded(false);
+      
+      // Then call onSubmit to close dialog and refresh
+      if (onSubmit) {
+        onSubmit();
+      }
     } catch (error) {
       console.error("Failed to create post:", error);
       toast.error(error.message || "Failed to create post");
@@ -306,8 +310,9 @@ export default function CreatePostSection({ onSubmit }) {
           <div className="relative">
             <div className="relative">
               <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
-              <Input
+              <input
                 ref={hashtagInputRef}
+                type="text"
                 placeholder={
                   language === 'vi' 
                     ? "Nhập hashtag (ví dụ: #HaNoi, #TourSapa)..."

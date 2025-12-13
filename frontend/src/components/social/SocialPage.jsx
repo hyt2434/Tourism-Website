@@ -8,7 +8,8 @@ import { Search, Check, Home, Plus, User, ShoppingBag, Heart, MessageCircle, Sen
 import SocialPost from "./SocialPost";
 import CreatePostSection from "./CreatePostSection";
 import ReportDialog from "./ReportDialog";
-import { Dialog, DialogContent } from "../ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "../ui/dialog";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 
 import BottomNavigation from "./BottomNavigation";
 import { useLanguage } from "../../context/LanguageContext";
@@ -87,9 +88,13 @@ export default function SocialPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [translatedDialogCaption, setTranslatedDialogCaption] = useState("");
   const [isTranslatingDialog, setIsTranslatingDialog] = useState(false);
+  const [showDeletePostConfirm, setShowDeletePostConfirm] = useState(false);
+  const [showDeleteCommentConfirm, setShowDeleteCommentConfirm] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
+  const [commentToDelete, setCommentToDelete] = useState(null);
 
   const { translations, language } = useLanguage();
-  const { toast } = useToast();
+  const toast = useToast();
   const navigate = useNavigate();
 
   // Get current user to check if admin
@@ -188,44 +193,63 @@ export default function SocialPage() {
   };
 
   const handleSubmitPost = async () => {
-    // Refresh posts after creating
-    await fetchPosts();
-    setShowSubmitSuccess(true);
+    // Close dialog immediately
     setShowCreatePost(false);
+    
+    // Show success message
+    setShowSubmitSuccess(true);
     setTimeout(() => setShowSubmitSuccess(false), 3000);
+    
+    // Refresh posts after creating - wait a bit for backend to process
+    try {
+      // Wait a bit for backend to process the new post
+      await new Promise(resolve => setTimeout(resolve, 800));
+      await fetchPosts();
+    } catch (error) {
+      console.error("Failed to refresh posts:", error);
+      toast.error("Failed to refresh posts");
+    }
   };
 
-  const handleDeletePost = async (postId) => {
-    if (!window.confirm("Are you sure you want to delete this post?")) {
-      return;
-    }
+  const handleDeletePostClick = (postId) => {
+    setPostToDelete(postId);
+    setShowDeletePostConfirm(true);
+  };
+
+  const handleDeletePost = async () => {
+    if (!postToDelete) return;
 
     try {
-      await deletePost(postId);
+      await deletePost(postToDelete);
       toast.success("Post deleted successfully");
       // Close dialog and refresh posts
       setShowPostDialog(false);
       setSelectedPost(null);
       await fetchPosts();
+      setPostToDelete(null);
     } catch (error) {
       console.error("Failed to delete post:", error);
       const errorMessage = error?.message || error?.error || "Failed to delete post";
       toast.error(errorMessage);
+    } finally {
+      setShowDeletePostConfirm(false);
     }
   };
 
-  const handleDeleteComment = async (commentId) => {
-    if (!window.confirm("Are you sure you want to delete this comment?")) {
-      return;
-    }
+  const handleDeleteCommentClick = (commentId) => {
+    setCommentToDelete(commentId);
+    setShowDeleteCommentConfirm(true);
+  };
 
-    if (!selectedPost?.id) {
+  const handleDeleteComment = async () => {
+    if (!commentToDelete || !selectedPost?.id) {
       toast.error("Post not found");
+      setShowDeleteCommentConfirm(false);
       return;
     }
 
     try {
-      await deleteComment(selectedPost.id, commentId);
+      await deleteComment(selectedPost.id, commentToDelete);
       toast.success("Comment deleted successfully");
       // Refresh post details to update comments
       const postData = await getPost(selectedPost.id);
@@ -246,10 +270,13 @@ export default function SocialPage() {
           return p;
         })
       );
+      setCommentToDelete(null);
     } catch (error) {
       console.error("Failed to delete comment:", error);
       const errorMessage = error?.message || error?.error || "Failed to delete comment";
       toast.error(errorMessage);
+    } finally {
+      setShowDeleteCommentConfirm(false);
     }
   };
 
@@ -553,8 +580,18 @@ export default function SocialPage() {
       />
 
       {/* Create Post Dialog */}
-      <Dialog open={showCreatePost} onOpenChange={setShowCreatePost}>
+      <Dialog open={showCreatePost} onOpenChange={(open) => {
+        setShowCreatePost(open);
+        if (!open) {
+          // If dialog is being closed, ensure we refresh posts
+          setTimeout(() => {
+            fetchPosts().catch(err => console.error("Failed to refresh:", err));
+          }, 300);
+        }
+      }}>
         <DialogContent className={`max-w-3xl w-[min(90vw,900px)] max-h-[80vh] p-0 bg-white dark:bg-black border-0 [&>button]:hidden !left-[50%] !top-[calc(50%+2rem)] !translate-x-[-50%] !translate-y-[-50%] rounded-2xl overflow-hidden flex flex-col transition-all duration-300 ${isSidebarCollapsed ? 'lg:!left-[calc(50%+2.5rem)] xl:!left-[calc(50%+2.5rem)]' : 'lg:!left-[calc(50%+2.5rem)] xl:!left-[calc(50%+8rem)]'}`}>
+          <DialogTitle className="sr-only">{translations.createPost || "Create Post"}</DialogTitle>
+          <DialogDescription className="sr-only">{translations.createPostDescription || "Create a new post to share with the community"}</DialogDescription>
           <CreatePostSection onSubmit={handleSubmitPost} />
         </DialogContent>
       </Dialog>
@@ -601,7 +638,7 @@ export default function SocialPage() {
                       variant="ghost" 
                       size="sm" 
                       className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                      onClick={() => handleDeletePost(selectedPost.id)}
+                      onClick={() => handleDeletePostClick(selectedPost.id)}
                     >
                       <Trash2 className="w-5 h-5" />
                     </Button>
@@ -673,7 +710,7 @@ export default function SocialPage() {
                                   variant="ghost"
                                   size="sm"
                                   className="h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0"
-                                  onClick={() => handleDeleteComment(comment.id)}
+                                  onClick={() => handleDeleteCommentClick(comment.id)}
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
@@ -753,6 +790,30 @@ export default function SocialPage() {
         open={showReportDialog}
         onOpenChange={setShowReportDialog}
         postId={reportedPostId}
+      />
+
+      {/* Delete Post Confirmation Dialog */}
+      <ConfirmDialog
+        open={showDeletePostConfirm}
+        onOpenChange={setShowDeletePostConfirm}
+        title={translations.deletePost || "Delete Post"}
+        description={translations.deletePostConfirm || "Are you sure you want to delete this post? This action cannot be undone."}
+        onConfirm={handleDeletePost}
+        confirmText={translations.delete || "Delete"}
+        cancelText={translations.cancel || "Cancel"}
+        variant="danger"
+      />
+
+      {/* Delete Comment Confirmation Dialog */}
+      <ConfirmDialog
+        open={showDeleteCommentConfirm}
+        onOpenChange={setShowDeleteCommentConfirm}
+        title={translations.deleteComment || "Delete Comment"}
+        description={translations.deleteCommentConfirm || "Are you sure you want to delete this comment? This action cannot be undone."}
+        onConfirm={handleDeleteComment}
+        confirmText={translations.delete || "Delete"}
+        cancelText={translations.cancel || "Cancel"}
+        variant="danger"
       />
     </div>
   );

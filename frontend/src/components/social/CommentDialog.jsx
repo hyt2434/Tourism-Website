@@ -8,6 +8,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import { getPost, addComment, deleteComment, getHashtagInfo } from "../../api/social";
 import { useToast } from "../../context/ToastContext";
 import { useNavigate } from "react-router-dom";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 
 // Get current user from localStorage
 const getCurrentUser = () => {
@@ -25,25 +26,33 @@ export default function CommentDialog({ open, onOpenChange, post }) {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
 
   const { translations } = useLanguage();
-  const { toast } = useToast();
+  const toast = useToast();
   const currentUser = getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
 
-  const handleDeleteComment = async (commentId) => {
-    if (!window.confirm("Are you sure you want to delete this comment?")) {
-      return;
-    }
+  const handleDeleteCommentClick = (commentId) => {
+    setCommentToDelete(commentId);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteComment = async () => {
+    if (!commentToDelete) return;
 
     try {
-      await deleteComment(post.id, commentId);
+      await deleteComment(post.id, commentToDelete);
       toast.success("Comment deleted successfully");
       // Refresh comments
       fetchPostDetails();
+      setCommentToDelete(null);
     } catch (error) {
       console.error("Failed to delete comment:", error);
       toast.error(error.message || "Failed to delete comment");
+    } finally {
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -303,6 +312,18 @@ export default function CommentDialog({ open, onOpenChange, post }) {
           </div>
         </div>
       </DialogContent>
+
+      {/* Delete Comment Confirmation Dialog */}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title={translations.deleteComment || "Delete Comment"}
+        description={translations.deleteCommentConfirm || "Are you sure you want to delete this comment? This action cannot be undone."}
+        onConfirm={handleDeleteComment}
+        confirmText={translations.delete || "Delete"}
+        cancelText={translations.cancel || "Cancel"}
+        variant="danger"
+      />
     </Dialog>
   );
 }
