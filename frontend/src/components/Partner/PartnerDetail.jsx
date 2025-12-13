@@ -314,7 +314,14 @@ export default function PartnerDetail() {
                     <div>
                       <p className="text-xs text-gray-500">{t?.startingFrom || "Starting from"}</p>
                       <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        {tour.total_price ? `${tour.total_price.toLocaleString('vi-VN')} ₫` : t?.contactForPrice || "Contact"}
+                        {tour.price_per_person ? (
+                          <>
+                            {tour.price_per_person.toLocaleString('vi-VN')} ₫
+                            <span className="text-xs font-normal text-gray-500 ml-1">/person</span>
+                          </>
+                        ) : (
+                          t?.contactForPrice || "Contact"
+                        )}
                       </p>
                     </div>
                     <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg" onClick={() => window.location.href = `/tours/${tour.tour_id}`}>

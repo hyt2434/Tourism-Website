@@ -478,6 +478,7 @@ def get_partner_detail(partner_id):
                     t.id,
                     t.name,
                     t.total_price,
+                    t.number_of_members,
                     t.duration,
                     t.is_published,
                     (
@@ -498,14 +499,23 @@ def get_partner_detail(partner_id):
 
             tours = []
             for tr in cur.fetchall():
+                total_price = float(tr[2]) if tr[2] is not None else None
+                number_of_members = tr[3] if tr[3] is not None else 1
+                # Calculate price per person
+                price_per_person = None
+                if total_price and number_of_members and number_of_members > 0:
+                    price_per_person = round((total_price / number_of_members) / 1000) * 1000  # Round to nearest 1,000
+                
                 tours.append({
                     'tour_id': tr[0],
                     'name': tr[1],
-                    'total_price': float(tr[2]) if tr[2] is not None else None,
-                    'duration': tr[3],
-                    'is_published': tr[4],
-                    'image_url': tr[5],
-                    'completed_bookings': tr[6] or 0,
+                    'total_price': total_price,
+                    'price_per_person': price_per_person,
+                    'number_of_members': number_of_members,
+                    'duration': tr[4],
+                    'is_published': tr[5],
+                    'image_url': tr[6],
+                    'completed_bookings': tr[7] or 0,
                 })
 
             # Services owned by partner (simple lists)
