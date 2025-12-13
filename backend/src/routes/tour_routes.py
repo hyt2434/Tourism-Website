@@ -56,14 +56,6 @@ def get_highlighted_tours():
             LEFT JOIN cities dpc ON th.departure_city_id = dpc.id
             LEFT JOIN tour_images ti ON th.id = ti.tour_id AND ti.is_primary = TRUE
             LEFT JOIN tour_reviews tr ON th.id = tr.tour_id
-            WHERE EXISTS (
-                SELECT 1 FROM tour_schedules ts 
-                WHERE ts.tour_id = th.id 
-                AND ts.is_active = TRUE 
-                AND ts.departure_datetime > NOW()
-                AND ts.slots_available > 0
-                AND ts.status NOT IN ('completed', 'cancelled')
-            )
             GROUP BY th.id, th.name, th.duration, th.description,
                      th.destination_city_id, dc.name,
                      th.departure_city_id, dpc.name,
@@ -152,14 +144,6 @@ def get_tours():
             LEFT JOIN cities dc ON t.destination_city_id = dc.id
             LEFT JOIN cities dpc ON t.departure_city_id = dpc.id
             WHERE t.is_published = TRUE AND t.is_active = TRUE
-            AND EXISTS (
-                SELECT 1 FROM tour_schedules ts 
-                WHERE ts.tour_id = t.id 
-                AND ts.is_active = TRUE 
-                AND ts.departure_datetime > NOW()
-                AND ts.slots_available > 0
-                AND ts.status NOT IN ('completed', 'cancelled')
-            )
         """
         
         params = []

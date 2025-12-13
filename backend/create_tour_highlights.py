@@ -24,7 +24,7 @@ def create_tour_highlights_table():
         cur.execute("DROP TABLE IF EXISTS tour_highlights CASCADE;")
         
         # Create tour_highlights table with same structure as tours_admin + booking_count
-        # Only include tours that have at least one available schedule
+        # Include all published and active tours (even if all schedules are completed)
         cur.execute("""
             CREATE TABLE tour_highlights AS
             SELECT 
@@ -35,14 +35,6 @@ def create_tour_highlights_table():
                 AND b.status IN ('confirmed', 'completed')
             WHERE t.is_active = TRUE 
                 AND t.is_published = TRUE
-                AND EXISTS (
-                    SELECT 1 FROM tour_schedules ts 
-                    WHERE ts.tour_id = t.id 
-                    AND ts.is_active = TRUE 
-                    AND ts.departure_datetime > NOW()
-                    AND ts.slots_available > 0
-                    AND ts.status NOT IN ('completed', 'cancelled')
-                )
             GROUP BY t.id
             ORDER BY booking_count DESC;
         """)
@@ -113,7 +105,7 @@ def refresh_tour_highlights():
         print("[INFO] Refreshing tour_highlights table...")
         
         # Recreate the table with updated data
-        # Only include tours that have at least one available schedule
+        # Include all published and active tours (even if all schedules are completed)
         cur.execute("DROP TABLE IF EXISTS tour_highlights CASCADE;")
         
         cur.execute("""
@@ -126,14 +118,6 @@ def refresh_tour_highlights():
                 AND b.status IN ('confirmed', 'completed')
             WHERE t.is_active = TRUE 
                 AND t.is_published = TRUE
-                AND EXISTS (
-                    SELECT 1 FROM tour_schedules ts 
-                    WHERE ts.tour_id = t.id 
-                    AND ts.is_active = TRUE 
-                    AND ts.departure_datetime > NOW()
-                    AND ts.slots_available > 0
-                    AND ts.status NOT IN ('completed', 'cancelled')
-                )
             GROUP BY t.id
             ORDER BY booking_count DESC;
         """)
