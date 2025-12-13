@@ -378,7 +378,8 @@ export default function SocialPage() {
               <img
                 src={post.image}
                 alt={post.caption}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover max-w-full max-h-full"
+                style={{ maxWidth: '100%', maxHeight: '100%' }}
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                 <div className="flex items-center gap-4 text-white">
@@ -537,13 +538,14 @@ export default function SocialPage() {
       <Dialog open={showPostDialog} onOpenChange={setShowPostDialog}>
         <DialogContent className={`!max-w-[1100px] !w-[85vw] !max-h-[80vh] !p-0 !gap-0 bg-white dark:bg-gray-900 overflow-hidden !border-gray-200 dark:!border-gray-700 rounded-xl !left-[50%] !top-[calc(50%+2rem)] !translate-x-[-50%] !translate-y-[-50%] transition-all duration-300 ${isSidebarCollapsed ? 'lg:!left-[calc(50%+2.5rem)] xl:!left-[calc(50%+2.5rem)]' : 'lg:!left-[calc(50%+2.5rem)] xl:!left-[calc(50%+8rem)]'}`}>
           {selectedPost && (
-            <div className="grid md:grid-cols-[2fr_1fr] h-[80vh]">
+            <div className="grid md:grid-cols-[2fr_1fr] h-[80vh] max-h-[80vh]">
               {/* Image Side */}
-              <div className="relative bg-black dark:bg-gray-900 flex items-center justify-center">
+              <div className="relative bg-black dark:bg-gray-900 flex items-center justify-center overflow-hidden h-full max-h-full">
                 <img
                   src={selectedPost.image}
                   alt={selectedPost.caption}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain max-w-full max-h-full"
+                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                 />
               </div>
               

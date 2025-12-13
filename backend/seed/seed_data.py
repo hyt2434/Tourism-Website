@@ -3748,25 +3748,25 @@ def ensure_tables_for_seed():
         ensure_base_tables()
             
         # Partner services tables (needed by tours)
-            create_partner_service_tables()
+        create_partner_service_tables()
             
         # Tour tables (depend on cities/users and partner services)
-            create_tour_tables()
+        create_tour_tables()
             
         # Remaining core tables (bookings, favorites, social, etc.)
-            create_tables()
+        create_tables()
             
         # Tour reviews table (depends on bookings)
-            create_tour_reviews_table()
+        create_tour_reviews_table()
             
         # Initialize cities data if missing
-            init_cities()
+        init_cities()
         
         # Create social_hashtag table and update posts table
         try:
             create_social_hashtag_table()
             update_posts_table()
-    except Exception as e:
+        except Exception as e:
             print(f"⚠️  Warning: Could not create social_hashtag table: {e}")
         
         # Add new columns to posts table

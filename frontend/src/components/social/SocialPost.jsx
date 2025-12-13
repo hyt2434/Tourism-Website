@@ -175,11 +175,12 @@ export default function SocialPost({
         </div>
 
         {/* Post Image */}
-        <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-900">
+        <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-900 overflow-hidden">
           <ImageWithFallback
             src={post.image}
             alt={post.caption}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover max-w-full max-h-full"
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
           />
           {post.status === "pending" && (
             <div className="absolute top-3 right-3">
