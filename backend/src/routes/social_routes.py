@@ -383,10 +383,12 @@ def list_posts():
                 FROM comments c
                 LEFT JOIN users u2 ON c.author_id = u2.id
                 WHERE c.post_id = p.id
+                    AND c.deleted_at IS NULL
                     AND EXISTS (
                         SELECT 1 FROM posts p_check 
                         WHERE p_check.id = c.post_id 
                             AND (p_check.deleted_at_tour_reviews IS NULL AND p_check.deleted_at_service_reviews IS NULL)
+                            AND p_check.deleted_at IS NULL
                     )
             ) as comments,
             (
@@ -398,6 +400,7 @@ def list_posts():
         FROM posts p
         LEFT JOIN users u ON p.author_id = u.id
         WHERE (p.deleted_at_tour_reviews IS NULL AND p.deleted_at_service_reviews IS NULL)
+            AND p.deleted_at IS NULL
         ORDER BY p.created_at DESC
         """
     )
@@ -466,6 +469,8 @@ def search_posts():
                 LEFT JOIN comments c ON c.post_id = p_base.id
                 LEFT JOIN users u2 ON c.author_id = u2.id
                 WHERE (p_base.deleted_at_tour_reviews IS NULL AND p_base.deleted_at_service_reviews IS NULL)
+                    AND p_base.deleted_at IS NULL
+                    AND c.deleted_at IS NULL
                 GROUP BY c.post_id
             ),
             post_tags_data AS (
@@ -503,28 +508,36 @@ def search_posts():
             LEFT JOIN post_comments pc ON pc.post_id = p.id
             LEFT JOIN post_tags_data ptd ON ptd.post_id = p.id
             WHERE (p.deleted_at_tour_reviews IS NULL AND p.deleted_at_service_reviews IS NULL)
+                AND p.deleted_at IS NULL
         """
 
         if query.startswith('#'):
-            # Search by hashtag
+            # Search by hashtag - search in hashtags column in posts table
             tag = query[1:]  # Remove the # symbol
             if not tag.strip():  # If only '#' was entered
                 return jsonify([])
                 
             sql = base_sql + """
-                WHERE EXISTS (
-                    SELECT 1 FROM post_tags pt2
-                    JOIN tags t ON t.id = pt2.tag_id
-                    WHERE pt2.post_id = p.id
-                    AND LOWER(t.name) LIKE %s
+                AND (
+                    EXISTS (
+                        SELECT 1 FROM unnest(p.hashtags) AS hashtag
+                        WHERE LOWER(hashtag) LIKE %s
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM post_tags pt2
+                        JOIN tags t ON t.id = pt2.tag_id
+                        WHERE pt2.post_id = p.id
+                        AND LOWER(t.name) LIKE %s
+                    )
                 )
                 ORDER BY p.created_at DESC
             """
-            cur.execute(sql, (f"%{tag.strip()}%",))
+            search_pattern = f"%{tag.strip()}%"
+            cur.execute(sql, (search_pattern, search_pattern))
         else:
             # Search in post content
             sql = base_sql + """
-                WHERE LOWER(p.content) LIKE %s
+                AND LOWER(p.content) LIKE %s
                 ORDER BY p.created_at DESC
             """
             cur.execute(sql, (f"%{query}%",))
@@ -711,6 +724,7 @@ def get_post(post_id):
         LEFT JOIN users u ON p.author_id = u.id 
         WHERE p.id = %s
             AND (p.deleted_at_tour_reviews IS NULL AND p.deleted_at_service_reviews IS NULL)
+            AND p.deleted_at IS NULL
         """,
         (post_id,)
     )
@@ -731,6 +745,7 @@ def get_post(post_id):
         FROM comments c 
         LEFT JOIN users u ON c.author_id = u.id 
         WHERE c.post_id = %s 
+            AND c.deleted_at IS NULL
         ORDER BY c.created_at ASC
         """, 
         (post_id,)
@@ -781,6 +796,7 @@ def add_comment(post_id):
         SELECT id FROM posts 
         WHERE id = %s 
             AND (deleted_at_tour_reviews IS NULL AND deleted_at_service_reviews IS NULL)
+            AND deleted_at IS NULL
     """, (post_id,))
     if not cur.fetchone():
         cur.close()
@@ -1260,6 +1276,127 @@ def auto_post_from_reviews():
     except Exception as e:
         conn.rollback()
         print(f"Error auto-posting from reviews: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+@social_routes.route('/posts/<int:post_id>', methods=['DELETE'])
+def delete_post(post_id):
+    """Soft delete a post (admin only)"""
+    try:
+        # Get user role from header
+        user_role = request.headers.get('X-User-Role', 'client')
+        user_id = request.headers.get('X-User-ID')
+        
+        if user_role != 'admin':
+            return jsonify({"error": "Only admins can delete posts"}), 403
+        
+        if not user_id:
+            return jsonify({"error": "User ID not found"}), 401
+        
+        conn = get_connection()
+        if conn is None:
+            return jsonify({"error": "Database connection failed."}), 500
+        
+        cur = conn.cursor()
+        
+        # Soft delete the post
+        cur.execute("""
+            UPDATE posts 
+            SET deleted_at = CURRENT_TIMESTAMP, deleted_by = %s
+            WHERE id = %s AND deleted_at IS NULL
+            RETURNING id
+        """, (int(user_id), post_id))
+        
+        result = cur.fetchone()
+        if not result:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Post not found or already deleted"}), 404
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"success": True, "message": "Post deleted successfully"}), 200
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"Error deleting post: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+@social_routes.route('/posts/<int:post_id>/comments/<int:comment_id>', methods=['DELETE'])
+def delete_comment(post_id, comment_id):
+    """Soft delete a comment (admin only)"""
+    try:
+        # Get user role from header
+        user_role = request.headers.get('X-User-Role', 'client')
+        user_id = request.headers.get('X-User-ID')
+        
+        if user_role != 'admin':
+            return jsonify({"error": "Only admins can delete comments"}), 403
+        
+        if not user_id:
+            return jsonify({"error": "User ID not found"}), 401
+        
+        conn = get_connection()
+        if conn is None:
+            return jsonify({"error": "Database connection failed."}), 500
+        
+        cur = conn.cursor()
+        
+        # Verify comment belongs to post
+        cur.execute("""
+            SELECT id FROM comments 
+            WHERE id = %s AND post_id = %s AND deleted_at IS NULL
+        """, (comment_id, post_id))
+        
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Comment not found or already deleted"}), 404
+        
+        # Soft delete the comment
+        cur.execute("""
+            UPDATE comments 
+            SET deleted_at = CURRENT_TIMESTAMP, deleted_by = %s
+            WHERE id = %s AND post_id = %s AND deleted_at IS NULL
+            RETURNING id
+        """, (int(user_id), comment_id, post_id))
+        
+        result = cur.fetchone()
+        if not result:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Failed to delete comment"}), 500
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"success": True, "message": "Comment deleted successfully"}), 200
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"Error deleting comment: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500

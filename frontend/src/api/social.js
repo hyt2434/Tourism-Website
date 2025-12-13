@@ -208,3 +208,53 @@ export const searchHashtags = async (query, limit = 20) => {
   return response.json();
 };
 
+/**
+ * Delete a post (admin only)
+ */
+export const deletePost = async (postId) => {
+  const user = getCurrentUser();
+  if (!user || !user.id) {
+    throw new Error('User must be logged in');
+  }
+
+  const headers = getAuthHeaders();
+  headers['X-User-Role'] = user.role || 'client';
+  headers['X-User-ID'] = user.id.toString();
+
+  const response = await fetch(`${API_BASE_URL}/api/social/posts/${postId}`, {
+    method: 'DELETE',
+    headers: headers,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete post');
+  }
+  return response.json();
+};
+
+/**
+ * Delete a comment (admin only)
+ */
+export const deleteComment = async (postId, commentId) => {
+  const user = getCurrentUser();
+  if (!user || !user.id) {
+    throw new Error('User must be logged in');
+  }
+
+  const headers = getAuthHeaders();
+  headers['X-User-Role'] = user.role || 'client';
+  headers['X-User-ID'] = user.id.toString();
+
+  const response = await fetch(`${API_BASE_URL}/api/social/posts/${postId}/comments/${commentId}`, {
+    method: 'DELETE',
+    headers: headers,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete comment');
+  }
+  return response.json();
+};
+

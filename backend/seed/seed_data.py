@@ -35,6 +35,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from migrate_social_hashtag import create_social_hashtag_table, update_posts_table
 from migrate_posts_table import add_posts_table_columns
+from migrate_social_soft_delete import add_social_soft_delete_columns
 
 bcrypt = Bcrypt()
 
@@ -3773,6 +3774,12 @@ def ensure_tables_for_seed():
             add_posts_table_columns()
         except Exception as e:
             print(f"⚠️  Warning: Could not add posts table columns: {e}")
+        
+        # Add soft delete columns to posts and comments
+        try:
+            add_social_soft_delete_columns()
+        except Exception as e:
+            print(f"⚠️  Warning: Could not add soft delete columns: {e}")
 
         print("✅ All tables created/verified for seed run.")
     except Exception as e:

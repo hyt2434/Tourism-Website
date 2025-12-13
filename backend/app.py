@@ -13,7 +13,7 @@ app.url_map.strict_slashes = False
 CORS(app, 
      resources={r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}},
      supports_credentials=True,
-     allow_headers=["Content-Type", "Authorization", "X-User-Email", "X-User-ID"],
+     allow_headers=["Content-Type", "Authorization", "X-User-Email", "X-User-ID", "X-User-Role"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 bcrypt = Bcrypt(app)
@@ -103,6 +103,14 @@ try:
         add_posts_table_columns()
     except Exception as e:
         print(f"[WARNING] Could not add posts table columns: {e}")
+    
+    # Add soft delete columns to posts and comments
+    try:
+        from migrate_social_soft_delete import add_social_soft_delete_columns
+        print("\n[INFO] Checking soft delete columns for posts and comments...")
+        add_social_soft_delete_columns()
+    except Exception as e:
+        print(f"[WARNING] Could not add soft delete columns: {e}")
 
 except Exception as e:
     print(f"[WARNING] Could not initialize database tables: {e}")

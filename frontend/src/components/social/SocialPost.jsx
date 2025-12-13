@@ -13,17 +13,17 @@ import {
   Heart,
   MessageCircle,
   Send,
-  Bookmark,
   MoreHorizontal,
   MapPin,
   Flag,
+  Trash2,
 } from "lucide-react";
 import ImageWithFallback from "../../figma/ImageWithFallback.jsx";
 import { useLanguage } from "../../context/LanguageContext";
 import CommentDialog from "./CommentDialog";
 import UserProfileDialog from "./UserProfileDialog";
 import { Link } from "react-router-dom";
-import { toggleLike } from "../../api/social";
+import { toggleLike, deletePost } from "../../api/social";
 import { useToast } from "../../context/ToastContext";
 
 export default function SocialPost({
@@ -34,12 +34,45 @@ export default function SocialPost({
   onLikeUpdate, // Callback to update parent state
 }) {
   const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const { translations } = useLanguage();
   const { toast } = useToast();
+
+  // Get current user to check if admin
+  const getCurrentUser = () => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
+  };
+
+  const currentUser = getCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
+
+  const handleDeletePost = async () => {
+    if (!window.confirm("Are you sure you want to delete this post?")) {
+      return;
+    }
+
+    try {
+      await deletePost(post.id);
+      toast.success("Post deleted successfully");
+      // Refresh posts by calling parent callback if available
+      if (onLikeUpdate) {
+        onLikeUpdate(post.id, false, true); // Pass delete flag
+      }
+      // Reload page or refresh posts list
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+      toast.error(error.message || "Failed to delete post");
+    }
+  };
 
   // Helper function to detect if text contains Vietnamese characters
   const containsVietnamese = (text) => {
@@ -128,6 +161,15 @@ export default function SocialPost({
                 <Flag className="w-4 h-4 mr-2" />
                 {translations.reportPost}
               </DropdownMenuItem>
+              {isAdmin && (
+                <DropdownMenuItem 
+                  onClick={handleDeletePost}
+                  className="cursor-pointer text-red-600 dark:text-red-400"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Post
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -186,20 +228,6 @@ export default function SocialPost({
                 <Send className="w-7 h-7 text-black dark:text-white" />
               </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-auto p-0 hover:bg-transparent hover:scale-110 transition-transform"
-              onClick={() => setSaved(!saved)}
-            >
-              <Bookmark
-                className={`w-7 h-7 transition-all ${
-                  saved
-                    ? "fill-current text-black dark:text-white scale-110"
-                    : "text-black dark:text-white"
-                }`}
-              />
-            </Button>
           </div>
 
           {/* Likes count */}

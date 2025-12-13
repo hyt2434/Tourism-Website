@@ -41,7 +41,7 @@ export default {
   // Bộ lọc
   quickSearch: "Tìm kiếm nhanh",
   searchTourDestination: "Tìm kiếm tour / điểm đến",
-  searchPlaceholder: "Nhập từ khóa...",
+  searchPlaceholder: "Nhập hashtags...",
 
   // Regions
   region: "Vùng miền",

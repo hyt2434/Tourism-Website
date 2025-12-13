@@ -4,7 +4,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Alert, AlertDescription } from "../ui/alert";
-import { Search, Check, Home, Plus, User, ShoppingBag, Heart, MessageCircle, Send, Bookmark, MoreHorizontal, MapPin, X, Smile, ChevronLeft } from "lucide-react";
+import { Search, Check, Home, Plus, User, ShoppingBag, Heart, MessageCircle, Send, MoreHorizontal, MapPin, X, Smile, ChevronLeft, Trash2 } from "lucide-react";
 import SocialPost from "./SocialPost";
 import CreatePostSection from "./CreatePostSection";
 import ReportDialog from "./ReportDialog";
@@ -12,7 +12,7 @@ import { Dialog, DialogContent } from "../ui/dialog";
 
 import BottomNavigation from "./BottomNavigation";
 import { useLanguage } from "../../context/LanguageContext";
-import { getPosts, searchPosts, toggleLike, addComment } from "../../api/social";
+import { getPosts, searchPosts, toggleLike, addComment, deletePost, deleteComment, getPost } from "../../api/social";
 import { useToast } from "../../context/ToastContext";
 
 /**
@@ -83,7 +83,6 @@ export default function SocialPage() {
   const [showPostDialog, setShowPostDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [comment, setComment] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [posts, setPosts] = useState([]);
@@ -93,6 +92,20 @@ export default function SocialPage() {
 
   const { translations } = useLanguage();
   const { toast } = useToast();
+
+  // Get current user to check if admin
+  const getCurrentUser = () => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
+  };
+
+  const currentUser = getCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
 
   // Fetch posts on mount
   useEffect(() => {
@@ -152,6 +165,45 @@ export default function SocialPage() {
     setShowSubmitSuccess(true);
     setShowCreatePost(false);
     setTimeout(() => setShowSubmitSuccess(false), 3000);
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Are you sure you want to delete this post?")) {
+      return;
+    }
+
+    try {
+      await deletePost(postId);
+      toast.success("Post deleted successfully");
+      // Close dialog and refresh posts
+      setShowPostDialog(false);
+      setSelectedPost(null);
+      await fetchPosts();
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+      const errorMessage = error?.message || error?.error || "Failed to delete post";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) {
+      return;
+    }
+
+    try {
+      await deleteComment(commentId);
+      toast.success("Comment deleted successfully");
+      // Refresh post details to update comments
+      if (selectedPost?.id) {
+        const postData = await getPost(selectedPost.id);
+        setSelectedPost(transformPost(postData));
+      }
+    } catch (error) {
+      console.error("Failed to delete comment:", error);
+      const errorMessage = error?.message || error?.error || "Failed to delete comment";
+      toast.error(errorMessage);
+    }
   };
 
   // Generate uniform square grid pattern - memoized to prevent re-renders
@@ -287,7 +339,7 @@ export default function SocialPage() {
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <Input
-              placeholder={translations.searchPlaceholder || "Search posts, users, locations..."}
+              placeholder={translations.searchPlaceholder || "Search by hashtag (e.g., #Hanoi, #HaLongTour)..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 rounded-lg h-12"
@@ -447,9 +499,16 @@ export default function SocialPage() {
                       )}
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                  </Button>
+                  {isAdmin && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      onClick={() => handleDeletePost(selectedPost.id)}
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </Button>
+                  )}
                 </div>
 
                 {/* Caption & Comments */}
@@ -488,13 +547,27 @@ export default function SocialPage() {
                             {comment.author?.[0] || "U"}
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm">
-                              <span className="font-semibold mr-2 text-gray-900 dark:text-gray-100">{comment.author || "Unknown"}</span>
-                              <span className="text-gray-800 dark:text-gray-200">{comment.content}</span>
-                            </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {comment.created_at ? new Date(comment.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ""}
-                            </p>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <p className="text-sm">
+                                  <span className="font-semibold mr-2 text-gray-900 dark:text-gray-100">{comment.author || "Unknown"}</span>
+                                  <span className="text-gray-800 dark:text-gray-200">{comment.content}</span>
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {comment.created_at ? new Date(comment.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ""}
+                                </p>
+                              </div>
+                              {isAdmin && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0"
+                                  onClick={() => handleDeleteComment(comment.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))
@@ -528,14 +601,6 @@ export default function SocialPage() {
                         <Send className="w-7 h-7 text-gray-700 dark:text-gray-300" />
                       </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 hover:bg-transparent"
-                      onClick={() => setSaved(!saved)}
-                    >
-                      <Bookmark className={`w-7 h-7 ${saved ? "fill-current text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300"}`} />
-                    </Button>
                   </div>
 
                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">

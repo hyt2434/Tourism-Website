@@ -351,17 +351,17 @@ export default function PartnerPage() {
                   </Button>
                 </DialogTrigger>
 
-                <DialogContent className="!max-w-6xl w-[95vw] sm:w-[90vw] lg:w-[85vw] max-h-[80vh] !top-[52%] overflow-y-auto bg-white dark:bg-gray-800 backdrop-blur-2xl border-gray-200 dark:border-gray-700 rounded-3xl shadow-2xl p-10">
-                  <DialogHeader className="pb-2">
-                    <DialogTitle className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent text-center mb-4 leading-tight pb-1">
+                <DialogContent className="!max-w-5xl w-[95vw] sm:w-[90vw] lg:w-[80vw] max-h-[90vh] !top-[50%] !left-[50%] !translate-x-[-50%] !translate-y-[-50%] overflow-hidden bg-white dark:bg-gray-800 backdrop-blur-2xl border-gray-200 dark:border-gray-700 rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col">
+                  <DialogHeader className="pb-4 flex-shrink-0">
+                    <DialogTitle className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent text-center mb-2 leading-tight">
                       {t.partnerRegisterTitle}
                     </DialogTitle>
-                    <p className="text-gray-600 dark:text-gray-300 text-center text-lg md:text-xl">
+                    <p className="text-gray-600 dark:text-gray-300 text-center text-base md:text-lg">
                       {t.partnerRegisterSubtitle}
                     </p>
                   </DialogHeader>
 
-                  <div className="mt-6">
+                  <div className="mt-4 flex-1 overflow-y-auto pr-2 -mr-2">
                     {registrationStep === "selection" && (
                       <PartnerTypeSelection onSelectType={handleSelectType} />
                     )}

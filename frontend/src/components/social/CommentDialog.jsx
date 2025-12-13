@@ -3,9 +3,9 @@ import { Dialog, DialogContent } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { Heart, Smile } from "lucide-react";
+import { Heart, Smile, Trash2 } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
-import { getPost, addComment } from "../../api/social";
+import { getPost, addComment, deleteComment } from "../../api/social";
 import { useToast } from "../../context/ToastContext";
 
 // Get current user from localStorage
@@ -28,6 +28,23 @@ export default function CommentDialog({ open, onOpenChange, post }) {
   const { translations } = useLanguage();
   const { toast } = useToast();
   const currentUser = getCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) {
+      return;
+    }
+
+    try {
+      await deleteComment(post.id, commentId);
+      toast.success("Comment deleted successfully");
+      // Refresh comments
+      fetchPostDetails();
+    } catch (error) {
+      console.error("Failed to delete comment:", error);
+      toast.error(error.message || "Failed to delete comment");
+    }
+  };
 
   // Fetch post details when dialog opens
   useEffect(() => {
@@ -194,13 +211,25 @@ export default function CommentDialog({ open, onOpenChange, post }) {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-semibold text-black dark:text-white">
-                        {c.author || "Unknown"}
-                      </span>
-                      <span className="text-muted-foreground dark:text-gray-400 text-xs">
-                        {c.created_at ? new Date(c.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ""}
-                      </span>
+                    <div className="flex items-baseline gap-2 justify-between">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-semibold text-black dark:text-white">
+                          {c.author || "Unknown"}
+                        </span>
+                        <span className="text-muted-foreground dark:text-gray-400 text-xs">
+                          {c.created_at ? new Date(c.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ""}
+                        </span>
+                      </div>
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          onClick={() => handleDeleteComment(c.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                     <p className="text-black dark:text-white mt-1">{c.content}</p>
                   </div>

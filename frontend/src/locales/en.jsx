@@ -35,7 +35,7 @@ export default {
   filterTitle: "Search Filters",
   quickSearch: "Quick Search",
   searchTourDestination: "Search tour / destination",
-  searchPlaceholder: "Enter keywords...",
+  searchPlaceholder: "Enter hashtags...",
 
   // Regions
   region: "Region",

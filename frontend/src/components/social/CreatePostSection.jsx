@@ -7,7 +7,7 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/input";
 import { Alert, AlertDescription } from "../ui/alert";
-import { Image, MapPin, X, Camera, AlertCircle, Hash } from "lucide-react";
+import { Image, X, Camera, AlertCircle, Hash } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
 import { createPost, uploadImage, searchHashtags } from "../../api/social";
 import { useToast } from "../../context/ToastContext";
@@ -26,10 +26,9 @@ const getCurrentUser = () => {
 export default function CreatePostSection({ onSubmit }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [caption, setCaption] = useState("");
-  const [location, setLocation] = useState("");
   const [selectedHashtags, setSelectedHashtags] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
-  const [uploadedImageUrls, setUploadedImageUrls] = useState([]);
+  const [uploadedImageBase64, setUploadedImageBase64] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hashtagQuery, setHashtagQuery] = useState("");
   const [hashtagSuggestions, setHashtagSuggestions] = useState([]);
@@ -84,17 +83,23 @@ export default function CreatePostSection({ onSubmit }) {
     const previewUrls = files.map((file) => URL.createObjectURL(file));
     setSelectedImages([...selectedImages, ...previewUrls]);
 
-    // Upload images to server
+    // Convert images to base64
     try {
-      const uploadPromises = files.map(async (file) => {
-        const result = await uploadImage(file);
-        return result.url;
+      const base64Promises = files.map(async (file) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            resolve(reader.result); // This will be the base64 string
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
       });
-      const urls = await Promise.all(uploadPromises);
-      setUploadedImageUrls([...uploadedImageUrls, ...urls]);
+      const base64Images = await Promise.all(base64Promises);
+      setUploadedImageBase64([...uploadedImageBase64, ...base64Images]);
     } catch (error) {
-      console.error("Failed to upload image:", error);
-      toast.error("Failed to upload image");
+      console.error("Failed to convert image to base64:", error);
+      toast.error("Failed to process image");
       // Remove previews on error
       setSelectedImages(selectedImages.filter((_, i) => i < selectedImages.length));
     }
@@ -102,6 +107,7 @@ export default function CreatePostSection({ onSubmit }) {
 
   const handleRemoveImage = (index) => {
     setSelectedImages(selectedImages.filter((_, i) => i !== index));
+    setUploadedImageBase64(uploadedImageBase64.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -110,7 +116,7 @@ export default function CreatePostSection({ onSubmit }) {
       return;
     }
 
-    if (!caption.trim() && uploadedImageUrls.length === 0) {
+    if (!caption.trim() && uploadedImageBase64.length === 0) {
       toast.error("Please add a caption or image");
       return;
     }
@@ -118,12 +124,8 @@ export default function CreatePostSection({ onSubmit }) {
     try {
       setIsSubmitting(true);
       
-      // Combine caption with hashtags
-      const hashtagText = selectedHashtags.map(tag => tag.startsWith('#') ? tag : `#${tag}`).join(' ');
-      const fullContent = [caption, hashtagText, location ? `📍 ${location}` : ''].filter(Boolean).join('\n');
-
-      // Use first uploaded image URL (or empty if none)
-      const imageUrl = uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : null;
+      // Use first uploaded image as base64 (or empty if none)
+      const imageUrl = uploadedImageBase64.length > 0 ? uploadedImageBase64[0] : null;
 
       await createPost({
         content: caption,
@@ -136,10 +138,9 @@ export default function CreatePostSection({ onSubmit }) {
       
       // Reset form
       setCaption("");
-      setLocation("");
       setSelectedHashtags([]);
       setSelectedImages([]);
-      setUploadedImageUrls([]);
+      setUploadedImageBase64([]);
       setHashtagQuery("");
       setHashtagSuggestions([]);
       setShowSuggestions(false);
@@ -154,7 +155,6 @@ export default function CreatePostSection({ onSubmit }) {
 
   const handleCancel = () => {
     setCaption("");
-    setLocation("");
     setSelectedHashtags([]);
     setSelectedImages([]);
     setIsExpanded(false);
@@ -298,19 +298,6 @@ export default function CreatePostSection({ onSubmit }) {
           )}
         </div>
 
-        {/* Location */}
-        <div className="space-y-2">
-          <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
-            <Input
-              placeholder={translations.addLocation || "Add location..."}
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="pl-10 bg-gray-50 dark:bg-gray-900/50 text-black dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 border-gray-200 dark:border-gray-700 rounded-xl h-12 focus-visible:ring-1 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
-            />
-          </div>
-        </div>
-
         {/* Hashtags with Autocomplete */}
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-black dark:text-white">
@@ -409,7 +396,7 @@ export default function CreatePostSection({ onSubmit }) {
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={(!caption.trim() && uploadedImageUrls.length === 0) || isSubmitting}
+            disabled={(!caption.trim() && uploadedImageBase64.length === 0) || isSubmitting}
             className="flex-1 bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white border-0 shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed h-10 rounded-xl font-semibold"
           >
             {isSubmitting ? (translations.posting || "Posting...") : (translations.post || "Post")}
