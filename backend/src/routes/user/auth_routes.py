@@ -6,6 +6,12 @@ import random
 import string
 from datetime import datetime, timedelta
 from config.database import get_connection
+from src.services.email_service import (
+    send_welcome_email,
+    send_password_reset_email,
+    send_password_changed_email,
+    send_account_status_changed_email
+)
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
@@ -253,6 +259,12 @@ def register():
 
     cur.close()
     conn.close()
+    
+    # Send welcome email
+    try:
+        send_welcome_email(email, username)
+    except Exception as e:
+        print(f"⚠️ Failed to send welcome email: {e}")
     
     return jsonify({
         "message": "Successfully registered.",
@@ -793,9 +805,18 @@ def change_password():
             UPDATE users
             SET password = %s
             WHERE email = %s
+            RETURNING username
         """, (hashed_pw, email))
         
+        user = cur.fetchone()
         conn.commit()
+        
+        # Send password changed confirmation email
+        if user:
+            try:
+                send_password_changed_email(email, user[0])
+            except Exception as e:
+                print(f"⚠️ Failed to send password changed email: {e}")
         
         return jsonify({"message": "Password changed successfully"}), 200
     
@@ -909,13 +930,17 @@ def forgot_password():
             'user_id': user[0]
         }
         
-        # In production, send email here
-        # For now, we'll just log it (or you can integrate an email service)
+        # Send password reset email
+        try:
+            send_password_reset_email(email, reset_code)
+            print(f"✅ Password reset email sent to {email}")
+        except Exception as e:
+            print(f"⚠️ Failed to send password reset email: {e}")
+            # Still return success for security (don't reveal if email exists)
+        
+        # In development, also log the code (remove in production)
         print(f"🔐 Password reset code for {email}: {reset_code}")
         print(f"   Expires at: {reset_codes[email]['expires_at']}")
-        
-        # TODO: Send email with reset code
-        # send_reset_email(email, reset_code)
         
         return jsonify({
             "message": "Reset code sent to your email. Please check your inbox.",
@@ -1121,6 +1146,13 @@ def update_user_status(user_id):
                 raise e
         
         conn.commit()
+        
+        # Send account status change email
+        try:
+            reason = data.get("reason")  # Optional reason from request
+            send_account_status_changed_email(user[2], user[1], status, reason)
+        except Exception as e:
+            print(f"⚠️ Failed to send account status change email: {e}")
         
         return jsonify({
             "message": f"User {'banned' if status == 'banned' else 'unbanned'} successfully",

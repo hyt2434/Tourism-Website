@@ -1,6 +1,10 @@
 from flask import Blueprint, request, jsonify
 from config.database import get_connection
 from datetime import datetime
+from src.services.email_service import (
+    send_tour_schedule_cancelled_email,
+    send_booking_cancellation_email
+)
 
 schedule_status_routes = Blueprint('schedule_status', __name__)
 
@@ -379,7 +383,51 @@ def cancel_tour_schedule(schedule_id):
             
             cancelled_bookings = cur.fetchall()
             
+            # Get tour name
+            cur.execute("SELECT name FROM tours_admin WHERE id = %s", (tour_id,))
+            tour_result = cur.fetchone()
+            tour_name = tour_result[0] if tour_result else "Tour"
+            
+            # Get schedule departure date
+            cur.execute("SELECT departure_datetime FROM tour_schedules WHERE id = %s", (schedule_id,))
+            schedule_date_result = cur.fetchone()
+            departure_date = schedule_date_result[0].strftime('%Y-%m-%d') if schedule_date_result and schedule_date_result[0] else "N/A"
+            
             conn.commit()
+            
+            # Send cancellation emails to all affected customers
+            for booking_row in cancelled_bookings:
+                booking_id = booking_row[0]
+                
+                # Get booking details
+                cur.execute("""
+                    SELECT b.id, b.full_name, b.email, b.total_price, b.departure_date
+                    FROM bookings b
+                    WHERE b.id = %s
+                """, (booking_id,))
+                booking = cur.fetchone()
+                
+                if booking:
+                    booking_data = {
+                        'booking_id': booking[0],
+                        'full_name': booking[1],
+                        'tour_name': tour_name,
+                        'departure_date': departure_date,
+                        'total_price': float(booking[3]) if booking[3] else 0
+                    }
+                    
+                    # Send tour schedule cancelled email
+                    try:
+                        send_tour_schedule_cancelled_email(
+                            booking[2],  # customer email
+                            booking_data
+                        )
+                        print(f"✅ Tour schedule cancellation email sent to {booking[2]}")
+                    except Exception as e:
+                        print(f"⚠️ Failed to send cancellation email to {booking[2]}: {e}")
+            
+            cur.close()
+            conn.close()
             
             return jsonify({
                 'success': True,

@@ -2,6 +2,13 @@ from flask import Blueprint, request, jsonify
 from config.database import get_connection
 from datetime import datetime
 import json
+import os
+from src.services.email_service import (
+    send_booking_confirmation_email,
+    send_booking_cancellation_email,
+    send_tour_schedule_cancelled_email,
+    send_payment_success_email
+)
 
 booking_routes = Blueprint('bookings', __name__)
 
@@ -326,6 +333,45 @@ def create_booking():
                 print(f"  Breakdown: Accommodation={accommodation_revenue:,.0f}, Restaurant={restaurant_revenue:,.0f}, Transportation={transportation_revenue:,.0f}")
             
             conn.commit()
+            
+            # Get tour name for email
+            cur.execute("SELECT name FROM tours_admin WHERE id = %s", (tour_id,))
+            tour_result = cur.fetchone()
+            tour_name = tour_result[0] if tour_result else "Tour"
+            
+            # Prepare booking data for email
+            booking_data = {
+                'booking_id': booking_id,
+                'tour_name': tour_name,
+                'full_name': full_name,
+                'departure_date': departure_date.strftime('%Y-%m-%d') if isinstance(departure_date, datetime) else str(departure_date),
+                'return_date': return_date.strftime('%Y-%m-%d') if return_date and isinstance(return_date, datetime) else (str(return_date) if return_date else None),
+                'number_of_guests': number_of_guests,
+                'total_price': float(total_price),
+                'payment_method': payment_method,
+                'contact_email': os.getenv('FROM_EMAIL', 'support@tourism-website.com')
+            }
+            
+            # Send booking confirmation email
+            try:
+                send_booking_confirmation_email(email, booking_data)
+                print(f"✅ Booking confirmation email sent to {email}")
+            except Exception as e:
+                print(f"⚠️ Failed to send booking confirmation email: {e}")
+            
+            # Send payment success email
+            try:
+                payment_data = {
+                    'customer_name': full_name,
+                    'transaction_id': payment_intent_id or f"BOOKING-{booking_id}",
+                    'amount': float(total_price),
+                    'payment_method': payment_method,
+                    'payment_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                }
+                send_payment_success_email(email, payment_data)
+                print(f"✅ Payment success email sent to {email}")
+            except Exception as e:
+                print(f"⚠️ Failed to send payment success email: {e}")
             
             return jsonify({
                 'success': True,

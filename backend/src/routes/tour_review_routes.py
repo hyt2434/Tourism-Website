@@ -4,6 +4,10 @@ import jwt
 import os
 from functools import wraps
 from src.routes.social_routes import auto_post_from_tour_review, auto_post_from_service_review
+from src.services.email_service import (
+    send_review_submitted_email,
+    send_review_deleted_email
+)
 
 tour_review_routes = Blueprint('tour_review_routes', __name__)
 
@@ -390,6 +394,22 @@ def create_review():
                     # Don't fail the review creation if auto-posting fails
         
         conn.commit()
+        
+        # Get user email and username for email notification
+        cur.execute("SELECT email, username FROM users WHERE id = %s", (request.user_id,))
+        user_info = cur.fetchone()
+        
+        if user_info:
+            user_email = user_info[0]
+            username = user_info[1] if not is_anonymous else "User"
+            
+            # Send review submitted email
+            try:
+                send_review_submitted_email(user_email, username, "tour")
+                print(f"✅ Review submission email sent to {user_email}")
+            except Exception as e:
+                print(f"⚠️ Failed to send review submission email: {e}")
+        
         cur.close()
         conn.close()
         
@@ -538,7 +558,25 @@ def delete_review(review_id):
                 WHERE tour_reviews_id = %s
             """, (deleted_at, review_id))
         
+        # Get user email and username before closing connection
+        cur.execute("SELECT u.email, u.username FROM users u JOIN tour_reviews tr ON u.id = tr.user_id WHERE tr.id = %s", (review_id,))
+        user_info = cur.fetchone()
+        
         conn.commit()
+        
+        # Send review deleted email notification
+        if user_info:
+            user_email = user_info[0]
+            username = user_info[1]
+            
+            try:
+                # Get deletion reason if admin deleted it
+                reason = request.json.get('reason') if request.is_json else None
+                send_review_deleted_email(user_email, username, reason)
+                print(f"✅ Review deletion email sent to {user_email}")
+            except Exception as e:
+                print(f"⚠️ Failed to send review deletion email: {e}")
+        
         cur.close()
         conn.close()
         
@@ -595,7 +633,30 @@ def delete_service_review(service_review_id):
                 WHERE service_reviews_id = %s
             """, (deleted_at, service_review_id))
         
+        # Get user email and username before closing connection
+        cur.execute("""
+            SELECT u.email, u.username 
+            FROM users u 
+            JOIN service_reviews sr ON u.id = sr.user_id 
+            WHERE sr.id = %s
+        """, (service_review_id,))
+        user_info = cur.fetchone()
+        
         conn.commit()
+        
+        # Send review deleted email notification
+        if user_info:
+            user_email = user_info[0]
+            username = user_info[1]
+            
+            try:
+                # Get deletion reason if admin deleted it
+                reason = request.json.get('reason') if request.is_json else None
+                send_review_deleted_email(user_email, username, reason)
+                print(f"✅ Service review deletion email sent to {user_email}")
+            except Exception as e:
+                print(f"⚠️ Failed to send service review deletion email: {e}")
+        
         cur.close()
         conn.close()
         
