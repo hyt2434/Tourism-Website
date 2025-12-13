@@ -26,6 +26,9 @@ export default function PartnerDetail() {
   });
 
   useEffect(() => {
+    // Scroll to top when component mounts or id changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     const fetchDetail = async () => {
       try {
         const res = await getPartnerDetail(id);
@@ -229,27 +232,27 @@ export default function PartnerDetail() {
         </div>
 
         {/* About Section */}
-        <section className="bg-white/70 backdrop-blur-xl rounded-3xl p-8 md:p-10 shadow-xl border border-white/20 mb-8">
-          <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
+        <section className="bg-white/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
             About {partner.name}
           </h2>
           
-          <div className="space-y-4">
-            <p className="text-gray-700 leading-relaxed text-lg">
+          <div className="space-y-3 sm:space-y-4">
+            <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
               {partner.name} has been one of our trusted travel partners, providing guests with exceptional
               service, comfort, and unforgettable experiences. Whether you're exploring Vietnam's
               breathtaking landscapes or relaxing at a seaside resort, {partner.name} ensures every trip is memorable.
             </p>
 
             {/* Success metrics */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6 mt-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 p-2.5 flex-shrink-0">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 mt-4 sm:mt-6">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 p-2 sm:p-2.5 flex-shrink-0">
                   <TrendingUp className="w-full h-full text-white" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-green-800 mb-2">Partnership Success Story</h3>
-                  <p className="text-green-700 leading-relaxed">{partner.benefit}</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base sm:text-lg font-bold text-green-800 mb-1 sm:mb-2">Partnership Success Story</h3>
+                  <p className="text-sm sm:text-base text-green-700 leading-relaxed">{partner.benefit}</p>
                 </div>
               </div>
             </div>
@@ -257,28 +260,28 @@ export default function PartnerDetail() {
         </section>
 
         {/* Available Tours Section */}
-        <section className="bg-white/70 backdrop-blur-xl rounded-3xl p-8 md:p-10 shadow-xl border border-white/20 mb-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
+        <section className="bg-white/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
               Available Tours
             </h2>
-            <Button variant="outline" className="border-2">
+            <Button variant="outline" className="border-2 text-sm sm:text-base w-full sm:w-auto">
               View All
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-2" />
             </Button>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {data.tours.length === 0 && (
               <div className="text-gray-500">No tours linked to this partner yet.</div>
             )}
             {data.tours.map((tour) => (
               <div 
                 key={tour.tour_id} 
-                className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]"
+                className="group bg-white rounded-xl sm:rounded-2xl overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]"
               >
                 {/* Tour Image */}
-                <div className="relative overflow-hidden h-48">
+                <div className="relative overflow-hidden h-40 sm:h-48">
                   <img
                     src={tour.image_url || `https://source.unsplash.com/600x400/?travel,vietnam,${tour.tour_id}`}
                     alt={tour.name}
@@ -287,46 +290,46 @@ export default function PartnerDetail() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   
                   {/* Badges */}
-                  <div className="absolute top-3 left-3 flex gap-2">
-                    <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  <div className="absolute top-2 sm:top-3 left-2 sm:left-3 flex gap-1.5 sm:gap-2">
+                    <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
                       Featured
                     </span>
                   </div>
                   
-                  <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-                    <div>
-                      <h3 className="text-white font-bold text-lg">{tour.name}</h3>
-                      <p className="text-white/90 text-sm flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {tour.duration || t?.tourDuration || "Flexible"}
+                  <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 flex items-end justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-white font-bold text-base sm:text-lg truncate">{tour.name}</h3>
+                      <p className="text-white/90 text-xs sm:text-sm flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                        <span className="truncate">{tour.duration || t?.tourDuration || "Flexible"}</span>
                       </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Tour Details */}
-                <div className="p-5 space-y-4">
-                  <p className="text-gray-600 text-sm leading-relaxed">
+                <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
+                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
                     {t?.partnerToursCompleted || "Completed bookings"}: {tour.completed_bookings}
                   </p>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                    <div>
-                      <p className="text-xs text-gray-500">{t?.startingFrom || "Starting from"}</p>
-                      <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-gray-200">
+                    <div className="w-full sm:w-auto">
+                      <p className="text-[10px] sm:text-xs text-gray-500">{t?.startingFrom || "Starting from"}</p>
+                      <p className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                         {tour.price_per_person ? (
                           <>
                             {tour.price_per_person.toLocaleString('vi-VN')} ₫
-                            <span className="text-xs font-normal text-gray-500 ml-1">/person</span>
+                            <span className="text-[10px] sm:text-xs font-normal text-gray-500 ml-1">/person</span>
                           </>
                         ) : (
                           t?.contactForPrice || "Contact"
                         )}
                       </p>
                     </div>
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg" onClick={() => window.location.href = `/tours/${tour.tour_id}`}>
+                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg text-xs sm:text-sm w-full sm:w-auto" onClick={() => window.location.href = `/tours/${tour.tour_id}`}>
                       {t?.bookNow || "Book Now"}
-                      <ArrowRight className="w-4 h-4 ml-2" />
+                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1.5 sm:ml-2" />
                     </Button>
                   </div>
                 </div>
@@ -336,16 +339,16 @@ export default function PartnerDetail() {
         </section>
 
         {/* Reviews Section */}
-        <section className="bg-white/70 backdrop-blur-xl rounded-3xl p-8 md:p-10 shadow-xl border border-white/20 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
+        <section className="bg-white/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 mb-6 sm:mb-8">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
               {t?.reviews || "Service Reviews"}
             </h2>
           </div>
           {data.reviews.length === 0 ? (
-            <p className="text-gray-500">{t?.noReviews || "No reviews yet."}</p>
+            <p className="text-sm sm:text-base text-gray-500">{t?.noReviews || "No reviews yet."}</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {data.reviews.map((rev) => (
                 <div 
                   key={rev.id} 
@@ -353,45 +356,45 @@ export default function PartnerDetail() {
                     setSelectedReview(rev);
                     setShowDetailPanel(true);
                   }}
-                  className="border border-gray-200 rounded-2xl p-4 bg-white shadow-sm hover:shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.02] group relative"
+                  className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 bg-white shadow-sm hover:shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.02] group relative"
                 >
                   {/* Admin Delete Button */}
                   {isAdmin && (
                     <button
                       onClick={(e) => handleDeleteServiceReview(rev.id, e)}
                       disabled={deletingId === rev.id}
-                      className="absolute top-4 right-4 p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg transition-colors z-10 disabled:opacity-50"
+                      className="absolute top-2 sm:top-3 right-2 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-md sm:rounded-lg transition-colors z-10 disabled:opacity-50"
                       title="Delete service review"
                     >
-                      <Trash2 size={18} className={deletingId === rev.id ? 'animate-pulse' : ''} />
+                      <Trash2 size={16} className={`sm:w-[18px] sm:h-[18px] ${deletingId === rev.id ? 'animate-pulse' : ''}`} />
                     </button>
                   )}
                   {/* Tour Info */}
-                  <div className="mb-3 pb-3 border-b border-gray-200">
-                    <div className="flex items-center gap-2 mb-1">
-                      <MapPin className="w-4 h-4 text-blue-600" />
-                      <h4 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{rev.tour_name || "Tour"}</h4>
+                  <div className="mb-2 sm:mb-3 pb-2 sm:pb-3 border-b border-gray-200 pr-8 sm:pr-10 md:pr-12">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                      <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
+                      <h4 className="font-semibold text-sm sm:text-base text-gray-900 group-hover:text-blue-600 transition-colors truncate">{rev.tour_name || "Tour"}</h4>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <Calendar className="w-3 h-3" />
-                      <span>{rev.created_at ? new Date(rev.created_at).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-gray-500">
+                      <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                      <span className="truncate">{rev.created_at ? new Date(rev.created_at).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
                     </div>
                   </div>
 
                   {/* User Info */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4 text-blue-600" />
+                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">{rev.username || "Anonymous"}</span>
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">{rev.username || "Anonymous"}</span>
                   </div>
 
                   {/* Service Review */}
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-gray-900">{rev.service_name || "Service"}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  <div className="bg-gray-50 rounded-lg p-2.5 sm:p-3">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                        <span className="font-medium text-xs sm:text-sm text-gray-900 truncate">{rev.service_name || "Service"}</span>
+                        <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium flex-shrink-0 ${
                           rev.service_type === 'accommodation' ? 'bg-blue-100 text-blue-700' :
                           rev.service_type === 'restaurant' ? 'bg-orange-100 text-orange-700' :
                           'bg-green-100 text-green-700'
@@ -401,20 +404,20 @@ export default function PartnerDetail() {
                            'Transportation'}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`w-3 h-3 ${i < (rev.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
+                          <Star key={i} className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${i < (rev.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
                         ))}
                       </div>
                     </div>
                     {rev.review_text && (
-                      <p className="text-sm text-gray-600 line-clamp-2">{rev.review_text}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{rev.review_text}</p>
                     )}
                   </div>
 
                   {/* Click hint */}
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <p className="text-xs text-blue-600 text-center group-hover:underline">Click to view details</p>
+                  <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200">
+                    <p className="text-[10px] sm:text-xs text-blue-600 text-center group-hover:underline">Click to view details</p>
                   </div>
                 </div>
               ))}

@@ -29,6 +29,9 @@ export default function PartnerManagePage() {
 
 
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     // Check if user is a partner
     const currentUser = localStorage.getItem("user");
     if (currentUser) {
@@ -105,6 +108,11 @@ export default function PartnerManagePage() {
     };
     return typeMap[partnerType] || partnerType;
   };
+
+  // Scroll to top when view changes - must be before any conditional returns
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentView]);
 
   if (loading) {
     return (
