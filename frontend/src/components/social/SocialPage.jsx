@@ -35,6 +35,20 @@ const transformPost = (apiPost) => {
     return date.toLocaleDateString('vi-VN');
   };
 
+  // Helper function to detect if text contains Vietnamese characters
+  const containsVietnamese = (text) => {
+    if (!text) return false;
+    // Vietnamese characters include: àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ
+    const vietnameseRegex = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/;
+    return vietnameseRegex.test(text);
+  };
+
+  // Use content column from posts table
+  const content = apiPost.content || "";
+  
+  const isVietnamese = containsVietnamese(content);
+  const isEnglish = !isVietnamese && content.length > 0;
+
   return {
     id: apiPost.id,
     user: {
@@ -44,13 +58,16 @@ const transformPost = (apiPost) => {
       avatar: "",
     },
     image: apiPost.image_url || "",
-    caption: apiPost.content || "",
-    hashtags: (apiPost.tags || []).map(tag => `#${tag}`),
+    caption: content,
+    hashtags: apiPost.hashtags || [], // Use hashtags array directly from API
     likes: apiPost.like_count || 0,
     comments: apiPost.comment_count || 0,
     timestamp: formatTimeAgo(apiPost.created_at),
     location: "",
     status: "approved",
+    // Language detection
+    isVietnamese,
+    isEnglish,
     // Store original API data for API calls
     _apiData: apiPost,
   };
@@ -137,34 +154,17 @@ export default function SocialPage() {
     setTimeout(() => setShowSubmitSuccess(false), 3000);
   };
 
-  // Generate random layout pattern - memoized to prevent re-renders
+  // Generate uniform square grid pattern - memoized to prevent re-renders
   const gridPattern = useMemo(() => {
     const postsToUse = activeTab === "search" ? searchResults : posts;
     if (postsToUse.length === 0) return [];
     
-    const patterns = [];
-    let index = 0;
-    
-    while (index < postsToUse.length) {
-      const rand = Math.random();
-      
-      if (rand < 0.2 && index < postsToUse.length) {
-        // 20% chance: Vertical rectangle (tall, spans 2 rows)
-        patterns.push({ type: 'rect-tall', span: 2, posts: [postsToUse[index]] });
-        index += 1;
-      } else if (rand < 0.35 && index + 1 < postsToUse.length) {
-        // 15% chance: Two squares side by side
-        patterns.push({ type: 'square', span: 1, posts: [postsToUse[index]] });
-        patterns.push({ type: 'square', span: 1, posts: [postsToUse[index + 1]] });
-        index += 2;
-      } else {
-        // 65% chance: Regular square
-        patterns.push({ type: 'square', span: 1, posts: [postsToUse[index]] });
-        index += 1;
-      }
-    }
-    
-    return patterns;
+    // All posts are displayed as uniform squares
+    return postsToUse.map(post => ({
+      type: 'square',
+      span: 1,
+      posts: [post]
+    }));
   }, [posts, searchResults, activeTab]);
 
   const handleServiceClick = (serviceName) => {
@@ -244,7 +244,7 @@ export default function SocialPage() {
 
   const renderGrid = (posts) => {
     return (
-      <div className="grid grid-cols-3 gap-1 auto-rows-[180px] p-1">
+      <div className="grid grid-cols-4 gap-4 p-5">
         {gridPattern.map((pattern, idx) => {
           const post = pattern.posts[0];
           if (!post) return null;
@@ -252,9 +252,8 @@ export default function SocialPage() {
           return (
             <div
               key={`${post.id}-${idx}`}
-              className={`relative cursor-pointer group overflow-hidden ${
-                pattern.type === 'rect-tall' ? 'col-span-1 row-span-2' : 'col-span-1 row-span-1'
-              }`}
+              className="relative cursor-pointer group overflow-hidden w-full"
+              style={{ aspectRatio: '1 / 1' }}
               onClick={() => handlePostClick(post)}
             >
               <img
@@ -463,15 +462,19 @@ export default function SocialPage() {
                     <div className="flex-1">
                       <p className="text-sm">
                         <span className="font-semibold mr-2 text-gray-900 dark:text-gray-100">{selectedPost?.user?.username}</span>
-                        <span className="text-gray-800 dark:text-gray-200">{selectedPost.caption}</span>
+                        <span className="text-gray-800 dark:text-gray-200">
+                          {selectedPost.caption || ""}
+                        </span>
                       </p>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {selectedPost.hashtags.map((tag, idx) => (
-                          <span key={idx} className="text-xs text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
+                      {selectedPost.hashtags && selectedPost.hashtags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {selectedPost.hashtags.map((tag, idx) => (
+                            <span key={idx} className="text-xs text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+                              {tag.startsWith('#') ? tag : `#${tag}`}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       <p className="text-xs text-gray-400 mt-2">{selectedPost.timestamp}</p>
                     </div>
                   </div>

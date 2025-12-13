@@ -502,13 +502,14 @@ def delete_review(review_id):
         user_role = cur.fetchone()
         is_admin = user_role and user_role[0] == 'admin'
         
+        deleted_at = None
         if is_admin:
             # Admin can soft delete any review
             cur.execute("""
                 UPDATE tour_reviews 
                 SET deleted_at = CURRENT_TIMESTAMP, deleted_by = %s
                 WHERE id = %s AND deleted_at IS NULL
-                RETURNING id
+                RETURNING id, deleted_at
             """, (request.user_id, review_id))
         else:
             # Regular user can only soft delete their own review
@@ -516,7 +517,7 @@ def delete_review(review_id):
                 UPDATE tour_reviews 
                 SET deleted_at = CURRENT_TIMESTAMP, deleted_by = %s
                 WHERE id = %s AND user_id = %s AND deleted_at IS NULL
-                RETURNING id
+                RETURNING id, deleted_at
             """, (request.user_id, review_id, request.user_id))
         
         result = cur.fetchone()
@@ -526,6 +527,16 @@ def delete_review(review_id):
             cur.close()
             conn.close()
             return jsonify({'success': False, 'message': 'Review not found or unauthorized'}), 404
+        
+        deleted_at = result[1] if result else None
+        
+        # Sync deleted_at to posts table
+        if deleted_at:
+            cur.execute("""
+                UPDATE posts 
+                SET deleted_at_tour_reviews = %s
+                WHERE tour_reviews_id = %s
+            """, (deleted_at, review_id))
         
         conn.commit()
         cur.close()
@@ -563,7 +574,7 @@ def delete_service_review(service_review_id):
             UPDATE service_reviews 
             SET deleted_at = CURRENT_TIMESTAMP, deleted_by = %s
             WHERE id = %s AND deleted_at IS NULL
-            RETURNING id
+            RETURNING id, deleted_at
         """, (request.user_id, service_review_id))
         
         result = cur.fetchone()
@@ -573,6 +584,16 @@ def delete_service_review(service_review_id):
             cur.close()
             conn.close()
             return jsonify({'success': False, 'message': 'Service review not found'}), 404
+        
+        deleted_at = result[1] if result else None
+        
+        # Sync deleted_at to posts table
+        if deleted_at:
+            cur.execute("""
+                UPDATE posts 
+                SET deleted_at_service_reviews = %s
+                WHERE service_reviews_id = %s
+            """, (deleted_at, service_review_id))
         
         conn.commit()
         cur.close()

@@ -5,8 +5,67 @@ import re
 import os
 import time
 from werkzeug.utils import secure_filename
+try:
+    from unidecode import unidecode
+except ImportError:
+    # Fallback if unidecode is not available
+    def unidecode(text):
+        return text
 
 social_routes = Blueprint('social_routes', __name__)
+
+
+def _detect_vietnamese(text):
+    """Check if text contains Vietnamese characters."""
+    if not text:
+        return False
+    vietnamese_regex = re.compile(r'[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]')
+    return bool(vietnamese_regex.search(text))
+
+
+def _separate_languages(text):
+    """
+    Separate text into English and Vietnamese parts.
+    Returns (en_text, vi_text) tuple.
+    """
+    if not text:
+        return ("", "")
+    
+    # Check if text contains Vietnamese
+    has_vietnamese = _detect_vietnamese(text)
+    
+    if has_vietnamese:
+        # Try to extract English and Vietnamese parts
+        # Simple approach: split by common patterns or assume all is Vietnamese if it contains Vietnamese chars
+        # For now, if it has Vietnamese, treat as Vietnamese; otherwise English
+        # This is a simple implementation - can be improved with better NLP
+        words = text.split()
+        en_words = []
+        vi_words = []
+        
+        for word in words:
+            if _detect_vietnamese(word):
+                vi_words.append(word)
+            else:
+                # Check if it's likely English (contains only ASCII letters)
+                if re.match(r'^[a-zA-Z0-9\s\.,!?;:\-\'"]+$', word):
+                    en_words.append(word)
+                else:
+                    vi_words.append(word)
+        
+        en_text = " ".join(en_words).strip() if en_words else ""
+        vi_text = " ".join(vi_words).strip() if vi_words else text.strip()
+        
+        # If no English words found, all text is Vietnamese
+        if not en_text:
+            vi_text = text.strip()
+            en_text = ""
+    else:
+        # All English
+        en_text = text.strip()
+        vi_text = ""
+    
+    return (en_text, vi_text)
 
 
 def auto_post_from_tour_review(review_id, tour_id, user_id, review_images, review_text, conn=None):
@@ -32,28 +91,30 @@ def auto_post_from_tour_review(review_id, tour_id, user_id, review_images, revie
         # Check if post already exists for this review
         cur.execute("""
             SELECT id FROM posts 
-            WHERE content LIKE %s
-        """, (f'%Review ID: {review_id}%',))
+            WHERE tour_reviews_id = %s
+        """, (review_id,))
         
         if cur.fetchone():
             return None  # Post already exists
         
-        # Get tour information including destination city (as user specified)
+        # Get tour information including destination city and review deleted_at
         cur.execute("""
             SELECT 
                 t.name as tour_name,
                 t.destination_city_id,
-                c.name as city_name
+                c.name as city_name,
+                tr.deleted_at
             FROM tours_admin t
             JOIN cities c ON t.destination_city_id = c.id
+            JOIN tour_reviews tr ON tr.id = %s AND tr.tour_id = t.id
             WHERE t.id = %s
-        """, (tour_id,))
+        """, (review_id, tour_id))
         
         tour_info = cur.fetchone()
         if not tour_info:
             return None
         
-        tour_name, city_id, city_name = tour_info
+        tour_name, city_id, city_name, deleted_at = tour_info
         
         # Generate hashtags
         hashtags = []
@@ -81,15 +142,20 @@ def auto_post_from_tour_review(review_id, tour_id, user_id, review_images, revie
         # Use first image
         image_url = review_images[0] if isinstance(review_images, list) else review_images
         
-        # Create post content
-        content = f"Amazing tour experience! {review_text[:200] if review_text else 'Check out this amazing tour!'} Review ID: {review_id}"
+        # Separate English and Vietnamese content
+        en_content, vi_content = _separate_languages(review_text or "")
         
-        # Create post
+        # Default content if review_text is empty
+        if not review_text:
+            en_content = "Amazing tour experience!"
+            vi_content = "Trải nghiệm tour tuyệt vời!"
+        
+        # Create post with new columns
         cur.execute("""
-            INSERT INTO posts (author_id, content, image_url, hashtags)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO posts (author_id, content, image_url, hashtags, tour_reviews_id, en_content, vi_content, deleted_at_tour_reviews)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
-        """, (user_id, content, image_url, hashtags))
+        """, (user_id, review_text or en_content or vi_content, image_url, hashtags, review_id, en_content, vi_content, deleted_at))
         
         post_id = cur.fetchone()[0]
         
@@ -141,28 +207,31 @@ def auto_post_from_service_review(service_review_id, tour_id, user_id, review_im
         # Check if post already exists for this review
         cur.execute("""
             SELECT id FROM posts 
-            WHERE content LIKE %s
-        """, (f'%Service Review ID: {service_review_id}%',))
+            WHERE service_reviews_id = %s
+        """, (service_review_id,))
         
         if cur.fetchone():
             return None  # Post already exists
         
-        # Get tour information including destination city (as user specified)
+        # Get tour information including destination city and review deleted_at
         cur.execute("""
             SELECT 
                 t.name as tour_name,
                 t.destination_city_id,
-                c.name as city_name
+                c.name as city_name,
+                sr.deleted_at
             FROM tours_admin t
             JOIN cities c ON t.destination_city_id = c.id
+            JOIN service_reviews sr ON sr.id = %s
+            JOIN tour_services ts ON sr.tour_service_id = ts.id AND ts.tour_id = t.id
             WHERE t.id = %s
-        """, (tour_id,))
+        """, (service_review_id, tour_id))
         
         tour_info = cur.fetchone()
         if not tour_info:
             return None
         
-        tour_name, city_id, city_name = tour_info
+        tour_name, city_id, city_name, deleted_at = tour_info
         
         # Generate hashtags
         hashtags = []
@@ -190,15 +259,39 @@ def auto_post_from_service_review(service_review_id, tour_id, user_id, review_im
         # Use first image
         image_url = review_images[0] if isinstance(review_images, list) else review_images
         
-        # Create post content
-        content = f"Great {service_type} service! {review_text[:200] if review_text else 'Check out this amazing service!'} Service Review ID: {service_review_id}"
+        # Separate English and Vietnamese content
+        en_content, vi_content = _separate_languages(review_text or "")
         
-        # Create post
+        # Add service type prefix
+        service_type_en = {
+            'accommodation': 'Great accommodation service!',
+            'restaurant': 'Great restaurant service!',
+            'transportation': 'Great transportation service!'
+        }.get(service_type, 'Great service!')
+        
+        service_type_vi = {
+            'accommodation': 'Dịch vụ lưu trú tuyệt vời!',
+            'restaurant': 'Dịch vụ nhà hàng tuyệt vời!',
+            'transportation': 'Dịch vụ vận chuyển tuyệt vời!'
+        }.get(service_type, 'Dịch vụ tuyệt vời!')
+        
+        # Combine service type with review text
+        if en_content:
+            en_content = f"{service_type_en} {en_content}"
+        else:
+            en_content = service_type_en
+            
+        if vi_content:
+            vi_content = f"{service_type_vi} {vi_content}"
+        else:
+            vi_content = service_type_vi
+        
+        # Create post with new columns
         cur.execute("""
-            INSERT INTO posts (author_id, content, image_url, hashtags)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO posts (author_id, content, image_url, hashtags, service_reviews_id, en_content, vi_content, deleted_at_service_reviews)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
-        """, (user_id, content, image_url, hashtags))
+        """, (user_id, review_text or en_content or vi_content, image_url, hashtags, service_review_id, en_content, vi_content, deleted_at))
         
         post_id = cur.fetchone()[0]
         
@@ -270,6 +363,8 @@ def list_posts():
             p.content, 
             p.image_url, 
             p.hashtags,
+            p.en_content,
+            p.vi_content,
             p.created_at, 
             u.username, 
             u.email,
@@ -288,6 +383,11 @@ def list_posts():
                 FROM comments c
                 LEFT JOIN users u2 ON c.author_id = u2.id
                 WHERE c.post_id = p.id
+                    AND EXISTS (
+                        SELECT 1 FROM posts p_check 
+                        WHERE p_check.id = c.post_id 
+                            AND (p_check.deleted_at_tour_reviews IS NULL AND p_check.deleted_at_service_reviews IS NULL)
+                    )
             ) as comments,
             (
                 SELECT array_agg(t.name) 
@@ -297,6 +397,7 @@ def list_posts():
             ) as tags
         FROM posts p
         LEFT JOIN users u ON p.author_id = u.id
+        WHERE (p.deleted_at_tour_reviews IS NULL AND p.deleted_at_service_reviews IS NULL)
         ORDER BY p.created_at DESC
         """
     )
@@ -308,12 +409,14 @@ def list_posts():
             "content": r[1],
             "image_url": r[2],
             "hashtags": r[3] if r[3] else [],
-            "created_at": r[4].isoformat() if r[4] else None,
-            "author": {"username": r[5], "email": r[6]},
-            "like_count": r[7],
-            "comment_count": r[8],
-            "comments": r[9] if r[9] else [],
-            "tags": r[10] if r[10] else []
+            "en_content": r[4] if len(r) > 4 and r[4] else None,
+            "vi_content": r[5] if len(r) > 5 and r[5] else None,
+            "created_at": r[6].isoformat() if len(r) > 6 and r[6] else None,
+            "author": {"username": r[7] if len(r) > 7 else None, "email": r[8] if len(r) > 8 else None},
+            "like_count": r[9] if len(r) > 9 else 0,
+            "comment_count": r[10] if len(r) > 10 else 0,
+            "comments": r[11] if len(r) > 11 and r[11] else [],
+            "tags": r[12] if len(r) > 12 and r[12] else []
         })
 
     cur.close()
@@ -351,12 +454,18 @@ def search_posts():
                                 'created_at', c.created_at::text,
                                 'author', u2.username
                             ) ORDER BY c.created_at DESC
-                        ) FILTER (WHERE c.id IS NOT NULL),
+                        ) FILTER (WHERE c.id IS NOT NULL 
+                            AND EXISTS (
+                                SELECT 1 FROM posts p_check 
+                                WHERE p_check.id = c.post_id 
+                                    AND (p_check.deleted_at_tour_reviews IS NULL AND p_check.deleted_at_service_reviews IS NULL)
+                            )),
                         '[]'
                     )::jsonb AS comments
                 FROM posts p_base
                 LEFT JOIN comments c ON c.post_id = p_base.id
                 LEFT JOIN users u2 ON c.author_id = u2.id
+                WHERE (p_base.deleted_at_tour_reviews IS NULL AND p_base.deleted_at_service_reviews IS NULL)
                 GROUP BY c.post_id
             ),
             post_tags_data AS (
@@ -375,17 +484,25 @@ def search_posts():
                 p.content, 
                 p.image_url,
                 p.hashtags,
+                p.en_content,
+                p.vi_content,
                 p.created_at, 
                 u.username, 
                 u.email,
                 COALESCE((SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id), 0) AS like_count,
-                COALESCE((SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id), 0) AS comment_count,
+                COALESCE((SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id 
+                    AND EXISTS (
+                        SELECT 1 FROM posts p_check 
+                        WHERE p_check.id = c.post_id 
+                            AND (p_check.deleted_at_tour_reviews IS NULL AND p_check.deleted_at_service_reviews IS NULL)
+                    )), 0) AS comment_count,
                 COALESCE(pc.comments, '[]'::jsonb) as comments,
                 COALESCE(ptd.tags, '[]'::jsonb) as tags
             FROM posts p
             LEFT JOIN users u ON p.author_id = u.id
             LEFT JOIN post_comments pc ON pc.post_id = p.id
             LEFT JOIN post_tags_data ptd ON ptd.post_id = p.id
+            WHERE (p.deleted_at_tour_reviews IS NULL AND p.deleted_at_service_reviews IS NULL)
         """
 
         if query.startswith('#'):
@@ -419,12 +536,14 @@ def search_posts():
             'content': post[1],
             'image_url': post[2],
             'hashtags': post[3] if post[3] else [],
-            'created_at': post[4].isoformat() if post[4] else None,
-            'author': {'username': post[5], 'email': post[6]},
-            'like_count': post[7],
-            'comment_count': post[8],
-            'comments': post[9] if post[9] else [],
-            'tags': post[10] if post[10] else []
+            'en_content': post[4] if len(post) > 4 and post[4] else None,
+            'vi_content': post[5] if len(post) > 5 and post[5] else None,
+            'created_at': post[6].isoformat() if len(post) > 6 and post[6] else None,
+            'author': {'username': post[7] if len(post) > 7 else None, 'email': post[8] if len(post) > 8 else None},
+            'like_count': post[9] if len(post) > 9 else 0,
+            'comment_count': post[10] if len(post) > 10 else 0,
+            'comments': post[11] if len(post) > 11 and post[11] else [],
+            'tags': post[12] if len(post) > 12 and post[12] else []
         } for post in posts])
 
     except Exception as e:
@@ -591,6 +710,7 @@ def get_post(post_id):
         FROM posts p 
         LEFT JOIN users u ON p.author_id = u.id 
         WHERE p.id = %s
+            AND (p.deleted_at_tour_reviews IS NULL AND p.deleted_at_service_reviews IS NULL)
         """,
         (post_id,)
     )
@@ -598,8 +718,9 @@ def get_post(post_id):
     if not post:
         cur.close()
         conn.close()
-        return jsonify({"error": "Post not found."}), 404
+        return jsonify({"error": "Post not found or has been deleted."}), 404
 
+    # Only fetch comments for this specific post (post_id is already filtered above)
     cur.execute(
         """
         SELECT 
@@ -655,12 +776,16 @@ def add_comment(post_id):
         return jsonify({"error": "Database connection failed."}), 500
     cur = conn.cursor()
 
-    # check post exists
-    cur.execute("SELECT id FROM posts WHERE id = %s", (post_id,))
+    # Check if post exists and is not deleted
+    cur.execute("""
+        SELECT id FROM posts 
+        WHERE id = %s 
+            AND (deleted_at_tour_reviews IS NULL AND deleted_at_service_reviews IS NULL)
+    """, (post_id,))
     if not cur.fetchone():
         cur.close()
         conn.close()
-        return jsonify({"error": "Post not found."}), 404
+        return jsonify({"error": "Post not found or has been deleted."}), 404
 
     author_id = _get_user_id_by_email(cur, author_email)
     if author_id is None:
@@ -877,12 +1002,14 @@ def posts_by_tag(tag_name):
             "content": r[1],
             "image_url": r[2],
             "hashtags": r[3] if r[3] else [],
-            "created_at": r[4].isoformat() if r[4] else None,
-            "author": {"username": r[5], "email": r[6]},
-            "like_count": r[7],
-            "comment_count": r[8],
-            "comments": r[9] if r[9] else [],
-            "tags": r[10] if r[10] else []
+            "en_content": r[4] if r[4] else None,
+            "vi_content": r[5] if r[5] else None,
+            "created_at": r[6].isoformat() if r[6] else None,
+            "author": {"username": r[7], "email": r[8]},
+            "like_count": r[9],
+            "comment_count": r[10],
+            "comments": r[11] if r[11] else [],
+            "tags": r[12] if r[12] else []
         })
 
     cur.close()

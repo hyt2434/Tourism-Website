@@ -41,6 +41,16 @@ export default function SocialPost({
   const { translations } = useLanguage();
   const { toast } = useToast();
 
+  // Helper function to detect if text contains Vietnamese characters
+  const containsVietnamese = (text) => {
+    if (!text) return false;
+    const vietnameseRegex = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/;
+    return vietnameseRegex.test(text);
+  };
+
+  // Use content from post caption
+  const displayContent = post.caption || "";
+
   // 👈 Lấy tất cả posts của user này
   const userPosts = getUserPosts ? getUserPosts(post?.user?.id) : [post];
 
@@ -203,20 +213,22 @@ export default function SocialPost({
             <span className="font-semibold mr-2">
               {post?.user?.username || "Unknown"}
             </span>
-            <span className="text-gray-800 dark:text-gray-200">{post.caption}</span>
+            <span className="text-gray-800 dark:text-gray-200">{displayContent}</span>
           </div>
 
           {/* Hashtags */}
-          <div className="flex flex-wrap gap-1 mb-2">
-            {post.hashtags.map((tag, index) => (
-              <span
-                key={index}
-                className="text-sm text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+          {post.hashtags && post.hashtags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {post.hashtags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="text-sm text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
+                >
+                  {tag.startsWith('#') ? tag : `#${tag}`}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Comments preview */}
           {post.comments > 0 && (

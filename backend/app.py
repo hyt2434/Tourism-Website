@@ -95,6 +95,14 @@ try:
         update_posts_table()
     except Exception as e:
         print(f"[WARNING] Could not create social_hashtag table: {e}")
+    
+    # Add new columns to posts table
+    try:
+        from migrate_posts_table import add_posts_table_columns
+        print("\n[INFO] Checking posts table columns...")
+        add_posts_table_columns()
+    except Exception as e:
+        print(f"[WARNING] Could not add posts table columns: {e}")
 
 except Exception as e:
     print(f"[WARNING] Could not initialize database tables: {e}")

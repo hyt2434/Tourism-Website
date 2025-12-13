@@ -42,10 +42,22 @@ export default function CommentDialog({ open, onOpenChange, post }) {
     try {
       setLoading(true);
       const postData = await getPost(post.id);
-      setComments(postData.comments || []);
+      // Only set comments if post exists and is not deleted
+      if (postData && postData.id) {
+        setComments(postData.comments || []);
+      } else {
+        setComments([]);
+        toast.error("Post not found or has been deleted");
+        onOpenChange(false); // Close dialog if post is deleted
+      }
     } catch (error) {
       console.error("Failed to fetch post details:", error);
-      toast.error("Failed to load comments");
+      toast.error(error.message || "Failed to load comments");
+      setComments([]);
+      // Close dialog if post is deleted (404 error)
+      if (error.message && error.message.includes("deleted")) {
+        onOpenChange(false);
+      }
     } finally {
       setLoading(false);
     }
@@ -63,19 +75,30 @@ export default function CommentDialog({ open, onOpenChange, post }) {
       setIsSubmitting(true);
       const result = await addComment(post.id, comment);
       
-      const newComment = {
-        id: result.id,
-        author: result.author,
-        content: result.content,
-        created_at: result.created_at,
-      };
+      // Check if comment was successfully added
+      if (result && result.id) {
+        const newComment = {
+          id: result.id,
+          author: result.author,
+          content: result.content,
+          created_at: result.created_at,
+        };
 
-      setComments([...comments, newComment]);
-      setComment("");
-      toast.success("Comment added successfully");
+        setComments([...comments, newComment]);
+        setComment("");
+        toast.success("Comment added successfully");
+      } else {
+        throw new Error("Failed to add comment");
+      }
     } catch (error) {
       console.error("Failed to post comment:", error);
-      toast.error(error.message || "Failed to add comment");
+      const errorMessage = error.message || "Failed to add comment";
+      toast.error(errorMessage);
+      
+      // If post is deleted, close dialog and refresh comments
+      if (errorMessage.includes("deleted") || errorMessage.includes("not found")) {
+        fetchPostDetails(); // Refresh to get updated state
+      }
     } finally {
       setIsSubmitting(false);
     }
