@@ -499,15 +499,15 @@ function EnhancedBookingForm({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-24">
-            <div className="relative w-full max-w-6xl max-h-[calc(100vh-12rem)] bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-8 sm:py-12">
+            <div className="relative w-full max-w-4xl max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-6rem)] bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between p-4 sm:p-5 lg:p-6 border-b border-gray-200 dark:border-gray-700">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                             Đặt tour
                         </h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
                             Bước {currentStep}/3
                         </p>
                     </div>
@@ -515,13 +515,13 @@ function EnhancedBookingForm({
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                     >
-                        <XIcon className="w-6 h-6" />
+                        <XIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
                 </div>
 
                 {/* Progress Bar */}
-                <div className="flex items-center justify-center px-6 py-4 bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center gap-2 max-w-2xl w-full">
+                <div className="flex items-center justify-center px-4 sm:px-5 lg:px-6 py-3 sm:py-4 bg-gray-50 dark:bg-gray-800/50">
+                    <div className="flex items-center gap-2 max-w-xl sm:max-w-2xl w-full">
                     {[
                         { num: 1, label: translations.dateAndPeople || 'Date & People' },
                         { num: 2, label: translations.customizeTrip || 'Customize' },
@@ -553,7 +553,7 @@ function EnhancedBookingForm({
                 </div>
 
                 {/* Content */}
-                <div ref={contentRef} className="flex-1 overflow-y-auto p-6">
+                <div ref={contentRef} className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6">
                     {currentStep === 1 && (
                         <Step1DatePeople
                             schedules={schedules}
@@ -606,10 +606,10 @@ function EnhancedBookingForm({
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <div className="flex items-center justify-between p-4 sm:p-5 lg:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                     <div className="text-left">
                         <p className="text-sm text-gray-600 dark:text-gray-400">{translations.total || "Total"}</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                             {calculatedPrice.toLocaleString()} VND
                         </p>
                     </div>
@@ -660,7 +660,7 @@ function Step1DatePeople({
                 ) : schedules.length === 0 ? (
                     <p className="text-gray-500 text-center">{translations.noSchedulesAvailable || "No schedules available"}</p>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
                         {schedules.map((schedule) => {
                             const depDate = new Date(schedule.departure_datetime);
                             const retDate = new Date(schedule.return_datetime);

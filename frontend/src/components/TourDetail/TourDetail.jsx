@@ -256,81 +256,84 @@ export default function TourDetail() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       {/* Tour Title Section */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3 break-words">
                 {tourData.title}
               </h1>
-              <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4">
                 {tourData.reviewCount > 0 ? (
-                  <div className="flex items-center gap-1 text-lg font-semibold">
-                    <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                  <div className="flex items-center gap-1 text-base sm:text-lg font-semibold">
+                    <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400 text-yellow-400 flex-shrink-0" />
                     <span className="text-gray-900 dark:text-white">
                       {tourData.rating}
                     </span>
-                    <span className="text-gray-600 dark:text-gray-400 font-normal">
+                    <span className="text-sm sm:text-base text-gray-600 dark:text-gray-400 font-normal">
                       ({tourData.reviewCount} {translations.reviews || "đánh giá"})
                     </span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-                    <Star className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm font-normal">
+                  <div className="flex items-center gap-1 text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    <Star className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
+                    <span className="font-normal">
                       (0 {translations.reviews || "đánh giá"})
                     </span>
                   </div>
                 )}
-                <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-medium">
-                  <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  <span>{tourData.location}</span>
+                <div className="flex items-center gap-1 text-sm sm:text-base text-gray-700 dark:text-gray-300 font-medium">
+                  <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                  <span className="truncate">{tourData.location}</span>
                 </div>
                 {tourData.duration && (
-                  <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-medium">
-                    <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <div className="flex items-center gap-1 text-sm sm:text-base text-gray-700 dark:text-gray-300 font-medium">
+                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                     <span>{tourData.duration}</span>
                   </div>
                 )}
                 {tourData.number_of_members && (
-                  <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-medium">
-                    <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <div className="flex items-center gap-1 text-sm sm:text-base text-gray-700 dark:text-gray-300 font-medium">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                     <span>{tourData.number_of_members} {translations.people || "người"}</span>
                   </div>
                 )}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               {userRole !== "partner" && (
                 <Button
                   ref={headerButtonRef}
                   onClick={handleBookingClick}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
-                  size="lg"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3 whitespace-nowrap"
+                  size="default"
                 >
-                  {translations.bookNow || "Đặt Tour Ngay"}
+                  <span className="hidden sm:inline">{translations.bookNow || "Đặt Tour Ngay"}</span>
+                  <span className="sm:hidden">{translations.book || "Đặt"}</span>
                 </Button>
               )}
               <Button
                 variant="outline"
                 size="icon"
-                className="rounded-full border-gray-300 dark:border-gray-600"
+                className="rounded-full border-gray-300 dark:border-gray-600 h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+                aria-label="Share"
               >
-                <Share2 className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={handleToggleFavorite}
                 disabled={favoriteLoading}
-                className={`rounded-full border-gray-300 dark:border-gray-600 transition-all ${
+                className={`rounded-full border-gray-300 dark:border-gray-600 transition-all h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 ${
                   isFavorite 
                     ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700' 
                     : ''
                 }`}
                 title={isFavorite ? translations.removeFromFavorites : translations.addToFavorites}
+                aria-label={isFavorite ? translations.removeFromFavorites : translations.addToFavorites}
               >
                 <Heart 
-                  className={`w-5 h-5 transition-all ${
+                  className={`w-4 h-4 sm:w-5 sm:h-5 transition-all ${
                     isFavorite 
                       ? 'fill-red-500 text-red-500' 
                       : 'text-gray-700 dark:text-gray-300'
