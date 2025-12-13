@@ -32,28 +32,46 @@ function DialogClose({
 
 function DialogOverlay({
   className,
+  style,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+  const hasHeaderExclusion = className?.includes('exclude-header');
+  
   return (
-    <DialogPrimitive.Overlay
-      data-slot="dialog-overlay"
-      className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-[9998] bg-black/90 dark:bg-black/95",
-        className
+    <>
+      <DialogPrimitive.Overlay
+        data-slot="dialog-overlay"
+        className={cn(
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed z-[9998] bg-black/90 dark:bg-black/95",
+          hasHeaderExclusion ? "top-16 left-0 right-0 bottom-0" : "inset-0",
+          className
+        )}
+        style={style}
+        {...props}
+      />
+      {/* Allow header to be clickable by placing a transparent layer above overlay */}
+      {hasHeaderExclusion && (
+        <div
+          className="fixed top-0 left-0 right-0 h-16 z-[9999] pointer-events-auto"
+          style={{ pointerEvents: 'auto' }}
+          aria-hidden="true"
+        />
       )}
-      {...props}
-    />
+    </>
   );
 }
 
 function DialogContent({
   className,
   children,
+  overlayClassName,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  overlayClassName?: string;
+}) {
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay />
+      <DialogOverlay className={overlayClassName} />
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(

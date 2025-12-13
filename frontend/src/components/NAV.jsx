@@ -87,7 +87,7 @@ export default function NAV() {
   };
 
   return (
-    <header className="sticky top-0 z-[80] bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
+    <header className="sticky top-0 z-[10000] bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
       <div className=" container mx-auto px-24">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -148,7 +148,7 @@ export default function NAV() {
                   </button>
 
                   {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-2 z-50">
+                    <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-2 z-[10001]">
                       <button
                         onClick={() => {
                           navigate("/profile");
@@ -238,7 +238,7 @@ export default function NAV() {
               </button>
 
               {showDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-[10001]">
                   <button
                     onClick={() => {
                       setShowDropdown(false);

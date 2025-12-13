@@ -15,6 +15,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import { getPosts, searchPosts, toggleLike, addComment, deletePost, deleteComment, getPost, getHashtagInfo } from "../../api/social";
 import { useToast } from "../../context/ToastContext";
 import { useNavigate } from "react-router-dom";
+import { getTranslatedContent, detectLanguage } from "../../utils/translation";
 
 /**
  * Transform API post format to component expected format
@@ -36,19 +37,12 @@ const transformPost = (apiPost) => {
     return date.toLocaleDateString('vi-VN');
   };
 
-  // Helper function to detect if text contains Vietnamese characters
-  const containsVietnamese = (text) => {
-    if (!text) return false;
-    // Vietnamese characters include: àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ
-    const vietnameseRegex = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/;
-    return vietnameseRegex.test(text);
-  };
-
   // Use content column from posts table
   const content = apiPost.content || "";
   
-  const isVietnamese = containsVietnamese(content);
-  const isEnglish = !isVietnamese && content.length > 0;
+  const contentLang = detectLanguage(content);
+  const isVietnamese = contentLang === 'vi';
+  const isEnglish = contentLang === 'en' && content.length > 0;
 
   return {
     id: apiPost.id,
@@ -91,8 +85,10 @@ export default function SocialPage() {
   const [loading, setLoading] = useState(true);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [translatedDialogCaption, setTranslatedDialogCaption] = useState("");
+  const [isTranslatingDialog, setIsTranslatingDialog] = useState(false);
 
-  const { translations } = useLanguage();
+  const { translations, language } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -127,6 +123,35 @@ export default function SocialPage() {
       setIsSearching(false);
     }
   }, [searchQuery, activeTab]);
+
+  // Auto-translate selected post caption in dialog
+  useEffect(() => {
+    const translateDialogCaption = async () => {
+      if (!selectedPost || !showPostDialog) {
+        setTranslatedDialogCaption("");
+        return;
+      }
+
+      const originalCaption = selectedPost.caption || "";
+      if (!originalCaption.trim()) {
+        setTranslatedDialogCaption("");
+        return;
+      }
+
+      setIsTranslatingDialog(true);
+      try {
+        const translated = await getTranslatedContent(originalCaption, language);
+        setTranslatedDialogCaption(translated);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTranslatedDialogCaption(originalCaption);
+      } finally {
+        setIsTranslatingDialog(false);
+      }
+    };
+
+    translateDialogCaption();
+  }, [selectedPost?.caption, language, showPostDialog]);
 
   const fetchPosts = async () => {
     try {
@@ -536,7 +561,10 @@ export default function SocialPage() {
 
       {/* Post Detail Dialog */}
       <Dialog open={showPostDialog} onOpenChange={setShowPostDialog}>
-        <DialogContent className={`!max-w-[1100px] !w-[85vw] !max-h-[80vh] !p-0 !gap-0 bg-white dark:bg-gray-900 overflow-hidden !border-gray-200 dark:!border-gray-700 rounded-xl !left-[50%] !top-[calc(50%+2rem)] !translate-x-[-50%] !translate-y-[-50%] transition-all duration-300 ${isSidebarCollapsed ? 'lg:!left-[calc(50%+2.5rem)] xl:!left-[calc(50%+2.5rem)]' : 'lg:!left-[calc(50%+2.5rem)] xl:!left-[calc(50%+8rem)]'}`}>
+        <DialogContent 
+          className={`!max-w-[1100px] !w-[85vw] !max-h-[80vh] !p-0 !gap-0 bg-white dark:bg-gray-900 overflow-hidden !border-gray-200 dark:!border-gray-700 rounded-xl !left-[50%] !top-[calc(50%+2rem)] !translate-x-[-50%] !translate-y-[-50%] transition-all duration-300 ${isSidebarCollapsed ? 'lg:!left-[calc(50%+2.5rem)] xl:!left-[calc(50%+2.5rem)]' : 'lg:!left-[calc(50%+2.5rem)] xl:!left-[calc(50%+8rem)]'}`}
+          overlayClassName="exclude-header"
+        >
           {selectedPost && (
             <div className="grid md:grid-cols-[2fr_1fr] h-[80vh] max-h-[80vh]">
               {/* Image Side */}
@@ -591,7 +619,11 @@ export default function SocialPage() {
                       <p className="text-sm">
                         <span className="font-semibold mr-2 text-gray-900 dark:text-gray-100">{selectedPost?.user?.username}</span>
                         <span className="text-gray-800 dark:text-gray-200">
-                          {selectedPost.caption || ""}
+                          {isTranslatingDialog ? (
+                            <span className="text-gray-400 italic">Translating...</span>
+                          ) : (
+                            translatedDialogCaption || selectedPost.caption || ""
+                          )}
                         </span>
                       </p>
                       {selectedPost.hashtags && selectedPost.hashtags.length > 0 && (

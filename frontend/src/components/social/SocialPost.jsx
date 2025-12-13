@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -25,6 +25,7 @@ import UserProfileDialog from "./UserProfileDialog";
 import { Link, useNavigate } from "react-router-dom";
 import { toggleLike, deletePost, getHashtagInfo } from "../../api/social";
 import { useToast } from "../../context/ToastContext";
+import { getTranslatedContent } from "../../utils/translation";
 
 export default function SocialPost({
   post,
@@ -37,7 +38,9 @@ export default function SocialPost({
   const [showComments, setShowComments] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
-  const { translations } = useLanguage();
+  const [translatedCaption, setTranslatedCaption] = useState("");
+  const [isTranslating, setIsTranslating] = useState(false);
+  const { translations, language } = useLanguage();
   const { toast } = useToast();
 
   // Get current user to check if admin
@@ -74,15 +77,32 @@ export default function SocialPost({
     }
   };
 
-  // Helper function to detect if text contains Vietnamese characters
-  const containsVietnamese = (text) => {
-    if (!text) return false;
-    const vietnameseRegex = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/;
-    return vietnameseRegex.test(text);
-  };
+  // Auto-translate caption based on user language
+  useEffect(() => {
+    const translateCaption = async () => {
+      const originalCaption = post.caption || "";
+      if (!originalCaption.trim()) {
+        setTranslatedCaption("");
+        return;
+      }
 
-  // Use content from post caption
-  const displayContent = post.caption || "";
+      setIsTranslating(true);
+      try {
+        const translated = await getTranslatedContent(originalCaption, language);
+        setTranslatedCaption(translated);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTranslatedCaption(originalCaption);
+      } finally {
+        setIsTranslating(false);
+      }
+    };
+
+    translateCaption();
+  }, [post.caption, language]);
+
+  // Use translated content or fallback to original
+  const displayContent = translatedCaption || post.caption || "";
 
   // 👈 Lấy tất cả posts của user này
   const userPosts = getUserPosts ? getUserPosts(post?.user?.id) : [post];
