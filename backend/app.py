@@ -57,14 +57,14 @@ try:
     from src.models.models import create_tables
     create_tables()
     print("[OK] Database tables checked/created successfully.")
-
+    
     # Ensure default admin exists
     ensure_default_admin()
-
+    
     # Initialize cities
     from src.services.city_init import init_cities
     init_cities()
-    
+
     # Create tour reviews table
     from src.models.tour_reviews_schema import create_tour_reviews_table
     create_tour_reviews_table()

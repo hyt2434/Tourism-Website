@@ -15,59 +15,6 @@ except ImportError:
 social_routes = Blueprint('social_routes', __name__)
 
 
-def _detect_vietnamese(text):
-    """Check if text contains Vietnamese characters."""
-    if not text:
-        return False
-    vietnamese_regex = re.compile(r'[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]')
-    return bool(vietnamese_regex.search(text))
-
-
-def _separate_languages(text):
-    """
-    Separate text into English and Vietnamese parts.
-    Returns (en_text, vi_text) tuple.
-    """
-    if not text:
-        return ("", "")
-    
-    # Check if text contains Vietnamese
-    has_vietnamese = _detect_vietnamese(text)
-    
-    if has_vietnamese:
-        # Try to extract English and Vietnamese parts
-        # Simple approach: split by common patterns or assume all is Vietnamese if it contains Vietnamese chars
-        # For now, if it has Vietnamese, treat as Vietnamese; otherwise English
-        # This is a simple implementation - can be improved with better NLP
-        words = text.split()
-        en_words = []
-        vi_words = []
-        
-        for word in words:
-            if _detect_vietnamese(word):
-                vi_words.append(word)
-            else:
-                # Check if it's likely English (contains only ASCII letters)
-                if re.match(r'^[a-zA-Z0-9\s\.,!?;:\-\'"]+$', word):
-                    en_words.append(word)
-                else:
-                    vi_words.append(word)
-        
-        en_text = " ".join(en_words).strip() if en_words else ""
-        vi_text = " ".join(vi_words).strip() if vi_words else text.strip()
-        
-        # If no English words found, all text is Vietnamese
-        if not en_text:
-            vi_text = text.strip()
-            en_text = ""
-    else:
-        # All English
-        en_text = text.strip()
-        vi_text = ""
-    
-    return (en_text, vi_text)
-
-
 def auto_post_from_tour_review(review_id, tour_id, user_id, review_images, review_text, conn=None):
     """
     Helper function to automatically create a post from a tour review.
@@ -142,20 +89,15 @@ def auto_post_from_tour_review(review_id, tour_id, user_id, review_images, revie
         # Use first image
         image_url = review_images[0] if isinstance(review_images, list) else review_images
         
-        # Separate English and Vietnamese content
-        en_content, vi_content = _separate_languages(review_text or "")
-        
         # Default content if review_text is empty
-        if not review_text:
-            en_content = "Amazing tour experience!"
-            vi_content = "Trải nghiệm tour tuyệt vời!"
+        default_content = review_text or "Amazing tour experience!"
         
         # Create post with new columns
         cur.execute("""
-            INSERT INTO posts (author_id, content, image_url, hashtags, tour_reviews_id, en_content, vi_content, deleted_at_tour_reviews)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO posts (author_id, content, image_url, hashtags, tour_reviews_id, deleted_at_tour_reviews)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
-        """, (user_id, review_text or en_content or vi_content, image_url, hashtags, review_id, en_content, vi_content, deleted_at))
+        """, (user_id, default_content, image_url, hashtags, review_id, deleted_at))
         
         post_id = cur.fetchone()[0]
         
@@ -259,39 +201,25 @@ def auto_post_from_service_review(service_review_id, tour_id, user_id, review_im
         # Use first image
         image_url = review_images[0] if isinstance(review_images, list) else review_images
         
-        # Separate English and Vietnamese content
-        en_content, vi_content = _separate_languages(review_text or "")
-        
         # Add service type prefix
-        service_type_en = {
+        service_type_prefix = {
             'accommodation': 'Great accommodation service!',
             'restaurant': 'Great restaurant service!',
             'transportation': 'Great transportation service!'
         }.get(service_type, 'Great service!')
         
-        service_type_vi = {
-            'accommodation': 'Dịch vụ lưu trú tuyệt vời!',
-            'restaurant': 'Dịch vụ nhà hàng tuyệt vời!',
-            'transportation': 'Dịch vụ vận chuyển tuyệt vời!'
-        }.get(service_type, 'Dịch vụ tuyệt vời!')
-        
         # Combine service type with review text
-        if en_content:
-            en_content = f"{service_type_en} {en_content}"
+        if review_text:
+            content = f"{service_type_prefix} {review_text}"
         else:
-            en_content = service_type_en
-            
-        if vi_content:
-            vi_content = f"{service_type_vi} {vi_content}"
-        else:
-            vi_content = service_type_vi
+            content = service_type_prefix
         
         # Create post with new columns
         cur.execute("""
-            INSERT INTO posts (author_id, content, image_url, hashtags, service_reviews_id, en_content, vi_content, deleted_at_service_reviews)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO posts (author_id, content, image_url, hashtags, service_reviews_id, deleted_at_service_reviews)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
-        """, (user_id, review_text or en_content or vi_content, image_url, hashtags, service_review_id, en_content, vi_content, deleted_at))
+        """, (user_id, content, image_url, hashtags, service_review_id, deleted_at))
         
         post_id = cur.fetchone()[0]
         
@@ -356,6 +284,12 @@ def list_posts():
         return jsonify({"error": "Database connection failed."}), 500
     cur = conn.cursor()
 
+    # Get current user email from request if available
+    user_email = request.headers.get('X-User-Email')
+    user_id = None
+    if user_email:
+        user_id = _get_user_id_by_email(cur, user_email)
+
     cur.execute(
         """
         SELECT 
@@ -363,13 +297,11 @@ def list_posts():
             p.content, 
             p.image_url, 
             p.hashtags,
-            p.en_content,
-            p.vi_content,
             p.created_at, 
             u.username, 
             u.email,
             (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
-            (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comment_count,
+            (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id AND c.deleted_at IS NULL) AS comment_count,
             (
                 SELECT json_agg(
                     json_build_object(
@@ -396,13 +328,17 @@ def list_posts():
                 FROM tags t 
                 JOIN post_tags pt ON t.id = pt.tag_id 
                 WHERE pt.post_id = p.id
-            ) as tags
+            ) as tags,
+            CASE WHEN %s IS NOT NULL THEN 
+                EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = %s)
+            ELSE FALSE END as is_liked
         FROM posts p
         LEFT JOIN users u ON p.author_id = u.id
         WHERE (p.deleted_at_tour_reviews IS NULL AND p.deleted_at_service_reviews IS NULL)
             AND p.deleted_at IS NULL
         ORDER BY p.created_at DESC
-        """
+        """,
+        (user_id, user_id)
     )
     rows = cur.fetchall()
     posts = []
@@ -412,14 +348,13 @@ def list_posts():
             "content": r[1],
             "image_url": r[2],
             "hashtags": r[3] if r[3] else [],
-            "en_content": r[4] if len(r) > 4 and r[4] else None,
-            "vi_content": r[5] if len(r) > 5 and r[5] else None,
-            "created_at": r[6].isoformat() if len(r) > 6 and r[6] else None,
-            "author": {"username": r[7] if len(r) > 7 else None, "email": r[8] if len(r) > 8 else None},
-            "like_count": r[9] if len(r) > 9 else 0,
-            "comment_count": r[10] if len(r) > 10 else 0,
-            "comments": r[11] if len(r) > 11 and r[11] else [],
-            "tags": r[12] if len(r) > 12 and r[12] else []
+            "created_at": r[4].isoformat() if len(r) > 4 and r[4] else None,
+            "author": {"username": r[5] if len(r) > 5 else None, "email": r[6] if len(r) > 6 else None},
+            "like_count": r[7] if len(r) > 7 else 0,
+            "comment_count": r[8] if len(r) > 8 else 0,
+            "comments": r[9] if len(r) > 9 and r[9] else [],
+            "tags": r[10] if len(r) > 10 and r[10] else [],
+            "is_liked": r[11] if len(r) > 11 else False
         })
 
     cur.close()
@@ -445,6 +380,12 @@ def search_posts():
             return jsonify({"error": "Database connection failed."}), 500
             
         cur = conn.cursor()
+        
+        # Get current user email from request if available
+        user_email = request.headers.get('X-User-Email')
+        user_id = None
+        if user_email:
+            user_id = _get_user_id_by_email(cur, user_email)
 
         base_sql = """
             WITH post_comments AS (
@@ -489,20 +430,22 @@ def search_posts():
                 p.content, 
                 p.image_url,
                 p.hashtags,
-                p.en_content,
-                p.vi_content,
                 p.created_at, 
                 u.username, 
                 u.email,
                 COALESCE((SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id), 0) AS like_count,
                 COALESCE((SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id 
+                    AND c.deleted_at IS NULL
                     AND EXISTS (
                         SELECT 1 FROM posts p_check 
                         WHERE p_check.id = c.post_id 
                             AND (p_check.deleted_at_tour_reviews IS NULL AND p_check.deleted_at_service_reviews IS NULL)
                     )), 0) AS comment_count,
                 COALESCE(pc.comments, '[]'::jsonb) as comments,
-                COALESCE(ptd.tags, '[]'::jsonb) as tags
+                COALESCE(ptd.tags, '[]'::jsonb) as tags,
+                CASE WHEN %s IS NOT NULL THEN 
+                    EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = %s)
+                ELSE FALSE END as is_liked
             FROM posts p
             LEFT JOIN users u ON p.author_id = u.id
             LEFT JOIN post_comments pc ON pc.post_id = p.id
@@ -533,14 +476,14 @@ def search_posts():
                 ORDER BY p.created_at DESC
             """
             search_pattern = f"%{tag.strip()}%"
-            cur.execute(sql, (search_pattern, search_pattern))
+            cur.execute(sql, (user_id, user_id, search_pattern, search_pattern))
         else:
             # Search in post content
             sql = base_sql + """
                 AND LOWER(p.content) LIKE %s
                 ORDER BY p.created_at DESC
             """
-            cur.execute(sql, (f"%{query}%",))
+            cur.execute(sql, (user_id, user_id, f"%{query}%"))
 
         posts = cur.fetchall()
         
@@ -549,14 +492,12 @@ def search_posts():
             'content': post[1],
             'image_url': post[2],
             'hashtags': post[3] if post[3] else [],
-            'en_content': post[4] if len(post) > 4 and post[4] else None,
-            'vi_content': post[5] if len(post) > 5 and post[5] else None,
-            'created_at': post[6].isoformat() if len(post) > 6 and post[6] else None,
-            'author': {'username': post[7] if len(post) > 7 else None, 'email': post[8] if len(post) > 8 else None},
-            'like_count': post[9] if len(post) > 9 else 0,
-            'comment_count': post[10] if len(post) > 10 else 0,
-            'comments': post[11] if len(post) > 11 and post[11] else [],
-            'tags': post[12] if len(post) > 12 and post[12] else []
+            'created_at': post[4].isoformat() if len(post) > 4 and post[4] else None,
+            'author': {'username': post[5] if len(post) > 5 else None, 'email': post[6] if len(post) > 6 else None},
+            'like_count': post[7] if len(post) > 7 else 0,
+            'comment_count': post[8] if len(post) > 8 else 0,
+            'comments': post[9] if len(post) > 9 and post[9] else [],
+            'tags': post[10] if len(post) > 10 and post[10] else []
         } for post in posts])
 
     except Exception as e:
@@ -706,6 +647,12 @@ def get_post(post_id):
         return jsonify({"error": "Database connection failed."}), 500
     cur = conn.cursor()
 
+    # Get current user email from request if available
+    user_email = request.headers.get('X-User-Email')
+    user_id = None
+    if user_email:
+        user_id = _get_user_id_by_email(cur, user_email)
+
     cur.execute(
         """
         SELECT 
@@ -719,14 +666,17 @@ def get_post(post_id):
             (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
             (SELECT array_agg(t.name) FROM tags t 
                 JOIN post_tags pt ON t.id = pt.tag_id 
-                WHERE pt.post_id = p.id) AS tags
+                WHERE pt.post_id = p.id) AS tags,
+            CASE WHEN %s IS NOT NULL THEN 
+                EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = %s)
+            ELSE FALSE END as is_liked
         FROM posts p 
         LEFT JOIN users u ON p.author_id = u.id 
         WHERE p.id = %s
             AND (p.deleted_at_tour_reviews IS NULL AND p.deleted_at_service_reviews IS NULL)
             AND p.deleted_at IS NULL
         """,
-        (post_id,)
+        (user_id, user_id, post_id)
     )
     post = cur.fetchone()
     if not post:
@@ -770,6 +720,7 @@ def get_post(post_id):
         "like_count": post[7],
         "tags": post[8] if post[8] else [],
         "comments": comments,
+        "is_liked": post[9] if len(post) > 9 else False,
     }
 
     cur.close()
@@ -981,7 +932,7 @@ def posts_by_tag(tag_name):
         """
         SELECT p.id, p.content, p.image_url, p.hashtags, p.created_at, u.username, u.email,
             (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
-            (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comment_count,
+            (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id AND c.deleted_at IS NULL) AS comment_count,
             (
                 SELECT json_agg(
                     json_build_object(
@@ -1018,14 +969,12 @@ def posts_by_tag(tag_name):
             "content": r[1],
             "image_url": r[2],
             "hashtags": r[3] if r[3] else [],
-            "en_content": r[4] if r[4] else None,
-            "vi_content": r[5] if r[5] else None,
-            "created_at": r[6].isoformat() if r[6] else None,
-            "author": {"username": r[7], "email": r[8]},
-            "like_count": r[9],
-            "comment_count": r[10],
-            "comments": r[11] if r[11] else [],
-            "tags": r[12] if r[12] else []
+            "created_at": r[4].isoformat() if r[4] else None,
+            "author": {"username": r[5], "email": r[6]},
+            "like_count": r[7],
+            "comment_count": r[8],
+            "comments": r[9] if r[9] else [],
+            "tags": r[10] if r[10] else []
         })
 
     cur.close()
@@ -1079,6 +1028,87 @@ def search_hashtags():
     finally:
         cur.close()
         conn.close()
+
+
+@social_routes.route('/hashtags/info', methods=['GET'])
+def get_hashtag_info():
+    """Get hashtag information including source name (city or tour name)."""
+    hashtag = request.args.get('hashtag', '').strip()
+    
+    if not hashtag:
+        return jsonify({"error": "Hashtag parameter is required."}), 400
+    
+    # Ensure hashtag starts with #
+    if not hashtag.startswith('#'):
+        hashtag = '#' + hashtag
+    
+    conn = get_connection()
+    if conn is None:
+        return jsonify({"error": "Database connection failed."}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        # Get hashtag info from social_hashtag table
+        cur.execute("""
+            SELECT source_type, source_id
+            FROM social_hashtag
+            WHERE LOWER(hashtag) = LOWER(%s)
+        """, (hashtag,))
+        
+        row = cur.fetchone()
+        if not row:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Hashtag not found."}), 404
+        
+        source_type = row[0]
+        source_id = row[1]
+        
+        # Get the actual name based on source_type
+        if source_type == 'city':
+            cur.execute("""
+                SELECT name FROM cities WHERE id = %s
+            """, (source_id,))
+            city_row = cur.fetchone()
+            if city_row:
+                name = city_row[0]
+            else:
+                cur.close()
+                conn.close()
+                return jsonify({"error": "City not found."}), 404
+        elif source_type == 'tour':
+            cur.execute("""
+                SELECT name FROM tours_admin WHERE id = %s
+            """, (source_id,))
+            tour_row = cur.fetchone()
+            if tour_row:
+                name = tour_row[0]
+            else:
+                cur.close()
+                conn.close()
+                return jsonify({"error": "Tour not found."}), 404
+        else:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Invalid source type."}), 400
+        
+        result = {
+            "hashtag": hashtag,
+            "source_type": source_type,
+            "source_id": source_id,
+            "name": name
+        }
+        
+        cur.close()
+        conn.close()
+        return jsonify(result)
+        
+    except Exception as e:
+        if conn:
+            cur.close()
+            conn.close()
+        return jsonify({"error": str(e)}), 500
 
 
 @social_routes.route('/auto-post-from-reviews', methods=['POST'])

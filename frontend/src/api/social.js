@@ -31,7 +31,15 @@ const getAuthHeaders = () => {
  * Get all posts
  */
 export const getPosts = async () => {
-  const response = await fetch(`${API_BASE_URL}/api/social/posts`);
+  const user = getCurrentUser();
+  const headers = getAuthHeaders();
+  if (user && user.email) {
+    headers['X-User-Email'] = user.email;
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/api/social/posts`, {
+    headers: headers,
+  });
   if (!response.ok) throw new Error('Failed to fetch posts');
   return response.json();
 };
@@ -49,7 +57,15 @@ export const searchPosts = async (query) => {
  * Get a single post by ID
  */
 export const getPost = async (postId) => {
-  const response = await fetch(`${API_BASE_URL}/api/social/posts/${postId}`);
+  const user = getCurrentUser();
+  const headers = getAuthHeaders();
+  if (user && user.email) {
+    headers['X-User-Email'] = user.email;
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/api/social/posts/${postId}`, {
+    headers: headers,
+  });
   if (!response.ok) throw new Error('Failed to fetch post');
   return response.json();
 };
@@ -256,5 +272,38 @@ export const deleteComment = async (postId, commentId) => {
     throw new Error(error.error || 'Failed to delete comment');
   }
   return response.json();
+};
+
+/**
+ * Get hashtag information (source type and name)
+ */
+export const getHashtagInfo = async (hashtag) => {
+  const url = `${API_BASE_URL}/api/social/hashtags/info?hashtag=${encodeURIComponent(hashtag)}`;
+  console.log("Fetching hashtag info from:", url);
+  
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    // Try to get error message from response
+    let errorMessage = 'Failed to get hashtag info';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorMessage;
+    } catch (e) {
+      // If response is not JSON (like HTML 404 page), use status text
+      errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+    }
+    console.error("Hashtag info API error:", {
+      status: response.status,
+      statusText: response.statusText,
+      url: url,
+      error: errorMessage
+    });
+    throw new Error(errorMessage);
+  }
+  
+  const data = await response.json();
+  console.log("Hashtag info response:", data);
+  return data;
 };
 

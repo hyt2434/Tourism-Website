@@ -1,5 +1,5 @@
 """
-Add new columns to posts table for review mapping and bilingual content.
+Add new columns to posts table for review mapping.
 """
 
 from config.database import get_connection
@@ -9,8 +9,6 @@ def add_posts_table_columns():
     Add new columns to posts table:
     - tour_reviews_id: Reference to tour_reviews table
     - service_reviews_id: Reference to service_reviews table
-    - en_content: English content
-    - vi_content: Vietnamese content
     - deleted_at_tour_reviews: deleted_at from tour_reviews
     - deleted_at_service_reviews: deleted_at from service_reviews
     """
@@ -33,18 +31,6 @@ def add_posts_table_columns():
         cur.execute("""
             ALTER TABLE posts 
             ADD COLUMN IF NOT EXISTS service_reviews_id INTEGER REFERENCES service_reviews(id) ON DELETE SET NULL;
-        """)
-        
-        # Add en_content column
-        cur.execute("""
-            ALTER TABLE posts 
-            ADD COLUMN IF NOT EXISTS en_content TEXT;
-        """)
-        
-        # Add vi_content column
-        cur.execute("""
-            ALTER TABLE posts 
-            ADD COLUMN IF NOT EXISTS vi_content TEXT;
         """)
         
         # Add deleted_at_tour_reviews column

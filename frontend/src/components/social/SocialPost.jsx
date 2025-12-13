@@ -22,8 +22,8 @@ import ImageWithFallback from "../../figma/ImageWithFallback.jsx";
 import { useLanguage } from "../../context/LanguageContext";
 import CommentDialog from "./CommentDialog";
 import UserProfileDialog from "./UserProfileDialog";
-import { Link } from "react-router-dom";
-import { toggleLike, deletePost } from "../../api/social";
+import { Link, useNavigate } from "react-router-dom";
+import { toggleLike, deletePost, getHashtagInfo } from "../../api/social";
 import { useToast } from "../../context/ToastContext";
 
 export default function SocialPost({
@@ -247,14 +247,36 @@ export default function SocialPost({
           {/* Hashtags */}
           {post.hashtags && post.hashtags.length > 0 && (
             <div className="flex flex-wrap gap-1 mb-2">
-              {post.hashtags.map((tag, index) => (
-                <span
-                  key={index}
-                  className="text-sm text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
-                >
-                  {tag.startsWith('#') ? tag : `#${tag}`}
-                </span>
-              ))}
+              {post.hashtags.map((tag, index) => {
+                const hashtagText = tag.startsWith('#') ? tag : `#${tag}`;
+                return (
+                  <span
+                    key={index}
+                    className="text-sm text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (onHashtagClick) {
+                        onHashtagClick(hashtagText);
+                      } else {
+                        // Fallback: handle directly if no prop provided
+                        try {
+                          const hashtagInfo = await getHashtagInfo(hashtagText);
+                          if (hashtagInfo && hashtagInfo.name) {
+                            navigate(`/tour?search=${encodeURIComponent(hashtagInfo.name)}`);
+                          } else {
+                            toast.error("Could not find information for this hashtag");
+                          }
+                        } catch (error) {
+                          console.error("Failed to get hashtag info:", error);
+                          toast.error("Failed to load hashtag information");
+                        }
+                      }
+                    }}
+                  >
+                    {hashtagText}
+                  </span>
+                );
+              })}
             </div>
           )}
 

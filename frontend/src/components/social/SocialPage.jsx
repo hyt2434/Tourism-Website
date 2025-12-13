@@ -12,8 +12,9 @@ import { Dialog, DialogContent } from "../ui/dialog";
 
 import BottomNavigation from "./BottomNavigation";
 import { useLanguage } from "../../context/LanguageContext";
-import { getPosts, searchPosts, toggleLike, addComment, deletePost, deleteComment, getPost } from "../../api/social";
+import { getPosts, searchPosts, toggleLike, addComment, deletePost, deleteComment, getPost, getHashtagInfo } from "../../api/social";
 import { useToast } from "../../context/ToastContext";
+import { useNavigate } from "react-router-dom";
 
 /**
  * Transform API post format to component expected format
@@ -65,6 +66,7 @@ const transformPost = (apiPost) => {
     timestamp: formatTimeAgo(apiPost.created_at),
     location: "",
     status: "approved",
+    isLiked: apiPost.is_liked || false, // Store whether current user has liked this post
     // Language detection
     isVietnamese,
     isEnglish,
@@ -92,6 +94,7 @@ export default function SocialPage() {
 
   const { translations } = useLanguage();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Get current user to check if admin
   const getCurrentUser = () => {
@@ -191,18 +194,64 @@ export default function SocialPage() {
       return;
     }
 
+    if (!selectedPost?.id) {
+      toast.error("Post not found");
+      return;
+    }
+
     try {
-      await deleteComment(commentId);
+      await deleteComment(selectedPost.id, commentId);
       toast.success("Comment deleted successfully");
       // Refresh post details to update comments
-      if (selectedPost?.id) {
-        const postData = await getPost(selectedPost.id);
-        setSelectedPost(transformPost(postData));
-      }
+      const postData = await getPost(selectedPost.id);
+      const transformedPost = transformPost(postData);
+      setSelectedPost(transformedPost);
+      // Also update liked state
+      setLiked(postData.is_liked || false);
+      
+      // Update the posts list to reflect the new comment count
+      setPosts(prevPosts => 
+        prevPosts.map(p => {
+          if (p.id === selectedPost.id) {
+            return {
+              ...p,
+              comments: transformedPost.comments,
+            };
+          }
+          return p;
+        })
+      );
     } catch (error) {
       console.error("Failed to delete comment:", error);
       const errorMessage = error?.message || error?.error || "Failed to delete comment";
       toast.error(errorMessage);
+    }
+  };
+
+  const handleHashtagClick = async (hashtag) => {
+    try {
+      console.log("Clicking hashtag:", hashtag);
+      // Get hashtag info from backend
+      const hashtagInfo = await getHashtagInfo(hashtag);
+      console.log("Hashtag info received:", hashtagInfo);
+      
+      // Navigate to tour page with search parameter filled with city/tour name
+      if (hashtagInfo && hashtagInfo.name) {
+        const searchUrl = `/tour?search=${encodeURIComponent(hashtagInfo.name)}`;
+        console.log("Navigating to:", searchUrl);
+        navigate(searchUrl);
+      } else {
+        toast.error("Could not find information for this hashtag");
+      }
+    } catch (error) {
+      console.error("Failed to get hashtag info:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack
+      });
+      // Show more detailed error message
+      const errorMsg = error.message || "Failed to load hashtag information";
+      toast.error(errorMsg);
     }
   };
 
@@ -235,24 +284,30 @@ export default function SocialPage() {
   const handleLike = async (post) => {
     try {
       const result = await toggleLike(post.id);
+      const newLiked = result.status === "liked";
+      
       // Update local state
       setPosts(prevPosts => 
         prevPosts.map(p => {
           if (p.id === post.id) {
-            const newLiked = result.status === "liked";
             return {
               ...p,
               likes: newLiked ? p.likes + 1 : Math.max(0, p.likes - 1),
+              isLiked: newLiked,
             };
           }
           return p;
         })
       );
+      
+      // Update selected post if it's the same post
       if (selectedPost?.id === post.id) {
         setSelectedPost(prev => ({
           ...prev,
-          likes: result.status === "liked" ? prev.likes + 1 : Math.max(0, prev.likes - 1),
+          likes: newLiked ? prev.likes + 1 : Math.max(0, prev.likes - 1),
+          isLiked: newLiked,
         }));
+        setLiked(newLiked);
       }
     } catch (error) {
       console.error("Failed to toggle like:", error);
@@ -283,9 +338,21 @@ export default function SocialPage() {
     }
   };
 
-  const handlePostClick = (post) => {
-    setSelectedPost(post);
-    setShowPostDialog(true);
+  const handlePostClick = async (post) => {
+    // Fetch full post details to get current like status
+    try {
+      const postData = await getPost(post.id);
+      const transformedPost = transformPost(postData);
+      setSelectedPost(transformedPost);
+      setLiked(transformedPost.isLiked || false);
+      setShowPostDialog(true);
+    } catch (error) {
+      console.error("Failed to fetch post details:", error);
+      // Fallback to using the post data we have
+      setSelectedPost(post);
+      setLiked(post.isLiked || false);
+      setShowPostDialog(true);
+    }
   };
 
   const sidebarItems = [
@@ -527,11 +594,21 @@ export default function SocialPage() {
                       </p>
                       {selectedPost.hashtags && selectedPost.hashtags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {selectedPost.hashtags.map((tag, idx) => (
-                            <span key={idx} className="text-xs text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
-                              {tag.startsWith('#') ? tag : `#${tag}`}
-                            </span>
-                          ))}
+                          {selectedPost.hashtags.map((tag, idx) => {
+                            const hashtagText = tag.startsWith('#') ? tag : `#${tag}`;
+                            return (
+                              <span 
+                                key={idx} 
+                                className="text-xs text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleHashtagClick(hashtagText);
+                                }}
+                              >
+                                {hashtagText}
+                              </span>
+                            );
+                          })}
                         </div>
                       )}
                       <p className="text-xs text-gray-400 mt-2">{selectedPost.timestamp}</p>
@@ -588,8 +665,9 @@ export default function SocialPage() {
                         size="sm"
                         className="h-auto p-0 hover:bg-transparent"
                         onClick={() => {
-                          setLiked(!liked);
-                          if (selectedPost) handleLike(selectedPost);
+                          if (selectedPost) {
+                            handleLike(selectedPost);
+                          }
                         }}
                       >
                         <Heart className={`w-7 h-7 transition-all ${liked ? "fill-red-500 text-red-500" : "text-gray-700 dark:text-gray-300"}`} />
@@ -604,7 +682,7 @@ export default function SocialPage() {
                   </div>
 
                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    {(selectedPost.likes + (liked ? 1 : 0)).toLocaleString()} likes
+                    {selectedPost.likes.toLocaleString()} likes
                   </p>
 
                   {/* Comment Input */}

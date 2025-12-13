@@ -5,8 +5,9 @@ import { Input } from "../ui/input";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Heart, Smile, Trash2 } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
-import { getPost, addComment, deleteComment } from "../../api/social";
+import { getPost, addComment, deleteComment, getHashtagInfo } from "../../api/social";
 import { useToast } from "../../context/ToastContext";
+import { useNavigate } from "react-router-dom";
 
 // Get current user from localStorage
 const getCurrentUser = () => {
@@ -185,14 +186,31 @@ export default function CommentDialog({ open, onOpenChange, post }) {
                   {post?.caption || ""}
                 </p>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {post?.hashtags?.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="text-blue-600 dark:text-blue-400 text-sm"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  {post?.hashtags?.map((tag, idx) => {
+                    const hashtagText = tag.startsWith('#') ? tag : `#${tag}`;
+                    return (
+                      <span
+                        key={idx}
+                        className="text-blue-600 dark:text-blue-400 text-sm cursor-pointer hover:underline"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const hashtagInfo = await getHashtagInfo(hashtagText);
+                            if (hashtagInfo && hashtagInfo.name) {
+                              navigate(`/tour?search=${encodeURIComponent(hashtagInfo.name)}`);
+                            } else {
+                              toast.error("Could not find information for this hashtag");
+                            }
+                          } catch (error) {
+                            console.error("Failed to get hashtag info:", error);
+                            toast.error("Failed to load hashtag information");
+                          }
+                        }}
+                      >
+                        {hashtagText}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             </div>
