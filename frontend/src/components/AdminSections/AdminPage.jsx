@@ -62,8 +62,8 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Enhanced Stats Cards */}
-      <div className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <Card className="relative overflow-hidden bg-white dark:bg-gray-900 border-2 border-blue-100 dark:border-blue-900 hover:shadow-2xl transition-all duration-300 hover:scale-105 group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-transparent rounded-bl-full" />
             <CardHeader className="pb-3 relative">
@@ -71,10 +71,10 @@ export default function AdminPage() {
                 <Users className="w-4 h-4" />
                 {translations.totalUsers}
               </CardDescription>
-              <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
+              <CardTitle className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
                 <span>{loadingStats ? "..." : stats.totalUsers.toLocaleString()}</span>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Users className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
+                  <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
               </CardTitle>
             </CardHeader>
@@ -87,10 +87,10 @@ export default function AdminPage() {
                 <UserCheck className="w-4 h-4" />
                 {translations.activePartners}
               </CardDescription>
-              <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
+              <CardTitle className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
                 <span>{loadingStats ? "..." : stats.activePartners.toLocaleString()}</span>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <UserCheck className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
+                  <UserCheck className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
               </CardTitle>
             </CardHeader>
@@ -103,10 +103,10 @@ export default function AdminPage() {
                 <Clock className="w-4 h-4" />
                 {translations.pendingApprovals}
               </CardDescription>
-              <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
+              <CardTitle className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mt-2 flex items-center justify-between">
                 <span>{loadingStats ? "..." : stats.pendingApprovals.toLocaleString()}</span>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Clock className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
+                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
               </CardTitle>
               <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
@@ -122,44 +122,44 @@ export default function AdminPage() {
           onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700 p-2">
-            <TabsList className="grid w-full grid-cols-4 bg-gray-100 dark:bg-gray-800 rounded-xl p-1.5 h-auto gap-2">
+          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 sm:p-2">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-gray-100 dark:bg-gray-800 rounded-lg sm:rounded-xl p-1 sm:p-1.5 h-auto gap-1.5 sm:gap-2">
               <TabsTrigger
                 value="users"
-                className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                className="flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 text-sm sm:text-base font-semibold rounded-md sm:rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
               >
-                <Users className="w-5 h-5" />
-                <span className="hidden sm:inline">{translations.userManagement}</span>
-                <span className="sm:hidden">{translations.totalUsers}</span>
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="hidden md:inline">{translations.userManagement}</span>
+                <span className="md:hidden">{translations.totalUsers}</span>
               </TabsTrigger>
               <TabsTrigger
                 value="partners"
-                className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                className="flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 text-sm sm:text-base font-semibold rounded-md sm:rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
               >
-                <UserCheck className="w-5 h-5" />
-                <span className="hidden sm:inline">{translations.partnerManagement}</span>
-                <span className="sm:hidden">{translations.partner}s</span>
+                <UserCheck className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="hidden md:inline">{translations.partnerManagement}</span>
+                <span className="md:hidden">{translations.partner}s</span>
               </TabsTrigger>
               <TabsTrigger
                 value="tours"
-                className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                className="flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 text-sm sm:text-base font-semibold rounded-md sm:rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
               >
-                <Map className="w-5 h-5" />
-                <span className="hidden sm:inline">{translations.tourManagement || "Tour Management"}</span>
-                <span className="sm:hidden">{translations.toursAdmin || "Tours"}</span>
+                <Map className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="hidden md:inline">{translations.tourManagement || "Tour Management"}</span>
+                <span className="md:hidden">{translations.toursAdmin || "Tours"}</span>
               </TabsTrigger>
               <TabsTrigger
                 value="bookings"
-                className="flex items-center gap-3 px-6 py-4 text-base font-semibold rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                className="flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 text-sm sm:text-base font-semibold rounded-md sm:rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
               >
-                <Package className="w-5 h-5" />
-                <span className="hidden sm:inline">{translations.bookingManagement || "Bookings"}</span>
-                <span className="sm:hidden">{translations.bookings || "Bookings"}</span>
+                <Package className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="hidden md:inline">{translations.bookingManagement || "Bookings"}</span>
+                <span className="md:hidden">{translations.bookings || "Bookings"}</span>
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700 p-4 sm:p-5 lg:p-6">
             <TabsContent value="users" className="mt-0">
               <UserManagementTab />
             </TabsContent>

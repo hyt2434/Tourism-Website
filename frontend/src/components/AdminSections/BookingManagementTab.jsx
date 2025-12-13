@@ -135,127 +135,127 @@ export default function BookingManagementTab() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
           {t.bookingManagement || 'Booking Management'}
         </h2>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
           {t.bookingManagementDesc || 'View and manage all tour bookings with platform revenue tracking'}
         </p>
       </div>
 
       {/* Revenue Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div 
-          className="rounded-xl shadow-lg p-6 border"
+          className="rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border"
           style={{
             backgroundColor: 'white',
             borderColor: '#e5e7eb'
           }}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm" style={{ color: '#6b7280' }}>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
                 {t.totalBookings || 'Total Bookings'}
               </p>
-              <p className="text-2xl font-bold mt-1" style={{ color: '#111827' }}>
+              <p className="text-xl sm:text-2xl font-bold mt-1" style={{ color: '#111827' }}>
                 {bookings.length}
               </p>
             </div>
             <div 
-              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2"
               style={{ backgroundColor: '#dbeafe' }}
             >
-              <Package className="w-6 h-6" style={{ color: '#2563eb' }} />
+              <Package className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: '#2563eb' }} />
             </div>
           </div>
         </div>
 
         <div 
-          className="rounded-xl shadow-lg p-6 border"
+          className="rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border"
           style={{
             backgroundColor: 'white',
             borderColor: '#e5e7eb'
           }}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm" style={{ color: '#6b7280' }}>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
                 {t.platformRevenue || 'Platform Revenue (10%)'}
               </p>
-              <p className="text-2xl font-bold mt-1" style={{ color: '#059669' }}>
+              <p className="text-xl sm:text-2xl font-bold mt-1 truncate" style={{ color: '#059669' }}>
                 {formatPrice(totalRevenue)}
               </p>
             </div>
             <div 
-              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2"
               style={{ backgroundColor: '#d1fae5' }}
             >
-              <TrendingUp className="w-6 h-6" style={{ color: '#059669' }} />
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: '#059669' }} />
             </div>
           </div>
         </div>
 
         <div 
-          className="rounded-xl shadow-lg p-6 border"
+          className="rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border"
           style={{
             backgroundColor: 'white',
             borderColor: '#e5e7eb'
           }}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm" style={{ color: '#6b7280' }}>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
                 {t.confirmedBookings || 'Confirmed'}
               </p>
-              <p className="text-2xl font-bold mt-1" style={{ color: '#059669' }}>
+              <p className="text-xl sm:text-2xl font-bold mt-1" style={{ color: '#059669' }}>
                 {bookings.filter(b => b.status === 'confirmed').length}
               </p>
             </div>
             <div 
-              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2"
               style={{ backgroundColor: '#d1fae5' }}
             >
-              <CheckCircle className="w-6 h-6" style={{ color: '#059669' }} />
+              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: '#059669' }} />
             </div>
           </div>
         </div>
 
         <div 
-          className="rounded-xl shadow-lg p-6 border"
+          className="rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border"
           style={{
             backgroundColor: 'white',
             borderColor: '#e5e7eb'
           }}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm" style={{ color: '#6b7280' }}>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
                 {t.completedBookings || 'Completed'}
               </p>
-              <p className="text-2xl font-bold mt-1" style={{ color: '#2563eb' }}>
+              <p className="text-xl sm:text-2xl font-bold mt-1" style={{ color: '#2563eb' }}>
                 {bookings.filter(b => b.status === 'completed').length}
               </p>
             </div>
             <div 
-              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2"
               style={{ backgroundColor: '#dbeafe' }}
             >
-              <CheckCircle className="w-6 h-6" style={{ color: '#2563eb' }} />
+              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: '#2563eb' }} />
             </div>
           </div>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 border-b" style={{ borderColor: '#e5e7eb' }}>
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 border-b overflow-x-auto" style={{ borderColor: '#e5e7eb' }}>
         {['all', 'confirmed', 'completed', 'cancelled'].map((status) => (
           <button
             key={status}
             onClick={() => setFilterStatus(status)}
-            className={`px-4 py-2 font-medium text-sm transition-colors ${
+            className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
               filterStatus === status
                 ? 'border-b-2'
                 : ''
@@ -277,7 +277,7 @@ export default function BookingManagementTab() {
             }
             {status !== 'all' && (
               <span 
-                className="ml-2 px-2 py-0.5 text-xs rounded-full"
+                className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs rounded-full"
                 style={{
                   backgroundColor: '#f3f4f6',
                   color: '#374151'
@@ -293,30 +293,30 @@ export default function BookingManagementTab() {
       {/* Bookings List */}
       {filteredBookings.length === 0 ? (
         <div 
-          className="rounded-xl shadow-lg p-12 text-center border"
+          className="rounded-lg sm:rounded-xl shadow-lg p-8 sm:p-12 text-center border"
           style={{
             backgroundColor: 'white',
             borderColor: '#e5e7eb'
           }}
         >
-          <Calendar className="w-16 h-16 mx-auto mb-4" style={{ color: '#9ca3af' }} />
-          <p style={{ color: '#6b7280' }} className="text-lg">
+          <Calendar className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4" style={{ color: '#9ca3af' }} />
+          <p style={{ color: '#6b7280' }} className="text-base sm:text-lg">
             {t.noBookingsFound || 'No bookings found'}
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {filteredBookings.map((booking) => (
             <div
               key={booking.id}
-              className="rounded-xl shadow-lg border overflow-hidden hover:shadow-xl transition-shadow"
+              className="rounded-lg sm:rounded-xl shadow-lg border overflow-hidden hover:shadow-xl transition-shadow"
               style={{
                 backgroundColor: 'white',
                 borderColor: '#e5e7eb'
               }}
             >
-              <div className="p-6">
-                <div className="flex flex-col lg:flex-row gap-6">
+              <div className="p-4 sm:p-6">
+                <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
                   {/* Tour Image */}
                   {booking.tour_image && (
                     <div className="flex-shrink-0">
@@ -329,18 +329,18 @@ export default function BookingManagementTab() {
                   )}
 
                   {/* Booking Details */}
-                  <div className="flex-grow space-y-4">
+                  <div className="flex-grow space-y-3 sm:space-y-4 min-w-0">
                     {/* Header with Status */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                      <div>
-                        <h3 className="text-xl font-bold" style={{ color: '#111827' }}>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-lg sm:text-xl font-bold truncate" style={{ color: '#111827' }}>
                           {booking.tour_name}
                         </h3>
-                        <p className="text-sm mt-1" style={{ color: '#6b7280' }}>
+                        <p className="text-xs sm:text-sm mt-1" style={{ color: '#6b7280' }}>
                           Booking ID: #{booking.id}
                         </p>
                       </div>
-                      {getStatusBadge(booking.status)}
+                      <div className="flex-shrink-0">{getStatusBadge(booking.status)}</div>
                     </div>
 
                     {/* Customer Info */}

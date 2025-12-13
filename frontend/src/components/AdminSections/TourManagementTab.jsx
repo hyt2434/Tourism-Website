@@ -959,105 +959,110 @@ export default function TourManagementTab() {
   };
 
   if (loading && !showForm) {
-    return <div className="p-8 text-center">{translations.loadingTours || "Loading tours..."}</div>;
+    return <div className="p-4 sm:p-6 lg:p-8 text-center text-sm sm:text-base">{translations.loadingTours || "Loading tours..."}</div>;
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">{translations.tourManagement || "Tour Management"}</h2>
+    <div className="p-4 sm:p-5 lg:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold">{translations.tourManagement || "Tour Management"}</h2>
         {activeSection === 'tours' && !showForm && (
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
             <Button 
               onClick={handleSyncAllPrices}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4"
               disabled={loading}
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> 
-              Sync All Tours
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? 'animate-spin' : ''}`} /> 
+              <span className="hidden sm:inline">Sync All Tours</span>
+              <span className="sm:hidden">Sync</span>
             </Button>
             <Button 
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4"
             >
-              <Plus className="w-4 h-4" /> {translations.createNewTour || "Create New Tour"}
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+              <span className="hidden sm:inline">{translations.createNewTour || "Create New Tour"}</span>
+              <span className="sm:hidden">New Tour</span>
             </Button>
           </div>
         )}
         {activeSection === 'promotions' && !showPromotionForm && (
           <Button 
             onClick={() => setShowPromotionForm(true)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4 w-full sm:w-auto"
           >
-            <Plus className="w-4 h-4" /> Create New Promotion
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+            <span className="hidden sm:inline">Create New Promotion</span>
+            <span className="sm:hidden">New Promotion</span>
           </Button>
         )}
       </div>
 
       {/* Section Tabs */}
       <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-          <TabsTrigger value="tours">Tours</TabsTrigger>
-          <TabsTrigger value="promotions">Promotions</TabsTrigger>
+        <TabsList className="grid w-full max-w-md grid-cols-2 mb-4 sm:mb-6 gap-1 p-1">
+          <TabsTrigger value="tours" className="text-xs sm:text-sm px-2 sm:px-4 py-2">Tours</TabsTrigger>
+          <TabsTrigger value="promotions" className="text-xs sm:text-sm px-2 sm:px-4 py-2">Promotions</TabsTrigger>
         </TabsList>
 
         {/* Tours Section */}
         <TabsContent value="tours" className="mt-0">
           {!showForm ? (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* Search Bar */}
-          <div className="flex gap-4">
+          <div className="flex gap-3 sm:gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
               <Input
                 placeholder="Search tours by name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400"
+                className="pl-9 sm:pl-10 h-10 sm:h-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 text-sm sm:text-base"
               />
             </div>
           </div>
           
-          <div className="grid gap-4">
+          <div className="grid gap-3 sm:gap-4">
           {tours.map((tour) => (
             <Card key={tour.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+              <CardContent className="p-4 sm:p-5 lg:p-6">
+                <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
+                  <div className="flex-1 min-w-0 w-full">
+                    <div className="flex items-start sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-2">
                       {tour.primary_image && (
                         <img 
                           src={tour.primary_image} 
                           alt={tour.name}
-                          className="w-20 h-20 object-cover rounded-lg"
+                          className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0"
                         />
                       )}
-                      <div>
-                        <h3 className="text-xl font-semibold">{tour.name}</h3>
-                        <p className="text-sm text-gray-600">{tour.duration} {tour.duration === 1 ? 'day' : `days ${tour.duration - 1} ${tour.duration - 1 === 1 ? 'night' : 'nights'}`}</p>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-lg sm:text-xl font-semibold truncate">{tour.name}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">{tour.duration} {tour.duration === 1 ? 'day' : `days ${tour.duration - 1} ${tour.duration - 1 === 1 ? 'night' : 'nights'}`}</p>
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="w-4 h-4 text-blue-500" />
-                        <span>{translations.from || "From"}: {tour.departure_city.name}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mt-3 sm:mt-4">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm min-w-0">
+                        <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
+                        <span className="truncate">{translations.from || "From"}: {tour.departure_city.name}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="w-4 h-4 text-green-500" />
-                        <span>{translations.to || "To"}: {tour.destination_city.name}</span>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm min-w-0">
+                        <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                        <span className="truncate">{translations.to || "To"}: {tour.destination_city.name}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="w-4 h-4 text-yellow-500" />
-                        <span>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm min-w-0">
+                        <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-500 flex-shrink-0" />
+                        <span className="truncate">
                           {tour.number_of_members > 0
                             ? `${(Math.ceil((tour.total_price / tour.number_of_members) / 1000) * 1000).toLocaleString()} ${tour.currency}/person (${tour.number_of_members} people)`
                             : `${tour.total_price.toLocaleString()} ${tour.currency}`
                           }
                         </span>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <span className={`px-2 py-1 rounded text-xs ${
                           tour.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
@@ -1072,28 +1077,34 @@ export default function TourManagementTab() {
                     </div>
                   </div>
                   
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-start lg:justify-end">
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleManageSchedules(tour)}
                       title="Manage Schedules"
+                      className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
                     >
-                      <Calendar className="w-4 h-4" />
+                      <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline ml-2">Schedules</span>
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleEdit(tour)}
+                      className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline ml-2">Edit</span>
                     </Button>
                     <Button 
                       variant="destructive" 
                       size="sm"
                       onClick={() => handleDelete(tour.id)}
+                      className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline ml-2">Delete</span>
                     </Button>
                   </div>
                 </div>
@@ -1104,20 +1115,20 @@ export default function TourManagementTab() {
           
           {/* Pagination */}
           {!loading && totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
                 Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalTours)} of {totalTours} tours
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="h-9"
+                  className="h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Previous
+                  <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Previous</span>
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -1137,7 +1148,7 @@ export default function TourManagementTab() {
                         variant={currentPage === pageNum ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(pageNum)}
-                        className="h-9 w-9"
+                        className="h-8 w-8 sm:h-9 sm:w-9 text-xs sm:text-sm"
                       >
                         {pageNum}
                       </Button>
@@ -1149,10 +1160,10 @@ export default function TourManagementTab() {
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
-                  className="h-9"
+                  className="h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
                 >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:ml-1" />
                 </Button>
               </div>
             </div>
@@ -1171,7 +1182,7 @@ export default function TourManagementTab() {
             <TabsContent value="basic" className="space-y-6 mt-6">
               <Card className="shadow-sm">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl">{translations.tourInformation || "Tour Information"}</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl">{translations.tourInformation || "Tour Information"}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
@@ -1302,7 +1313,7 @@ export default function TourManagementTab() {
             <TabsContent value="images" className="space-y-6 mt-6">
               <Card className="shadow-sm">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-3 text-xl">
+                  <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
                     <ImageIcon className="w-5 h-5" />
                     {translations.tourImages || "Tour Images"}
                   </CardTitle>
@@ -1389,7 +1400,7 @@ export default function TourManagementTab() {
               <Card className="shadow-sm">
                 <CardHeader className="pb-4">
                   <div className="flex justify-between items-center">
-                    <CardTitle className="flex items-center gap-3 text-xl">
+                    <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
                       <Calendar className="w-5 h-5" />
                       {translations.dailyItinerary || "Daily Itinerary"}
                     </CardTitle>
@@ -1561,7 +1572,7 @@ export default function TourManagementTab() {
         <form onSubmit={handlePromotionSubmit} className="space-y-6">
           <Card className="shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl">
+              <CardTitle className="text-lg sm:text-xl">
                 {editingPromotion ? 'Edit Promotion' : 'Create New Promotion'}
               </CardTitle>
             </CardHeader>
@@ -2235,7 +2246,7 @@ function ServicesEditor({
     <div className="space-y-8">
       <Card className="shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-xl">
+          <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
             <Hotel className="w-5 h-5 text-purple-500" />
             {translations.accommodation || "Accommodation"}
           </CardTitle>
