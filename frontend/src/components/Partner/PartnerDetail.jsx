@@ -72,7 +72,7 @@ export default function PartnerDetail() {
       const data = await deleteServiceReview(reviewId);
       
       if (data.success) {
-        toast.success('Service review deleted successfully');
+        toast.success(t?.serviceReviewDeleted || 'Service review deleted successfully');
         // Remove review from list
         setData(prev => ({
           ...prev,
@@ -102,11 +102,11 @@ export default function PartnerDetail() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center">
         <div className="text-center space-y-4">
           <div className="text-6xl">{loading ? "⏳" : "❌"}</div>
-          <p className="text-xl text-gray-600 font-medium">{loading ? "Loading..." : (error || "Partner not found")}</p>
+          <p className="text-xl text-gray-600 font-medium">{loading ? (t?.loading || "Loading...") : (error || t?.partnerNotFound || "Partner not found")}</p>
           <Link to="/partner">
             <Button className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600">
               <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
-              Back to Partners
+              {t?.backToPartners || "Back to Partners"}
             </Button>
           </Link>
         </div>
@@ -126,7 +126,7 @@ export default function PartnerDetail() {
         {/* Back Button */}
         <Link to="/partner" className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-8 transition-colors">
           <ArrowRight className="w-4 h-4 rotate-180" />
-          <span className="font-medium">Back to Partners</span>
+          <span className="font-medium">{t?.backToPartners || "Back to Partners"}</span>
         </Link>
 
         {/* Hero Header Section */}
@@ -148,7 +148,7 @@ export default function PartnerDetail() {
               </div>
               <div className="absolute -top-3 -left-3 bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1 rounded-full text-white text-xs font-bold shadow-lg flex items-center gap-1">
                 <Award className="w-3 h-3" />
-                Verified
+                {t?.partnerVerified || "Verified"}
               </div>
             </div>
 
@@ -156,7 +156,7 @@ export default function PartnerDetail() {
               <div>
                 <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-blue-100 text-blue-700 text-xs sm:text-sm font-semibold mb-2 sm:mb-3">
                   <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                  Premium Partner
+                  {t?.premiumPartner || "Premium Partner"}
                 </div>
                 <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-900 bg-clip-text text-transparent mb-2 sm:mb-3 break-words">
                   {partner.name}
@@ -234,14 +234,12 @@ export default function PartnerDetail() {
         {/* About Section */}
         <section className="bg-white/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 mb-6 sm:mb-8">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
-            About {partner.name}
+            {t?.aboutPartner || "About"} {partner.name}
           </h2>
           
           <div className="space-y-3 sm:space-y-4">
             <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
-              {partner.name} has been one of our trusted travel partners, providing guests with exceptional
-              service, comfort, and unforgettable experiences. Whether you're exploring Vietnam's
-              breathtaking landscapes or relaxing at a seaside resort, {partner.name} ensures every trip is memorable.
+              {(t?.partnerAboutDescription || "{name} has been one of our trusted travel partners, providing guests with exceptional service, comfort, and unforgettable experiences. Whether you're exploring Vietnam's breathtaking landscapes or relaxing at a seaside resort, {name} ensures every trip is memorable.").replace(/{name}/g, partner.name)}
             </p>
 
             {/* Success metrics */}
@@ -251,7 +249,7 @@ export default function PartnerDetail() {
                   <TrendingUp className="w-full h-full text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-base sm:text-lg font-bold text-green-800 mb-1 sm:mb-2">Partnership Success Story</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-green-800 mb-1 sm:mb-2">{t?.partnershipSuccessStory || "Partnership Success Story"}</h3>
                   <p className="text-sm sm:text-base text-green-700 leading-relaxed">{partner.benefit}</p>
                 </div>
               </div>
@@ -263,17 +261,17 @@ export default function PartnerDetail() {
         <section className="bg-white/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
-              Available Tours
+              {t?.availableTours || "Available Tours"}
             </h2>
             <Button variant="outline" className="border-2 text-sm sm:text-base w-full sm:w-auto">
-              View All
+              {t?.viewAll || "View All"}
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-2" />
             </Button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {data.tours.length === 0 && (
-              <div className="text-gray-500">No tours linked to this partner yet.</div>
+              <div className="text-gray-500">{t?.noToursLinked || "No tours linked to this partner yet."}</div>
             )}
             {data.tours.map((tour) => (
               <div 
@@ -292,7 +290,7 @@ export default function PartnerDetail() {
                   {/* Badges */}
                   <div className="absolute top-2 sm:top-3 left-2 sm:left-3 flex gap-1.5 sm:gap-2">
                     <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
-                      Featured
+                      {t?.featured || "Featured"}
                     </span>
                   </div>
                   
@@ -310,7 +308,7 @@ export default function PartnerDetail() {
                 {/* Tour Details */}
                 <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
                   <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
-                    {t?.partnerToursCompleted || "Completed bookings"}: {tour.completed_bookings}
+                    {t?.completedBookings || "Completed bookings"}: {tour.completed_bookings}
                   </p>
 
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-gray-200">
@@ -373,7 +371,7 @@ export default function PartnerDetail() {
                   <div className="mb-2 sm:mb-3 pb-2 sm:pb-3 border-b border-gray-200 pr-8 sm:pr-10 md:pr-12">
                     <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
                       <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
-                      <h4 className="font-semibold text-sm sm:text-base text-gray-900 group-hover:text-blue-600 transition-colors truncate">{rev.tour_name || "Tour"}</h4>
+                      <h4 className="font-semibold text-sm sm:text-base text-gray-900 group-hover:text-blue-600 transition-colors truncate">{rev.tour_name || t?.tour || "Tour"}</h4>
                     </div>
                     <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-gray-500">
                       <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
@@ -386,22 +384,22 @@ export default function PartnerDetail() {
                     <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                       <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
                     </div>
-                    <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">{rev.username || "Anonymous"}</span>
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">{rev.username || t?.anonymous || "Anonymous"}</span>
                   </div>
 
                   {/* Service Review */}
                   <div className="bg-gray-50 rounded-lg p-2.5 sm:p-3">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-                        <span className="font-medium text-xs sm:text-sm text-gray-900 truncate">{rev.service_name || "Service"}</span>
+                        <span className="font-medium text-xs sm:text-sm text-gray-900 truncate">{rev.service_name || t?.service || "Service"}</span>
                         <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium flex-shrink-0 ${
                           rev.service_type === 'accommodation' ? 'bg-blue-100 text-blue-700' :
                           rev.service_type === 'restaurant' ? 'bg-orange-100 text-orange-700' :
                           'bg-green-100 text-green-700'
                         }`}>
-                          {rev.service_type === 'accommodation' ? 'Accommodation' :
-                           rev.service_type === 'restaurant' ? 'Restaurant' :
-                           'Transportation'}
+                          {rev.service_type === 'accommodation' ? (t?.serviceTypeAccommodation || t?.accommodation || 'Accommodation') :
+                           rev.service_type === 'restaurant' ? (t?.serviceTypeRestaurant || t?.restaurant || 'Restaurant') :
+                           (t?.serviceTypeTransportation || t?.transportation || 'Transportation')}
                         </span>
                       </div>
                       <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
@@ -417,7 +415,7 @@ export default function PartnerDetail() {
 
                   {/* Click hint */}
                   <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200">
-                    <p className="text-[10px] sm:text-xs text-blue-600 text-center group-hover:underline">Click to view details</p>
+                    <p className="text-[10px] sm:text-xs text-blue-600 text-center group-hover:underline">{t?.clickToViewDetails || "Click to view details"}</p>
                   </div>
                 </div>
               ))}
@@ -437,7 +435,7 @@ export default function PartnerDetail() {
             />
             <div className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white dark:bg-gray-800 shadow-2xl z-50 overflow-y-auto transform transition-transform">
               <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Review Details</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t?.reviewDetails || "Review Details"}</h2>
                 <div className="flex items-center gap-2">
                   {/* Admin Delete Button */}
                   {isAdmin && (
@@ -471,12 +469,12 @@ export default function PartnerDetail() {
                   <div className="flex items-center gap-3 mb-3">
                     <MapPin className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                      {selectedReview.tour_name || "Tour"}
+                      {selectedReview.tour_name || t?.tour || "Tour"}
                     </h3>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <Calendar className="w-4 h-4" />
-                    <span>Reviewed on {selectedReview.created_at ? new Date(selectedReview.created_at).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                    <span>{t?.reviewedOn || "Reviewed on"} {selectedReview.created_at ? new Date(selectedReview.created_at).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
                   </div>
                 </div>
 
@@ -487,9 +485,9 @@ export default function PartnerDetail() {
                   </div>
                   <div>
                     <p className="font-bold text-lg text-gray-900 dark:text-white">
-                      {selectedReview.username || "Anonymous"}
+                      {selectedReview.username || t?.anonymous || "Anonymous"}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Customer</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t?.customer || "Customer"}</p>
                   </div>
                 </div>
 
@@ -498,23 +496,23 @@ export default function PartnerDetail() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-                        {selectedReview.service_name || "Service"}
+                        {selectedReview.service_name || t?.service || "Service"}
                       </h4>
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                         selectedReview.service_type === 'accommodation' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                         selectedReview.service_type === 'restaurant' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
                         'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                       }`}>
-                        {selectedReview.service_type === 'accommodation' ? 'Accommodation' :
-                         selectedReview.service_type === 'restaurant' ? 'Restaurant' :
-                         'Transportation'}
+                        {selectedReview.service_type === 'accommodation' ? (t?.serviceTypeAccommodation || t?.accommodation || 'Accommodation') :
+                         selectedReview.service_type === 'restaurant' ? (t?.serviceTypeRestaurant || t?.restaurant || 'Restaurant') :
+                         (t?.serviceTypeTransportation || t?.transportation || 'Transportation')}
                       </span>
                     </div>
                   </div>
 
                   {/* Service Rating */}
                   <div>
-                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Rating</p>
+                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t?.rating || "Rating"}</p>
                     <div className="flex items-center gap-2">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
@@ -533,7 +531,7 @@ export default function PartnerDetail() {
                   {/* Service Review Text */}
                   {selectedReview.review_text && (
                     <div>
-                      <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Review</p>
+                      <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t?.reviews || "Review"}</p>
                       <p className="text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                         {selectedReview.review_text}
                       </p>
@@ -548,7 +546,7 @@ export default function PartnerDetail() {
                       onClick={() => navigate(`/tours/${selectedReview.tour_id}`)}
                       className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-4 px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
                     >
-                      <span>View Tour Details</span>
+                      <span>{t?.viewTourDetails || "View Tour Details"}</span>
                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                   </div>
