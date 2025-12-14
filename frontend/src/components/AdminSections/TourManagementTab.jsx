@@ -1172,34 +1172,34 @@ export default function TourManagementTab() {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-8">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 gap-2 mb-6">
-              <TabsTrigger value="basic" className="px-4 py-3">{translations.basicInfo || "Basic Info"}</TabsTrigger>
-              <TabsTrigger value="images" className="px-4 py-3">{translations.tourImages || "Images"}</TabsTrigger>
-              <TabsTrigger value="itinerary" className="px-4 py-3">{translations.dailyItinerary || "Itinerary"}</TabsTrigger>
-              <TabsTrigger value="services" className="px-4 py-3">{translations.tourServices || "Services"}</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 gap-2 mb-6 bg-gray-100 dark:bg-gray-800 h-12">
+              <TabsTrigger value="basic" className="px-4 py-3 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 text-gray-700 dark:text-gray-300">{translations.basicInfo || "Basic Info"}</TabsTrigger>
+              <TabsTrigger value="images" className="px-4 py-3 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 text-gray-700 dark:text-gray-300">{translations.tourImages || "Images"}</TabsTrigger>
+              <TabsTrigger value="itinerary" className="px-4 py-3 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 text-gray-700 dark:text-gray-300">{translations.dailyItinerary || "Itinerary"}</TabsTrigger>
+              <TabsTrigger value="services" className="px-4 py-3 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 text-gray-700 dark:text-gray-300">{translations.tourServices || "Services"}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="space-y-6 mt-6">
-              <Card className="shadow-sm">
+              <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-lg sm:text-xl">{translations.tourInformation || "Tour Information"}</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl text-gray-900 dark:text-white">{translations.tourInformation || "Tour Information"}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-medium">{translations.tourName || "Tour Name"} *</Label>
+                    <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">{translations.tourName || "Tour Name"} *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       required
-                      className="h-11"
+                      className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder={translations.tourNamePlaceholder || "e.g., Explore Beautiful Da Nang"}
                     />
                   </div>
 
                   <div className="grid grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="duration" className="text-sm font-medium">{translations.duration || "Duration"} (days) *</Label>
+                      <Label htmlFor="duration" className="text-sm font-medium text-gray-700 dark:text-gray-300">{translations.duration || "Duration"} (days) *</Label>
                       <Input
                         id="duration"
                         type="number"
@@ -1207,15 +1207,15 @@ export default function TourManagementTab() {
                         value={formData.duration}
                         onChange={(e) => setFormData({...formData, duration: parseInt(e.target.value) || ''})}
                         required
-                        className="h-11"
+                        className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                         placeholder={translations.durationPlaceholder || "e.g., 3 for 3 days 2 nights"}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="number_of_members" className="text-sm font-medium">
+                      <Label htmlFor="number_of_members" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {translations.numberOfMembers || "Number of Members"} *
                         {roomBooking.room_id && (
-                          <span className="text-xs text-gray-500 ml-2">{translations.autoCalculatedFromRooms || "(Auto-calculated from rooms)"}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{translations.autoCalculatedFromRooms || "(Auto-calculated from rooms)"}</span>
                         )}
                       </Label>
                       <Input
@@ -1225,43 +1225,43 @@ export default function TourManagementTab() {
                         value={formData.number_of_members}
                         onChange={(e) => setFormData({...formData, number_of_members: parseInt(e.target.value) || 1})}
                         required
-                        className="h-11"
+                        className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                         placeholder={translations.numberOfMembersPlaceholder || "e.g., 4"}
                         readOnly={roomBooking.room_id !== null}
                         disabled={roomBooking.room_id !== null}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium">{translations.calculatedPriceTotal || "Calculated Price (Total)"}</Label>
-                      <div className="flex items-center gap-3 h-11 px-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-md border border-green-200/60 shadow-sm">
-                        <DollarSign className="w-5 h-5 text-green-600" />
-                        <span className="font-semibold text-green-700 text-base">{calculatedPrice.toLocaleString()} VND</span>
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">{translations.calculatedPriceTotal || "Calculated Price (Total)"}</Label>
+                      <div className="flex items-center gap-3 h-11 px-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-md border border-green-200/60 dark:border-green-800/60 shadow-sm">
+                        <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        <span className="font-semibold text-green-700 dark:text-green-300 text-base">{calculatedPrice.toLocaleString()} VND</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="description" className="text-sm font-medium">{translations.tourDescriptionLabel || "Description"} *</Label>
+                    <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300">{translations.tourDescriptionLabel || "Description"} *</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                       required
                       rows={5}
-                      className="resize-none"
+                      className="resize-none bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder={translations.tourDescriptionPlaceholder || "Describe the tour highlights and key experiences..."}
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="departure_city" className="text-sm font-medium">{translations.departureCity || "Departure City"} *</Label>
+                      <Label htmlFor="departure_city" className="text-sm font-medium text-gray-700 dark:text-gray-300">{translations.departureCity || "Departure City"} *</Label>
                       <select
                         id="departure_city"
                         value={formData.departure_city_id}
                         onChange={(e) => setFormData({...formData, departure_city_id: parseInt(e.target.value)})}
                         required
-                        className="w-full h-11 px-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        className="w-full h-11 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
                       >
                         <option value="">{translations.selectDepartureCity || "Select departure city"}</option>
                         {cities.map(city => (
@@ -1270,13 +1270,13 @@ export default function TourManagementTab() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="destination_city" className="text-sm font-medium">{translations.destinationCity || "Destination City"} *</Label>
+                      <Label htmlFor="destination_city" className="text-sm font-medium text-gray-700 dark:text-gray-300">{translations.destinationCity || "Destination City"} *</Label>
                       <select
                         id="destination_city"
                         value={formData.destination_city_id}
                         onChange={(e) => setFormData({...formData, destination_city_id: parseInt(e.target.value)})}
                         required
-                        className="w-full h-11 px-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        className="w-full h-11 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
                       >
                         <option value="">{translations.selectDestinationCity || "Select destination city"}</option>
                         {cities.map(city => (
@@ -1292,18 +1292,18 @@ export default function TourManagementTab() {
                         type="checkbox"
                         checked={formData.is_active}
                         onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
-                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer bg-white dark:bg-gray-700"
                       />
-                      <span className="text-sm font-medium group-hover:text-gray-700 transition-colors">{translations.active || "Active"}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{translations.active || "Active"}</span>
                     </label>
                     <label className="flex items-center gap-3 cursor-pointer group">
                       <input
                         type="checkbox"
                         checked={formData.is_published}
                         onChange={(e) => setFormData({...formData, is_published: e.target.checked})}
-                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer bg-white dark:bg-gray-700"
                       />
-                      <span className="text-sm font-medium group-hover:text-gray-700 transition-colors">{translations.published || "Published"}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{translations.published || "Published"}</span>
                     </label>
                   </div>
                 </CardContent>
@@ -1311,16 +1311,16 @@ export default function TourManagementTab() {
             </TabsContent>
 
             <TabsContent value="images" className="space-y-6 mt-6">
-              <Card className="shadow-sm">
+              <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
-                    <ImageIcon className="w-5 h-5" />
+                  <CardTitle className="flex items-center gap-3 text-lg sm:text-xl text-gray-900 dark:text-white">
+                    <ImageIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                     {translations.tourImages || "Tour Images"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Upload Area */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200">
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-12 text-center hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-all duration-200 bg-gray-50/50 dark:bg-gray-900/50">
                     <input
                       type="file"
                       multiple
@@ -1330,9 +1330,9 @@ export default function TourManagementTab() {
                       id="image-upload"
                     />
                     <label htmlFor="image-upload" className="cursor-pointer block">
-                      <Upload className="w-14 h-14 mx-auto mb-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                      <p className="text-lg font-semibold text-gray-700 mb-2">{translations.clickOrDragImages || "Click or drag images here"}</p>
-                      <p className="text-sm text-gray-500">{translations.uploadMultipleImages || "Upload multiple images (JPG, PNG, WebP)"}</p>
+                      <Upload className="w-14 h-14 mx-auto mb-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors" />
+                      <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{translations.clickOrDragImages || "Click or drag images here"}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{translations.uploadMultipleImages || "Upload multiple images (JPG, PNG, WebP)"}</p>
                     </label>
                   </div>
 
@@ -1341,7 +1341,7 @@ export default function TourManagementTab() {
                     <div className="grid grid-cols-3 gap-6">
                       {formData.images.map((image, idx) => (
                         <div key={idx} className={`relative group border-2 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-200 ${
-                          image.is_primary ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 hover:border-blue-300'
+                          image.is_primary ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500'
                         }`}>
                           <img 
                             src={image.url} 
@@ -1349,7 +1349,7 @@ export default function TourManagementTab() {
                             className="w-full h-52 object-cover"
                           />
                           {image.is_primary && (
-                            <span className="absolute top-3 left-3 bg-blue-500 text-white text-xs px-3 py-1.5 rounded-full font-semibold shadow-md flex items-center gap-1">
+                            <span className="absolute top-3 left-3 bg-blue-500 dark:bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full font-semibold shadow-md flex items-center gap-1">
                               <Star className="w-3 h-3 fill-white" />
                               {translations.primaryImage || "Primary Image"}
                             </span>
@@ -1359,7 +1359,7 @@ export default function TourManagementTab() {
                               type="button"
                               variant={image.is_primary ? "default" : "secondary"}
                               size="sm"
-                              className={`shadow-md ${image.is_primary ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'}`}
+                              className={`shadow-md ${image.is_primary ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-900 dark:text-white'}`}
                               onClick={() => setPrimaryImage(idx)}
                               title={translations.setAsPrimary || "Set as primary image"}
                             >
@@ -1376,7 +1376,7 @@ export default function TourManagementTab() {
                               <Trash className="w-4 h-4" />
                             </Button>
                           </div>
-                          <div className="p-4 bg-white border-t border-gray-100">
+                          <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
                             <Input
                               value={image.caption || ''}
                               onChange={(e) => {
@@ -1385,7 +1385,7 @@ export default function TourManagementTab() {
                                 setFormData({...formData, images: updated});
                               }}
                               placeholder="Add caption..."
-                              className="text-sm h-9"
+                              className="text-sm h-9 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                             />
                           </div>
                         </div>
@@ -1397,11 +1397,11 @@ export default function TourManagementTab() {
             </TabsContent>
 
             <TabsContent value="itinerary" className="space-y-6 mt-6">
-              <Card className="shadow-sm">
+              <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <CardHeader className="pb-4">
                   <div className="flex justify-between items-center">
-                    <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
-                      <Calendar className="w-5 h-5" />
+                    <CardTitle className="flex items-center gap-3 text-lg sm:text-xl text-gray-900 dark:text-white">
+                      <Calendar className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                       {translations.dailyItinerary || "Daily Itinerary"}
                     </CardTitle>
                     <Button type="button" onClick={addDay} size="sm" className="gap-2">
@@ -1448,9 +1448,9 @@ export default function TourManagementTab() {
                   numberOfMembers={formData.number_of_members}
                 />
               ) : (
-                <Card className="shadow-sm">
-                  <CardContent className="p-12 text-center text-gray-500">
-                    <Info className="w-14 h-14 mx-auto mb-4 text-gray-400" />
+                <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                  <CardContent className="p-12 text-center text-gray-500 dark:text-gray-400">
+                    <Info className="w-14 h-14 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
                     <p className="text-base">{translations.pleaseSelectCities || "Please select departure and destination cities first"}</p>
                   </CardContent>
                 </Card>
@@ -1458,8 +1458,8 @@ export default function TourManagementTab() {
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-end gap-4 sticky bottom-0 bg-white/95 backdrop-blur-sm p-6 border-t border-gray-200 shadow-lg mt-8">
-            <Button type="button" variant="outline" onClick={resetForm} className="gap-2 min-w-[120px] h-11">
+          <div className="flex justify-end gap-4 sticky bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm p-6 border-t border-gray-200 dark:border-gray-700 shadow-lg mt-8">
+            <Button type="button" variant="outline" onClick={resetForm} className="gap-2 min-w-[120px] h-11 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
               <X className="w-4 h-4" /> {translations.cancel || "Cancel"}
             </Button>
             <Button type="submit" disabled={loading} className="min-w-[150px] h-11 gap-2">
@@ -1490,7 +1490,7 @@ export default function TourManagementTab() {
           
           <div className="grid gap-4">
           {promotions.map((promotion) => (
-            <Card key={promotion.id} className="hover:shadow-lg transition-shadow">
+            <Card key={promotion.id} className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -1503,17 +1503,17 @@ export default function TourManagementTab() {
                         />
                       )}
                       <div>
-                        <h3 className="text-xl font-semibold">{promotion.title || promotion.code}</h3>
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{promotion.title || promotion.code}</h3>
                         {promotion.subtitle && (
-                          <p className="text-sm text-gray-600">{promotion.subtitle}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{promotion.subtitle}</p>
                         )}
-                        <p className="text-sm text-gray-500">Code: {promotion.code}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Code: {promotion.code}</p>
                       </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="w-4 h-4 text-yellow-500" />
+                      <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <DollarSign className="w-4 h-4 text-yellow-500 dark:text-yellow-400" />
                         <span>
                           {promotion.discount_type === 'percentage' 
                             ? `${promotion.discount_value}% off`
@@ -1522,16 +1522,16 @@ export default function TourManagementTab() {
                       </div>
                       <div className="flex gap-2">
                         <span className={`px-2 py-1 rounded text-xs ${
-                          promotion.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          promotion.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
                         }`}>
                           {promotion.is_active ? 'Active' : 'Inactive'}
                         </span>
                         {promotion.show_on_homepage && (
-                          <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                          <span className="px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
                             Homepage
                           </span>
                         )}
-                        <span className="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">
+                        <span className="px-2 py-1 rounded text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
                           {promotion.promotion_type || 'promo_code'}
                         </span>
                       </div>
@@ -1543,6 +1543,7 @@ export default function TourManagementTab() {
                       variant="outline" 
                       size="sm"
                       onClick={() => handlePromotionEdit(promotion)}
+                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -1559,9 +1560,9 @@ export default function TourManagementTab() {
             </Card>
           ))}
           {promotions.length === 0 && (
-            <Card>
-              <CardContent className="p-12 text-center text-gray-500">
-                <Info className="w-14 h-14 mx-auto mb-4 text-gray-400" />
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+              <CardContent className="p-12 text-center text-gray-500 dark:text-gray-400">
+                <Info className="w-14 h-14 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
                 <p className="text-base">No promotions yet. Create your first promotion!</p>
               </CardContent>
             </Card>
@@ -1570,21 +1571,21 @@ export default function TourManagementTab() {
         </div>
       ) : activeSection === 'promotions' && showPromotionForm ? (
         <form onSubmit={handlePromotionSubmit} className="space-y-6">
-          <Card className="shadow-sm">
+          <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg sm:text-xl">
+              <CardTitle className="text-lg sm:text-xl text-gray-900 dark:text-white">
                 {editingPromotion ? 'Edit Promotion' : 'Create New Promotion'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="promotion_type">Promotion Type *</Label>
+                  <Label htmlFor="promotion_type" className="text-gray-700 dark:text-gray-300">Promotion Type *</Label>
                   <select
                     id="promotion_type"
                     value={promotionFormData.promotion_type}
                     onChange={(e) => setPromotionFormData({...promotionFormData, promotion_type: e.target.value})}
-                    className="w-full h-11 px-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-11 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400"
                     required
                   >
                     <option value="promo_code">Promo Code</option>
@@ -1592,13 +1593,13 @@ export default function TourManagementTab() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="code">Promo Code *</Label>
+                  <Label htmlFor="code" className="text-gray-700 dark:text-gray-300">Promo Code *</Label>
                   <Input
                     id="code"
                     value={promotionFormData.code}
                     onChange={(e) => setPromotionFormData({...promotionFormData, code: e.target.value})}
                     required
-                    className="h-11"
+                    className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     placeholder="e.g., TRAVELNEW"
                   />
                 </div>
@@ -1606,12 +1607,12 @@ export default function TourManagementTab() {
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="discount_type">Discount Type *</Label>
+                  <Label htmlFor="discount_type" className="text-gray-700 dark:text-gray-300">Discount Type *</Label>
                   <select
                     id="discount_type"
                     value={promotionFormData.discount_type}
                     onChange={(e) => setPromotionFormData({...promotionFormData, discount_type: e.target.value})}
-                    className="w-full h-11 px-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-11 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400"
                     required
                   >
                     <option value="percentage">Percentage</option>
@@ -1619,14 +1620,14 @@ export default function TourManagementTab() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="discount_value">Discount Value *</Label>
+                  <Label htmlFor="discount_value" className="text-gray-700 dark:text-gray-300">Discount Value *</Label>
                   <Input
                     id="discount_value"
                     type="number"
                     value={promotionFormData.discount_value}
                     onChange={(e) => setPromotionFormData({...promotionFormData, discount_value: e.target.value})}
                     required
-                    className="h-11"
+                    className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     placeholder="e.g., 10 or 50000"
                   />
                 </div>
@@ -1636,22 +1637,22 @@ export default function TourManagementTab() {
               {promotionFormData.promotion_type === 'banner' && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="image">Image URL</Label>
+                    <Label htmlFor="image" className="text-gray-700 dark:text-gray-300">Image URL</Label>
                     <Input
                       id="image"
                       value={promotionFormData.image}
                       onChange={(e) => setPromotionFormData({...promotionFormData, image: e.target.value})}
-                      className="h-11"
+                      className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder="https://example.com/image.jpg"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="highlight">Highlight Text</Label>
+                    <Label htmlFor="highlight" className="text-gray-700 dark:text-gray-300">Highlight Text</Label>
                     <Input
                       id="highlight"
                       value={promotionFormData.highlight}
                       onChange={(e) => setPromotionFormData({...promotionFormData, highlight: e.target.value})}
-                      className="h-11"
+                      className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder="e.g., Save up to 1 Million"
                     />
                   </div>
@@ -1662,23 +1663,23 @@ export default function TourManagementTab() {
               {promotionFormData.show_on_homepage && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="title">Title * {promotionFormData.show_on_homepage && '(Required for homepage)'}</Label>
+                    <Label htmlFor="title" className="text-gray-700 dark:text-gray-300">Title * {promotionFormData.show_on_homepage && '(Required for homepage)'}</Label>
                     <Input
                       id="title"
                       value={promotionFormData.title}
                       onChange={(e) => setPromotionFormData({...promotionFormData, title: e.target.value})}
-                      className="h-11"
+                      className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder={promotionFormData.promotion_type === 'banner' ? "e.g., Chill this weekend" : "e.g., Get up to 50,000 VND off"}
                       required={promotionFormData.show_on_homepage}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="subtitle">Subtitle</Label>
+                    <Label htmlFor="subtitle" className="text-gray-700 dark:text-gray-300">Subtitle</Label>
                     <Input
                       id="subtitle"
                       value={promotionFormData.subtitle}
                       onChange={(e) => setPromotionFormData({...promotionFormData, subtitle: e.target.value})}
-                      className="h-11"
+                      className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder={promotionFormData.promotion_type === 'banner' ? "e.g., Up to 30% off" : "e.g., Valid for your first booking"}
                     />
                   </div>
@@ -1687,58 +1688,58 @@ export default function TourManagementTab() {
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="start_date">Start Date</Label>
+                  <Label htmlFor="start_date" className="text-gray-700 dark:text-gray-300">Start Date</Label>
                   <Input
                     id="start_date"
                     type="date"
                     value={promotionFormData.start_date}
                     onChange={(e) => setPromotionFormData({...promotionFormData, start_date: e.target.value})}
-                    className="h-11"
+                    className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="end_date">End Date</Label>
+                  <Label htmlFor="end_date" className="text-gray-700 dark:text-gray-300">End Date</Label>
                   <Input
                     id="end_date"
                     type="date"
                     value={promotionFormData.end_date}
                     onChange={(e) => setPromotionFormData({...promotionFormData, end_date: e.target.value})}
-                    className="h-11"
+                    className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="max_uses">Max Uses (leave empty for unlimited)</Label>
+                <Label htmlFor="max_uses" className="text-gray-700 dark:text-gray-300">Max Uses (leave empty for unlimited)</Label>
                 <Input
                   id="max_uses"
                   type="number"
                   value={promotionFormData.max_uses || ''}
                   onChange={(e) => setPromotionFormData({...promotionFormData, max_uses: e.target.value ? parseInt(e.target.value) : null})}
-                  className="h-11"
+                  className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                   placeholder="e.g., 100"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="conditions">Conditions</Label>
+                <Label htmlFor="conditions" className="text-gray-700 dark:text-gray-300">Conditions</Label>
                 <Textarea
                   id="conditions"
                   value={promotionFormData.conditions}
                   onChange={(e) => setPromotionFormData({...promotionFormData, conditions: e.target.value})}
                   rows={3}
-                  className="resize-none"
+                  className="resize-none bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                   placeholder="Terms and conditions..."
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="terms">Terms Text (for display)</Label>
+                <Label htmlFor="terms" className="text-gray-700 dark:text-gray-300">Terms Text (for display)</Label>
                 <Input
                   id="terms"
                   value={promotionFormData.terms}
                   onChange={(e) => setPromotionFormData({...promotionFormData, terms: e.target.value})}
-                  className="h-11"
+                  className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                   placeholder="Terms & Conditions apply."
                 />
               </div>
@@ -1749,24 +1750,24 @@ export default function TourManagementTab() {
                     type="checkbox"
                     checked={promotionFormData.is_active}
                     onChange={(e) => setPromotionFormData({...promotionFormData, is_active: e.target.checked})}
-                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer bg-white dark:bg-gray-700"
                   />
-                  <span className="text-sm font-medium">Active</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Active</span>
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={promotionFormData.show_on_homepage}
                     onChange={(e) => setPromotionFormData({...promotionFormData, show_on_homepage: e.target.checked})}
-                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer bg-white dark:bg-gray-700"
                   />
-                  <span className="text-sm font-medium">Show on Homepage</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Show on Homepage</span>
                 </label>
               </div>
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-4 sticky bottom-0 bg-white/95 backdrop-blur-sm p-6 border-t border-gray-200 shadow-lg mt-8">
+          <div className="flex justify-end gap-4 sticky bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm p-6 border-t border-gray-200 dark:border-gray-700 shadow-lg mt-8">
             <Button 
               type="button" 
               variant="outline" 
@@ -1791,7 +1792,7 @@ export default function TourManagementTab() {
                   terms: 'Terms & Conditions apply.'
                 });
               }} 
-              className="gap-2 min-w-[120px] h-11"
+              className="gap-2 min-w-[120px] h-11 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <X className="w-4 h-4" /> Cancel
             </Button>
@@ -1998,7 +1999,7 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
   const [expanded, setExpanded] = useState(true);
 
   return (
-    <div className="border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white shadow-sm hover:shadow-md transition-shadow">
+    <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-800 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">
           <Button
@@ -2006,11 +2007,11 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
             variant="ghost"
             size="sm"
             onClick={() => setExpanded(!expanded)}
-            className="h-9 w-9"
+            className="h-9 w-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </Button>
-          <h3 className="font-semibold text-lg">{translations.day || "Day"} {day.day_number}</h3>
+          <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{translations.day || "Day"} {day.day_number}</h3>
         </div>
         <Button
           type="button"
@@ -2029,7 +2030,7 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
             <Input
               value={day.day_title || ''}
               onChange={(e) => onUpdate(dayIndex, 'day_title', e.target.value)}
-              className="h-11"
+              className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
               placeholder={translations.dayTitlePlaceholder || "Day title (e.g., Arrival and City Tour)"}
             />
           </div>
@@ -2037,48 +2038,48 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
             <Textarea
               value={day.day_summary || ''}
               onChange={(e) => onUpdate(dayIndex, 'day_summary', e.target.value)}
-              className="resize-none"
+              className="resize-none bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
               placeholder={translations.daySummaryPlaceholder || "Brief day summary"}
               rows={3}
             />
           </div>
 
           {TIME_PERIODS.map(period => (
-            <div key={period} className="border-l-4 border-blue-500 pl-5 space-y-4">
+            <div key={period} className="border-l-4 border-blue-500 dark:border-blue-400 pl-5 space-y-4">
               <div className="flex justify-between items-center">
-                <h4 className="font-semibold capitalize text-base">{period}</h4>
+                <h4 className="font-semibold capitalize text-base text-gray-900 dark:text-white">{period}</h4>
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   onClick={() => onAddCheckpoint(dayIndex, period)}
-                  className="gap-2"
+                  className="gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   <Plus className="w-3 h-3" /> {translations.checkpoint || "Checkpoint"}
                 </Button>
               </div>
 
               {day.checkpoints[period].map((checkpoint, cpIdx) => (
-                <div key={cpIdx} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm space-y-3">
+                <div key={cpIdx} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm space-y-3">
                   <div className="flex gap-3">
                     <Input
                       type="time"
                       value={checkpoint.checkpoint_time}
                       onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'checkpoint_time', e.target.value)}
-                      className="w-36 h-10"
+                      className="w-36 h-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     />
                     <Input
                       value={checkpoint.activity_title}
                       onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'activity_title', e.target.value)}
                       placeholder={translations.activityTitle || "Activity title"}
-                      className="flex-1 h-10"
+                      className="flex-1 h-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => onRemoveCheckpoint(dayIndex, period, cpIdx)}
-                      className="h-10 w-10"
+                      className="h-10 w-10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -2086,13 +2087,13 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
                   <Input
                     value={checkpoint.location || ''}
                     onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'location', e.target.value)}
-                    className="h-10"
+                    className="h-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     placeholder={translations.location || "Location"}
                   />
                   <Textarea
                     value={checkpoint.activity_description || ''}
                     onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'activity_description', e.target.value)}
-                    className="resize-none"
+                    className="resize-none bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     placeholder={translations.activityDescription || "Activity description"}
                     rows={2}
                   />
@@ -2244,10 +2245,10 @@ function ServicesEditor({
   
   return (
     <div className="space-y-8">
-      <Card className="shadow-sm">
+      <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
-            <Hotel className="w-5 h-5 text-purple-500" />
+          <CardTitle className="flex items-center gap-3 text-lg sm:text-xl text-gray-900 dark:text-white">
+            <Hotel className="w-5 h-5 text-purple-500 dark:text-purple-400" />
             {translations.accommodation || "Accommodation"}
           </CardTitle>
         </CardHeader>
@@ -2255,7 +2256,7 @@ function ServicesEditor({
           <select
             value={services.accommodation?.service_id || ''}
             onChange={(e) => handleAccommodationChange(e.target.value)}
-            className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+            className="w-full h-11 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 transition-colors"
           >
             <option value="">{translations.selectAccommodation || "Select accommodation for entire trip"}</option>
             {availableServices.accommodations?.map(a => (
@@ -2268,18 +2269,18 @@ function ServicesEditor({
           
           {/* Room Booking - Quantity First, then auto-select Standard Double */}
           {services.accommodation && selectedRooms.length > 0 && (
-            <div className="mt-6 border-t border-gray-200 pt-6">
-              <h4 className="font-semibold text-lg mb-5 flex items-center gap-3">
-                <Users className="w-5 h-5 text-purple-600" />
+            <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h4 className="font-semibold text-lg mb-5 flex items-center gap-3 text-gray-900 dark:text-white">
+                <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 {translations.roomBooking || "Room Booking"}
               </h4>
               {loadingDetails ? (
-                <p className="text-center py-8 text-gray-500">{translations.loadingRooms || "Loading rooms..."}</p>
+                <p className="text-center py-8 text-gray-500 dark:text-gray-400">{translations.loadingRooms || "Loading rooms..."}</p>
               ) : (
                 <div className="space-y-6">
                   {/* Quantity Input - Primary Field */}
                   <div>
-                    <Label className="font-medium mb-3 block">{translations.numberOfRooms || "Number of Rooms"} *</Label>
+                    <Label className="font-medium mb-3 block text-gray-700 dark:text-gray-300">{translations.numberOfRooms || "Number of Rooms"} *</Label>
                     <Input
                       type="number"
                       min="1"
@@ -2292,30 +2293,30 @@ function ServicesEditor({
                           handleRoomSelection(defaultRoom.id);
                         }
                       }}
-                      className="w-full h-12 text-lg font-semibold"
+                      className="w-full h-12 text-lg font-semibold bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder="Enter number of rooms needed"
                     />
-                    <p className="mt-2 text-sm text-gray-600">
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                       {translations.roomQuantityHint || "How many rooms do you need for this tour?"}
                     </p>
                   </div>
                   
                   {/* Auto-calculated participants display */}
                   {roomBooking.quantity > 0 && roomBooking.room_id && numberOfMembers > 0 && (
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg p-4 shadow-sm">
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-300 dark:border-purple-700 rounded-lg p-4 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <Users className="w-6 h-6 text-purple-600" />
+                          <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                           <div>
-                            <p className="text-sm text-gray-700 font-medium">{translations.totalParticipants || "Total Participants"}</p>
-                            <p className="text-2xl font-bold text-purple-700">{numberOfMembers} {translations.people || "people"}</p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{translations.totalParticipants || "Total Participants"}</p>
+                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{numberOfMembers} {translations.people || "people"}</p>
                           </div>
                         </div>
-                        <div className="text-right text-sm text-gray-600">
+                        <div className="text-right text-sm text-gray-600 dark:text-gray-400">
                           <p>{roomBooking.quantity} {translations.rooms || "rooms"} × {
                             selectedRooms.find(r => r.id === roomBooking.room_id)?.roomType === 'Standard Quad' ? '4' : '2'
                           } {translations.people || "people"}</p>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                             ({selectedRooms.find(r => r.id === roomBooking.room_id)?.roomType || 'Standard'})
                           </p>
                         </div>
@@ -2325,14 +2326,14 @@ function ServicesEditor({
                   
                   {/* Room Type Selection - Secondary (Optional Override) */}
                   <div>
-                    <Label className="font-medium mb-3 block">
+                    <Label className="font-medium mb-3 block text-gray-700 dark:text-gray-300">
                       {translations.roomType || "Room Type"} 
-                      <span className="text-xs text-gray-500 ml-2">(Default: Standard - Double Bed)</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(Default: Standard - Double Bed)</span>
                     </Label>
                     <select
                       value={roomBooking.room_id || defaultRoom?.id || ''}
                       onChange={(e) => handleRoomSelection(parseInt(e.target.value))}
-                      className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                      className="w-full h-11 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 transition-colors"
                     >
                       {selectedRooms
                         .filter(r => r.roomType === 'Standard') // Only show Standard rooms
@@ -2344,14 +2345,14 @@ function ServicesEditor({
                           </option>
                         ))}
                     </select>
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                       {translations.changeRoomTypeHint || "You can change the room type if needed. Standard rooms have 2 people capacity."}
                     </p>
                   </div>
                   
                   {/* Selected Room Preview */}
                   {roomBooking.room_id && selectedRooms.find(r => r.id === roomBooking.room_id) && (
-                    <div className="border-2 border-purple-500 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 shadow-lg">
+                    <div className="border-2 border-purple-500 dark:border-purple-600 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-5 shadow-lg">
                       {(() => {
                         const room = selectedRooms.find(r => r.id === roomBooking.room_id);
                         return (
@@ -2363,27 +2364,27 @@ function ServicesEditor({
                                 className="w-full h-48 object-cover rounded-lg mb-4"
                               />
                             )}
-                            <h5 className="font-semibold text-xl mb-3">{room.roomType || room.name}</h5>
+                            <h5 className="font-semibold text-xl mb-3 text-gray-900 dark:text-white">{room.roomType || room.name}</h5>
                             <div className="space-y-2 text-sm">
-                              <p className="flex items-center gap-2">
-                                <Users className="w-4 h-4 text-purple-600" />
+                              <p className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                                <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                                 {translations.capacity || "Capacity"}: {room.maxAdults || 0} {translations.adults || "adults"}
                                 {room.maxChildren ? ` + ${room.maxChildren} ${translations.children || "children"}` : ''}
                               </p>
-                              <p className="flex items-center gap-2">
-                                <DollarSign className="w-4 h-4 text-green-600" />
+                              <p className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                                <DollarSign className="w-4 h-4 text-green-600 dark:text-green-400" />
                                 {(room.basePrice || 0).toLocaleString()} {room.currency || 'VND'}{translations.perNight || "/night"}
                               </p>
                               {room.bedType && (
-                                <p className="text-gray-700">🛏️ {room.bedType} Bed</p>
+                                <p className="text-gray-700 dark:text-gray-300">🛏️ {room.bedType} Bed</p>
                               )}
                               {room.deluxeUpgradePrice && (
-                                <p className="text-sm text-blue-700">
+                                <p className="text-sm text-blue-700 dark:text-blue-400">
                                   💎 Deluxe Upgrade: +{room.deluxeUpgradePrice.toLocaleString()} VND
                                 </p>
                               )}
                               {room.suiteUpgradePrice && (
-                                <p className="text-sm text-blue-700">
+                                <p className="text-sm text-blue-700 dark:text-blue-400">
                                   👑 Suite Upgrade: +{room.suiteUpgradePrice.toLocaleString()} VND
                                 </p>
                               )}
@@ -2400,28 +2401,28 @@ function ServicesEditor({
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm">
+      <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-xl">
-            <Car className="w-5 h-5 text-blue-500" />
+          <CardTitle className="flex items-center gap-3 text-xl text-gray-900 dark:text-white">
+            <Car className="w-5 h-5 text-blue-500 dark:text-blue-400" />
             {translations.transportation || "Transportation"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-5 shadow-sm">
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-5 shadow-sm">
             <div className="flex items-center gap-3 text-sm mb-2">
-              <MapPin className="w-5 h-5 text-blue-600" />
-              <span className="font-semibold">{translations.route || "Route"}:</span>
-              <span className="text-blue-700 font-medium">{getDepartureCityName()}</span>
-              <span className="text-gray-400 text-lg">→</span>
-              <span className="text-blue-700 font-medium">{getDestinationCityName()}</span>
+              <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{translations.route || "Route"}:</span>
+              <span className="text-blue-700 dark:text-blue-400 font-medium">{getDepartureCityName()}</span>
+              <span className="text-gray-400 dark:text-gray-500 text-lg">→</span>
+              <span className="text-blue-700 dark:text-blue-400 font-medium">{getDestinationCityName()}</span>
             </div>
             {numberOfMembers > 0 && (
               <div className="flex items-center gap-3 text-sm">
-                <Users className="w-5 h-5 text-blue-600" />
-                <span className="font-semibold">{translations.totalMembers || "Total Members"}:</span>
-                <span className="text-blue-700 font-medium">{numberOfMembers} {translations.people || "people"}</span>
-                <span className="text-gray-500 text-xs ml-2">(Showing vehicles ≤ {numberOfMembers * 2} seats)</span>
+                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <span className="font-semibold text-gray-700 dark:text-gray-300">{translations.totalMembers || "Total Members"}:</span>
+                <span className="text-blue-700 dark:text-blue-400 font-medium">{numberOfMembers} {translations.people || "people"}</span>
+                <span className="text-gray-500 dark:text-gray-400 text-xs ml-2">(Showing vehicles ≤ {numberOfMembers * 2} seats)</span>
               </div>
             )}
           </div>
@@ -2437,7 +2438,7 @@ function ServicesEditor({
                 } : null
               });
             }}
-            className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="w-full h-11 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
           >
             <option value="">{translations.selectTransportation || "Select transportation for entire trip"}</option>
             {filteredTransportation.map(t => (
@@ -2453,33 +2454,33 @@ function ServicesEditor({
           </select>
           
           {filteredTransportation.length === 0 && numberOfMembers > 0 && (
-            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 p-4 rounded-lg">
+            <p className="text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 p-4 rounded-lg">
               {translations.noTransportationAvailable || `No transportation available for ${numberOfMembers} members. Please select rooms first or check available vehicles.`}
             </p>
           )}
           {filteredTransportation.length === 0 && numberOfMembers === 0 && (
-            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 p-4 rounded-lg">
+            <p className="text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 p-4 rounded-lg">
               {translations.pleaseSelectRoomsFirst || "Please select accommodation rooms first to determine the number of members."}
             </p>
           )}
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm">
+      <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-xl">
-            <UtensilsCrossed className="w-5 h-5 text-orange-500" />
+          <CardTitle className="flex items-center gap-3 text-xl text-gray-900 dark:text-white">
+            <UtensilsCrossed className="w-5 h-5 text-orange-500 dark:text-orange-400" />
             {translations.restaurants || "Restaurants"} - {translations.selectSetMeals || "Select Set Meals Per Day"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {itinerary.map((day, idx) => (
-            <div key={idx} className="border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white">
-              <Label className="font-semibold text-base mb-4 block">{translations.day || "Day"} {day.day_number} - {day.day_title || translations.untitled || 'Untitled'}</Label>
+            <div key={idx} className="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-800">
+              <Label className="font-semibold text-base mb-4 block text-gray-900 dark:text-white">{translations.day || "Day"} {day.day_number} - {day.day_title || translations.untitled || 'Untitled'}</Label>
               <select
                 value={services.restaurants.find(r => r.day_number === day.day_number)?.service_id || ''}
                 onChange={(e) => handleRestaurantChange(day.day_number, e.target.value)}
-                className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors mb-6"
+                className="w-full h-11 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 dark:focus:border-orange-400 transition-colors mb-6"
               >
                 <option value="">{translations.selectRestaurant || "Select restaurant"}</option>
                 {availableServices.restaurants?.map(r => (
@@ -2492,13 +2493,13 @@ function ServicesEditor({
               {/* Set Meal Selection per Session */}
               {services.restaurants.find(r => r.day_number === day.day_number) && 
                selectedRestaurantSetMeals[services.restaurants.find(r => r.day_number === day.day_number).service_id]?.length > 0 && (
-                <div className="mt-6 border-t border-gray-200 pt-6">
-                  <h5 className="font-semibold text-base mb-4 flex items-center gap-3">
-                    <Utensils className="w-5 h-5 text-orange-600" />
+                <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h5 className="font-semibold text-base mb-4 flex items-center gap-3 text-gray-900 dark:text-white">
+                    <Utensils className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                     {translations.selectSetMeals || "Select Set Meals by Session"}
                   </h5>
                   {loadingDetails ? (
-                    <p className="text-center py-8 text-gray-500">{translations.loadingSetMeals || "Loading set meals..."}</p>
+                    <p className="text-center py-8 text-gray-500 dark:text-gray-400">{translations.loadingSetMeals || "Loading set meals..."}</p>
                   ) : (
                     <div className="space-y-6">
                       {TIME_PERIODS.map(session => {
@@ -2507,8 +2508,8 @@ function ServicesEditor({
                         ]?.filter(sm => sm.mealSession === session) || [];
                         
                         return sessionSetMeals.length > 0 && (
-                          <div key={session} className="border border-orange-200 rounded-lg p-4 bg-orange-50/50">
-                            <h6 className="font-semibold text-sm mb-3 capitalize text-orange-800">
+                          <div key={session} className="border border-orange-200 dark:border-orange-800 rounded-lg p-4 bg-orange-50/50 dark:bg-orange-900/20">
+                            <h6 className="font-semibold text-sm mb-3 capitalize text-orange-800 dark:text-orange-300">
                               {session === 'morning' && '🌅 Morning'}
                               {session === 'noon' && '☀️ Noon'}
                               {session === 'evening' && '🌙 Evening'}
@@ -2519,17 +2520,17 @@ function ServicesEditor({
                                   key={setMeal.id}
                                   className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
                                     isSetMealSelected(day.day_number, session, setMeal.id)
-                                      ? 'border-orange-500 bg-gradient-to-br from-orange-100 to-amber-100 shadow-lg'
-                                      : 'border-gray-300 hover:border-orange-300 hover:shadow-md bg-white'
+                                      ? 'border-orange-500 dark:border-orange-600 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 shadow-lg'
+                                      : 'border-gray-300 dark:border-gray-600 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md bg-white dark:bg-gray-800'
                                   }`}
                                   onClick={() => toggleSetMeal(day.day_number, session, setMeal.id)}
                                 >
-                                  <h6 className="font-semibold text-base mb-2">{setMeal.name}</h6>
-                                  <p className="text-xs text-gray-600 mb-3 line-clamp-2">{setMeal.description}</p>
+                                  <h6 className="font-semibold text-base mb-2 text-gray-900 dark:text-white">{setMeal.name}</h6>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{setMeal.description}</p>
                                   
                                   {/* Display included dishes */}
                                   {setMeal.menuItems && setMeal.menuItems.length > 0 && (
-                                    <div className="mb-3 text-xs text-gray-700">
+                                    <div className="mb-3 text-xs text-gray-700 dark:text-gray-300">
                                       <p className="font-medium mb-1">{translations.includes || "Includes"}:</p>
                                       <ul className="list-disc list-inside space-y-0.5">
                                         {setMeal.menuItems.map(item => (
@@ -2539,15 +2540,15 @@ function ServicesEditor({
                                     </div>
                                   )}
                                   
-                                  <p className="text-sm font-bold text-orange-600 mb-1">
+                                  <p className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-1">
                                     {(setMeal.totalPrice || 0).toLocaleString()} VND
                                   </p>
-                                  <p className="text-xs text-gray-500">
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
                                     {translations.perPerson || "Per person"}
                                   </p>
                                   
                                   {isSetMealSelected(day.day_number, session, setMeal.id) && (
-                                    <div className="mt-3 bg-orange-500 text-white rounded-lg p-2 text-center text-xs font-semibold">
+                                    <div className="mt-3 bg-orange-500 dark:bg-orange-600 text-white rounded-lg p-2 text-center text-xs font-semibold">
                                       ✓ {translations.selected || "Selected"}
                                     </div>
                                   )}
