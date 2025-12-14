@@ -22,18 +22,43 @@ export default function NAV() {
 
   // All navigation items with role restrictions
   const allNavItems = [
-    { name: translations.home, path: "/", roles: ["admin", "partner", "client"], public: true },
-    { name: translations.tour, path: "/tour", roles: ["admin", "partner", "client"], public: true },
-    { name: translations.social, path: "/social", roles: ["admin", "partner", "client"], public: true },
-    { name: translations.partner, path: "/partner", roles: ["admin", "partner", "client"], public: true },
-    { name: translations.about, path: "/aboutus", roles: ["admin", "partner", "client"], public: true },
+    {
+      name: translations.home,
+      path: "/",
+      roles: ["admin", "partner", "client"],
+      public: true,
+    },
+    {
+      name: translations.tour,
+      path: "/tour",
+      roles: ["admin", "partner", "client"],
+      public: true,
+    },
+    {
+      name: translations.social,
+      path: "/social",
+      roles: ["admin", "partner", "client"],
+      public: true,
+    },
+    {
+      name: translations.partner,
+      path: "/partner",
+      roles: ["admin", "partner", "client"],
+      public: true,
+    },
+    {
+      name: translations.about,
+      path: "/aboutus",
+      roles: ["admin", "partner", "client"],
+      public: true,
+    },
     { name: "Admin", path: "/admin", roles: ["admin"], public: false },
     { name: translations.partnerManagePage || "Partner Manage", path: "/partner/manage", roles: ["partner"], public: false },
     { name: translations.myAccount, path: "/account", roles: ["client"], public: false },
   ];
 
   // Filter navigation items based on user role
-  const navItems = allNavItems.filter(item => {
+  const navItems = allNavItems.filter((item) => {
     if (!userRole) return item.public; // Show only public items when not logged in
     return item.roles.includes(userRole);
   });
