@@ -121,20 +121,31 @@ export default function FlightSearchForm() {
     }
 
     // Scenario 2: Location/Date search
-    if (fromLocation && toLocation && departureDate && returnDate) {
-      const duration = calculateDuration(departureDate, returnDate);
+    // Check if we have at least one location (from or to)
+    if (fromLocation || toLocation) {
+      const params = new URLSearchParams();
       const totalMembers = adults + children + infants;
 
-      const params = new URLSearchParams({
-        departure_city_id: fromLocation.id.toString(),
-        destination_city_id: toLocation.id.toString(),
-      });
-
-      if (duration) {
-        params.append("min_duration", duration.toString());
-        params.append("max_duration", duration.toString());
+      // Add departure city if provided
+      if (fromLocation) {
+        params.append("departure_city_id", fromLocation.id.toString());
       }
 
+      // Add destination city if provided
+      if (toLocation) {
+        params.append("destination_city_id", toLocation.id.toString());
+      }
+
+      // Add duration if both dates are provided
+      if (departureDate && returnDate) {
+        const duration = calculateDuration(departureDate, returnDate);
+        if (duration) {
+          params.append("min_duration", duration.toString());
+          params.append("max_duration", duration.toString());
+        }
+      }
+
+      // Always add number of members if it's greater than 0
       if (totalMembers > 0) {
         params.append("number_of_members", totalMembers.toString());
       }
@@ -144,7 +155,7 @@ export default function FlightSearchForm() {
     }
 
     // If neither condition is met, just navigate to tour page
-    navigate('/tours');
+    navigate('/tour');
   };
 
   return (
