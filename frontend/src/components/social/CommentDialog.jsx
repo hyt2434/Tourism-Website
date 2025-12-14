@@ -9,6 +9,7 @@ import { getPost, addComment, deleteComment, getHashtagInfo } from "../../api/so
 import { useToast } from "../../context/ToastContext";
 import { useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "../ui/confirm-dialog";
+import { getTranslatedContent } from "../../utils/translation";
 
 // Get current user from localStorage
 const getCurrentUser = () => {
@@ -28,8 +29,12 @@ export default function CommentDialog({ open, onOpenChange, post }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
+  const [translatedComments, setTranslatedComments] = useState({});
+  const [isTranslatingComments, setIsTranslatingComments] = useState(false);
+  const [translatedCaption, setTranslatedCaption] = useState("");
+  const [isTranslatingCaption, setIsTranslatingCaption] = useState(false);
 
-  const { translations } = useLanguage();
+  const { translations, language } = useLanguage();
   const toast = useToast();
   const currentUser = getCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
@@ -62,6 +67,81 @@ export default function CommentDialog({ open, onOpenChange, post }) {
       fetchPostDetails();
     }
   }, [open, post?.id]);
+
+  // Auto-translate comments when they change or language changes
+  useEffect(() => {
+    const translateComments = async () => {
+      if (!open || !comments || comments.length === 0) {
+        setTranslatedComments({});
+        return;
+      }
+
+      setIsTranslatingComments(true);
+      try {
+        const translatedMap = {};
+        // Translate all comments in parallel
+        const translationPromises = comments.map(async (comment) => {
+          if (!comment.content || !comment.content.trim()) {
+            return { id: comment.id, translated: comment.content || "" };
+          }
+          try {
+            const translated = await getTranslatedContent(comment.content, language);
+            return { id: comment.id, translated };
+          } catch (error) {
+            console.error(`Translation error for comment ${comment.id}:`, error);
+            return { id: comment.id, translated: comment.content };
+          }
+        });
+
+        const results = await Promise.all(translationPromises);
+        results.forEach(({ id, translated }) => {
+          translatedMap[id] = translated;
+        });
+        setTranslatedComments(translatedMap);
+      } catch (error) {
+        console.error("Error translating comments:", error);
+        // Fallback to original comments
+        const fallbackMap = {};
+        comments.forEach((comment) => {
+          fallbackMap[comment.id] = comment.content || "";
+        });
+        setTranslatedComments(fallbackMap);
+      } finally {
+        setIsTranslatingComments(false);
+      }
+    };
+
+    translateComments();
+  }, [comments, language, open]);
+
+  // Auto-translate post caption
+  useEffect(() => {
+    const translateCaption = async () => {
+      if (!open || !post?.caption) {
+        setTranslatedCaption("");
+        return;
+      }
+
+      const originalCaption = post.caption || "";
+      if (!originalCaption.trim()) {
+        setTranslatedCaption("");
+        return;
+      }
+
+      setIsTranslatingCaption(true);
+      try {
+        const translated = await getTranslatedContent(originalCaption, language);
+        setTranslatedCaption(translated);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTranslatedCaption(originalCaption);
+      } finally {
+        setIsTranslatingCaption(false);
+      }
+    };
+
+    translateCaption();
+  }, [post?.caption, language, open]);
 
   const fetchPostDetails = async () => {
     if (!post?.id) return;
@@ -114,6 +194,8 @@ export default function CommentDialog({ open, onOpenChange, post }) {
         setComments([...comments, newComment]);
         setComment("");
         toast.success("Comment added successfully");
+        // Clear translated comments to trigger re-translation with new comment
+        setTranslatedComments({});
       } else {
         throw new Error("Failed to add comment");
       }
@@ -192,7 +274,11 @@ export default function CommentDialog({ open, onOpenChange, post }) {
                   </span>
                 </div>
                 <p className="text-black dark:text-white mt-1">
-                  {post?.caption || ""}
+                  {isTranslatingCaption ? (
+                    <span className="text-gray-400 italic">Translating...</span>
+                  ) : (
+                    translatedCaption || post?.caption || ""
+                  )}
                 </p>
                 <div className="flex flex-wrap gap-1 mt-2">
                   {post?.hashtags?.map((tag, idx) => {
@@ -230,38 +316,49 @@ export default function CommentDialog({ open, onOpenChange, post }) {
             ) : comments.length === 0 ? (
               <div className="text-center py-4 text-gray-500">{translations.noComments || "No comments yet"}</div>
             ) : (
-              comments.map((c) => (
-                <div key={c.id} className="flex gap-3">
-                  <Avatar className="w-8 h-8 flex-shrink-0">
-                    <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white">
-                      {c.author?.[0] || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-2 justify-between">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-semibold text-black dark:text-white">
-                          {c.author || "Unknown"}
-                        </span>
-                        <span className="text-muted-foreground dark:text-gray-400 text-xs">
-                          {c.created_at ? new Date(c.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ""}
-                        </span>
+              comments.map((c) => {
+                const translatedContent = translatedComments[c.id] !== undefined 
+                  ? translatedComments[c.id] 
+                  : c.content;
+                return (
+                  <div key={c.id} className="flex gap-3">
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white">
+                        {c.author?.[0] || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2 justify-between">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-semibold text-black dark:text-white">
+                            {c.author || "Unknown"}
+                          </span>
+                          <span className="text-muted-foreground dark:text-gray-400 text-xs">
+                            {c.created_at ? new Date(c.created_at).toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : ""}
+                          </span>
+                        </div>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            onClick={() => handleDeleteComment(c.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
-                      {isAdmin && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          onClick={() => handleDeleteComment(c.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
+                      <p className="text-black dark:text-white mt-1">
+                        {isTranslatingComments && !translatedComments[c.id] ? (
+                          <span className="text-gray-400 italic">Translating...</span>
+                        ) : (
+                          translatedContent
+                        )}
+                      </p>
                     </div>
-                    <p className="text-black dark:text-white mt-1">{c.content}</p>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 

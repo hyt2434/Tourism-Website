@@ -88,6 +88,8 @@ export default function SocialPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [translatedDialogCaption, setTranslatedDialogCaption] = useState("");
   const [isTranslatingDialog, setIsTranslatingDialog] = useState(false);
+  const [translatedComments, setTranslatedComments] = useState({});
+  const [isTranslatingComments, setIsTranslatingComments] = useState(false);
   const [showDeletePostConfirm, setShowDeletePostConfirm] = useState(false);
   const [showDeleteCommentConfirm, setShowDeleteCommentConfirm] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
@@ -157,6 +159,58 @@ export default function SocialPage() {
 
     translateDialogCaption();
   }, [selectedPost?.caption, language, showPostDialog]);
+
+  // Auto-translate comments in dialog
+  useEffect(() => {
+    const translateComments = async () => {
+      if (!selectedPost || !showPostDialog || !selectedPost._apiData?.comments) {
+        setTranslatedComments({});
+        return;
+      }
+
+      const comments = selectedPost._apiData.comments || [];
+      if (comments.length === 0) {
+        setTranslatedComments({});
+        return;
+      }
+
+      setIsTranslatingComments(true);
+      try {
+        const translatedMap = {};
+        // Translate all comments in parallel
+        const translationPromises = comments.map(async (comment) => {
+          if (!comment.content || !comment.content.trim()) {
+            return { id: comment.id, translated: comment.content || "" };
+          }
+          try {
+            const translated = await getTranslatedContent(comment.content, language);
+            return { id: comment.id, translated };
+          } catch (error) {
+            console.error(`Translation error for comment ${comment.id}:`, error);
+            return { id: comment.id, translated: comment.content };
+          }
+        });
+
+        const results = await Promise.all(translationPromises);
+        results.forEach(({ id, translated }) => {
+          translatedMap[id] = translated;
+        });
+        setTranslatedComments(translatedMap);
+      } catch (error) {
+        console.error("Error translating comments:", error);
+        // Fallback to original comments
+        const fallbackMap = {};
+        comments.forEach((comment) => {
+          fallbackMap[comment.id] = comment.content || "";
+        });
+        setTranslatedComments(fallbackMap);
+      } finally {
+        setIsTranslatingComments(false);
+      }
+    };
+
+    translateComments();
+  }, [selectedPost?._apiData?.comments, language, showPostDialog]);
 
   const fetchPosts = async () => {
     try {
@@ -257,6 +311,8 @@ export default function SocialPage() {
       setSelectedPost(transformedPost);
       // Also update liked state
       setLiked(postData.is_liked || false);
+      // Clear translated comments to trigger re-translation
+      setTranslatedComments({});
       
       // Update the posts list to reflect the new comment count
       setPosts(prevPosts => 
@@ -384,6 +440,8 @@ export default function SocialPage() {
       }));
       setComment("");
       toast.success("Comment added successfully");
+      // Clear translated comments to trigger re-translation with new comment
+      setTranslatedComments({});
     } catch (error) {
       console.error("Failed to add comment:", error);
       toast.error("Failed to add comment");
@@ -689,36 +747,47 @@ export default function SocialPage() {
                   {/* Comments */}
                   <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                     {selectedPost._apiData?.comments && selectedPost._apiData.comments.length > 0 ? (
-                      selectedPost._apiData.comments.map((comment) => (
-                        <div key={comment.id} className="flex gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex-shrink-0 flex items-center justify-center text-white text-xs font-semibold">
-                            {comment.author?.[0] || "U"}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1">
-                                <p className="text-sm">
-                                  <span className="font-semibold mr-2 text-gray-900 dark:text-gray-100">{comment.author || "Unknown"}</span>
-                                  <span className="text-gray-800 dark:text-gray-200">{comment.content}</span>
-                                </p>
-                                <p className="text-xs text-gray-400 mt-1">
-                                  {comment.created_at ? new Date(comment.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ""}
-                                </p>
+                      selectedPost._apiData.comments.map((comment) => {
+                        const translatedContent = translatedComments[comment.id] !== undefined 
+                          ? translatedComments[comment.id] 
+                          : comment.content;
+                        return (
+                          <div key={comment.id} className="flex gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex-shrink-0 flex items-center justify-center text-white text-xs font-semibold">
+                              {comment.author?.[0] || "U"}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  <p className="text-sm">
+                                    <span className="font-semibold mr-2 text-gray-900 dark:text-gray-100">{comment.author || "Unknown"}</span>
+                                    <span className="text-gray-800 dark:text-gray-200">
+                                      {isTranslatingComments && !translatedComments[comment.id] ? (
+                                        <span className="text-gray-400 italic">Translating...</span>
+                                      ) : (
+                                        translatedContent
+                                      )}
+                                    </span>
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    {comment.created_at ? new Date(comment.created_at).toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : ""}
+                                  </p>
+                                </div>
+                                {isAdmin && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0"
+                                    onClick={() => handleDeleteCommentClick(comment.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
                               </div>
-                              {isAdmin && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0"
-                                  onClick={() => handleDeleteCommentClick(comment.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              )}
                             </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <div className="text-sm text-gray-500 text-center py-4">
                         {translations.noComments || "No comments yet"}
