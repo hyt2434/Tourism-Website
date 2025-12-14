@@ -384,8 +384,11 @@ def create_tour():
     try:
         cur = conn.cursor()
         
-        # Get user ID from request headers
-        user_id = request.headers.get('X-User-ID')
+        # Get user ID from request headers or body (ensure it's a string)
+        user_id = request.headers.get('X-User-ID') or data.get('user_id')
+        # Convert to string if it's not already (for database compatibility)
+        if user_id is not None:
+            user_id = str(user_id)
         
         # Create main tour
         cur.execute("""
@@ -513,11 +516,16 @@ def create_tour():
         total_price = 0
         
         # Extract number of nights from duration (duration is number of days, nights = days - 1)
-        duration_str = data.get('duration', '1')
-        # Extract number from duration string (e.g., "3 days 2 nights" -> 3)
-        import re
-        days_match = re.search(r'(\d+)', duration_str)
-        num_days = int(days_match.group(1)) if days_match else 1
+        duration_value = data.get('duration', 1)
+        # Handle both integer and string formats
+        if isinstance(duration_value, (int, float)):
+            num_days = int(duration_value)
+        else:
+            # If it's a string, try to extract number from it (e.g., "3 days 2 nights" -> 3)
+            import re
+            duration_str = str(duration_value)
+            days_match = re.search(r'(\d+)', duration_str)
+            num_days = int(days_match.group(1)) if days_match else 1
         num_nights = max(1, num_days - 1)  # Nights = Days - 1, minimum 1
         
         # Calculate number of people from room bookings

@@ -792,47 +792,193 @@ export default function TourManagementTab() {
         restaurants: formData.services?.restaurants?.map(r => ({
           ...r,
           id: r.id ? String(r.id) : r.id,
+          service_id: r.service_id ? String(r.service_id) : r.service_id,
           restaurant_id: r.restaurant_id ? String(r.restaurant_id) : r.restaurant_id
         })) || [],
         accommodation: formData.services?.accommodation ? {
           ...formData.services.accommodation,
-          id: formData.services.accommodation.id ? String(formData.services.accommodation.id) : formData.services.accommodation.id
+          id: formData.services.accommodation.id ? String(formData.services.accommodation.id) : formData.services.accommodation.id,
+          service_id: formData.services.accommodation.service_id ? String(formData.services.accommodation.service_id) : formData.services.accommodation.service_id
         } : null,
         transportation: formData.services?.transportation ? {
           ...formData.services.transportation,
-          id: formData.services.transportation.id ? String(formData.services.transportation.id) : formData.services.transportation.id
+          id: formData.services.transportation.id ? String(formData.services.transportation.id) : formData.services.transportation.id,
+          service_id: formData.services.transportation.service_id ? String(formData.services.transportation.service_id) : formData.services.transportation.service_id
         } : null
       };
       
+      // Get user ID for potential backend requirement
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user?.id ? String(user.id) : null;
+      
+      // Deep clone and process all data to ensure all IDs are strings
+      // Convert empty strings to null for optional ID fields
       const tourData = {
-        ...formData,
-        // Convert city IDs to strings if they exist
-        destination_city_id: formData.destination_city_id ? String(formData.destination_city_id) : '',
-        departure_city_id: formData.departure_city_id ? String(formData.departure_city_id) : '',
+        name: formData.name || '',
+        description: formData.description || '',
+        // Add user_id to body in case backend expects it (even though we also send it in headers)
+        ...(userId && { user_id: userId }),
+        // Convert city IDs to strings if they exist, null if empty
+        destination_city_id: formData.destination_city_id ? String(formData.destination_city_id) : null,
+        departure_city_id: formData.departure_city_id ? String(formData.departure_city_id) : null,
         // Ensure duration is a number (parse if string)
         duration: formData.duration ? parseInt(formData.duration) || 0 : 0,
         // Ensure number_of_members is a number
         number_of_members: parseInt(formData.number_of_members) || 0,
+        is_active: formData.is_active !== undefined ? formData.is_active : true,
+        is_published: formData.is_published !== undefined ? formData.is_published : false,
+        // Process images - ensure no ID fields exist and clean structure
+        images: (formData.images || []).map((img, idx) => {
+          // Remove any ID fields that might exist (for new images, shouldn't have IDs)
+          // Also ensure display_order is a number (not an ID)
+          const { id, image_id, tour_id, ...cleanImage } = img;
+          return {
+            url: cleanImage.url || '',
+            caption: cleanImage.caption || '',
+            display_order: typeof cleanImage.display_order === 'number' ? cleanImage.display_order : idx,
+            is_primary: cleanImage.is_primary || false
+          };
+        }),
+        // Process itinerary (keep structure but ensure no ID fields are integers)
+        itinerary: formData.itinerary || [],
         // Use processed services with string IDs
         services: processedServices,
         roomBookings: roomBooking.room_id ? [{
-          room_id: roomBooking.room_id ? String(roomBooking.room_id) : null,
+          room_id: String(roomBooking.room_id),
           quantity: parseInt(roomBooking.quantity) || 1
         }] : [],
-        selectedSetMeals: selectedSetMeals.map(meal => ({
-          ...meal,
-          restaurant_id: meal.restaurant_id ? String(meal.restaurant_id) : null,
-          set_meal_id: meal.set_meal_id ? String(meal.set_meal_id) : null
-        }))
+        selectedSetMeals: selectedSetMeals.map(meal => {
+          const processedMeal = { ...meal };
+          // Convert all ID fields to strings
+          if (processedMeal.set_meal_id !== undefined && processedMeal.set_meal_id !== null) {
+            processedMeal.set_meal_id = String(processedMeal.set_meal_id);
+          }
+          if (processedMeal.restaurant_id !== undefined && processedMeal.restaurant_id !== null) {
+            processedMeal.restaurant_id = String(processedMeal.restaurant_id);
+          }
+          if (processedMeal.service_id !== undefined && processedMeal.service_id !== null) {
+            processedMeal.service_id = String(processedMeal.service_id);
+          }
+          // Keep day_number and meal_session as they are (not IDs)
+          return processedMeal;
+        })
       };
       
-      console.log('Submitting tour data:', tourData);
+      // AGGRESSIVE sanitization: Convert ALL ID fields to strings
+      // Backend Python code expects strings for any field that might be hashed/encoded
+      const sanitizeIds = (obj, path = '') => {
+        if (obj === null || obj === undefined) return obj;
+        if (typeof obj === 'boolean') return obj;
+        if (typeof obj === 'string') return obj;
+        if (typeof obj === 'number') {
+          // Only keep numbers for non-ID fields (duration, quantity, number_of_members, day_number, price, etc.)
+          return obj;
+        }
+        if (Array.isArray(obj)) {
+          return obj.map((item, idx) => sanitizeIds(item, `${path}[${idx}]`));
+        }
+        if (typeof obj === 'object' && !(obj instanceof Date) && !(obj instanceof File)) {
+          const sanitized = {};
+          for (const [key, value] of Object.entries(obj)) {
+            const currentPath = path ? `${path}.${key}` : key;
+            
+            // List of fields that should remain as numbers (not IDs)
+            const numericFields = ['duration', 'number_of_members', 'quantity', 'day_number', 'price', 'discount', 'total_price', 'base_price'];
+            
+            // Convert ANY field ending in _id or named 'id' to string if it's a number
+            // This catches: id, _id, service_id, restaurant_id, room_id, set_meal_id, city_id, etc.
+            if ((key.endsWith('_id') || key === 'id') && typeof value === 'number' && !numericFields.includes(key)) {
+              console.warn(`[SANITIZE] Converting ${currentPath} from number ${value} to string "${String(value)}"`);
+              sanitized[key] = String(value);
+            } else if (key.endsWith('_id') || key === 'id') {
+              // Field is an ID but already a string or null - ensure it's a string if not null
+              if (value !== null && value !== undefined && typeof value !== 'string') {
+                console.warn(`[SANITIZE] Converting ${currentPath} from ${typeof value} to string`);
+                sanitized[key] = String(value);
+              } else {
+                sanitized[key] = value;
+              }
+            } else {
+              // Recursively sanitize nested objects
+              sanitized[key] = sanitizeIds(value, currentPath);
+            }
+          }
+          return sanitized;
+        }
+        return obj;
+      };
+      
+      const finalTourData = sanitizeIds(tourData);
+      
+      // Double-check: Find any remaining numeric IDs
+      const findNumericIds = (obj, path = '') => {
+        if (obj === null || obj === undefined) return [];
+        if (Array.isArray(obj)) {
+          return obj.flatMap((item, idx) => findNumericIds(item, `${path}[${idx}]`));
+        }
+        if (typeof obj === 'object') {
+          const issues = [];
+          for (const [key, value] of Object.entries(obj)) {
+            const currentPath = path ? `${path}.${key}` : key;
+            if ((key.endsWith('_id') || key === 'id') && typeof value === 'number' && 
+                !['day_number', 'quantity', 'duration', 'number_of_members'].includes(key)) {
+              issues.push(`${currentPath} = ${value} (number, should be string)`);
+            }
+            issues.push(...findNumericIds(value, currentPath));
+          }
+          return issues;
+        }
+        return [];
+      };
+      
+      const remainingIssues = findNumericIds(finalTourData);
+      if (remainingIssues.length > 0) {
+        console.error('⚠️ REMAINING NUMERIC IDs FOUND:', remainingIssues);
+      }
+      
+      console.log('=== FINAL TOUR DATA ===');
+      console.log('Full data:', JSON.stringify(finalTourData, null, 2));
+      console.log('Services:', JSON.stringify(finalTourData.services, null, 2));
+      console.log('RoomBookings:', JSON.stringify(finalTourData.roomBookings, null, 2));
+      console.log('SelectedSetMeals:', JSON.stringify(finalTourData.selectedSetMeals, null, 2));
+      console.log('Itinerary:', JSON.stringify(finalTourData.itinerary, null, 2));
+      console.log('Images count:', finalTourData.images?.length || 0);
+      
+      // Final validation: ensure NO integers exist in any ID field
+      const validateNoIntegerIds = (obj, path = '') => {
+        const violations = [];
+        if (obj === null || obj === undefined) return violations;
+        if (Array.isArray(obj)) {
+          obj.forEach((item, idx) => {
+            violations.push(...validateNoIntegerIds(item, `${path}[${idx}]`));
+          });
+          return violations;
+        }
+        if (typeof obj === 'object') {
+          for (const [key, value] of Object.entries(obj)) {
+            const currentPath = path ? `${path}.${key}` : key;
+            if ((key.endsWith('_id') || key === 'id') && typeof value === 'number') {
+              violations.push(`${currentPath} = ${value} (INTEGER - MUST BE STRING!)`);
+            }
+            violations.push(...validateNoIntegerIds(value, currentPath));
+          }
+        }
+        return violations;
+      };
+      
+      const violations = validateNoIntegerIds(finalTourData);
+      if (violations.length > 0) {
+        console.error('🚨 CRITICAL: Integer IDs found in request:', violations);
+        throw new Error(`Cannot send request: Found ${violations.length} integer ID fields that must be strings: ${violations.join(', ')}`);
+      } else {
+        console.log('✅ Validation passed: All ID fields are strings');
+      }
       
       if (editingTour) {
-        await updateTour(editingTour.id, tourData);
+        await updateTour(editingTour.id, finalTourData);
         toast.success(translations.tourUpdatedSuccess || 'Tour updated successfully');
       } else {
-        await createTour(tourData);
+        await createTour(finalTourData);
         toast.success(translations.tourCreatedSuccess || 'Tour created successfully');
       }
       
@@ -1089,7 +1235,7 @@ export default function TourManagementTab() {
                         <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-500 flex-shrink-0" />
                         <span className="truncate">
                           {tour.number_of_members > 0
-                            ? `${(Math.ceil((tour.total_price / tour.number_of_members) / 1000) * 1000).toLocaleString()} ${tour.currency}/${translations.perPerson || 'person'} (${tour.number_of_members} ${translations.people || 'people'})`
+                            ? `${(Math.ceil((tour.total_price / tour.number_of_members) / 1000) * 1000).toLocaleString()} ${tour.currency}${translations.perPerson || '/person'} (${tour.number_of_members} ${translations.people || 'people'})`
                             : `${tour.total_price.toLocaleString()} ${tour.currency}`
                           }
                         </span>

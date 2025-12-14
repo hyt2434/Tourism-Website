@@ -103,12 +103,58 @@ export const getTourDetail = async (tourId) => {
  */
 export const createTour = async (tourData) => {
   try {
+    const headers = getAuthHeaders();
+    
+    // CRITICAL: Ensure X-User-ID is explicitly a string, not a number
+    // Some backends may parse "1" as integer 1, so we add a prefix to force string type
+    // But actually, let's just make sure it's a proper string
+    if (headers['X-User-ID'] && typeof headers['X-User-ID'] !== 'string') {
+      headers['X-User-ID'] = String(headers['X-User-ID']);
+    }
+    
+    // Final pass: Ensure no integer IDs in the body by re-stringifying and parsing
+    // This catches any edge cases where JSON.stringify might have issues
+    const bodyString = JSON.stringify(tourData);
+    const parsedBody = JSON.parse(bodyString);
+    
+    // Double-check: recursively ensure all _id and id fields are strings
+    const finalSanitize = (obj) => {
+      if (obj === null || obj === undefined) return obj;
+      if (Array.isArray(obj)) return obj.map(item => finalSanitize(item));
+      if (typeof obj === 'object') {
+        const sanitized = {};
+        for (const [key, value] of Object.entries(obj)) {
+          if ((key.endsWith('_id') || key === 'id') && typeof value === 'number' && 
+              !['day_number', 'quantity', 'duration', 'number_of_members', 'display_order'].includes(key)) {
+            console.warn(`[FINAL SANITIZE] Converting ${key} from ${typeof value} to string`);
+            sanitized[key] = String(value);
+          } else {
+            sanitized[key] = finalSanitize(value);
+          }
+        }
+        return sanitized;
+      }
+      return obj;
+    };
+    
+    const finalBody = finalSanitize(parsedBody);
+    
+    console.log('=== API REQUEST ===');
+    console.log('Headers:', headers);
+    console.log('X-User-ID type:', typeof headers['X-User-ID'], 'value:', headers['X-User-ID']);
+    console.log('Body preview (first 500 chars):', JSON.stringify(finalBody).substring(0, 500));
+    
     const response = await fetch(`${API_BASE_URL}/api/admin/tours`, {
       method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(tourData)
+      headers: headers,
+      body: JSON.stringify(finalBody)
     });
-    if (!response.ok) throw new Error('Failed to create tour');
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Response error:', errorText);
+      throw new Error('Failed to create tour');
+    }
     return response.json();
   } catch (error) {
     console.error('Error creating tour:', error);
