@@ -6,6 +6,12 @@ import random
 import string
 from datetime import datetime, timedelta
 from config.database import get_connection
+from src.services.email_service import (
+    send_welcome_email,
+    send_password_reset_email,
+    send_password_changed_email,
+    send_account_status_changed_email
+)
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
@@ -128,9 +134,17 @@ def ensure_default_admin():
 # ---------------- GOOGLE LOGIN ----------------
 @auth_routes.route("/google")
 def google_login():
+    redirect_uri = f"{BACKEND_URL}/api/auth/google/callback"
+    # Remove trailing slash if present
+    redirect_uri = redirect_uri.rstrip('/')
+    
+    print(f"🔍 Google OAuth - Redirect URI: {redirect_uri}")
+    print(f"🔍 Google OAuth - BACKEND_URL from env: {BACKEND_URL}")
+    print(f"🔍 Google OAuth - Client ID from env: {GOOGLE_CLIENT_ID}")
+    
     google = OAuth2Session(
         GOOGLE_CLIENT_ID,
-        redirect_uri=f"{BACKEND_URL}/api/auth/google/callback",
+        redirect_uri=redirect_uri,
         scope=["openid", "email", "profile"]
     )
     auth_url, state = google.authorization_url(
@@ -139,15 +153,23 @@ def google_login():
         prompt="select_account"
     )
     session["oauth_state"] = state
+    print(f"🔍 Google OAuth - Auth URL: {auth_url}")
     return redirect(auth_url)
 
 
 @auth_routes.route("/google/callback")
 def google_callback():
+    redirect_uri = f"{BACKEND_URL}/api/auth/google/callback"
+    # Remove trailing slash if present
+    redirect_uri = redirect_uri.rstrip('/')
+    
+    print(f"🔍 Google OAuth Callback - Redirect URI: {redirect_uri}")
+    print(f"🔍 Google OAuth Callback - Request URL: {request.url}")
+    
     google = OAuth2Session(
         GOOGLE_CLIENT_ID,
         state=session.get("oauth_state"),
-        redirect_uri=f"{BACKEND_URL}/api/auth/google/callback"
+        redirect_uri=redirect_uri
     )
     token = google.fetch_token(
         "https://oauth2.googleapis.com/token",
@@ -161,6 +183,21 @@ def google_callback():
     # Store user email in session for role-based access
     session['user_email'] = user_info['email']
     
+    # Check if user needs to set up password (OAuth user with NULL password)
+    conn = get_connection()
+    if conn:
+        cur = conn.cursor()
+        cur.execute("SELECT password FROM users WHERE email = %s", (user_info['email'],))
+        password_result = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        # If password is NULL, redirect to password setup page
+        if password_result and password_result[0] is None:
+            redirect_url = f"{FRONTEND_URL}/setup-password?email={user_info['email']}&from=google"
+            return redirect(redirect_url)
+    
+    # User has password or existing user, proceed normally
     redirect_url = f"{FRONTEND_URL}/?user={user_info['email']}&role={user.get('role', 'client')}"
     return redirect(redirect_url)
 
@@ -238,6 +275,12 @@ def register():
     cur.close()
     conn.close()
     
+    # Send welcome email
+    try:
+        send_welcome_email(email, username)
+    except Exception as e:
+        print(f"⚠️ Failed to send welcome email: {e}")
+    
     return jsonify({
         "message": "Successfully registered.",
         "user": {
@@ -280,7 +323,19 @@ def login():
         # Store user email in session for role-based access
         session['user_email'] = email
         
-        # Return user info including role and partner_type
+        # Generate JWT token
+        import jwt
+        import datetime
+        SECRET_KEY = os.getenv('SECRET_KEY', 'your_secret_key')
+        
+        token = jwt.encode({
+            'user_id': user_id,
+            'email': email,
+            'role': role,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7)  # Token valid for 7 days
+        }, SECRET_KEY, algorithm='HS256')
+        
+        # Return user info including role, partner_type, and token
         user_data = {
             "id": user_id,
             "username": username,
@@ -294,7 +349,8 @@ def login():
         
         return jsonify({
             "message": "Successfully logged in.",
-            "user": user_data
+            "user": user_data,
+            "token": token  # Add JWT token to response
         }), 200
     else:
         return jsonify({"error": "Invalid password."}), 401
@@ -718,6 +774,86 @@ def update_profile():
         conn.close()
 
 
+@auth_routes.route('/setup-password', methods=['POST'])
+def setup_password():
+    """Set up password for OAuth users (users with NULL password)"""
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+    
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+    
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters long"}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        # Check if user exists and has NULL password (OAuth user)
+        cur.execute("SELECT id, username, password FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        # Check if password is already set
+        if user[2] is not None:
+            return jsonify({"error": "Password is already set. Use change-password endpoint instead."}), 400
+        
+        # Hash and set password
+        bcrypt = current_app.bcrypt
+        hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
+        
+        cur.execute("""
+            UPDATE users
+            SET password = %s
+            WHERE email = %s
+            RETURNING id, username, email, role
+        """, (hashed_pw, email))
+        
+        updated_user = cur.fetchone()
+        conn.commit()
+        
+        if not updated_user:
+            return jsonify({"error": "Failed to set password"}), 500
+        
+        # Generate JWT token for immediate login
+        import jwt
+        import datetime
+        SECRET_KEY = os.getenv('SECRET_KEY', 'your_secret_key')
+        
+        token = jwt.encode({
+            'user_id': updated_user[0],
+            'email': updated_user[2],
+            'role': updated_user[3],
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7)
+        }, SECRET_KEY, algorithm='HS256')
+        
+        return jsonify({
+            "message": "Password set successfully. You are now logged in.",
+            "user": {
+                "id": updated_user[0],
+                "username": updated_user[1],
+                "email": updated_user[2],
+                "role": updated_user[3]
+            },
+            "token": token
+        }), 200
+    
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": f"Failed to set password: {str(e)}"}), 500
+    
+    finally:
+        cur.close()
+        conn.close()
+
+
 @auth_routes.route('/change-password', methods=['POST'])
 def change_password():
     """Change current user's password."""
@@ -764,9 +900,18 @@ def change_password():
             UPDATE users
             SET password = %s
             WHERE email = %s
+            RETURNING username
         """, (hashed_pw, email))
         
+        user = cur.fetchone()
         conn.commit()
+        
+        # Send password changed confirmation email
+        if user:
+            try:
+                send_password_changed_email(email, user[0])
+            except Exception as e:
+                print(f"⚠️ Failed to send password changed email: {e}")
         
         return jsonify({"message": "Password changed successfully"}), 200
     
@@ -880,13 +1025,17 @@ def forgot_password():
             'user_id': user[0]
         }
         
-        # In production, send email here
-        # For now, we'll just log it (or you can integrate an email service)
+        # Send password reset email
+        try:
+            send_password_reset_email(email, reset_code)
+            print(f"✅ Password reset email sent to {email}")
+        except Exception as e:
+            print(f"⚠️ Failed to send password reset email: {e}")
+            # Still return success for security (don't reveal if email exists)
+        
+        # In development, also log the code (remove in production)
         print(f"🔐 Password reset code for {email}: {reset_code}")
         print(f"   Expires at: {reset_codes[email]['expires_at']}")
-        
-        # TODO: Send email with reset code
-        # send_reset_email(email, reset_code)
         
         return jsonify({
             "message": "Reset code sent to your email. Please check your inbox.",
@@ -1092,6 +1241,13 @@ def update_user_status(user_id):
                 raise e
         
         conn.commit()
+        
+        # Send account status change email
+        try:
+            reason = data.get("reason")  # Optional reason from request
+            send_account_status_changed_email(user[2], user[1], status, reason)
+        except Exception as e:
+            print(f"⚠️ Failed to send account status change email: {e}")
         
         return jsonify({
             "message": f"User {'banned' if status == 'banned' else 'unbanned'} successfully",

@@ -453,10 +453,11 @@ def get_rooms(accommodation_id):
                 id, name, room_type, description, max_adults, max_children,
                 total_rooms, room_size, bed_type, view_type, amenities,
                 base_price, weekend_price, holiday_price, currency, is_available,
+                deluxe_upgrade_price, suite_upgrade_price,
                 created_at, updated_at
             FROM accommodation_rooms
             WHERE accommodation_id = %s
-            ORDER BY base_price
+            ORDER BY created_at DESC
         """, (accommodation_id,))
         
         rows = cur.fetchall()
@@ -489,9 +490,11 @@ def get_rooms(accommodation_id):
                 'holidayPrice': float(row[13]) if row[13] else None,
                 'currency': row[14],
                 'isAvailable': row[15],
+                'deluxeUpgradePrice': float(row[16]) if row[16] else 0,
+                'suiteUpgradePrice': float(row[17]) if row[17] else 0,
                 'images': images,
-                'createdAt': row[16].isoformat() if row[16] else None,
-                'updatedAt': row[17].isoformat() if row[17] else None
+                'createdAt': row[18].isoformat() if row[18] else None,
+                'updatedAt': row[19].isoformat() if row[19] else None
             })
         
         cur.close()
@@ -536,25 +539,28 @@ def create_room(accommodation_id):
                 accommodation_id, name, room_type, description,
                 max_adults, max_children, total_rooms, room_size,
                 bed_type, view_type, amenities, base_price,
-                weekend_price, holiday_price, currency
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                weekend_price, holiday_price, currency,
+                deluxe_upgrade_price, suite_upgrade_price
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             accommodation_id,
             data['name'],
-            data.get('roomType'),
+            data.get('roomType', 'Standard'),  # Default to Standard
             data.get('description'),
             data.get('maxAdults', 2),
             data.get('maxChildren', 1),
             data.get('totalRooms', 1),
             data.get('roomSize'),
-            data.get('bedType'),
+            data.get('bedType', 'Double'),  # Default to Double
             data.get('viewType'),
             data.get('amenities', []),
             data['basePrice'],
             data.get('weekendPrice'),
             data.get('holidayPrice'),
-            data.get('currency', 'VND')
+            data.get('currency', 'VND'),
+            data.get('deluxeUpgradePrice', 0),  # Upgrade price for Deluxe
+            data.get('suiteUpgradePrice', 0)    # Upgrade price for Suite
         ))
         
         room_id = cur.fetchone()[0]
@@ -626,6 +632,8 @@ def update_room(accommodation_id, room_id):
                 weekend_price = %s,
                 holiday_price = %s,
                 currency = %s,
+                deluxe_upgrade_price = %s,
+                suite_upgrade_price = %s,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = %s AND accommodation_id = %s
         """, (
@@ -643,6 +651,8 @@ def update_room(accommodation_id, room_id):
             data.get('weekendPrice'),
             data.get('holidayPrice'),
             data.get('currency', 'VND'),
+            data.get('deluxeUpgradePrice', 0),
+            data.get('suiteUpgradePrice', 0),
             room_id,
             accommodation_id
         ))

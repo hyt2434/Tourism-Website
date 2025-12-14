@@ -56,10 +56,10 @@ export default function ServiceDialog({ service, type }) {
                 <SelectTrigger className="bg-white dark:bg-gray-800 text-black dark:text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white rounded-lg shadow-sm border border-gray-200">
-                  <SelectItem value="pending">{translations.pendingApproval}</SelectItem>
-                  <SelectItem value="approved">{translations.approved}</SelectItem>
-                  <SelectItem value="hidden">{translations.hidden}</SelectItem>
+                <SelectContent className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                  <SelectItem value="pending" className="text-black dark:text-white focus:bg-gray-100 dark:focus:bg-gray-700">{translations.pendingApproval}</SelectItem>
+                  <SelectItem value="approved" className="text-black dark:text-white focus:bg-gray-100 dark:focus:bg-gray-700">{translations.approved}</SelectItem>
+                  <SelectItem value="hidden" className="text-black dark:text-white focus:bg-gray-100 dark:focus:bg-gray-700">{translations.hidden}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

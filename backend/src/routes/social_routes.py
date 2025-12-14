@@ -5,8 +5,247 @@ import re
 import os
 import time
 from werkzeug.utils import secure_filename
+try:
+    from unidecode import unidecode
+except ImportError:
+    # Fallback if unidecode is not available
+    def unidecode(text):
+        return text
 
 social_routes = Blueprint('social_routes', __name__)
+
+
+def auto_post_from_tour_review(review_id, tour_id, user_id, review_images, review_text, conn=None):
+    """
+    Helper function to automatically create a post from a tour review.
+    Called when a tour review with images is created.
+    """
+    should_close_conn = False
+    if conn is None:
+        conn = get_connection()
+        if conn is None:
+            print("❌ Cannot auto-post: Database connection failed.")
+            return None
+        should_close_conn = True
+    
+    cur = conn.cursor()
+    
+    try:
+        # Check if review has images
+        if not review_images or len(review_images) == 0:
+            return None
+        
+        # Check if post already exists for this review
+        cur.execute("""
+            SELECT id FROM posts 
+            WHERE tour_reviews_id = %s
+        """, (review_id,))
+        
+        if cur.fetchone():
+            return None  # Post already exists
+        
+        # Get tour information including destination city and review deleted_at
+        cur.execute("""
+            SELECT 
+                t.name as tour_name,
+                t.destination_city_id,
+                c.name as city_name,
+                tr.deleted_at
+            FROM tours_admin t
+            JOIN cities c ON t.destination_city_id = c.id
+            JOIN tour_reviews tr ON tr.id = %s AND tr.tour_id = t.id
+            WHERE t.id = %s
+        """, (review_id, tour_id))
+        
+        tour_info = cur.fetchone()
+        if not tour_info:
+            return None
+        
+        tour_name, city_id, city_name, deleted_at = tour_info
+        
+        # Generate hashtags
+        hashtags = []
+        
+        # Destination city hashtag
+        cur.execute("""
+            SELECT hashtag FROM social_hashtag 
+            WHERE source_type = 'city' AND source_id = %s
+            LIMIT 1
+        """, (city_id,))
+        city_hashtag_row = cur.fetchone()
+        if city_hashtag_row:
+            hashtags.append(city_hashtag_row[0])
+        
+        # Tour hashtag
+        cur.execute("""
+            SELECT hashtag FROM social_hashtag 
+            WHERE source_type = 'tour' AND source_id = %s
+            LIMIT 1
+        """, (tour_id,))
+        tour_hashtag_row = cur.fetchone()
+        if tour_hashtag_row:
+            hashtags.append(tour_hashtag_row[0])
+        
+        # Use first image
+        image_url = review_images[0] if isinstance(review_images, list) else review_images
+        
+        # Default content if review_text is empty
+        default_content = review_text or "Amazing tour experience!"
+        
+        # Create post with new columns
+        cur.execute("""
+            INSERT INTO posts (author_id, content, image_url, hashtags, tour_reviews_id, deleted_at_tour_reviews)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (user_id, default_content, image_url, hashtags, review_id, deleted_at))
+        
+        post_id = cur.fetchone()[0]
+        
+        # Update hashtag usage counts
+        for hashtag in hashtags:
+            cur.execute("""
+                UPDATE social_hashtag 
+                SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP
+                WHERE hashtag = %s
+            """, (hashtag,))
+        
+        if should_close_conn:
+            conn.commit()
+        
+        print(f"✅ Auto-created post {post_id} from tour review {review_id}")
+        return post_id
+        
+    except Exception as e:
+        print(f"❌ Error auto-posting from tour review: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+    finally:
+        cur.close()
+        if should_close_conn and conn:
+            conn.close()
+
+
+def auto_post_from_service_review(service_review_id, tour_id, user_id, review_images, review_text, service_type, conn=None):
+    """
+    Helper function to automatically create a post from a service review.
+    Called when a service review with images is created.
+    """
+    should_close_conn = False
+    if conn is None:
+        conn = get_connection()
+        if conn is None:
+            print("❌ Cannot auto-post: Database connection failed.")
+            return None
+        should_close_conn = True
+    
+    cur = conn.cursor()
+    
+    try:
+        # Check if review has images
+        if not review_images or len(review_images) == 0:
+            return None
+        
+        # Check if post already exists for this review
+        cur.execute("""
+            SELECT id FROM posts 
+            WHERE service_reviews_id = %s
+        """, (service_review_id,))
+        
+        if cur.fetchone():
+            return None  # Post already exists
+        
+        # Get tour information including destination city and review deleted_at
+        cur.execute("""
+            SELECT 
+                t.name as tour_name,
+                t.destination_city_id,
+                c.name as city_name,
+                sr.deleted_at
+            FROM tours_admin t
+            JOIN cities c ON t.destination_city_id = c.id
+            JOIN service_reviews sr ON sr.id = %s
+            JOIN tour_services ts ON sr.tour_service_id = ts.id AND ts.tour_id = t.id
+            WHERE t.id = %s
+        """, (service_review_id, tour_id))
+        
+        tour_info = cur.fetchone()
+        if not tour_info:
+            return None
+        
+        tour_name, city_id, city_name, deleted_at = tour_info
+        
+        # Generate hashtags
+        hashtags = []
+        
+        # Destination city hashtag
+        cur.execute("""
+            SELECT hashtag FROM social_hashtag 
+            WHERE source_type = 'city' AND source_id = %s
+            LIMIT 1
+        """, (city_id,))
+        city_hashtag_row = cur.fetchone()
+        if city_hashtag_row:
+            hashtags.append(city_hashtag_row[0])
+        
+        # Tour hashtag
+        cur.execute("""
+            SELECT hashtag FROM social_hashtag 
+            WHERE source_type = 'tour' AND source_id = %s
+            LIMIT 1
+        """, (tour_id,))
+        tour_hashtag_row = cur.fetchone()
+        if tour_hashtag_row:
+            hashtags.append(tour_hashtag_row[0])
+        
+        # Use first image
+        image_url = review_images[0] if isinstance(review_images, list) else review_images
+        
+        # Add service type prefix
+        service_type_prefix = {
+            'accommodation': 'Great accommodation service!',
+            'restaurant': 'Great restaurant service!',
+            'transportation': 'Great transportation service!'
+        }.get(service_type, 'Great service!')
+        
+        # Combine service type with review text
+        if review_text:
+            content = f"{service_type_prefix} {review_text}"
+        else:
+            content = service_type_prefix
+        
+        # Create post with new columns
+        cur.execute("""
+            INSERT INTO posts (author_id, content, image_url, hashtags, service_reviews_id, deleted_at_service_reviews)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (user_id, content, image_url, hashtags, service_review_id, deleted_at))
+        
+        post_id = cur.fetchone()[0]
+        
+        # Update hashtag usage counts
+        for hashtag in hashtags:
+            cur.execute("""
+                UPDATE social_hashtag 
+                SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP
+                WHERE hashtag = %s
+            """, (hashtag,))
+        
+        if should_close_conn:
+            conn.commit()
+        
+        print(f"✅ Auto-created post {post_id} from service review {service_review_id}")
+        return post_id
+        
+    except Exception as e:
+        print(f"❌ Error auto-posting from service review: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+    finally:
+        cur.close()
+        if should_close_conn and conn:
+            conn.close()
 
 
 def _get_user_id_by_email(cur, email):
@@ -45,17 +284,24 @@ def list_posts():
         return jsonify({"error": "Database connection failed."}), 500
     cur = conn.cursor()
 
+    # Get current user email from request if available
+    user_email = request.headers.get('X-User-Email')
+    user_id = None
+    if user_email:
+        user_id = _get_user_id_by_email(cur, user_email)
+
     cur.execute(
         """
         SELECT 
             p.id, 
             p.content, 
             p.image_url, 
+            p.hashtags,
             p.created_at, 
             u.username, 
             u.email,
             (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
-            (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comment_count,
+            (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id AND c.deleted_at IS NULL) AS comment_count,
             (
                 SELECT json_agg(
                     json_build_object(
@@ -69,17 +315,30 @@ def list_posts():
                 FROM comments c
                 LEFT JOIN users u2 ON c.author_id = u2.id
                 WHERE c.post_id = p.id
+                    AND c.deleted_at IS NULL
+                    AND EXISTS (
+                        SELECT 1 FROM posts p_check 
+                        WHERE p_check.id = c.post_id 
+                            AND (p_check.deleted_at_tour_reviews IS NULL AND p_check.deleted_at_service_reviews IS NULL)
+                            AND p_check.deleted_at IS NULL
+                    )
             ) as comments,
             (
                 SELECT array_agg(t.name) 
                 FROM tags t 
                 JOIN post_tags pt ON t.id = pt.tag_id 
                 WHERE pt.post_id = p.id
-            ) as tags
+            ) as tags,
+            CASE WHEN %s IS NOT NULL THEN 
+                EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = %s)
+            ELSE FALSE END as is_liked
         FROM posts p
         LEFT JOIN users u ON p.author_id = u.id
+        WHERE (p.deleted_at_tour_reviews IS NULL AND p.deleted_at_service_reviews IS NULL)
+            AND p.deleted_at IS NULL
         ORDER BY p.created_at DESC
-        """
+        """,
+        (user_id, user_id)
     )
     rows = cur.fetchall()
     posts = []
@@ -88,12 +347,14 @@ def list_posts():
             "id": r[0],
             "content": r[1],
             "image_url": r[2],
-            "created_at": r[3].isoformat() if r[3] else None,
-            "author": {"username": r[4], "email": r[5]},
-            "like_count": r[6],
-            "comment_count": r[7],
-            "comments": r[8] if r[8] else [],
-            "tags": r[9] if r[9] else []
+            "hashtags": r[3] if r[3] else [],
+            "created_at": r[4].isoformat() if len(r) > 4 and r[4] else None,
+            "author": {"username": r[5] if len(r) > 5 else None, "email": r[6] if len(r) > 6 else None},
+            "like_count": r[7] if len(r) > 7 else 0,
+            "comment_count": r[8] if len(r) > 8 else 0,
+            "comments": r[9] if len(r) > 9 and r[9] else [],
+            "tags": r[10] if len(r) > 10 and r[10] else [],
+            "is_liked": r[11] if len(r) > 11 else False
         })
 
     cur.close()
@@ -119,6 +380,12 @@ def search_posts():
             return jsonify({"error": "Database connection failed."}), 500
             
         cur = conn.cursor()
+        
+        # Get current user email from request if available
+        user_email = request.headers.get('X-User-Email')
+        user_id = None
+        if user_email:
+            user_id = _get_user_id_by_email(cur, user_email)
 
         base_sql = """
             WITH post_comments AS (
@@ -131,12 +398,20 @@ def search_posts():
                                 'created_at', c.created_at::text,
                                 'author', u2.username
                             ) ORDER BY c.created_at DESC
-                        ) FILTER (WHERE c.id IS NOT NULL),
+                        ) FILTER (WHERE c.id IS NOT NULL 
+                            AND EXISTS (
+                                SELECT 1 FROM posts p_check 
+                                WHERE p_check.id = c.post_id 
+                                    AND (p_check.deleted_at_tour_reviews IS NULL AND p_check.deleted_at_service_reviews IS NULL)
+                            )),
                         '[]'
                     )::jsonb AS comments
                 FROM posts p_base
                 LEFT JOIN comments c ON c.post_id = p_base.id
                 LEFT JOIN users u2 ON c.author_id = u2.id
+                WHERE (p_base.deleted_at_tour_reviews IS NULL AND p_base.deleted_at_service_reviews IS NULL)
+                    AND p_base.deleted_at IS NULL
+                    AND c.deleted_at IS NULL
                 GROUP BY c.post_id
             ),
             post_tags_data AS (
@@ -153,43 +428,62 @@ def search_posts():
             SELECT DISTINCT 
                 p.id, 
                 p.content, 
-                p.image_url, 
+                p.image_url,
+                p.hashtags,
                 p.created_at, 
                 u.username, 
                 u.email,
                 COALESCE((SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id), 0) AS like_count,
-                COALESCE((SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id), 0) AS comment_count,
+                COALESCE((SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id 
+                    AND c.deleted_at IS NULL
+                    AND EXISTS (
+                        SELECT 1 FROM posts p_check 
+                        WHERE p_check.id = c.post_id 
+                            AND (p_check.deleted_at_tour_reviews IS NULL AND p_check.deleted_at_service_reviews IS NULL)
+                    )), 0) AS comment_count,
                 COALESCE(pc.comments, '[]'::jsonb) as comments,
-                COALESCE(ptd.tags, '[]'::jsonb) as tags
+                COALESCE(ptd.tags, '[]'::jsonb) as tags,
+                CASE WHEN %s IS NOT NULL THEN 
+                    EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = %s)
+                ELSE FALSE END as is_liked
             FROM posts p
             LEFT JOIN users u ON p.author_id = u.id
             LEFT JOIN post_comments pc ON pc.post_id = p.id
             LEFT JOIN post_tags_data ptd ON ptd.post_id = p.id
+            WHERE (p.deleted_at_tour_reviews IS NULL AND p.deleted_at_service_reviews IS NULL)
+                AND p.deleted_at IS NULL
         """
 
         if query.startswith('#'):
-            # Search by hashtag
+            # Search by hashtag - search in hashtags column in posts table
             tag = query[1:]  # Remove the # symbol
             if not tag.strip():  # If only '#' was entered
                 return jsonify([])
                 
             sql = base_sql + """
-                WHERE EXISTS (
-                    SELECT 1 FROM post_tags pt2
-                    JOIN tags t ON t.id = pt2.tag_id
-                    WHERE pt2.post_id = p.id
-                    AND LOWER(t.name) LIKE %s
+                AND (
+                    EXISTS (
+                        SELECT 1 FROM unnest(p.hashtags) AS hashtag
+                        WHERE LOWER(hashtag) LIKE %s
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM post_tags pt2
+                        JOIN tags t ON t.id = pt2.tag_id
+                        WHERE pt2.post_id = p.id
+                        AND LOWER(t.name) LIKE %s
+                    )
                 )
                 ORDER BY p.created_at DESC
             """
-            cur.execute(sql, (f"%{tag.strip()}%",))
+            search_pattern = f"%{tag.strip()}%"
+            cur.execute(sql, (user_id, user_id, search_pattern, search_pattern))
         else:
             # Search in post content
             sql = base_sql + """
-                WHERE LOWER(p.content) LIKE %s
+                AND LOWER(p.content) LIKE %s
                 ORDER BY p.created_at DESC
             """
-            cur.execute(sql, (f"%{query}%",))
+            cur.execute(sql, (user_id, user_id, f"%{query}%"))
 
         posts = cur.fetchall()
         
@@ -197,12 +491,13 @@ def search_posts():
             'id': post[0],
             'content': post[1],
             'image_url': post[2],
-            'created_at': post[3].isoformat() if post[3] else None,
-            'author': {'username': post[4], 'email': post[5]},
-            'like_count': post[6],
-            'comment_count': post[7],
-            'comments': post[8] if post[8] else [],
-            'tags': post[9] if post[9] else []
+            'hashtags': post[3] if post[3] else [],
+            'created_at': post[4].isoformat() if len(post) > 4 and post[4] else None,
+            'author': {'username': post[5] if len(post) > 5 else None, 'email': post[6] if len(post) > 6 else None},
+            'like_count': post[7] if len(post) > 7 else 0,
+            'comment_count': post[8] if len(post) > 8 else 0,
+            'comments': post[9] if len(post) > 9 and post[9] else [],
+            'tags': post[10] if len(post) > 10 and post[10] else []
         } for post in posts])
 
     except Exception as e:
@@ -271,6 +566,7 @@ def create_post():
     author_email = data.get('author_email')
     content = data.get('content')
     image_url = data.get('image_url')
+    hashtags = data.get('hashtags', [])  # Array of hashtags from frontend
 
     if not author_email or (not content and not image_url):
         return jsonify({"error": "Missing author_email or content/image_url."}), 400
@@ -286,10 +582,17 @@ def create_post():
         conn.close()
         return jsonify({"error": "Author not found."}), 404
 
-    # create post
+    # Extract hashtags from content if not provided
+    if not hashtags:
+        hashtags = _extract_hashtags(content)
+    else:
+        # Ensure hashtags start with #
+        hashtags = [tag if tag.startswith('#') else f'#{tag}' for tag in hashtags]
+
+    # create post with hashtags
     cur.execute(
-        "INSERT INTO posts (author_id, content, image_url) VALUES (%s, %s, %s) RETURNING id, created_at",
-        (author_id, content, image_url)
+        "INSERT INTO posts (author_id, content, image_url, hashtags) VALUES (%s, %s, %s, %s) RETURNING id, created_at",
+        (author_id, content, image_url, hashtags)
     )
     row = cur.fetchone()
     if not row:
@@ -300,29 +603,41 @@ def create_post():
 
     post_id, created_at = row
 
-    # extract hashtags and store them
-    tags = _extract_hashtags(content)
-    for tag in tags:
-        # insert tag if not exists
-        cur.execute("INSERT INTO tags (name) VALUES (%s) ON CONFLICT (name) DO NOTHING RETURNING id", (tag,))
+    # Update usage_count in social_hashtag table for each hashtag
+    for hashtag in hashtags:
+        # Remove # if present for lookup
+        hashtag_clean = hashtag.lstrip('#')
+        cur.execute("""
+            UPDATE social_hashtag 
+            SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP
+            WHERE LOWER(hashtag) = LOWER(%s)
+        """, (f'#{hashtag_clean}',))
+        
+        # Also update old tags table for backward compatibility
+        tag_lower = hashtag_clean.lower()
+        cur.execute("INSERT INTO tags (name) VALUES (%s) ON CONFLICT (name) DO NOTHING RETURNING id", (tag_lower,))
         res = cur.fetchone()
         if res:
             tag_id = res[0]
         else:
-            cur.execute("SELECT id FROM tags WHERE name = %s", (tag,))
-            tag_id = cur.fetchone()[0]
+            cur.execute("SELECT id FROM tags WHERE name = %s", (tag_lower,))
+            tag_row = cur.fetchone()
+            if tag_row:
+                tag_id = tag_row[0]
+            else:
+                continue
 
         # link post and tag (ignore duplicates)
         try:
             cur.execute("INSERT INTO post_tags (post_id, tag_id) VALUES (%s, %s) ON CONFLICT (post_id, tag_id) DO NOTHING", (post_id, tag_id))
         except Exception:
             # don't fail entire request if linking fails
-            conn.rollback()
+            pass
 
     conn.commit()
     cur.close()
     conn.close()
-    return jsonify({"id": post_id, "created_at": created_at.isoformat(), "tags": tags}), 201
+    return jsonify({"id": post_id, "created_at": created_at.isoformat(), "tags": hashtags}), 201
 
 
 @social_routes.route('/posts/<int:post_id>', methods=['GET'])
@@ -332,31 +647,44 @@ def get_post(post_id):
         return jsonify({"error": "Database connection failed."}), 500
     cur = conn.cursor()
 
+    # Get current user email from request if available
+    user_email = request.headers.get('X-User-Email')
+    user_id = None
+    if user_email:
+        user_id = _get_user_id_by_email(cur, user_email)
+
     cur.execute(
         """
         SELECT 
             p.id, 
             p.content, 
-            p.image_url, 
+            p.image_url,
+            p.hashtags,
             p.created_at, 
             u.username, 
             u.email,
             (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
             (SELECT array_agg(t.name) FROM tags t 
                 JOIN post_tags pt ON t.id = pt.tag_id 
-                WHERE pt.post_id = p.id) AS tags
+                WHERE pt.post_id = p.id) AS tags,
+            CASE WHEN %s IS NOT NULL THEN 
+                EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = %s)
+            ELSE FALSE END as is_liked
         FROM posts p 
         LEFT JOIN users u ON p.author_id = u.id 
         WHERE p.id = %s
+            AND (p.deleted_at_tour_reviews IS NULL AND p.deleted_at_service_reviews IS NULL)
+            AND p.deleted_at IS NULL
         """,
-        (post_id,)
+        (user_id, user_id, post_id)
     )
     post = cur.fetchone()
     if not post:
         cur.close()
         conn.close()
-        return jsonify({"error": "Post not found."}), 404
+        return jsonify({"error": "Post not found or has been deleted."}), 404
 
+    # Only fetch comments for this specific post (post_id is already filtered above)
     cur.execute(
         """
         SELECT 
@@ -367,6 +695,7 @@ def get_post(post_id):
         FROM comments c 
         LEFT JOIN users u ON c.author_id = u.id 
         WHERE c.post_id = %s 
+            AND c.deleted_at IS NULL
         ORDER BY c.created_at ASC
         """, 
         (post_id,)
@@ -385,11 +714,13 @@ def get_post(post_id):
         "id": post[0],
         "content": post[1],
         "image_url": post[2],
-        "created_at": post[3].isoformat() if post[3] else None,
-        "author": {"username": post[4], "email": post[5]},
-        "like_count": post[6],
-        "tags": post[7] if post[7] else [],
+        "hashtags": post[3] if post[3] else [],
+        "created_at": post[4].isoformat() if post[4] else None,
+        "author": {"username": post[5], "email": post[6]},
+        "like_count": post[7],
+        "tags": post[8] if post[8] else [],
         "comments": comments,
+        "is_liked": post[9] if len(post) > 9 else False,
     }
 
     cur.close()
@@ -411,12 +742,17 @@ def add_comment(post_id):
         return jsonify({"error": "Database connection failed."}), 500
     cur = conn.cursor()
 
-    # check post exists
-    cur.execute("SELECT id FROM posts WHERE id = %s", (post_id,))
+    # Check if post exists and is not deleted
+    cur.execute("""
+        SELECT id FROM posts 
+        WHERE id = %s 
+            AND (deleted_at_tour_reviews IS NULL AND deleted_at_service_reviews IS NULL)
+            AND deleted_at IS NULL
+    """, (post_id,))
     if not cur.fetchone():
         cur.close()
         conn.close()
-        return jsonify({"error": "Post not found."}), 404
+        return jsonify({"error": "Post not found or has been deleted."}), 404
 
     author_id = _get_user_id_by_email(cur, author_email)
     if author_id is None:
@@ -594,9 +930,9 @@ def posts_by_tag(tag_name):
 
     cur.execute(
         """
-        SELECT p.id, p.content, p.image_url, p.created_at, u.username, u.email,
+        SELECT p.id, p.content, p.image_url, p.hashtags, p.created_at, u.username, u.email,
             (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
-            (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comment_count,
+            (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id AND c.deleted_at IS NULL) AS comment_count,
             (
                 SELECT json_agg(
                     json_build_object(
@@ -632,14 +968,470 @@ def posts_by_tag(tag_name):
             "id": r[0],
             "content": r[1],
             "image_url": r[2],
-            "created_at": r[3].isoformat() if r[3] else None,
-            "author": {"username": r[4], "email": r[5]},
-            "like_count": r[6],
-            "comment_count": r[7],
-            "comments": r[8] if r[8] else [],
-            "tags": r[9] if r[9] else []
+            "hashtags": r[3] if r[3] else [],
+            "created_at": r[4].isoformat() if r[4] else None,
+            "author": {"username": r[5], "email": r[6]},
+            "like_count": r[7],
+            "comment_count": r[8],
+            "comments": r[9] if r[9] else [],
+            "tags": r[10] if r[10] else []
         })
 
     cur.close()
     conn.close()
     return jsonify(posts)
+
+
+@social_routes.route('/hashtags/search', methods=['GET'])
+def search_hashtags():
+    """Search hashtags from social_hashtag table, sorted by usage count (highest first)."""
+    query = request.args.get('q', '').strip()
+    limit = request.args.get('limit', 20, type=int)
+    
+    conn = get_connection()
+    if conn is None:
+        return jsonify({"error": "Database connection failed."}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        if query:
+            # Search hashtags that start with or contain the query
+            cur.execute("""
+                SELECT hashtag, usage_count, source_type
+                FROM social_hashtag
+                WHERE LOWER(hashtag) LIKE LOWER(%s)
+                ORDER BY usage_count DESC, hashtag ASC
+                LIMIT %s
+            """, (f"%{query}%", limit))
+        else:
+            # Return top hashtags by usage
+            cur.execute("""
+                SELECT hashtag, usage_count, source_type
+                FROM social_hashtag
+                ORDER BY usage_count DESC, hashtag ASC
+                LIMIT %s
+            """, (limit,))
+        
+        hashtags = []
+        for row in cur.fetchall():
+            hashtags.append({
+                'hashtag': row[0],
+                'usage_count': row[1],
+                'source_type': row[2]
+            })
+        
+        return jsonify(hashtags)
+    except Exception as e:
+        print(f"Error searching hashtags: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@social_routes.route('/hashtags/info', methods=['GET'])
+def get_hashtag_info():
+    """Get hashtag information including source name (city or tour name)."""
+    hashtag = request.args.get('hashtag', '').strip()
+    
+    if not hashtag:
+        return jsonify({"error": "Hashtag parameter is required."}), 400
+    
+    # Ensure hashtag starts with #
+    if not hashtag.startswith('#'):
+        hashtag = '#' + hashtag
+    
+    conn = get_connection()
+    if conn is None:
+        return jsonify({"error": "Database connection failed."}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        # Get hashtag info from social_hashtag table
+        cur.execute("""
+            SELECT source_type, source_id
+            FROM social_hashtag
+            WHERE LOWER(hashtag) = LOWER(%s)
+        """, (hashtag,))
+        
+        row = cur.fetchone()
+        if not row:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Hashtag not found."}), 404
+        
+        source_type = row[0]
+        source_id = row[1]
+        
+        # Get the actual name based on source_type
+        if source_type == 'city':
+            cur.execute("""
+                SELECT name FROM cities WHERE id = %s
+            """, (source_id,))
+            city_row = cur.fetchone()
+            if city_row:
+                name = city_row[0]
+            else:
+                cur.close()
+                conn.close()
+                return jsonify({"error": "City not found."}), 404
+        elif source_type == 'tour':
+            cur.execute("""
+                SELECT name FROM tours_admin WHERE id = %s
+            """, (source_id,))
+            tour_row = cur.fetchone()
+            if tour_row:
+                name = tour_row[0]
+            else:
+                cur.close()
+                conn.close()
+                return jsonify({"error": "Tour not found."}), 404
+        else:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Invalid source type."}), 400
+        
+        result = {
+            "hashtag": hashtag,
+            "source_type": source_type,
+            "source_id": source_id,
+            "name": name
+        }
+        
+        cur.close()
+        conn.close()
+        return jsonify(result)
+        
+    except Exception as e:
+        if conn:
+            cur.close()
+            conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
+@social_routes.route('/auto-post-from-reviews', methods=['POST'])
+def auto_post_from_reviews():
+    """
+    Automatically create posts from tour_reviews and service_reviews.
+    This function:
+    1. Gets images from reviews
+    2. Creates posts with city and tour hashtags
+    3. Links to the original review
+    """
+    conn = get_connection()
+    if conn is None:
+        return jsonify({"error": "Database connection failed."}), 500
+    
+    cur = conn.cursor()
+    
+    try:
+        # Get tour reviews with images
+        cur.execute("""
+            SELECT 
+                tr.id,
+                tr.tour_id,
+                tr.user_id,
+                tr.review_images,
+                tr.review_text,
+                t.name as tour_name,
+                t.destination_city_id,
+                c.name as city_name
+            FROM tour_reviews tr
+            JOIN tours_admin t ON tr.tour_id = t.id
+            JOIN cities c ON t.destination_city_id = c.id
+            WHERE tr.review_images IS NOT NULL 
+                AND array_length(tr.review_images, 1) > 0
+                AND tr.deleted_at IS NULL
+                AND NOT EXISTS (
+                    SELECT 1 FROM posts p 
+                    WHERE p.content LIKE '%Review ID: ' || tr.id || '%'
+                )
+            ORDER BY tr.created_at DESC
+            LIMIT 50
+        """)
+        
+        tour_reviews = cur.fetchall()
+        created_posts = []
+        
+        for review in tour_reviews:
+            review_id, tour_id, user_id, review_images, review_text, tour_name, city_id, city_name = review
+            
+            if not review_images or len(review_images) == 0:
+                continue
+            
+            # Generate hashtags
+            hashtags = []
+            
+            # City hashtag
+            cur.execute("""
+                SELECT hashtag FROM social_hashtag 
+                WHERE source_type = 'city' AND source_id = %s
+                LIMIT 1
+            """, (city_id,))
+            city_hashtag_row = cur.fetchone()
+            if city_hashtag_row:
+                hashtags.append(city_hashtag_row[0])
+            
+            # Tour hashtag
+            cur.execute("""
+                SELECT hashtag FROM social_hashtag 
+                WHERE source_type = 'tour' AND source_id = %s
+                LIMIT 1
+            """, (tour_id,))
+            tour_hashtag_row = cur.fetchone()
+            if tour_hashtag_row:
+                hashtags.append(tour_hashtag_row[0])
+            
+            # Use first image
+            image_url = review_images[0] if isinstance(review_images, list) else review_images
+            
+            # Create post content
+            content = f"Review from our amazing tour! {review_text[:200] if review_text else ''} Review ID: {review_id}"
+            
+            # Create post
+            cur.execute("""
+                INSERT INTO posts (author_id, content, image_url, hashtags)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
+            """, (user_id, content, image_url, hashtags))
+            
+            post_id = cur.fetchone()[0]
+            
+            # Update hashtag usage counts
+            for hashtag in hashtags:
+                cur.execute("""
+                    UPDATE social_hashtag 
+                    SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP
+                    WHERE hashtag = %s
+                """, (hashtag,))
+            
+            created_posts.append(post_id)
+        
+        # Get service reviews with images
+        cur.execute("""
+            SELECT 
+                sr.id,
+                sr.service_type,
+                sr.service_id,
+                sr.user_id,
+                sr.review_images,
+                sr.review_text,
+                ts.tour_id,
+                t.name as tour_name,
+                t.destination_city_id,
+                c.name as city_name
+            FROM service_reviews sr
+            JOIN tour_services ts ON sr.tour_service_id = ts.id
+            JOIN tours_admin t ON ts.tour_id = t.id
+            JOIN cities c ON t.destination_city_id = c.id
+            WHERE sr.review_images IS NOT NULL 
+                AND array_length(sr.review_images, 1) > 0
+                AND sr.deleted_at IS NULL
+                AND NOT EXISTS (
+                    SELECT 1 FROM posts p 
+                    WHERE p.content LIKE '%Service Review ID: ' || sr.id || '%'
+                )
+            ORDER BY sr.created_at DESC
+            LIMIT 50
+        """)
+        
+        service_reviews = cur.fetchall()
+        
+        for review in service_reviews:
+            review_id, service_type, service_id, user_id, review_images, review_text, tour_id, tour_name, city_id, city_name = review
+            
+            if not review_images or len(review_images) == 0:
+                continue
+            
+            # Generate hashtags
+            hashtags = []
+            
+            # City hashtag
+            cur.execute("""
+                SELECT hashtag FROM social_hashtag 
+                WHERE source_type = 'city' AND source_id = %s
+                LIMIT 1
+            """, (city_id,))
+            city_hashtag_row = cur.fetchone()
+            if city_hashtag_row:
+                hashtags.append(city_hashtag_row[0])
+            
+            # Tour hashtag
+            cur.execute("""
+                SELECT hashtag FROM social_hashtag 
+                WHERE source_type = 'tour' AND source_id = %s
+                LIMIT 1
+            """, (tour_id,))
+            tour_hashtag_row = cur.fetchone()
+            if tour_hashtag_row:
+                hashtags.append(tour_hashtag_row[0])
+            
+            # Use first image
+            image_url = review_images[0] if isinstance(review_images, list) else review_images
+            
+            # Create post content
+            content = f"Service review: {service_type} - {review_text[:200] if review_text else ''} Service Review ID: {review_id}"
+            
+            # Create post
+            cur.execute("""
+                INSERT INTO posts (author_id, content, image_url, hashtags)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
+            """, (user_id, content, image_url, hashtags))
+            
+            post_id = cur.fetchone()[0]
+            
+            # Update hashtag usage counts
+            for hashtag in hashtags:
+                cur.execute("""
+                    UPDATE social_hashtag 
+                    SET usage_count = usage_count + 1, updated_at = CURRENT_TIMESTAMP
+                    WHERE hashtag = %s
+                """, (hashtag,))
+            
+            created_posts.append(post_id)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Created {len(created_posts)} posts from reviews",
+            "post_ids": created_posts
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error auto-posting from reviews: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+@social_routes.route('/posts/<int:post_id>', methods=['DELETE'])
+def delete_post(post_id):
+    """Soft delete a post (admin only)"""
+    try:
+        # Get user role from header
+        user_role = request.headers.get('X-User-Role', 'client')
+        user_id = request.headers.get('X-User-ID')
+        
+        if user_role != 'admin':
+            return jsonify({"error": "Only admins can delete posts"}), 403
+        
+        if not user_id:
+            return jsonify({"error": "User ID not found"}), 401
+        
+        conn = get_connection()
+        if conn is None:
+            return jsonify({"error": "Database connection failed."}), 500
+        
+        cur = conn.cursor()
+        
+        # Soft delete the post
+        cur.execute("""
+            UPDATE posts 
+            SET deleted_at = CURRENT_TIMESTAMP, deleted_by = %s
+            WHERE id = %s AND deleted_at IS NULL
+            RETURNING id
+        """, (int(user_id), post_id))
+        
+        result = cur.fetchone()
+        if not result:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Post not found or already deleted"}), 404
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"success": True, "message": "Post deleted successfully"}), 200
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"Error deleting post: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+@social_routes.route('/posts/<int:post_id>/comments/<int:comment_id>', methods=['DELETE'])
+def delete_comment(post_id, comment_id):
+    """Soft delete a comment (admin only)"""
+    try:
+        # Get user role from header
+        user_role = request.headers.get('X-User-Role', 'client')
+        user_id = request.headers.get('X-User-ID')
+        
+        if user_role != 'admin':
+            return jsonify({"error": "Only admins can delete comments"}), 403
+        
+        if not user_id:
+            return jsonify({"error": "User ID not found"}), 401
+        
+        conn = get_connection()
+        if conn is None:
+            return jsonify({"error": "Database connection failed."}), 500
+        
+        cur = conn.cursor()
+        
+        # Verify comment belongs to post
+        cur.execute("""
+            SELECT id FROM comments 
+            WHERE id = %s AND post_id = %s AND deleted_at IS NULL
+        """, (comment_id, post_id))
+        
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Comment not found or already deleted"}), 404
+        
+        # Soft delete the comment
+        cur.execute("""
+            UPDATE comments 
+            SET deleted_at = CURRENT_TIMESTAMP, deleted_by = %s
+            WHERE id = %s AND post_id = %s AND deleted_at IS NULL
+            RETURNING id
+        """, (int(user_id), comment_id, post_id))
+        
+        result = cur.fetchone()
+        if not result:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Failed to delete comment"}), 500
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({"success": True, "message": "Comment deleted successfully"}), 200
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"Error deleting comment: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()

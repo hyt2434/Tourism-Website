@@ -1,4 +1,50 @@
 from config.database import get_connection
+from .tour_reviews_schema import create_tour_reviews_table
+
+
+def ensure_base_tables():
+    """Create base tables that other schemas depend on (cities, users)."""
+    conn = get_connection()
+    if conn is None:
+        print("❌ Cannot create base tables: Database connection failed.")
+        return
+
+    cur = conn.cursor()
+    try:
+        # Cities table (used by tours and other modules)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS cities (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL UNIQUE,
+                code VARCHAR(10),
+                region VARCHAR(50)
+            );
+        """)
+
+        # Users table (referenced by many schemas)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(100) NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                password VARCHAR(255),
+                phone VARCHAR(20),
+                avatar_url TEXT,
+                role VARCHAR(20) DEFAULT 'client' CHECK (role IN ('admin', 'client', 'partner')),
+                partner_type VARCHAR(50) CHECK (partner_type IN ('accommodation', 'transportation', 'restaurant') OR partner_type IS NULL),
+                status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended', 'pending')),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
+        conn.commit()
+        print("✅ Base tables created/verified.")
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Error creating base tables: {e}")
+    finally:
+        cur.close()
+        conn.close()
 
 def create_table():
     conn = get_connection()
@@ -14,12 +60,16 @@ def create_table():
             email VARCHAR(100) UNIQUE NOT NULL,
             password VARCHAR(200) NOT NULL,
             role VARCHAR(20) DEFAULT 'client' CHECK (role IN ('admin', 'client')),
+            partner_type VARCHAR(50) CHECK (partner_type IN ('accommodation', 'transportation', 'restaurant')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
     conn.commit()
     cur.close()
     conn.close()
+    
+    # Create tour reviews table
+    create_tour_reviews_table()
 
 class Tour:
     def __init__(self, id, name, image, price, duration, rating, reviews, tour_type, is_active, province_name, region_name, max_slots, badge, start_date=None):
@@ -134,7 +184,8 @@ def create_tables():
             id SERIAL PRIMARY KEY,
             author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
             content TEXT,
-            image_url TEXT,
+            image_url TEXT, -- Can store base64 encoded images
+            hashtags TEXT[], -- Array of hashtags
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
@@ -306,6 +357,7 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS bookings (
             id SERIAL PRIMARY KEY,
             tour_id INTEGER REFERENCES tours_admin(id) ON DELETE SET NULL,
+            tour_schedule_id INTEGER REFERENCES tour_schedules(id) ON DELETE SET NULL,
             user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
             full_name VARCHAR(200) NOT NULL,
             email VARCHAR(100) NOT NULL,
@@ -313,14 +365,59 @@ def create_tables():
             departure_date DATE NOT NULL,
             return_date DATE,
             number_of_guests INTEGER DEFAULT 1,
+            number_of_adults INTEGER DEFAULT 1,
+            number_of_children INTEGER DEFAULT 0,
             total_price DECIMAL(12, 2) NOT NULL,
             payment_method VARCHAR(20) NOT NULL,
             payment_intent_id VARCHAR(200),
             promotion_code VARCHAR(50),
             notes TEXT,
+            customizations JSONB,
             status VARCHAR(20) DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+    """)
+    
+    # Add columns to existing bookings table if they don't exist
+    cur.execute("""
+        DO $$ 
+        BEGIN
+            -- Add tour_schedule_id column
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'bookings' AND column_name = 'tour_schedule_id'
+            ) THEN
+                ALTER TABLE bookings 
+                ADD COLUMN tour_schedule_id INTEGER REFERENCES tour_schedules(id) ON DELETE SET NULL;
+            END IF;
+            
+            -- Add number_of_adults column
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'bookings' AND column_name = 'number_of_adults'
+            ) THEN
+                ALTER TABLE bookings 
+                ADD COLUMN number_of_adults INTEGER DEFAULT 1;
+            END IF;
+            
+            -- Add customizations column
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'bookings' AND column_name = 'customizations'
+            ) THEN
+                ALTER TABLE bookings 
+                ADD COLUMN customizations JSONB;
+            END IF;
+            
+            -- Add number_of_children column
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'bookings' AND column_name = 'number_of_children'
+            ) THEN
+                ALTER TABLE bookings 
+                ADD COLUMN number_of_children INTEGER DEFAULT 0;
+            END IF;
+        END $$;
     """)
 
     conn.commit()

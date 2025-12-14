@@ -4,18 +4,104 @@ import re
 
 tour_routes = Blueprint('tour_routes', __name__)
 
-def extract_days_from_duration(duration_str):
+def extract_days_from_duration(duration):
     """
-    Extract number of days from duration string like "3 ngày 2 đêm" or "3 days 2 nights"
-    Returns the first number found, or None if no number found
+    Extract number of days from duration (now stored as integer)
+    Returns the duration as integer if it's a number, otherwise tries to parse from string
     """
-    if not duration_str:
+    if not duration:
         return None
-    # Match first number in the string
-    match = re.search(r'(\d+)', str(duration_str))
-    if match:
-        return int(match.group(1))
-    return None
+    
+    # If duration is already a number, return it
+    if isinstance(duration, (int, float)):
+        return int(duration)
+    
+    # Try to parse as integer
+    try:
+        return int(duration)
+    except (ValueError, TypeError):
+        # Fallback: try to extract from string format "3 days 2 nights"
+        match = re.search(r'(\d+)', str(duration))
+        return int(match.group(1)) if match else None
+
+@tour_routes.route('/highlights', methods=['GET'])
+def get_highlighted_tours():
+    """
+    API GET /api/tours/highlights to get top 6 most booked tours.
+    Returns tours ordered by booking count (descending).
+    """
+    limit = request.args.get('limit', 6, type=int)
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    try:
+        cur = conn.cursor()
+        
+        # Get highlighted tours with their primary image and review stats
+        # Only include tours that have at least one available schedule
+        query = """
+            SELECT 
+                th.id, th.name, th.duration, th.description,
+                th.destination_city_id, dc.name as destination_city_name,
+                th.departure_city_id, dpc.name as departure_city_name,
+                th.total_price, th.currency, th.number_of_members,
+                th.booking_count,
+                ti.image_url,
+                COALESCE(AVG(tr.rating), 0) as avg_rating,
+                COUNT(DISTINCT tr.id) as review_count
+            FROM tour_highlights th
+            LEFT JOIN cities dc ON th.destination_city_id = dc.id
+            LEFT JOIN cities dpc ON th.departure_city_id = dpc.id
+            LEFT JOIN tour_images ti ON th.id = ti.tour_id AND ti.is_primary = TRUE
+            LEFT JOIN tour_reviews tr ON th.id = tr.tour_id
+            GROUP BY th.id, th.name, th.duration, th.description,
+                     th.destination_city_id, dc.name,
+                     th.departure_city_id, dpc.name,
+                     th.total_price, th.currency, th.number_of_members,
+                     th.booking_count, ti.image_url
+            ORDER BY th.booking_count DESC, avg_rating DESC
+            LIMIT %s
+        """
+        
+        cur.execute(query, (limit,))
+        rows = cur.fetchall()
+        
+        tours = []
+        for row in rows:
+            # Calculate price per person
+            price_per_person = round((float(row[8]) / row[10]) / 1000) * 1000 if row[8] and row[10] and row[10] > 0 else float(row[8]) if row[8] else 0
+            
+            tours.append({
+                'id': row[0],
+                'name': row[1],
+                'duration': row[2],
+                'description': row[3],
+                'destination_city': {'id': row[4], 'name': row[5]},
+                'departure_city': {'id': row[6], 'name': row[7]},
+                'price': price_per_person,
+                'total_price': float(row[8]) if row[8] else 0,
+                'currency': row[9],
+                'number_of_members': row[10],
+                'booking_count': row[11],
+                'image': row[12] or 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=800&h=600&fit=crop&q=80',
+                'rating': round(float(row[13]), 1) if row[13] else 0,
+                'reviews': row[14]
+            })
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'tours': tours,
+            'total': len(tours)
+        })
+        
+    except Exception as e:
+        print(f"Error getting highlighted tours: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @tour_routes.route('/', methods=['GET'])
 def get_tours():
@@ -38,7 +124,7 @@ def get_tours():
     try:
         cur = conn.cursor()
         
-        # Build query for published tours only
+        # Build query for published tours only with available schedules
         query = """
             SELECT 
                 t.id, t.name, t.duration, t.description,
@@ -47,7 +133,13 @@ def get_tours():
                 t.total_price, t.currency, t.number_of_members,
                 t.created_at, t.updated_at,
                 (SELECT image_url FROM tour_images WHERE tour_id = t.id AND is_primary = TRUE LIMIT 1) as primary_image,
-                (SELECT COUNT(*) FROM tour_images WHERE tour_id = t.id) as image_count
+                (SELECT COUNT(*) FROM tour_images WHERE tour_id = t.id) as image_count,
+                (SELECT COUNT(*) FROM tour_schedules ts 
+                 WHERE ts.tour_id = t.id 
+                 AND ts.is_active = TRUE 
+                 AND ts.departure_datetime > NOW()
+                 AND ts.slots_available > 0
+                 AND ts.status NOT IN ('completed', 'cancelled')) as available_schedules_count
             FROM tours_admin t
             LEFT JOIN cities dc ON t.destination_city_id = dc.id
             LEFT JOIN cities dpc ON t.departure_city_id = dpc.id
@@ -109,7 +201,8 @@ def get_tours():
                 'description': row[3],
                 'destination_city': {'id': row[4], 'name': row[5]},
                 'departure_city': {'id': row[6], 'name': row[7]},
-                'price': float(row[8]) if row[8] else 0,
+                'price': round((float(row[8]) / row[10]) / 1000) * 1000 if row[8] and row[10] and row[10] > 0 else float(row[8]) if row[8] else 0,  # Price per person rounded to nearest 1,000
+                'total_price': float(row[8]) if row[8] else 0,
                 'currency': row[9],
                 'number_of_members': row[10],
                 'created_at': row[11].isoformat() if row[11] else None,
@@ -117,6 +210,7 @@ def get_tours():
                 'primary_image': row[13],
                 'image': row[13],  # For compatibility with TourCard component
                 'image_count': row[14],
+                'available_schedules_count': row[15] if len(row) > 15 else 0,  # Number of available schedules
                 # For compatibility with frontend
                 'destination': row[5],  # destination city name
                 'region': None,  # Can be added later if needed
@@ -179,16 +273,14 @@ def get_tour_detail(tour_id):
             'destination_city': {'id': tour_row[4], 'name': tour_row[5]},
             'departure_city': {'id': tour_row[6], 'name': tour_row[7]},
             'location': tour_row[5],  # destination city name for display
-            'price': float(tour_row[8]) if tour_row[8] else 0,
-            'basePrice': float(tour_row[8]) if tour_row[8] else 0,  # For compatibility
+            'price': round((float(tour_row[8]) / tour_row[10]) / 1000) * 1000 if tour_row[8] and tour_row[10] and tour_row[10] > 0 else float(tour_row[8]) if tour_row[8] else 0,  # Price per person rounded to nearest 1,000
+            'total_price': float(tour_row[8]) if tour_row[8] else 0,
+            'basePrice': round((float(tour_row[8]) / tour_row[10]) / 1000) * 1000 if tour_row[8] and tour_row[10] and tour_row[10] > 0 else float(tour_row[8]) if tour_row[8] else 0,  # For compatibility, price per person rounded
             'currency': tour_row[9],
             'number_of_members': tour_row[10],
             'created_at': tour_row[11].isoformat() if tour_row[11] else None,
             'updated_at': tour_row[12].isoformat() if tour_row[12] else None,
             # Default values for features not yet implemented
-            'rating': 4.5,
-            'reviewCount': 0,
-            'reviews': [],
             'tags': [],
             'highlights': [],
             'included': [],
@@ -197,6 +289,19 @@ def get_tour_detail(tour_id):
             'tourLocations': [],
             'centerCoordinates': None
         }
+        
+        # Get real review statistics
+        cur.execute("""
+            SELECT 
+                COUNT(*) as review_count,
+                COALESCE(AVG(rating), 0) as avg_rating
+            FROM tour_reviews
+            WHERE tour_id = %s
+        """, (tour_id,))
+        
+        review_stats = cur.fetchone()
+        tour_data['reviewCount'] = review_stats[0] if review_stats else 0
+        tour_data['rating'] = round(float(review_stats[1]), 1) if review_stats and review_stats[1] else 0
         
         # Get images
         cur.execute("""
@@ -302,7 +407,7 @@ def get_tour_detail(tour_id):
                 # Get more transportation details
                 if svc_row[9]:
                     cur.execute("""
-                        SELECT id, license_plate, vehicle_type, brand, max_passengers, description
+                        SELECT id, license_plate, vehicle_type, brand, max_passengers, description, base_price
                         FROM transportation_services
                         WHERE id = %s
                     """, (svc_row[9],))
@@ -313,21 +418,26 @@ def get_tour_detail(tour_id):
                         service_data['brand'] = trans_row[3]
                         service_data['capacity'] = trans_row[4]  # max_passengers
                         service_data['description'] = trans_row[5]
+                        service_data['price_per_person'] = float(trans_row[6]) if trans_row[6] else 0
                 tour_data['services']['transportation'] = service_data
         
-        # Get selected rooms with details
+        # Get room bookings with details
         cur.execute("""
             SELECT 
                 ar.id, ar.name, ar.room_type, ar.description, 
                 ar.max_adults, ar.max_children, ar.room_size, ar.bed_type,
-                ar.base_price, ar.currency, ar.view_type, ar.amenities
-            FROM tour_selected_rooms tsr
-            JOIN accommodation_rooms ar ON tsr.room_id = ar.id
-            WHERE tsr.tour_id = %s
+                ar.view_type, ar.amenities, ar.base_price, trb.quantity,
+                acs.name as accommodation_name, acs.address, acs.star_rating, acs.description as acc_description
+            FROM tour_room_bookings trb
+            JOIN accommodation_rooms ar ON trb.room_id = ar.id
+            JOIN accommodation_services acs ON ar.accommodation_id = acs.id
+            WHERE trb.tour_id = %s
             ORDER BY ar.base_price
         """, (tour_id,))
         
-        tour_data['selectedRooms'] = []
+        tour_data['roomBookings'] = []
+        tour_data['accommodationDetails'] = None
+        
         for room_row in cur.fetchall():
             # Get room images
             cur.execute("""
@@ -338,8 +448,10 @@ def get_tour_detail(tour_id):
             """, (room_row[0],))
             image_row = cur.fetchone()
             
-            tour_data['selectedRooms'].append({
-                'id': room_row[0],
+            tour_data['roomBookings'].append({
+                'room_id': room_row[0],
+                'quantity': room_row[11],
+                'base_price': float(room_row[10]) if room_row[10] else 0,
                 'name': room_row[1],
                 'roomType': room_row[2],
                 'description': room_row[3],
@@ -347,55 +459,64 @@ def get_tour_detail(tour_id):
                 'maxChildren': room_row[5],
                 'roomSize': float(room_row[6]) if room_row[6] else None,
                 'bedType': room_row[7],
-                'basePrice': float(room_row[8]) if room_row[8] else 0,
-                'currency': room_row[9],
-                'viewType': room_row[10],
-                'amenities': room_row[11] if room_row[11] else [],
+                'viewType': room_row[8],
+                'amenities': room_row[9] if room_row[9] else [],
                 'image': image_row[0] if image_row else None
             })
+            
+            # Set accommodation details (same for all rooms)
+            if not tour_data['accommodationDetails']:
+                tour_data['accommodationDetails'] = {
+                    'name': room_row[12],
+                    'address': room_row[13],
+                    'star_rating': room_row[14],
+                    'description': room_row[15]
+                }
         
-        # Get selected menu items with details, grouped by day
+        # Get selected set meals with details
         cur.execute("""
             SELECT 
-                tsmi.day_number, tsmi.menu_item_id,
-                rmi.id, rmi.name, rmi.description, rmi.category,
-                rmi.price, rmi.currency, rmi.portion_size, rmi.is_vegetarian,
-                rmi.is_vegan, rmi.is_gluten_free, rmi.is_spicy, rmi.spice_level
-            FROM tour_selected_menu_items tsmi
-            JOIN restaurant_menu_items rmi ON tsmi.menu_item_id = rmi.id
-            WHERE tsmi.tour_id = %s
-            ORDER BY tsmi.day_number, rmi.category, rmi.name
+                tssm.set_meal_id, tssm.day_number, tssm.meal_session,
+                rsm.name, rsm.description, rsm.total_price, rsm.currency,
+                rs.name as restaurant_name, rs.cuisine_type, rs.address
+            FROM tour_selected_set_meals tssm
+            JOIN restaurant_set_meals rsm ON tssm.set_meal_id = rsm.id
+            JOIN restaurant_services rs ON rsm.restaurant_id = rs.id
+            WHERE tssm.tour_id = %s
+            ORDER BY tssm.day_number, tssm.meal_session
         """, (tour_id,))
         
-        tour_data['selectedMenuItems'] = {}
-        for menu_row in cur.fetchall():
-            day_number = str(menu_row[0])
-            if day_number not in tour_data['selectedMenuItems']:
-                tour_data['selectedMenuItems'][day_number] = []
-            
-            # Get menu item image
+        tour_data['selectedSetMeals'] = []
+        for meal_row in cur.fetchall():
+            # Get set meal items
             cur.execute("""
-                SELECT image_url FROM service_images
-                WHERE service_type = 'menu_item' AND service_id = %s
-                ORDER BY display_order
-                LIMIT 1
-            """, (menu_row[2],))
-            image_row = cur.fetchone()
+                SELECT rmi.name, rmi.description, rmi.category
+                FROM restaurant_set_meal_items rsmi
+                JOIN restaurant_menu_items rmi ON rsmi.menu_item_id = rmi.id
+                WHERE rsmi.set_meal_id = %s
+                ORDER BY rmi.category, rmi.name
+            """, (meal_row[0],))
             
-            tour_data['selectedMenuItems'][day_number].append({
-                'id': menu_row[2],
-                'name': menu_row[3],
-                'description': menu_row[4],
-                'category': menu_row[5],
-                'price': float(menu_row[6]) if menu_row[6] else 0,
-                'currency': menu_row[7],
-                'portionSize': menu_row[8],
-                'isVegetarian': menu_row[9],
-                'isVegan': menu_row[10],
-                'isGlutenFree': menu_row[11],
-                'isSpicy': menu_row[12],
-                'spiceLevel': menu_row[13],
-                'image': image_row[0] if image_row else None
+            menu_items = []
+            for item_row in cur.fetchall():
+                menu_items.append({
+                    'name': item_row[0],
+                    'description': item_row[1],
+                    'category': item_row[2]
+                })
+            
+            tour_data['selectedSetMeals'].append({
+                'set_meal_id': meal_row[0],
+                'day_number': meal_row[1],
+                'meal_session': meal_row[2],
+                'set_meal_name': meal_row[3],
+                'set_meal_description': meal_row[4],
+                'total_price': float(meal_row[5]) if meal_row[5] else 0,  # Price for 2 people
+                'currency': meal_row[6],
+                'restaurant_name': meal_row[7],
+                'cuisine_type': meal_row[8],
+                'restaurant_address': meal_row[9],
+                'menu_items': menu_items
             })
         
         # Get all partners involved in this tour from services
@@ -463,6 +584,125 @@ def get_tour_detail(tour_id):
         
     except Exception as e:
         print(f"Error fetching tour detail: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@tour_routes.route('/<int:tour_id>/schedules', methods=['GET'])
+def get_available_schedules(tour_id):
+    """
+    Get available schedules for a tour (public endpoint for booking).
+    Returns only active schedules with available slots.
+    """
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        # Get only active schedules with available slots that are not completed or cancelled
+        cur.execute("""
+            SELECT 
+                id, tour_id, departure_datetime, return_datetime,
+                max_slots, slots_booked, slots_available, is_active, status
+            FROM tour_schedules
+            WHERE tour_id = %s 
+                AND is_active = TRUE 
+                AND departure_datetime > NOW()
+                AND slots_available > 0
+                AND status NOT IN ('completed', 'cancelled')
+            ORDER BY departure_datetime ASC
+        """, (tour_id,))
+        
+        rows = cur.fetchall()
+        schedules = []
+        for row in rows:
+            schedules.append({
+                'id': row[0],
+                'tour_id': row[1],
+                'departure_datetime': row[2].isoformat() if row[2] else None,
+                'return_datetime': row[3].isoformat() if row[3] else None,
+                'max_slots': row[4],
+                'slots_booked': row[5],
+                'slots_available': row[6],
+                'is_active': row[7],
+                'status': row[8] if len(row) > 8 else 'pending'
+            })
+        
+        return jsonify(schedules), 200
+        
+    except Exception as e:
+        print(f"Error getting available schedules: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+@tour_routes.route('/accommodation/<int:accommodation_id>/rooms', methods=['GET'])
+def get_accommodation_rooms(accommodation_id):
+    """
+    Public API to get all rooms for a specific accommodation.
+    Used for room upgrade options in booking.
+    """
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        # Get all available rooms for this accommodation
+        query = """
+            SELECT 
+                ar.id,
+                ar.accommodation_id,
+                ar.room_type,
+                ar.bed_type,
+                ar.room_size,
+                ar.max_adults,
+                ar.max_children,
+                ar.base_price,
+                ar.amenities,
+                ar.is_available,
+                si.image_url,
+                ar.deluxe_upgrade_price,
+                ar.suite_upgrade_price
+            FROM accommodation_rooms ar
+            LEFT JOIN service_images si ON ar.id = si.service_id 
+                AND si.service_type = 'accommodation_room'
+                AND si.display_order = 1
+            WHERE ar.accommodation_id = %s AND ar.is_available = TRUE
+            ORDER BY ar.base_price ASC
+        """
+        
+        cur.execute(query, (accommodation_id,))
+        rows = cur.fetchall()
+        
+        rooms = []
+        for row in rows:
+            rooms.append({
+                'id': row[0],
+                'accommodation_id': row[1],
+                'room_type': row[2],
+                'bed_type': row[3],
+                'room_size': row[4],
+                'max_adults': row[5],
+                'max_children': row[6],
+                'base_price': float(row[7]) if row[7] else 0,
+                'amenities': row[8],
+                'is_available': row[9],
+                'image_url': row[10],
+                'deluxe_upgrade_price': float(row[11]) if row[11] else 0,
+                'suite_upgrade_price': float(row[12]) if row[12] else 0
+            })
+        
+        return jsonify(rooms), 200
+        
+    except Exception as e:
+        print(f"Error getting accommodation rooms: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cur.close()

@@ -1,55 +1,216 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { Heart, Smile } from "lucide-react";
+import { Heart, Smile, Trash2 } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
+import { getPost, addComment, deleteComment, getHashtagInfo } from "../../api/social";
+import { useToast } from "../../context/ToastContext";
+import { useNavigate } from "react-router-dom";
+import { ConfirmDialog } from "../ui/confirm-dialog";
+import { getTranslatedContent } from "../../utils/translation";
 
-// 👈 MOCK CURRENT USER
-const currentUser = {
-  id: "user_123",
-  username: "current_user",
-  displayName: "Minh Hoàng",
+// Get current user from localStorage
+const getCurrentUser = () => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  try {
+    return JSON.parse(userStr);
+  } catch {
+    return null;
+  }
 };
 
 export default function CommentDialog({ open, onOpenChange, post }) {
   const [comment, setComment] = useState("");
-  const [comments, setComments] = useState([
-    {
-      id: 1,
-      username: "traveler_vn",
-      displayName: "Nguyễn Văn A",
-      text: "Đẹp quá! Mình cũng muốn đi đây",
-      timestamp: "2h",
-      likes: 5,
-    },
-    {
-      id: 2,
-      username: "explorer_sg",
-      displayName: "Sarah Lee",
-      text: "Amazing view! How was the weather?",
-      timestamp: "5h",
-      likes: 2,
-    },
-  ]);
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+  const [translatedComments, setTranslatedComments] = useState({});
+  const [isTranslatingComments, setIsTranslatingComments] = useState(false);
+  const [translatedCaption, setTranslatedCaption] = useState("");
+  const [isTranslatingCaption, setIsTranslatingCaption] = useState(false);
 
-  const { translations } = useLanguage();
+  const { translations, language } = useLanguage();
+  const toast = useToast();
+  const currentUser = getCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
 
-  const handlePostComment = () => {
-    if (!comment.trim()) return;
+  const handleDeleteCommentClick = (commentId) => {
+    setCommentToDelete(commentId);
+    setShowDeleteConfirm(true);
+  };
 
-    const newComment = {
-      id: Date.now(),
-      username: currentUser.username,
-      displayName: currentUser.displayName,
-      text: comment,
-      timestamp: "Vừa xong",
-      likes: 0,
+  const handleDeleteComment = async () => {
+    if (!commentToDelete) return;
+
+    try {
+      await deleteComment(post.id, commentToDelete);
+      toast.success("Comment deleted successfully");
+      // Refresh comments
+      fetchPostDetails();
+      setCommentToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete comment:", error);
+      toast.error(error.message || "Failed to delete comment");
+    } finally {
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  // Fetch post details when dialog opens
+  useEffect(() => {
+    if (open && post?.id) {
+      fetchPostDetails();
+    }
+  }, [open, post?.id]);
+
+  // Auto-translate comments when they change or language changes
+  useEffect(() => {
+    const translateComments = async () => {
+      if (!open || !comments || comments.length === 0) {
+        setTranslatedComments({});
+        return;
+      }
+
+      setIsTranslatingComments(true);
+      try {
+        const translatedMap = {};
+        // Translate all comments in parallel
+        const translationPromises = comments.map(async (comment) => {
+          if (!comment.content || !comment.content.trim()) {
+            return { id: comment.id, translated: comment.content || "" };
+          }
+          try {
+            const translated = await getTranslatedContent(comment.content, language);
+            return { id: comment.id, translated };
+          } catch (error) {
+            console.error(`Translation error for comment ${comment.id}:`, error);
+            return { id: comment.id, translated: comment.content };
+          }
+        });
+
+        const results = await Promise.all(translationPromises);
+        results.forEach(({ id, translated }) => {
+          translatedMap[id] = translated;
+        });
+        setTranslatedComments(translatedMap);
+      } catch (error) {
+        console.error("Error translating comments:", error);
+        // Fallback to original comments
+        const fallbackMap = {};
+        comments.forEach((comment) => {
+          fallbackMap[comment.id] = comment.content || "";
+        });
+        setTranslatedComments(fallbackMap);
+      } finally {
+        setIsTranslatingComments(false);
+      }
     };
 
-    setComments([...comments, newComment]);
-    setComment("");
+    translateComments();
+  }, [comments, language, open]);
+
+  // Auto-translate post caption
+  useEffect(() => {
+    const translateCaption = async () => {
+      if (!open || !post?.caption) {
+        setTranslatedCaption("");
+        return;
+      }
+
+      const originalCaption = post.caption || "";
+      if (!originalCaption.trim()) {
+        setTranslatedCaption("");
+        return;
+      }
+
+      setIsTranslatingCaption(true);
+      try {
+        const translated = await getTranslatedContent(originalCaption, language);
+        setTranslatedCaption(translated);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTranslatedCaption(originalCaption);
+      } finally {
+        setIsTranslatingCaption(false);
+      }
+    };
+
+    translateCaption();
+  }, [post?.caption, language, open]);
+
+  const fetchPostDetails = async () => {
+    if (!post?.id) return;
+    
+    try {
+      setLoading(true);
+      const postData = await getPost(post.id);
+      // Only set comments if post exists and is not deleted
+      if (postData && postData.id) {
+        setComments(postData.comments || []);
+      } else {
+        setComments([]);
+        toast.error("Post not found or has been deleted");
+        onOpenChange(false); // Close dialog if post is deleted
+      }
+    } catch (error) {
+      console.error("Failed to fetch post details:", error);
+      toast.error(error.message || "Failed to load comments");
+      setComments([]);
+      // Close dialog if post is deleted (404 error)
+      if (error.message && error.message.includes("deleted")) {
+        onOpenChange(false);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!comment.trim() || !post?.id) return;
+    
+    if (!currentUser) {
+      toast.error("Please log in to comment");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const result = await addComment(post.id, comment);
+      
+      // Check if comment was successfully added
+      if (result && result.id) {
+        const newComment = {
+          id: result.id,
+          author: result.author,
+          content: result.content,
+          created_at: result.created_at,
+        };
+
+        setComments([...comments, newComment]);
+        setComment("");
+        toast.success("Comment added successfully");
+        // Clear translated comments to trigger re-translation with new comment
+        setTranslatedComments({});
+      } else {
+        throw new Error("Failed to add comment");
+      }
+    } catch (error) {
+      console.error("Failed to post comment:", error);
+      const errorMessage = error.message || "Failed to add comment";
+      toast.error(errorMessage);
+      
+      // If post is deleted, close dialog and refresh comments
+      if (errorMessage.includes("deleted") || errorMessage.includes("not found")) {
+        fetchPostDetails(); // Refresh to get updated state
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // 👈 Kiểm tra post có tồn tại không
@@ -113,59 +274,92 @@ export default function CommentDialog({ open, onOpenChange, post }) {
                   </span>
                 </div>
                 <p className="text-black dark:text-white mt-1">
-                  {post?.caption || ""}
+                  {isTranslatingCaption ? (
+                    <span className="text-gray-400 italic">Translating...</span>
+                  ) : (
+                    translatedCaption || post?.caption || ""
+                  )}
                 </p>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {post?.hashtags?.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="text-blue-600 dark:text-blue-400 text-sm"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  {post?.hashtags?.map((tag, idx) => {
+                    const hashtagText = tag.startsWith('#') ? tag : `#${tag}`;
+                    return (
+                      <span
+                        key={idx}
+                        className="text-blue-600 dark:text-blue-400 text-sm cursor-pointer hover:underline"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const hashtagInfo = await getHashtagInfo(hashtagText);
+                            if (hashtagInfo && hashtagInfo.name) {
+                              navigate(`/tour?search=${encodeURIComponent(hashtagInfo.name)}`);
+                            } else {
+                              toast.error("Could not find information for this hashtag");
+                            }
+                          } catch (error) {
+                            console.error("Failed to get hashtag info:", error);
+                            toast.error("Failed to load hashtag information");
+                          }
+                        }}
+                      >
+                        {hashtagText}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
             {/* User Comments */}
-            {comments.map((c) => (
-              <div key={c.id} className="flex gap-3">
-                <Avatar className="w-8 h-8 flex-shrink-0">
-                  <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white">
-                    {c.displayName[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-semibold text-black dark:text-white">
-                      {c.username}
-                    </span>
-                    <span className="text-muted-foreground dark:text-gray-400 text-xs">
-                      {c.timestamp}
-                    </span>
+            {loading ? (
+              <div className="text-center py-4 text-gray-500">Loading comments...</div>
+            ) : comments.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">{translations.noComments || "No comments yet"}</div>
+            ) : (
+              comments.map((c) => {
+                const translatedContent = translatedComments[c.id] !== undefined 
+                  ? translatedComments[c.id] 
+                  : c.content;
+                return (
+                  <div key={c.id} className="flex gap-3">
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white">
+                        {c.author?.[0] || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2 justify-between">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-semibold text-black dark:text-white">
+                            {c.author || "Unknown"}
+                          </span>
+                          <span className="text-muted-foreground dark:text-gray-400 text-xs">
+                            {c.created_at ? new Date(c.created_at).toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : ""}
+                          </span>
+                        </div>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            onClick={() => handleDeleteComment(c.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-black dark:text-white mt-1">
+                        {isTranslatingComments && !translatedComments[c.id] ? (
+                          <span className="text-gray-400 italic">Translating...</span>
+                        ) : (
+                          translatedContent
+                        )}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-black dark:text-white mt-1">{c.text}</p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <button className="text-xs text-muted-foreground dark:text-gray-400 hover:text-black dark:hover:text-white">
-                      Trả lời
-                    </button>
-                    {c.likes > 0 && (
-                      <span className="text-xs text-muted-foreground dark:text-gray-400">
-                        {c.likes} lượt thích
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto p-0 hover:bg-transparent"
-                >
-                  <Heart className="w-3 h-3 text-muted-foreground dark:text-gray-400" />
-                </Button>
-              </div>
-            ))}
+                );
+              })
+            )}
           </div>
 
           {/* Footer - Actions & Input */}
@@ -206,15 +400,28 @@ export default function CommentDialog({ open, onOpenChange, post }) {
                 variant="ghost"
                 size="sm"
                 onClick={handlePostComment}
-                disabled={!comment.trim()}
+                disabled={!comment.trim() || isSubmitting}
                 className="text-blue-600 dark:text-blue-400 font-semibold hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-30"
               >
-                Đăng
+                {isSubmitting ? (translations.posting || "Posting...") : (translations.post || "Post")}
               </Button>
             </div>
           </div>
         </div>
       </DialogContent>
+
+      {/* Delete Comment Confirmation Dialog */}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title={translations.deleteComment || "Delete Comment"}
+        description={translations.deleteCommentConfirm || "Are you sure you want to delete this comment? This action cannot be undone."}
+        onConfirm={handleDeleteComment}
+        confirmText={translations.delete || "Delete"}
+        cancelText={translations.cancel || "Cancel"}
+        variant="danger"
+      />
     </Dialog>
   );
 }
+

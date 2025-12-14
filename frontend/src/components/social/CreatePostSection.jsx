@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -7,55 +7,158 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/input";
 import { Alert, AlertDescription } from "../ui/alert";
-import { Image, MapPin, X, Camera, AlertCircle } from "lucide-react";
+import { Image, X, Camera, AlertCircle, Hash } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
-import { suggestedHashtags } from "./mockData";
+import { createPost, uploadImage, searchHashtags } from "../../api/social";
+import { useToast } from "../../context/ToastContext";
 
-// 👈 MOCK CURRENT USER
-const currentUser = {
-  id: "user_123",
-  username: "current_user",
-  displayName: "Minh Hoàng",
+// Get current user from localStorage
+const getCurrentUser = () => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  try {
+    return JSON.parse(userStr);
+  } catch {
+    return null;
+  }
 };
 
 export default function CreatePostSection({ onSubmit }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [caption, setCaption] = useState("");
-  const [location, setLocation] = useState("");
   const [selectedHashtags, setSelectedHashtags] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
+  const [uploadedImageBase64, setUploadedImageBase64] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hashtagQuery, setHashtagQuery] = useState("");
+  const [hashtagSuggestions, setHashtagSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const hashtagInputRef = useRef(null);
+  const suggestionsRef = useRef(null);
 
-  const { translations } = useLanguage();
+  const { translations, language } = useLanguage();
+  const toast = useToast();
+  const currentUser = getCurrentUser();
 
-  const handleImageUpload = (e) => {
+  // Search hashtags when query changes
+  useEffect(() => {
+    if (hashtagQuery.trim()) {
+      const timeoutId = setTimeout(async () => {
+        try {
+          const results = await searchHashtags(hashtagQuery, 10);
+          setHashtagSuggestions(results);
+          setShowSuggestions(true);
+        } catch (error) {
+          console.error("Failed to search hashtags:", error);
+        }
+      }, 300); // Debounce
+      return () => clearTimeout(timeoutId);
+    } else {
+      setHashtagSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [hashtagQuery]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target) &&
+        hashtagInputRef.current &&
+        !hashtagInputRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
-    const imageUrls = files.map((file) => URL.createObjectURL(file));
-    setSelectedImages([...selectedImages, ...imageUrls]);
+    if (files.length === 0) return;
+
+    // Show preview immediately
+    const previewUrls = files.map((file) => URL.createObjectURL(file));
+    setSelectedImages([...selectedImages, ...previewUrls]);
+
+    // Convert images to base64
+    try {
+      const base64Promises = files.map(async (file) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            resolve(reader.result); // This will be the base64 string
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      });
+      const base64Images = await Promise.all(base64Promises);
+      setUploadedImageBase64([...uploadedImageBase64, ...base64Images]);
+    } catch (error) {
+      console.error("Failed to convert image to base64:", error);
+      toast.error("Failed to process image");
+      // Remove previews on error
+      setSelectedImages(selectedImages.filter((_, i) => i < selectedImages.length));
+    }
   };
 
   const handleRemoveImage = (index) => {
     setSelectedImages(selectedImages.filter((_, i) => i !== index));
+    setUploadedImageBase64(uploadedImageBase64.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
-    console.log("Submit post:", {
-      caption,
-      location,
-      selectedHashtags,
-      selectedImages,
-    });
-    onSubmit();
-    // Reset form
-    setCaption("");
-    setLocation("");
-    setSelectedHashtags([]);
-    setSelectedImages([]);
-    setIsExpanded(false);
+  const handleSubmit = async () => {
+    if (!currentUser) {
+      toast.error("Please log in to create a post");
+      return;
+    }
+
+    if (!caption.trim() && uploadedImageBase64.length === 0) {
+      toast.error("Please add a caption or image");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      // Use first uploaded image as base64 (or empty if none)
+      const imageUrl = uploadedImageBase64.length > 0 ? uploadedImageBase64[0] : null;
+
+      const result = await createPost({
+        content: caption,
+        image_url: imageUrl,
+        hashtags: selectedHashtags,
+      });
+
+      toast.success("Post created successfully!");
+      
+      // Reset form first
+      setCaption("");
+      setSelectedHashtags([]);
+      setSelectedImages([]);
+      setUploadedImageBase64([]);
+      setHashtagQuery("");
+      setHashtagSuggestions([]);
+      setShowSuggestions(false);
+      setIsExpanded(false);
+      
+      // Then call onSubmit to close dialog and refresh
+      if (onSubmit) {
+        onSubmit();
+      }
+    } catch (error) {
+      console.error("Failed to create post:", error);
+      toast.error(error.message || "Failed to create post");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
     setCaption("");
-    setLocation("");
     setSelectedHashtags([]);
     setSelectedImages([]);
     setIsExpanded(false);
@@ -108,8 +211,8 @@ export default function CreatePostSection({ onSubmit }) {
           U
         </div>
         <div>
-          <p className="font-semibold text-sm text-black dark:text-white">current_user</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">@traveler</p>
+          <p className="font-semibold text-sm text-black dark:text-white">{currentUser?.username || "User"}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{currentUser?.email || ""}</p>
         </div>
       </div>
 
@@ -199,48 +302,84 @@ export default function CreatePostSection({ onSubmit }) {
           )}
         </div>
 
-        {/* Location */}
-        <div className="space-y-2">
-          <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
-            <Input
-              placeholder={translations.addLocation || "Add location..."}
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="pl-10 bg-gray-50 dark:bg-gray-900/50 text-black dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 border-gray-200 dark:border-gray-700 rounded-xl h-12 focus-visible:ring-1 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
-            />
-          </div>
-        </div>
-
-        {/* Hashtags */}
+        {/* Hashtags with Autocomplete */}
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-black dark:text-white">
             {translations.addHashtags || "Add Hashtags"}
           </Label>
-          <div className="flex flex-wrap gap-2">
-            {suggestedHashtags.map((tag) => (
-              <Badge
-                key={tag}
-                variant={selectedHashtags.includes(tag) ? "default" : "outline"}
-                className={`cursor-pointer transition-all text-sm py-1.5 px-3 rounded-full ${
-                  selectedHashtags.includes(tag)
-                    ? "bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white border-0 shadow-md shadow-blue-500/30"
-                    : "hover:bg-gray-100 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300"
-                }`}
-                onClick={() => {
-                  if (selectedHashtags.includes(tag)) {
-                    setSelectedHashtags(
-                      selectedHashtags.filter((t) => t !== tag)
-                    );
-                  } else {
-                    setSelectedHashtags([...selectedHashtags, tag]);
-                  }
-                }}
+          <div className="relative">
+            <div className="relative">
+              <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
+              <input
+                ref={hashtagInputRef}
+                type="text"
+                placeholder={
+                  language === 'vi' 
+                    ? "Nhập hashtag (ví dụ: #HaNoi, #TourSapa)..."
+                    : "Enter hashtag (e.g., #HaNoi, #TourSapa)..."
+                }
+                value={hashtagQuery}
+                onChange={(e) => setHashtagQuery(e.target.value)}
+                onFocus={() => hashtagQuery.trim() && setShowSuggestions(true)}
+                className="pl-10 bg-gray-50 dark:bg-gray-900/50 text-black dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 border-gray-200 dark:border-gray-700 rounded-xl h-12 focus-visible:ring-1 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
+              />
+            </div>
+            {showSuggestions && hashtagSuggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto"
               >
-                {tag}
-              </Badge>
-            ))}
+                {hashtagSuggestions.map((suggestion, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      const hashtag = suggestion.hashtag.startsWith('#') 
+                        ? suggestion.hashtag 
+                        : `#${suggestion.hashtag}`;
+                      if (!selectedHashtags.includes(hashtag)) {
+                        setSelectedHashtags([...selectedHashtags, hashtag]);
+                      }
+                      setHashtagQuery("");
+                      setShowSuggestions(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between"
+                  >
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
+                      {suggestion.hashtag}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {suggestion.usage_count} {translations.uses || "uses"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+          
+          {/* Selected Hashtags */}
+          {selectedHashtags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedHashtags.map((tag, idx) => (
+                <Badge
+                  key={idx}
+                  variant="default"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 shadow-md cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => setSelectedHashtags(selectedHashtags.filter((_, i) => i !== idx))}
+                >
+                  {tag}
+                  <X className="w-3 h-3 ml-1" />
+                </Badge>
+              ))}
+            </div>
+          )}
+          
+          {/* Hint text */}
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {language === 'vi' 
+              ? "💡 Gợi ý: Sử dụng hashtag tên thành phố (ví dụ: #HaNoi) hoặc tên tour (ví dụ: #TourSapa)"
+              : "💡 Tip: Use city name hashtags (e.g., #HaNoi) or tour name hashtags (e.g., #TourSapa)"}
+          </p>
         </div>
       </div>
 
@@ -262,10 +401,10 @@ export default function CreatePostSection({ onSubmit }) {
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!caption.trim() && selectedImages.length === 0}
+            disabled={(!caption.trim() && uploadedImageBase64.length === 0) || isSubmitting}
             className="flex-1 bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 text-white border-0 shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed h-10 rounded-xl font-semibold"
           >
-            {translations.post || "Post"}
+            {isSubmitting ? (translations.posting || "Posting...") : (translations.post || "Post")}
           </Button>
         </div>
       </div>

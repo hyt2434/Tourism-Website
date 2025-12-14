@@ -19,6 +19,11 @@ tour_admin_bp = Blueprint('tour_admin', __name__, url_prefix='/api/admin/tours')
 # HELPER FUNCTIONS
 # =====================================================================
 
+def round_to_thousands(price):
+    """Round price to nearest thousand (e.g., 649,000 -> 650,000, 911,900 -> 912,000)"""
+    import math
+    return math.ceil(price / 1000) * 1000
+
 def get_service_price(service_type, service_id):
     """Get the price of a service for tour cost calculation."""
     conn = get_connection()
@@ -312,27 +317,35 @@ def get_tour_detail(tour_id):
                 service_data['service_name'] = svc_row[10]
                 tour_data['services']['transportation'] = service_data
         
-        # Get selected rooms
+        # Get room bookings with quantity
         cur.execute("""
-            SELECT room_id FROM tour_selected_rooms
+            SELECT room_id, quantity FROM tour_room_bookings
             WHERE tour_id = %s
         """, (tour_id,))
-        tour_data['selectedRooms'] = [row[0] for row in cur.fetchall()]
-        
-        # Get selected menu items
-        cur.execute("""
-            SELECT menu_item_id, day_number FROM tour_selected_menu_items
-            WHERE tour_id = %s
-            ORDER BY day_number
-        """, (tour_id,))
-        
-        selected_menu_items = {}
+        room_bookings = []
         for row in cur.fetchall():
-            day_key = str(row[1])
-            if day_key not in selected_menu_items:
-                selected_menu_items[day_key] = []
-            selected_menu_items[day_key].append(row[0])
-        tour_data['selectedMenuItems'] = selected_menu_items
+            room_bookings.append({
+                'room_id': row[0],
+                'quantity': row[1]
+            })
+        tour_data['roomBookings'] = room_bookings
+        
+        # Get selected set meals
+        cur.execute("""
+            SELECT set_meal_id, day_number, meal_session 
+            FROM tour_selected_set_meals
+            WHERE tour_id = %s
+            ORDER BY day_number, meal_session
+        """, (tour_id,))
+        
+        selected_set_meals = []
+        for row in cur.fetchall():
+            selected_set_meals.append({
+                'set_meal_id': row[0],
+                'day_number': row[1],
+                'meal_session': row[2]
+            })
+        tour_data['selectedSetMeals'] = selected_set_meals
         
         return jsonify(tour_data), 200
         
@@ -478,61 +491,101 @@ def create_tour():
                     VALUES (%s, 'transportation', %s, %s, %s)
                 """, (tour_id, trans['service_id'], price, trans.get('notes')))
         
-        # Save selected rooms if provided
-        if 'selectedRooms' in data and data['selectedRooms']:
-            for room_id in data['selectedRooms']:
+        # Save selected rooms with quantity if provided (NEW LOGIC)
+        if 'roomBookings' in data and data['roomBookings']:
+            for booking in data['roomBookings']:
                 cur.execute("""
-                    INSERT INTO tour_selected_rooms (tour_id, room_id)
-                    VALUES (%s, %s)
-                    ON CONFLICT (tour_id, room_id) DO NOTHING
-                """, (tour_id, room_id))
+                    INSERT INTO tour_room_bookings (tour_id, room_id, quantity)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (tour_id, room_id) DO UPDATE SET quantity = EXCLUDED.quantity
+                """, (tour_id, booking['room_id'], booking['quantity']))
         
-        # Save selected menu items if provided
-        if 'selectedMenuItems' in data and data['selectedMenuItems']:
-            for day_number, item_ids in data['selectedMenuItems'].items():
-                for item_id in item_ids:
-                    cur.execute("""
-                        INSERT INTO tour_selected_menu_items (tour_id, menu_item_id, day_number)
-                        VALUES (%s, %s, %s)
-                        ON CONFLICT (tour_id, menu_item_id, day_number) DO NOTHING
-                    """, (tour_id, item_id, int(day_number)))
+        # Save selected set meals if provided (NEW LOGIC)
+        if 'selectedSetMeals' in data and data['selectedSetMeals']:
+            for set_meal_data in data['selectedSetMeals']:
+                cur.execute("""
+                    INSERT INTO tour_selected_set_meals (tour_id, set_meal_id, day_number, meal_session)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (tour_id, set_meal_id, day_number, meal_session) DO NOTHING
+                """, (tour_id, set_meal_data['set_meal_id'], set_meal_data['day_number'], set_meal_data['meal_session']))
         
-        # Calculate and set total_price based on selected rooms and menu items
+        # Calculate and set total_price based on new logic
         total_price = 0
         
-        # Extract number of nights from duration (e.g., "3 days 2 nights" -> 2)
-        duration = data.get('duration', '')
-        num_nights = 1  # Default to 1 night
-        if duration:
-            night_match = re.search(r'(\d+)\s*(?:night|đêm)', duration.lower())
-            if night_match:
-                num_nights = int(night_match.group(1))
+        # Extract number of nights from duration (duration is number of days, nights = days - 1)
+        duration_str = data.get('duration', '1')
+        # Extract number from duration string (e.g., "3 days 2 nights" -> 3)
+        import re
+        days_match = re.search(r'(\d+)', duration_str)
+        num_days = int(days_match.group(1)) if days_match else 1
+        num_nights = max(1, num_days - 1)  # Nights = Days - 1, minimum 1
         
-        # Calculate accommodation cost from selected rooms (multiply by number of nights)
-        if 'selectedRooms' in data and data['selectedRooms']:
-            for room_id in data['selectedRooms']:
+        # Calculate number of people from room bookings
+        # Standard rooms = 2 people per room, Standard Quad = 4 people per room
+        number_of_people = 0
+        if 'roomBookings' in data and data['roomBookings']:
+            for booking in data['roomBookings']:
                 cur.execute("""
-                    SELECT base_price FROM accommodation_rooms WHERE id = %s
-                """, (room_id,))
+                    SELECT room_type FROM accommodation_rooms WHERE id = %s
+                """, (booking['room_id'],))
+                result = cur.fetchone()
+                if result:
+                    room_type = result[0]
+                    people_per_room = 4 if room_type == 'Standard Quad' else 2
+                    number_of_people += people_per_room * booking['quantity']
+        
+        # If no room bookings, use provided number_of_members
+        if number_of_people == 0:
+            number_of_people = data.get('number_of_members', 1)
+        
+        # Update number_of_members in the tour based on room bookings
+        cur.execute("""
+            UPDATE tours_admin SET number_of_members = %s WHERE id = %s
+        """, (number_of_people, tour_id))
+        
+        # Calculate accommodation cost from selected rooms (only Standard rooms, multiply by quantity and nights)
+        accommodation_cost = 0
+        if 'roomBookings' in data and data['roomBookings']:
+            for booking in data['roomBookings']:
+                cur.execute("""
+                    SELECT base_price, room_type FROM accommodation_rooms WHERE id = %s
+                """, (booking['room_id'],))
                 result = cur.fetchone()
                 if result and result[0]:
-                    total_price += float(result[0]) * num_nights
+                    base_price = float(result[0])
+                    quantity = booking['quantity']
+                    accommodation_cost += base_price * quantity * num_nights
         
-        # Calculate restaurant costs from selected menu items
-        if 'selectedMenuItems' in data and data['selectedMenuItems']:
-            for day_number, item_ids in data['selectedMenuItems'].items():
-                for item_id in item_ids:
-                    cur.execute("""
-                        SELECT price FROM restaurant_menu_items WHERE id = %s
-                    """, (item_id,))
-                    result = cur.fetchone()
-                    if result and result[0]:
-                        total_price += float(result[0])
+        # Calculate restaurant costs from selected set meals
+        # Each set meal price is now per person
+        restaurant_cost = 0
+        if 'selectedSetMeals' in data and data['selectedSetMeals']:
+            for set_meal_data in data['selectedSetMeals']:
+                cur.execute("""
+                    SELECT total_price FROM restaurant_set_meals WHERE id = %s
+                """, (set_meal_data['set_meal_id'],))
+                result = cur.fetchone()
+                if result and result[0]:
+                    price_per_person = float(result[0])  # Price per person
+                    # Multiply by number of people
+                    restaurant_cost += price_per_person * number_of_people
         
-        # Add transportation cost (round trip)
+        # Add transportation cost (per person, multiply by number of people, double for round trip)
+        transportation_cost = 0
         if 'services' in data and 'transportation' in data['services'] and data['services']['transportation']:
-            trans_price = get_service_price('transportation', data['services']['transportation']['service_id'])
-            total_price += trans_price * 2  # Round trip
+            cur.execute("""
+                SELECT base_price FROM transportation_services WHERE id = %s
+            """, (data['services']['transportation']['service_id'],))
+            result = cur.fetchone()
+            if result and result[0]:
+                price_per_person = float(result[0])
+                transportation_cost = price_per_person * number_of_people * 2  # Round trip
+        
+        # Calculate total price
+        total_price = accommodation_cost + restaurant_cost + transportation_cost
+        
+        # Round to nearest thousand
+        total_price = round_to_thousands(total_price)
         
         # Update total_price directly
         cur.execute("""
@@ -709,83 +762,132 @@ def update_tour(tour_id):
                     VALUES (%s, 'transportation', %s, %s, %s)
                 """, (tour_id, trans['service_id'], price, trans.get('notes')))
         
-        # Update selected rooms if provided
-        if 'selectedRooms' in data:
-            # Delete existing selections
-            cur.execute("DELETE FROM tour_selected_rooms WHERE tour_id = %s", (tour_id,))
-            # Add new selections
-            for room_id in data['selectedRooms']:
+        # Update room bookings if provided
+        if 'roomBookings' in data:
+            # Delete existing bookings
+            cur.execute("DELETE FROM tour_room_bookings WHERE tour_id = %s", (tour_id,))
+            # Add new bookings
+            for booking in data['roomBookings']:
                 cur.execute("""
-                    INSERT INTO tour_selected_rooms (tour_id, room_id)
-                    VALUES (%s, %s)
-                    ON CONFLICT (tour_id, room_id) DO NOTHING
-                """, (tour_id, room_id))
+                    INSERT INTO tour_room_bookings (tour_id, room_id, quantity)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (tour_id, room_id) DO UPDATE SET quantity = EXCLUDED.quantity
+                """, (tour_id, booking['room_id'], booking['quantity']))
+            
+            # Recalculate number of members from room bookings and update schedules
+            cur.execute("""
+                SELECT ar.bed_type, trb.quantity
+                FROM tour_room_bookings trb
+                JOIN accommodation_rooms ar ON trb.room_id = ar.id
+                WHERE trb.tour_id = %s
+            """, (tour_id,))
+            room_bookings = cur.fetchall()
+            
+            # Calculate number of members from room bookings
+            # Formula: quantity × people_per_room
+            # Double bed = 2 people, Queen bed = 2 people, King bed = 3 people
+            calculated_members = 0
+            if room_bookings:
+                for bed_type, quantity in room_bookings:
+                    people_per_room = 3 if bed_type == 'King' else 2
+                    calculated_members += quantity * people_per_room
+            
+            # Default to 1 if no rooms selected
+            if calculated_members == 0:
+                calculated_members = 1
+            
+            # Update number of members in tours table
+            cur.execute("""
+                UPDATE tours_admin SET number_of_members = %s WHERE id = %s
+            """, (calculated_members, tour_id))
+            
+            # Update max_slots in all schedules for this tour
+            cur.execute("""
+                UPDATE tour_schedules 
+                SET max_slots = %s 
+                WHERE tour_id = %s
+            """, (calculated_members, tour_id))
         
-        # Update selected menu items if provided
-        if 'selectedMenuItems' in data:
+        # Update selected set meals if provided
+        if 'selectedSetMeals' in data:
             # Delete existing selections
-            cur.execute("DELETE FROM tour_selected_menu_items WHERE tour_id = %s", (tour_id,))
+            cur.execute("DELETE FROM tour_selected_set_meals WHERE tour_id = %s", (tour_id,))
             # Add new selections
-            for day_number, item_ids in data['selectedMenuItems'].items():
-                for item_id in item_ids:
-                    cur.execute("""
-                        INSERT INTO tour_selected_menu_items (tour_id, menu_item_id, day_number)
-                        VALUES (%s, %s, %s)
-                        ON CONFLICT (tour_id, menu_item_id, day_number) DO NOTHING
-                    """, (tour_id, item_id, int(day_number)))
+            for set_meal in data['selectedSetMeals']:
+                cur.execute("""
+                    INSERT INTO tour_selected_set_meals (tour_id, set_meal_id, day_number, meal_session)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (tour_id, set_meal_id, day_number, meal_session) DO NOTHING
+                """, (tour_id, set_meal['set_meal_id'], set_meal['day_number'], set_meal['meal_session']))
         
-        # Calculate and set total_price based on selected rooms and menu items
+        # Calculate and set total_price based on room bookings and set meals
         total_price = 0
         
-        # Get tour duration to calculate number of nights
-        cur.execute("SELECT duration FROM tours_admin WHERE id = %s", (tour_id,))
-        duration_result = cur.fetchone()
-        duration = duration_result[0] if duration_result else ''
-        num_nights = 1  # Default to 1 night
-        if duration:
-            night_match = re.search(r'(\d+)\s*(?:night|đêm)', duration.lower())
-            if night_match:
-                num_nights = int(night_match.group(1))
+        # Get tour duration and number of members to calculate price
+        cur.execute("SELECT duration, number_of_members FROM tours_admin WHERE id = %s", (tour_id,))
+        tour_result = cur.fetchone()
+        duration = tour_result[0] if tour_result else 1
+        number_of_members = tour_result[1] if tour_result and tour_result[1] else 1
         
-        # Get current selected rooms
-        cur.execute("SELECT room_id FROM tour_selected_rooms WHERE tour_id = %s", (tour_id,))
-        selected_room_ids = [row[0] for row in cur.fetchall()]
+        # Calculate nights from days (duration is number of days, nights = days - 1, minimum 1)
+        # Ensure duration is integer
+        try:
+            duration_int = int(duration) if duration else 1
+        except (ValueError, TypeError):
+            duration_int = 1
+        num_nights = max(1, duration_int - 1)
         
-        # Calculate accommodation cost from selected rooms (multiply by number of nights)
-        if selected_room_ids:
-            for room_id in selected_room_ids:
-                cur.execute("""
-                    SELECT base_price FROM accommodation_rooms WHERE id = %s
-                """, (room_id,))
-                result = cur.fetchone()
-                if result and result[0]:
-                    total_price += float(result[0]) * num_nights
-        
-        # Get current selected menu items
+        # Calculate accommodation cost from room bookings (quantity × base_price × nights)
+        accommodation_cost = 0
         cur.execute("""
-            SELECT menu_item_id FROM tour_selected_menu_items WHERE tour_id = %s
+            SELECT ar.base_price, trb.quantity
+            FROM tour_room_bookings trb
+            JOIN accommodation_rooms ar ON trb.room_id = ar.id
+            WHERE trb.tour_id = %s
         """, (tour_id,))
-        selected_menu_item_ids = [row[0] for row in cur.fetchall()]
+        room_bookings = cur.fetchall()
         
-        # Calculate restaurant costs from selected menu items
-        if selected_menu_item_ids:
-            for item_id in selected_menu_item_ids:
-                cur.execute("""
-                    SELECT price FROM restaurant_menu_items WHERE id = %s
-                """, (item_id,))
-                result = cur.fetchone()
-                if result and result[0]:
-                    total_price += float(result[0])
+        for base_price, quantity in room_bookings:
+            if base_price:
+                accommodation_cost += float(base_price) * quantity * num_nights
         
-        # Add transportation cost (round trip)
+        # Calculate restaurant costs from selected set meals
+        restaurant_cost = 0
+        cur.execute("""
+            SELECT rsm.total_price
+            FROM tour_selected_set_meals tssm
+            JOIN restaurant_set_meals rsm ON tssm.set_meal_id = rsm.id
+            WHERE tssm.tour_id = %s
+        """, (tour_id,))
+        set_meal_prices = cur.fetchall()
+        
+        if set_meal_prices:
+            # Each set meal price is per person
+            for price_tuple in set_meal_prices:
+                if price_tuple[0]:
+                    restaurant_cost += float(price_tuple[0]) * number_of_members
+        
+        # Add transportation cost (per person, multiply by number of members, double for round trip)
+        transportation_cost = 0
         cur.execute("""
             SELECT transportation_id FROM tour_services 
             WHERE tour_id = %s AND service_type = 'transportation'
         """, (tour_id,))
         trans_result = cur.fetchone()
         if trans_result and trans_result[0]:
-            trans_price = get_service_price('transportation', trans_result[0])
-            total_price += trans_price * 2  # Round trip
+            cur.execute("""
+                SELECT base_price FROM transportation_services WHERE id = %s
+            """, (trans_result[0],))
+            price_result = cur.fetchone()
+            if price_result and price_result[0]:
+                price_per_person = float(price_result[0])
+                transportation_cost = price_per_person * number_of_members * 2  # Round trip
+        
+        # Calculate total price
+        total_price = accommodation_cost + restaurant_cost + transportation_cost
+        
+        # Round to nearest ten thousand
+        total_price = round_to_thousands(total_price)
         
         # Update total_price directly
         cur.execute("""
@@ -965,13 +1067,88 @@ def get_available_services():
 
 
 # =====================================================================
+# GET RESTAURANT SET MEALS (for admin tour creation)
+# =====================================================================
+
+@tour_admin_bp.route('/restaurants/<int:restaurant_id>/set-meals', methods=['GET'])
+@admin_required
+def get_restaurant_set_meals(restaurant_id):
+    """
+    Get all set meals for a restaurant (for admin tour creation).
+    No authentication check - admins can view all set meals.
+    """
+    conn = get_connection()
+    if not conn:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        # Get set meals
+        cur.execute("""
+            SELECT id, name, description, meal_session, total_price, currency, is_available, created_at, updated_at
+            FROM restaurant_set_meals
+            WHERE restaurant_id = %s
+            ORDER BY meal_session, created_at DESC
+        """, (restaurant_id,))
+        
+        rows = cur.fetchall()
+        set_meals = []
+        
+        for row in rows:
+            set_meal_id = row[0]
+            
+            # Get menu items for this set meal
+            cur.execute("""
+                SELECT rmi.id, rmi.name, rmi.description, rmi.price, rmi.currency, rmi.category
+                FROM restaurant_set_meal_items rsmi
+                JOIN restaurant_menu_items rmi ON rsmi.menu_item_id = rmi.id
+                WHERE rsmi.set_meal_id = %s
+                ORDER BY rmi.category, rmi.name
+            """, (set_meal_id,))
+            
+            menu_items = []
+            for menu_row in cur.fetchall():
+                menu_items.append({
+                    'id': menu_row[0],
+                    'name': menu_row[1],
+                    'description': menu_row[2],
+                    'price': float(menu_row[3]) if menu_row[3] else 0,
+                    'currency': menu_row[4] or 'VND',
+                    'category': menu_row[5]
+                })
+            
+            set_meals.append({
+                'id': row[0],
+                'name': row[1],
+                'description': row[2],
+                'mealSession': row[3],
+                'totalPrice': float(row[4]) if row[4] else 0,
+                'currency': row[5] or 'VND',
+                'isAvailable': row[6],
+                'menuItems': menu_items,
+                'createdAt': row[7].isoformat() if row[7] else None,
+                'updatedAt': row[8].isoformat() if row[8] else None
+            })
+        
+        return jsonify(set_meals), 200
+        
+    except Exception as e:
+        print(f"Error fetching set meals: {e}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+# =====================================================================
 # CALCULATE SERVICE PRICE
 # =====================================================================
 
 @tour_admin_bp.route('/calculate-price', methods=['POST'])
 @admin_required
 def calculate_tour_price():
-    """Calculate total tour price based on selected services and specific items."""
+    """Calculate total tour price based on selected services and room bookings."""
     data = request.get_json()
     
     if 'services' not in data:
@@ -991,60 +1168,97 @@ def calculate_tour_price():
         }
         
         services = data['services']
-        selected_rooms = data.get('selectedRooms', [])
-        selected_menu_items = data.get('selectedMenuItems', {})
+        room_bookings = data.get('roomBookings', [])  # [{room_id, quantity}]
+        selected_set_meals = data.get('selectedSetMeals', [])  # [{set_meal_id, day_number, meal_session}]
+        number_of_members = data.get('number_of_members', 1)
         
-        print(f"Calculating price - Selected rooms: {selected_rooms}")
-        print(f"Calculating price - Selected menu items: {selected_menu_items}")
+        print(f"Calculating price - Room bookings: {room_bookings}")
+        print(f"Calculating price - Selected set meals: {selected_set_meals}")
+        print(f"Calculating price - Number of members: {number_of_members}")
         
         # Extract number of nights from duration if provided
+        # Duration is number of days (2 = 2 days 1 night, 3 = 3 days 2 nights)
         num_nights = 1  # Default to 1 night
-        if 'duration' in data:
+        if 'duration' in data and data['duration']:
             duration = data['duration']
-            night_match = re.search(r'(\d+)\s*(?:night|đêm)', duration.lower())
-            if night_match:
-                num_nights = int(night_match.group(1))
+            # If duration is a number, calculate nights
+            if isinstance(duration, (int, float)):
+                num_nights = int(duration) - 1 if duration > 1 else 1
+            else:
+                # If it's a string, try to parse it
+                try:
+                    duration_int = int(duration)
+                    num_nights = duration_int - 1 if duration_int > 1 else 1
+                except ValueError:
+                    # Fallback to regex for old format
+                    night_match = re.search(r'(\d+)\s*(?:night|đêm)', str(duration).lower())
+                    if night_match:
+                        num_nights = int(night_match.group(1))
         
-        # Calculate accommodation cost based on selected rooms (multiply by number of nights)
-        if 'accommodation' in services and services['accommodation'] and selected_rooms:
-            print(f"Processing {len(selected_rooms)} rooms for {num_nights} nights...")
-            for room_id in selected_rooms:
+        # Calculate accommodation cost based on room bookings (quantity × base_price × nights)
+        if 'accommodation' in services and services['accommodation'] and room_bookings:
+            print(f"Processing {len(room_bookings)} room booking(s) for {num_nights} nights...")
+            for booking in room_bookings:
+                room_id = booking.get('room_id')
+                quantity = booking.get('quantity', 1)
+                
                 cur.execute("""
-                    SELECT base_price FROM accommodation_rooms WHERE id = %s
+                    SELECT base_price, bed_type FROM accommodation_rooms WHERE id = %s
                 """, (room_id,))
                 result = cur.fetchone()
                 if result and result[0]:
-                    room_price = float(result[0]) * num_nights
-                    breakdown['accommodation'] += room_price
-                    print(f"Room {room_id}: {float(result[0])} VND x {num_nights} nights = {room_price} VND")
+                    base_price = float(result[0])
+                    bed_type = result[1]
+                    room_cost = base_price * quantity * num_nights
+                    breakdown['accommodation'] += room_cost
+                    print(f"Room {room_id} ({bed_type}): {base_price} VND x {quantity} room(s) x {num_nights} night(s) = {room_cost} VND")
                 else:
                     print(f"Room {room_id}: No price found")
         
-        # Calculate restaurant costs based on selected menu items
-        if 'restaurants' in services and selected_menu_items:
-            print(f"Processing menu items for {len(selected_menu_items)} days...")
-            for day_number, item_ids in selected_menu_items.items():
-                if item_ids:  # Only process if there are items
-                    for item_id in item_ids:
-                        cur.execute("""
-                            SELECT price FROM restaurant_menu_items WHERE id = %s
-                        """, (item_id,))
-                        result = cur.fetchone()
-                        if result and result[0]:
-                            item_price = float(result[0])
-                            breakdown['restaurants'] += item_price
-                            print(f"Menu item {item_id}: {item_price} VND")
-                        else:
-                            print(f"Menu item {item_id}: No price found")
+        # Calculate restaurant costs based on selected set meals
+        if selected_set_meals:
+            print(f"Processing {len(selected_set_meals)} set meal(s)...")
+            # Each set meal price is now per person
+            
+            for set_meal in selected_set_meals:
+                set_meal_id = set_meal.get('set_meal_id')
+                
+                cur.execute("""
+                    SELECT total_price, name, meal_session FROM restaurant_set_meals WHERE id = %s
+                """, (set_meal_id,))
+                result = cur.fetchone()
+                if result and result[0]:
+                    set_meal_price_per_person = float(result[0])
+                    set_meal_name = result[1]
+                    meal_session = result[2]
+                    # Multiply by number of members (price is per person)
+                    total_set_meal_cost = set_meal_price_per_person * number_of_members
+                    breakdown['restaurants'] += total_set_meal_cost
+                    print(f"Set meal {set_meal_id} ({set_meal_name} - {meal_session}): {set_meal_price_per_person} VND/person x {number_of_members} members = {total_set_meal_cost} VND")
+                else:
+                    print(f"Set meal {set_meal_id}: No price found")
         
-        # Calculate transportation cost (double for round trip)
+        # Calculate transportation cost (per person, multiply by number of members, double for round trip)
         if 'transportation' in services and services['transportation']:
-            price = get_service_price('transportation', services['transportation']['service_id'])
-            breakdown['transportation'] = price * 2  # Round trip
-            print(f"Transportation: {price} x 2 = {breakdown['transportation']} VND")
+            cur.execute("""
+                SELECT base_price FROM transportation_services WHERE id = %s
+            """, (services['transportation']['service_id'],))
+            result = cur.fetchone()
+            if result and result[0]:
+                price_per_person = float(result[0])
+                # Price is per person, multiply by number of members, then by 2 for round trip
+                breakdown['transportation'] = price_per_person * number_of_members * 2
+                print(f"Transportation: {price_per_person} VND/person x {number_of_members} members x 2 (round trip) = {breakdown['transportation']} VND")
+            else:
+                print("Transportation: No price found")
         
-        total_price = sum(breakdown.values())
-        print(f"Total price: {total_price} VND")
+        # Calculate total price
+        total_price = breakdown['accommodation'] + breakdown['restaurants'] + breakdown['transportation']
+        
+        # Round to nearest ten thousand
+        total_price = round_to_thousands(total_price)
+        
+        print(f"Total price (rounded): {total_price} VND")
         print(f"Breakdown: {breakdown}")
         
         return jsonify({
@@ -1206,13 +1420,13 @@ def get_restaurant_menu(restaurant_id):
 
 
 # =====================================================================
-# SYNC ALL TOUR PRICES
+# SYNC ALL TOURS (Update all tour information including members and prices)
 # =====================================================================
 
-@tour_admin_bp.route('/sync-all-prices', methods=['POST'])
+@tour_admin_bp.route('/sync-all-tours', methods=['POST'])
 @admin_required
-def sync_all_tour_prices():
-    """Sync all tour prices by recalculating based on current service prices."""
+def sync_all_tours():
+    """Sync all tours by recalculating number of members and prices based on current data."""
     conn = get_connection()
     if not conn:
         return jsonify({"error": "Database connection failed"}), 500
@@ -1231,54 +1445,102 @@ def sync_all_tour_prices():
         
         for tour_id, duration in tours:
             try:
-                total_price = 0
-                
-                # Extract number of nights from duration
-                num_nights = 1  # Default to 1 night
-                if duration:
-                    night_match = re.search(r'(\d+)\s*(?:night|đêm)', duration.lower())
-                    if night_match:
-                        num_nights = int(night_match.group(1))
-                
-                # Calculate accommodation cost from selected rooms
+                # Get room bookings to calculate number of members
                 cur.execute("""
-                    SELECT room_id FROM tour_selected_rooms WHERE tour_id = %s
+                    SELECT ar.bed_type, trb.quantity
+                    FROM tour_room_bookings trb
+                    JOIN accommodation_rooms ar ON trb.room_id = ar.id
+                    WHERE trb.tour_id = %s
                 """, (tour_id,))
-                selected_room_ids = [row[0] for row in cur.fetchall()]
+                room_bookings = cur.fetchall()
                 
-                if selected_room_ids:
-                    for room_id in selected_room_ids:
-                        cur.execute("""
-                            SELECT base_price FROM accommodation_rooms WHERE id = %s
-                        """, (room_id,))
-                        result = cur.fetchone()
-                        if result and result[0]:
-                            total_price += float(result[0]) * num_nights
+                # Calculate number of members from room bookings
+                # Formula: quantity × people_per_room
+                # Double bed = 2 people, Queen bed = 2 people, King bed = 3 people
+                number_of_members = 0
+                if room_bookings:
+                    for bed_type, quantity in room_bookings:
+                        people_per_room = 3 if bed_type == 'King' else 2
+                        number_of_members += quantity * people_per_room
                 
-                # Calculate restaurant costs from selected menu items
+                # Default to 1 if no rooms selected
+                if number_of_members == 0:
+                    number_of_members = 1
+                
+                # Update number of members
                 cur.execute("""
-                    SELECT menu_item_id FROM tour_selected_menu_items WHERE tour_id = %s
+                    UPDATE tours_admin SET number_of_members = %s WHERE id = %s
+                """, (number_of_members, tour_id))
+                
+                # Update max_slots in all schedules for this tour
+                cur.execute("""
+                    UPDATE tour_schedules 
+                    SET max_slots = %s 
+                    WHERE tour_id = %s
+                """, (number_of_members, tour_id))
+                
+                # Now calculate prices
+                accommodation_cost = 0
+                restaurant_cost = 0
+                transportation_cost = 0
+                
+                # Calculate number of nights from duration (duration is number of days)
+                # Example: duration=2 means 2 days 1 night, duration=3 means 3 days 2 nights
+                # Ensure duration is integer
+                try:
+                    duration_int = int(duration) if duration else 1
+                except (ValueError, TypeError):
+                    duration_int = 1
+                num_nights = max(1, duration_int - 1)
+                
+                # Calculate accommodation cost from room bookings (quantity × base_price × nights)
+                cur.execute("""
+                    SELECT ar.base_price, trb.quantity
+                    FROM tour_room_bookings trb
+                    JOIN accommodation_rooms ar ON trb.room_id = ar.id
+                    WHERE trb.tour_id = %s
                 """, (tour_id,))
-                selected_menu_item_ids = [row[0] for row in cur.fetchall()]
+                room_booking_prices = cur.fetchall()
                 
-                if selected_menu_item_ids:
-                    for item_id in selected_menu_item_ids:
-                        cur.execute("""
-                            SELECT price FROM restaurant_menu_items WHERE id = %s
-                        """, (item_id,))
-                        result = cur.fetchone()
-                        if result and result[0]:
-                            total_price += float(result[0])
+                for base_price, quantity in room_booking_prices:
+                    if base_price:
+                        accommodation_cost += float(base_price) * quantity * num_nights
                 
-                # Add transportation cost (round trip)
+                # Calculate restaurant costs from selected set meals
+                cur.execute("""
+                    SELECT rsm.total_price
+                    FROM tour_selected_set_meals tssm
+                    JOIN restaurant_set_meals rsm ON tssm.set_meal_id = rsm.id
+                    WHERE tssm.tour_id = %s
+                """, (tour_id,))
+                set_meal_prices = cur.fetchall()
+                
+                if set_meal_prices:
+                    # Each set meal price is per person
+                    for price_tuple in set_meal_prices:
+                        if price_tuple[0]:
+                            restaurant_cost += float(price_tuple[0]) * number_of_members
+                
+                # Add transportation cost (per person, multiply by number of members, round trip)
                 cur.execute("""
                     SELECT transportation_id FROM tour_services 
                     WHERE tour_id = %s AND service_type = 'transportation'
                 """, (tour_id,))
                 trans_result = cur.fetchone()
                 if trans_result and trans_result[0]:
-                    trans_price = get_service_price('transportation', trans_result[0])
-                    total_price += trans_price * 2  # Round trip
+                    cur.execute("""
+                        SELECT base_price FROM transportation_services WHERE id = %s
+                    """, (trans_result[0],))
+                    price_result = cur.fetchone()
+                    if price_result and price_result[0]:
+                        price_per_person = float(price_result[0])
+                        transportation_cost = price_per_person * number_of_members * 2  # Round trip
+                
+                # Calculate total price
+                total_price = accommodation_cost + restaurant_cost + transportation_cost
+                
+                # Round to nearest ten thousand
+                total_price = round_to_thousands(total_price)
                 
                 # Update total_price
                 cur.execute("""
@@ -1302,8 +1564,283 @@ def sync_all_tour_prices():
         
     except Exception as e:
         conn.rollback()
-        print(f"Error syncing tour prices: {e}")
+        print(f"Error syncing tours: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         cur.close()
         conn.close()
+
+
+# =====================================================================
+# TOUR SCHEDULES MANAGEMENT
+# =====================================================================
+
+@tour_admin_bp.route('/<int:tour_id>/schedules', methods=['GET'])
+@admin_required
+def get_tour_schedules(tour_id):
+    """Get all schedules for a specific tour."""
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT 
+                id, tour_id, departure_datetime, return_datetime,
+                max_slots, slots_booked, slots_available, is_active,
+                created_at, updated_at
+            FROM tour_schedules
+            WHERE tour_id = %s
+            ORDER BY departure_datetime ASC
+        """, (tour_id,))
+        
+        rows = cur.fetchall()
+        schedules = []
+        for row in rows:
+            schedules.append({
+                'id': row[0],
+                'tour_id': row[1],
+                'departure_datetime': row[2].isoformat() if row[2] else None,
+                'return_datetime': row[3].isoformat() if row[3] else None,
+                'max_slots': row[4],
+                'slots_booked': row[5],
+                'slots_available': row[6],
+                'is_active': row[7],
+                'created_at': row[8].isoformat() if row[8] else None,
+                'updated_at': row[9].isoformat() if row[9] else None
+            })
+        
+        return jsonify(schedules), 200
+        
+    except Exception as e:
+        print(f"Error getting tour schedules: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@tour_admin_bp.route('/<int:tour_id>/schedules', methods=['POST'])
+@admin_required
+def create_tour_schedule(tour_id):
+    """Create a new schedule for a tour."""
+    data = request.get_json()
+    
+    departure_datetime = data.get('departure_datetime')
+    
+    if not departure_datetime:
+        return jsonify({"error": "departure_datetime is required"}), 400
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        # Get tour details (duration and max_slots)
+        cur.execute("""
+            SELECT duration, number_of_members
+            FROM tours_admin
+            WHERE id = %s
+        """, (tour_id,))
+        
+        tour_data = cur.fetchone()
+        if not tour_data:
+            return jsonify({"error": "Tour not found"}), 404
+        
+        duration_str = tour_data[0]
+        max_slots = tour_data[1]
+        
+        # Extract days from duration (expecting format like "3 days 2 nights" or just a number)
+        duration_days = extract_days_from_duration(duration_str)
+        if not duration_days:
+            return jsonify({"error": "Invalid tour duration format"}), 400
+        
+        # Calculate return datetime (departure + duration - 1 days)
+        # e.g., 2 days tour: day 1 departure, day 2 return = add 1 day
+        from datetime import datetime, timedelta
+        departure_dt = datetime.fromisoformat(departure_datetime.replace('Z', '+00:00'))
+        return_dt = departure_dt + timedelta(days=duration_days - 1)
+        
+        # Insert schedule
+        cur.execute("""
+            INSERT INTO tour_schedules (
+                tour_id, departure_datetime, return_datetime, max_slots, is_active
+            ) VALUES (%s, %s, %s, %s, TRUE)
+            RETURNING id, departure_datetime, return_datetime, max_slots, slots_booked, slots_available
+        """, (tour_id, departure_dt, return_dt, max_slots))
+        
+        result = cur.fetchone()
+        conn.commit()
+        
+        return jsonify({
+            'id': result[0],
+            'tour_id': tour_id,
+            'departure_datetime': result[1].isoformat(),
+            'return_datetime': result[2].isoformat(),
+            'max_slots': result[3],
+            'slots_booked': result[4],
+            'slots_available': result[5],
+            'is_active': True
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error creating tour schedule: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@tour_admin_bp.route('/<int:tour_id>/schedules/<int:schedule_id>', methods=['PUT'])
+@admin_required
+def update_tour_schedule(tour_id, schedule_id):
+    """Update a tour schedule."""
+    data = request.get_json()
+    
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        # Check if schedule exists and belongs to tour
+        cur.execute("""
+            SELECT id FROM tour_schedules
+            WHERE id = %s AND tour_id = %s
+        """, (schedule_id, tour_id))
+        
+        if not cur.fetchone():
+            return jsonify({"error": "Schedule not found"}), 404
+        
+        # Build update query
+        update_fields = []
+        params = []
+        
+        if 'departure_datetime' in data:
+            # If departure changes, recalculate return date
+            departure_dt = datetime.fromisoformat(data['departure_datetime'].replace('Z', '+00:00'))
+            
+            # Get tour duration
+            cur.execute("SELECT duration FROM tours_admin WHERE id = %s", (tour_id,))
+            duration_str = cur.fetchone()[0]
+            duration_days = extract_days_from_duration(duration_str)
+            
+            # Calculate return datetime (departure + duration - 1 days)
+            return_dt = departure_dt + timedelta(days=duration_days - 1)
+            
+            update_fields.append("departure_datetime = %s")
+            params.append(departure_dt)
+            update_fields.append("return_datetime = %s")
+            params.append(return_dt)
+        
+        if 'is_active' in data:
+            update_fields.append("is_active = %s")
+            params.append(data['is_active'])
+        
+        if not update_fields:
+            return jsonify({"error": "No fields to update"}), 400
+        
+        update_fields.append("updated_at = CURRENT_TIMESTAMP")
+        params.append(schedule_id)
+        params.append(tour_id)
+        
+        query = f"""
+            UPDATE tour_schedules
+            SET {', '.join(update_fields)}
+            WHERE id = %s AND tour_id = %s
+            RETURNING id, departure_datetime, return_datetime, max_slots, slots_booked, slots_available, is_active
+        """
+        
+        cur.execute(query, params)
+        result = cur.fetchone()
+        conn.commit()
+        
+        return jsonify({
+            'id': result[0],
+            'tour_id': tour_id,
+            'departure_datetime': result[1].isoformat(),
+            'return_datetime': result[2].isoformat(),
+            'max_slots': result[3],
+            'slots_booked': result[4],
+            'slots_available': result[5],
+            'is_active': result[6]
+        }), 200
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error updating tour schedule: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+@tour_admin_bp.route('/<int:tour_id>/schedules/<int:schedule_id>', methods=['DELETE'])
+@admin_required
+def delete_tour_schedule(tour_id, schedule_id):
+    """Delete a tour schedule."""
+    conn = get_connection()
+    if not conn:
+        return jsonify({"error": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        
+        # Check if schedule has bookings
+        cur.execute("""
+            SELECT COUNT(*) FROM bookings
+            WHERE tour_schedule_id = %s
+        """, (schedule_id,))
+        
+        booking_count = cur.fetchone()[0]
+        if booking_count > 0:
+            return jsonify({
+                "error": f"Cannot delete schedule with {booking_count} existing booking(s)"
+            }), 400
+        
+        # Delete schedule
+        cur.execute("""
+            DELETE FROM tour_schedules
+            WHERE id = %s AND tour_id = %s
+            RETURNING id
+        """, (schedule_id, tour_id))
+        
+        result = cur.fetchone()
+        if not result:
+            return jsonify({"error": "Schedule not found"}), 404
+        
+        conn.commit()
+        return jsonify({"message": "Schedule deleted successfully"}), 200
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error deleting tour schedule: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+def extract_days_from_duration(duration):
+    """Extract number of days from duration string."""
+    if not duration:
+        return None
+    
+    # If duration is already a number, return it
+    if isinstance(duration, (int, float)):
+        return int(duration)
+    
+    # Try to parse as integer
+    try:
+        return int(duration)
+    except (ValueError, TypeError):
+        # Try to extract from string format "3 days 2 nights"
+        match = re.search(r'(\d+)', str(duration))
+        return int(match.group(1)) if match else None
+

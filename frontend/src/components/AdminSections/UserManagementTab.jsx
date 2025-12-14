@@ -215,47 +215,47 @@ export default function UserManagementTab() {
       />
 
       {/* Search and Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           <Input
             placeholder={t.searchUsers}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400"
+            className="pl-9 sm:pl-10 h-10 sm:h-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 text-sm sm:text-base"
           />
         </div>
         
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant={filterRole === "all" ? "default" : "outline"}
             onClick={() => setFilterRole("all")}
-            className="h-12"
+            className="h-10 sm:h-12 text-xs sm:text-sm px-3 sm:px-4"
           >
             {t.allUsers}
           </Button>
           <Button
             variant={filterRole === "client" ? "default" : "outline"}
             onClick={() => setFilterRole("client")}
-            className="h-12"
+            className="h-10 sm:h-12 text-xs sm:text-sm px-3 sm:px-4"
           >
-            <User className="w-4 h-4 mr-2" />
+            <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
             {t.clients}
           </Button>
           <Button
             variant={filterRole === "partner" ? "default" : "outline"}
             onClick={() => setFilterRole("partner")}
-            className="h-12"
+            className="h-10 sm:h-12 text-xs sm:text-sm px-3 sm:px-4"
           >
-            <UserCheck className="w-4 h-4 mr-2" />
+            <UserCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
             {t.partners}
           </Button>
           <Button
             variant={filterRole === "admin" ? "default" : "outline"}
             onClick={() => setFilterRole("admin")}
-            className="h-12"
+            className="h-10 sm:h-12 text-xs sm:text-sm px-3 sm:px-4"
           >
-            <Shield className="w-4 h-4 mr-2" />
+            <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
             {t.admins}
           </Button>
         </div>
@@ -264,11 +264,11 @@ export default function UserManagementTab() {
       {/* User Table */}
       <Card className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-2xl">
-            <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
+            <User className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
             {t.userManagement}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm">
             {t.userManagementDesc}
           </CardDescription>
         </CardHeader>
@@ -285,46 +285,47 @@ export default function UserManagementTab() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-700/50">
-                    <tr className="border-b-2 border-gray-200 dark:border-gray-600">
-                      <th className="text-left py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.username}</th>
-                      <th className="text-left py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.role}</th>
-                      <th className="text-left py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.status}</th>
-                      <th className="text-left py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.joined}</th>
-                      <th className="text-left py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.lastLogin}</th>
-                      <th className="text-left py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.bookings}</th>
-                      <th className="text-right py-4 px-4 font-semibold text-gray-800 dark:text-gray-200">{t.actions}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="inline-block min-w-full align-middle">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700/50">
+                      <tr className="border-b-2 border-gray-200 dark:border-gray-600">
+                        <th className="text-left py-3 px-3 sm:px-4 font-semibold text-xs sm:text-sm text-gray-800 dark:text-gray-200 whitespace-nowrap">{t.username}</th>
+                        <th className="text-left py-3 px-3 sm:px-4 font-semibold text-xs sm:text-sm text-gray-800 dark:text-gray-200 whitespace-nowrap">{t.role}</th>
+                        <th className="text-left py-3 px-3 sm:px-4 font-semibold text-xs sm:text-sm text-gray-800 dark:text-gray-200 whitespace-nowrap">{t.status}</th>
+                        <th className="text-left py-3 px-3 sm:px-4 font-semibold text-xs sm:text-sm text-gray-800 dark:text-gray-200 whitespace-nowrap hidden md:table-cell">{t.joined}</th>
+                        <th className="text-left py-3 px-3 sm:px-4 font-semibold text-xs sm:text-sm text-gray-800 dark:text-gray-200 whitespace-nowrap hidden lg:table-cell">{t.lastLogin}</th>
+                        <th className="text-left py-3 px-3 sm:px-4 font-semibold text-xs sm:text-sm text-gray-800 dark:text-gray-200 whitespace-nowrap hidden sm:table-cell">{t.bookings}</th>
+                        <th className="text-right py-3 px-3 sm:px-4 font-semibold text-xs sm:text-sm text-gray-800 dark:text-gray-200 whitespace-nowrap">{t.actions}</th>
+                      </tr>
+                    </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredUsers.map((user) => (
                   <tr 
                     key={user.id} 
                     className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
                   >
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                    <td className="py-3 px-3 sm:px-4">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm flex-shrink-0">
                           {user.username.charAt(0).toUpperCase()}
                         </div>
-                        <div>
-                          <p className="font-semibold text-gray-900 dark:text-white">{user.username}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                            <Mail className="w-3 h-3" />
-                            {user.email}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate">{user.username}</p>
+                          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate">
+                            <Mail className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{user.email}</span>
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-4">
-                      <Badge className={`${getRoleBadgeColor(user.role)} border-0 font-semibold`}>
+                    <td className="py-3 px-3 sm:px-4">
+                      <Badge className={`${getRoleBadgeColor(user.role)} border-0 font-semibold text-xs`}>
                         {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                       </Badge>
                     </td>
-                    <td className="py-4 px-4">
-                      <Badge className={`${getStatusBadgeColor(user.status)} border-0 font-semibold flex items-center gap-1 w-fit`}>
+                    <td className="py-3 px-3 sm:px-4">
+                      <Badge className={`${getStatusBadgeColor(user.status)} border-0 font-semibold flex items-center gap-1 w-fit text-xs`}>
                         {user.status === "active" ? (
                           <CheckCircle2 className="w-3 h-3" />
                         ) : (
@@ -333,22 +334,22 @@ export default function UserManagementTab() {
                         {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
                       </Badge>
                     </td>
-                    <td className="py-4 px-4 text-gray-800 dark:text-gray-200">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                        {user.createdAt}
+                    <td className="py-3 px-3 sm:px-4 text-gray-800 dark:text-gray-200 hidden md:table-cell">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm">
+                        <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                        <span className="truncate">{user.createdAt}</span>
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-gray-800 dark:text-gray-200 text-sm">
-                      {user.lastLogin}
+                    <td className="py-3 px-3 sm:px-4 text-gray-800 dark:text-gray-200 text-xs sm:text-sm hidden lg:table-cell">
+                      <span className="truncate">{user.lastLogin}</span>
                     </td>
-                    <td className="py-4 px-4">
-                      <span className="font-semibold text-blue-600 dark:text-blue-400">
+                    <td className="py-3 px-3 sm:px-4 hidden sm:table-cell">
+                      <span className="font-semibold text-blue-600 dark:text-blue-400 text-sm">
                         {user.totalBookings}
                       </span>
                     </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="py-3 px-3 sm:px-4">
+                      <div className="flex items-center justify-end gap-1.5 sm:gap-2">
                         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
                           <DialogTrigger asChild>
                             <Button 
@@ -360,11 +361,11 @@ export default function UserManagementTab() {
                                 setEditForm({ username: user.username, email: user.email, role: user.role });
                               }}
                             >
-                              <Edit className="w-4 h-4 mr-1" />
-                              {t.edit}
+                                <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0 sm:mr-1" />
+                              <span className="hidden sm:inline">{t.edit}</span>
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-md bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700">
+                          <DialogContent className="max-w-[95vw] sm:max-w-md bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 p-4 sm:p-6">
                             <DialogHeader>
                               <DialogTitle className="text-gray-900 dark:text-white">{t.editUser}: {selectedUser?.username}</DialogTitle>
                               <DialogDescription className="text-gray-600 dark:text-gray-300">
@@ -427,32 +428,32 @@ export default function UserManagementTab() {
                         <Button 
                           size="sm" 
                           variant="outline"
-                          className="hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400"
+                          className="h-8 w-8 sm:h-auto sm:w-auto p-0 sm:px-3 sm:py-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400"
                           onClick={() => handleResetPassword(user.id)}
                           title="Reset Password"
                         >
-                          <Key className="w-4 h-4" />
+                          <Key className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </Button>
 
                         {user.status === "active" ? (
                           <Button 
                             size="sm" 
                             variant="outline"
-                            className="hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
+                            className="h-8 w-8 sm:h-auto sm:w-auto p-0 sm:px-3 sm:py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
                             onClick={() => handleToggleStatus(user.id, user.status)}
                             title="Ban User"
                           >
-                            <Ban className="w-4 h-4" />
+                            <Ban className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </Button>
                         ) : (
                           <Button 
                             size="sm" 
                             variant="outline"
-                            className="hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400"
+                            className="h-8 w-8 sm:h-auto sm:w-auto p-0 sm:px-3 sm:py-2 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400"
                             onClick={() => handleToggleStatus(user.id, user.status)}
                             title="Unban User"
                           >
-                            <CheckCircle2 className="w-4 h-4" />
+                            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </Button>
                         )}
                       </div>
@@ -462,6 +463,7 @@ export default function UserManagementTab() {
               </tbody>
             </table>
           </div>
+        </div>
 
           {filteredUsers.length === 0 && (
             <div className="text-center py-12">
@@ -474,8 +476,8 @@ export default function UserManagementTab() {
           
           {/* Pagination */}
           {!loading && !error && totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
                 Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalUsers)} of {totalUsers} users
               </div>
               <div className="flex items-center gap-2">
@@ -484,10 +486,10 @@ export default function UserManagementTab() {
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="h-9"
+                  className="h-9 text-xs sm:text-sm px-2 sm:px-3"
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Previous
+                  <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Previous</span>
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -507,7 +509,7 @@ export default function UserManagementTab() {
                         variant={currentPage === pageNum ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(pageNum)}
-                        className="h-9 w-9"
+                        className="h-8 w-8 sm:h-9 sm:w-9 text-xs sm:text-sm"
                       >
                         {pageNum}
                       </Button>
@@ -519,10 +521,10 @@ export default function UserManagementTab() {
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
-                  className="h-9"
+                  className="h-9 text-xs sm:text-sm px-2 sm:px-3"
                 >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:ml-1" />
                 </Button>
               </div>
             </div>

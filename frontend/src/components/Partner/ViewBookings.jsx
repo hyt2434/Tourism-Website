@@ -3,16 +3,67 @@ import { useLanguage } from '../../context/LanguageContext';
 import { getPartnerBookings } from '../../api/bookings';
 import { Calendar, User, Phone, Mail, MapPin, DollarSign, Users, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
 export default function ViewBookings() {
   const { translations: t } = useLanguage();
   const [bookings, setBookings] = useState([]);
+  const [revenue, setRevenue] = useState({ total_pending: 0, total_paid: 0, total_revenue: 0 });
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all'); // all, confirmed, cancelled, completed
 
   useEffect(() => {
     loadBookings();
+    loadRevenue();
+    loadMonthlyRevenue();
   }, []);
+
+  const loadRevenue = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const partnerId = user.id;
+      
+      console.log('Loading revenue for partner:', partnerId);
+      
+      if (!partnerId) return;
+
+      const url = `${API_BASE_URL}/api/partner/${partnerId}/revenue`;
+      console.log('Fetching revenue from:', url);
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      console.log('Revenue response:', data);
+      
+      if (data.success) {
+        setRevenue(data);
+        console.log('Revenue set:', data);
+      }
+    } catch (err) {
+      console.error('Error loading revenue:', err);
+    }
+  };
+
+  const loadMonthlyRevenue = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const partnerId = user.id;
+      
+      if (!partnerId) return;
+
+      const url = `${API_BASE_URL}/api/partner/${partnerId}/revenue/monthly`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.success) {
+        setMonthlyRevenue(data.monthly_revenue || 0);
+      }
+    } catch (err) {
+      console.error('Error loading monthly revenue:', err);
+    }
+  };
 
   const loadBookings = async () => {
     try {
@@ -154,6 +205,20 @@ export default function ViewBookings() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t.monthlyRevenue || 'Monthly Revenue'}</p>
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
+                  {formatPrice(monthlyRevenue)}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{t.confirmedBookings || 'Confirmed'}</p>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
                   {bookings.filter(b => b.status === 'confirmed').length}
@@ -175,20 +240,6 @@ export default function ViewBookings() {
               </div>
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                 <CheckCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t.totalRevenue || 'Total Revenue'}</p>
-                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
-                  {formatPrice(bookings.reduce((sum, b) => sum + (b.service_revenue || 0), 0))}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
           </div>
@@ -345,6 +396,49 @@ export default function ViewBookings() {
                           <p className="text-sm text-gray-600 dark:text-gray-400">
                             <span className="font-medium">{t.notes || 'Notes'}:</span> {booking.notes}
                           </p>
+                        </div>
+                      )}
+
+                      {/* Revenue Breakdown */}
+                      {booking.service_revenue !== undefined && (
+                        <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                          <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                            <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                            {t.revenueBreakdown || 'Revenue Breakdown'}
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                {t.bookingTotal || 'Booking Total'}
+                              </p>
+                              <p className="text-lg font-bold text-gray-900 dark:text-white">
+                                {formatPrice(booking.total_price || 0)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                {t.partnerPool || 'Partner Pool (90%)'}
+                              </p>
+                              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                {formatPrice(booking.partner_pool || 0)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                {t.yourRevenue || 'Your Revenue'}
+                              </p>
+                              <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                                {formatPrice(booking.service_revenue || 0)}
+                              </p>
+                            </div>
+                          </div>
+                          {booking.partner_service_cost !== undefined && booking.total_service_costs > 0 && (
+                            <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800">
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                {t.revenueCalculation || 'Calculation'}: {formatPrice(booking.partner_pool || 0)} × ({formatPrice(booking.partner_service_cost)} / {formatPrice(booking.total_service_costs)}) = {formatPrice(booking.service_revenue || 0)}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
 

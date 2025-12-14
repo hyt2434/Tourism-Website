@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { useToast } from '../context/ToastContext';
 import { transportationAPI } from '../api/partnerServices';
 import { processImages } from '../utils/imageUpload';
 import { getCities } from '../api/cities';
 
 const TransportationManagement = () => {
   const { translations: t } = useLanguage();
+  const toast = useToast();
   const [vehicles, setVehicles] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
@@ -64,7 +66,7 @@ const TransportationManagement = () => {
       const base64Images = await processImages(files);
       setFormData({ ...formData, images: [...formData.images, ...base64Images] });
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -73,9 +75,9 @@ const TransportationManagement = () => {
     try {
       await transportationAPI.delete(id);
       loadVehicles();
-      alert(t.serviceManagement.deleteSuccess);
+      toast.success(t.serviceManagement.deleteSuccess);
     } catch (err) {
-      alert(t.serviceManagement.errorOccurred + ': ' + err.message);
+      toast.error(t.serviceManagement.errorOccurred + ': ' + err.message);
     }
   };
 
@@ -144,9 +146,9 @@ const TransportationManagement = () => {
       setShowForm(false);
       resetForm();
       loadVehicles();
-      alert(t.serviceManagement.saveSuccess);
+      toast.success(t.serviceManagement.saveSuccess);
     } catch (err) {
-      alert(t.serviceManagement.errorOccurred + ': ' + err.message);
+      toast.error(t.serviceManagement.errorOccurred + ': ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -156,27 +158,27 @@ const TransportationManagement = () => {
   const featuresList = ['ac', 'wifiFeature', 'gps', 'childSeat', 'wheelchairAccessible', 'luggage'];
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">{t.serviceManagement.transportation}</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t.serviceManagement.transportation}</h2>
         <button
           onClick={() => {
             resetForm();
             setShowForm(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-800"
         >
           {t.serviceManagement.addVehicle}
         </button>
       </div>
 
-      {error && <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>}
+      {error && <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-4 rounded mb-4">{error}</div>}
 
       {/* Vehicle List */}
       {!showForm && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {vehicles.map((vehicle) => (
-            <div key={vehicle.id} className="border rounded-lg p-4 shadow hover:shadow-lg transition">
+            <div key={vehicle.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow hover:shadow-lg transition bg-white dark:bg-gray-800">
               {vehicle.primaryImage && (
                 <img
                   src={vehicle.primaryImage}
@@ -184,22 +186,22 @@ const TransportationManagement = () => {
                   className="w-full h-48 object-cover rounded mb-3"
                 />
               )}
-              <h3 className="font-bold text-lg mb-2">{vehicle.licensePlate || vehicle.name}</h3>
-              <p className="text-gray-600 text-sm mb-1">
+              <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">{vehicle.licensePlate || vehicle.name}</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">
                 {t.serviceManagement[vehicle.vehicleType] || vehicle.vehicleType}
               </p>
-              <p className="text-gray-500 text-xs mb-2">
+              <p className="text-gray-500 dark:text-gray-400 text-xs mb-2">
                 {vehicle.brand}
               </p>
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
                 <span>👥 {vehicle.maxPassengers} {t.serviceManagement.maxPassengers}</span>
               </div>
-              <div className="bg-blue-50 p-2 rounded mb-2">
-                <p className="text-sm font-semibold text-blue-900">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded mb-2">
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-300">
                   {t.serviceManagement.basePrice}: {vehicle.basePrice?.toLocaleString()} VND
                 </p>
                 {vehicle.holidayPrice > 0 && (
-                  <p className="text-xs text-blue-700">
+                  <p className="text-xs text-blue-700 dark:text-blue-400">
                     {t.serviceManagement.holidayPrice || 'Holiday'}: {vehicle.holidayPrice?.toLocaleString()} VND
                   </p>
                 )}
@@ -207,13 +209,13 @@ const TransportationManagement = () => {
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={() => handleEdit(vehicle)}
-                  className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                  className="bg-green-600 dark:bg-green-700 text-white px-3 py-1 rounded text-sm hover:bg-green-700 dark:hover:bg-green-800"
                 >
                   {t.serviceManagement.edit}
                 </button>
                 <button
                   onClick={() => handleDelete(vehicle.id)}
-                  className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                  className="bg-red-600 dark:bg-red-700 text-white px-3 py-1 rounded text-sm hover:bg-red-700 dark:hover:bg-red-800"
                 >
                   {t.serviceManagement.delete}
                 </button>
@@ -225,8 +227,8 @@ const TransportationManagement = () => {
 
       {/* Vehicle Form */}
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-bold mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
             {selectedVehicle ? t.serviceManagement.editVehicle : t.serviceManagement.addVehicle}
           </h3>
           <form onSubmit={handleSubmit}>
@@ -237,7 +239,7 @@ const TransportationManagement = () => {
                   type="text"
                   value={formData.licensePlate}
                   onChange={(e) => setFormData({ ...formData, licensePlate: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="e.g., 30A-12345"
                   required
                 />
@@ -247,7 +249,7 @@ const TransportationManagement = () => {
                 <select
                   value={formData.vehicleType}
                   onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   {vehicleTypes.map((type) => (
                     <option key={type} value={type}>{t.serviceManagement[type]}</option>
@@ -260,7 +262,7 @@ const TransportationManagement = () => {
                   type="text"
                   value={formData.brand}
                   onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="e.g., Toyota, Honda"
                 />
               </div>
@@ -270,7 +272,7 @@ const TransportationManagement = () => {
                   type="number"
                   value={formData.maxPassengers}
                   onChange={(e) => setFormData({ ...formData, maxPassengers: parseInt(e.target.value) })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   min="1"
                   required
                 />
@@ -280,7 +282,7 @@ const TransportationManagement = () => {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   rows="3"
                 />
               </div>
@@ -290,7 +292,7 @@ const TransportationManagement = () => {
                   type="number"
                   value={formData.basePrice}
                   onChange={(e) => setFormData({ ...formData, basePrice: parseFloat(e.target.value) })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   min="0"
                   required
                 />
@@ -301,7 +303,7 @@ const TransportationManagement = () => {
                   type="number"
                   value={formData.holidayPrice}
                   onChange={(e) => setFormData({ ...formData, holidayPrice: parseFloat(e.target.value) })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   min="0"
                 />
               </div>
@@ -311,7 +313,7 @@ const TransportationManagement = () => {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div>
@@ -321,7 +323,7 @@ const TransportationManagement = () => {
                 <select
                   value={formData.departureCityId}
                   onChange={(e) => setFormData({ ...formData, departureCityId: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option value="">{t.serviceManagement.selectCity || 'Select a city'}</option>
                   {cities.map((city) => (
@@ -338,7 +340,7 @@ const TransportationManagement = () => {
                 <select
                   value={formData.destinationCityId}
                   onChange={(e) => setFormData({ ...formData, destinationCityId: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option value="">{t.serviceManagement.selectCity || 'Select a city'}</option>
                   {cities.map((city) => (
@@ -375,7 +377,7 @@ const TransportationManagement = () => {
                   type="text"
                   value={pickupInput}
                   onChange={(e) => setPickupInput(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="e.g., Airport, Hotel, City Center"
                 />
                 <p className="text-xs text-gray-500 mt-1">Separate with commas</p>
@@ -386,7 +388,7 @@ const TransportationManagement = () => {
                   type="text"
                   value={dropoffInput}
                   onChange={(e) => setDropoffInput(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="e.g., Airport, Hotel, City Center"
                 />
                 <p className="text-xs text-gray-500 mt-1">Separate with commas</p>
@@ -398,7 +400,7 @@ const TransportationManagement = () => {
                   accept="image/*"
                   multiple
                   onChange={handleImageUpload}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
                 <p className="text-xs text-gray-500 mt-1">{t.serviceManagement.dragDropImages}</p>
               </div>
@@ -407,7 +409,7 @@ const TransportationManagement = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                className="bg-blue-600 dark:bg-blue-700 text-white px-6 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50"
               >
                 {loading ? 'Saving...' : t.serviceManagement.save}
               </button>
@@ -417,7 +419,7 @@ const TransportationManagement = () => {
                   setShowForm(false);
                   resetForm();
                 }}
-                className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600"
+                className="bg-gray-500 dark:bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-600 dark:hover:bg-gray-700"
               >
                 {t.serviceManagement.cancel}
               </button>

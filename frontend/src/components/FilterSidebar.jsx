@@ -113,10 +113,8 @@ export default function FilterSidebar({ onFilterChange, initialFilters = {} }) {
   const handleChange = (key, value) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
-    // Auto-apply search filter as user types
-    if (key === 'search') {
-      onFilterChange(newFilters);
-    }
+    // Don't auto-apply search filter - wait for user to press Enter or click Apply
+    // This prevents too many API calls while typing
   };
 
   // Apply filters when component mounts with initial filters

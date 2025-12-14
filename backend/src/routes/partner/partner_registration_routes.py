@@ -4,6 +4,11 @@ import secrets
 import string
 from datetime import datetime
 import re
+from src.services.email_service import (
+    send_partner_registration_submitted_email,
+    send_partner_registration_approved_email,
+    send_partner_registration_rejected_email
+)
 
 partner_registration_bp = Blueprint('partner_registration', __name__, url_prefix='/api/partner-registrations')
 
@@ -138,6 +143,17 @@ def submit_partner_registration():
         conn.commit()
         cur.close()
         conn.close()
+        
+        # Send confirmation email to partner
+        try:
+            send_partner_registration_submitted_email(
+                data['email'],
+                data['businessName'],
+                registration_id
+            )
+            print(f"✅ Partner registration confirmation email sent to {data['email']}")
+        except Exception as e:
+            print(f"⚠️ Failed to send partner registration email: {e}")
         
         return jsonify({
             'message': 'Partner registration submitted successfully',
@@ -349,6 +365,12 @@ def reject_registration(registration_id):
             conn.close()
             return jsonify({'error': 'Registration is not pending'}), 400
         
+        # Get partner email and business name
+        cur.execute("""
+            SELECT email, business_name FROM partner_registrations WHERE id = %s
+        """, (registration_id,))
+        partner_info = cur.fetchone()
+        
         # Update registration status
         cur.execute("""
             UPDATE partner_registrations
@@ -362,7 +384,17 @@ def reject_registration(registration_id):
         cur.close()
         conn.close()
         
-        # TODO: Send email notification to partner about rejection
+        # Send rejection email to partner
+        if partner_info:
+            try:
+                send_partner_registration_rejected_email(
+                    partner_info[0],  # email
+                    partner_info[1],  # business_name
+                    reason
+                )
+                print(f"✅ Partner rejection email sent to {partner_info[0]}")
+            except Exception as e:
+                print(f"⚠️ Failed to send partner rejection email: {e}")
         
         return jsonify({
             'message': 'Partner registration rejected',

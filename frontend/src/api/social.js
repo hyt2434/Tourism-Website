@@ -1,0 +1,309 @@
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+/**
+ * Get current user from localStorage
+ */
+const getCurrentUser = () => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  try {
+    return JSON.parse(userStr);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Get authorization headers if user is logged in
+ */
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
+/**
+ * Get all posts
+ */
+export const getPosts = async () => {
+  const user = getCurrentUser();
+  const headers = getAuthHeaders();
+  if (user && user.email) {
+    headers['X-User-Email'] = user.email;
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/api/social/posts`, {
+    headers: headers,
+  });
+  if (!response.ok) throw new Error('Failed to fetch posts');
+  return response.json();
+};
+
+/**
+ * Search posts by query (supports hashtags with #)
+ */
+export const searchPosts = async (query) => {
+  const response = await fetch(`${API_BASE_URL}/api/social/posts/search?q=${encodeURIComponent(query)}`);
+  if (!response.ok) throw new Error('Failed to search posts');
+  return response.json();
+};
+
+/**
+ * Get a single post by ID
+ */
+export const getPost = async (postId) => {
+  const user = getCurrentUser();
+  const headers = getAuthHeaders();
+  if (user && user.email) {
+    headers['X-User-Email'] = user.email;
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/api/social/posts/${postId}`, {
+    headers: headers,
+  });
+  if (!response.ok) throw new Error('Failed to fetch post');
+  return response.json();
+};
+
+/**
+ * Create a new post
+ */
+export const createPost = async (data) => {
+  const user = getCurrentUser();
+  if (!user || !user.email) {
+    throw new Error('User must be logged in to create a post');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/social/posts`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      ...data,
+      author_email: user.email,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create post');
+  }
+  return response.json();
+};
+
+/**
+ * Upload an image file
+ */
+export const uploadImage = async (file) => {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await fetch(`${API_BASE_URL}/api/social/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to upload image');
+  }
+  return response.json();
+};
+
+/**
+ * Add a comment to a post
+ */
+export const addComment = async (postId, content) => {
+  const user = getCurrentUser();
+  if (!user || !user.email) {
+    throw new Error('User must be logged in to comment');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/social/posts/${postId}/comments`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      author_email: user.email,
+      content,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to add comment');
+  }
+  return response.json();
+};
+
+/**
+ * Toggle like on a post
+ */
+export const toggleLike = async (postId) => {
+  const user = getCurrentUser();
+  if (!user || !user.email) {
+    throw new Error('User must be logged in to like');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/social/posts/${postId}/like`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      user_email: user.email,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to toggle like');
+  }
+  return response.json();
+};
+
+/**
+ * Get all stories
+ */
+export const getStories = async () => {
+  const response = await fetch(`${API_BASE_URL}/api/social/stories`);
+  if (!response.ok) throw new Error('Failed to fetch stories');
+  return response.json();
+};
+
+/**
+ * Create a story
+ */
+export const createStory = async (data) => {
+  const user = getCurrentUser();
+  if (!user || !user.email) {
+    throw new Error('User must be logged in to create a story');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/social/stories`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      ...data,
+      author_email: user.email,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create story');
+  }
+  return response.json();
+};
+
+/**
+ * Get all tags
+ */
+export const getTags = async () => {
+  const response = await fetch(`${API_BASE_URL}/api/social/tags`);
+  if (!response.ok) throw new Error('Failed to fetch tags');
+  return response.json();
+};
+
+/**
+ * Get posts by tag name
+ */
+export const getPostsByTag = async (tagName) => {
+  const response = await fetch(`${API_BASE_URL}/api/social/tags/${encodeURIComponent(tagName)}/posts`);
+  if (!response.ok) throw new Error('Failed to fetch posts by tag');
+  return response.json();
+};
+
+/**
+ * Search hashtags from social_hashtag table
+ */
+export const searchHashtags = async (query, limit = 20) => {
+  const response = await fetch(`${API_BASE_URL}/api/social/hashtags/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+  if (!response.ok) throw new Error('Failed to search hashtags');
+  return response.json();
+};
+
+/**
+ * Delete a post (admin only)
+ */
+export const deletePost = async (postId) => {
+  const user = getCurrentUser();
+  if (!user || !user.id) {
+    throw new Error('User must be logged in');
+  }
+
+  const headers = getAuthHeaders();
+  headers['X-User-Role'] = user.role || 'client';
+  headers['X-User-ID'] = user.id.toString();
+
+  const response = await fetch(`${API_BASE_URL}/api/social/posts/${postId}`, {
+    method: 'DELETE',
+    headers: headers,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete post');
+  }
+  return response.json();
+};
+
+/**
+ * Delete a comment (admin only)
+ */
+export const deleteComment = async (postId, commentId) => {
+  const user = getCurrentUser();
+  if (!user || !user.id) {
+    throw new Error('User must be logged in');
+  }
+
+  const headers = getAuthHeaders();
+  headers['X-User-Role'] = user.role || 'client';
+  headers['X-User-ID'] = user.id.toString();
+
+  const response = await fetch(`${API_BASE_URL}/api/social/posts/${postId}/comments/${commentId}`, {
+    method: 'DELETE',
+    headers: headers,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete comment');
+  }
+  return response.json();
+};
+
+/**
+ * Get hashtag information (source type and name)
+ */
+export const getHashtagInfo = async (hashtag) => {
+  const url = `${API_BASE_URL}/api/social/hashtags/info?hashtag=${encodeURIComponent(hashtag)}`;
+  console.log("Fetching hashtag info from:", url);
+  
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    // Try to get error message from response
+    let errorMessage = 'Failed to get hashtag info';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorMessage;
+    } catch (e) {
+      // If response is not JSON (like HTML 404 page), use status text
+      errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+    }
+    console.error("Hashtag info API error:", {
+      status: response.status,
+      statusText: response.statusText,
+      url: url,
+      error: errorMessage
+    });
+    throw new Error(errorMessage);
+  }
+  
+  const data = await response.json();
+  console.log("Hashtag info response:", data);
+  return data;
+};
+

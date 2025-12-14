@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import TourCard from "./TourCard";
 import FilterSidebar from "./FilterSidebar";
 import { useLanguage } from "../context/LanguageContext";
@@ -11,7 +11,8 @@ import { ArrowUpDown, Grid, List, MapPin, Star, Sun, Tag } from "lucide-react";
 
 export default function ToursPage() {
   const { translations } = useLanguage();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const [allTours, setAllTours] = useState([]);
   const [filteredTours, setFilteredTours] = useState([]);
@@ -87,17 +88,21 @@ export default function ToursPage() {
   };
 
   const handleFilterChange = (filters) => {
-    let result = [...allTours];
-
-    // Search filter
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      result = result.filter((t) =>
-        t.name.toLowerCase().includes(searchLower) ||
-        (t.destination && t.destination.toLowerCase().includes(searchLower)) ||
-        (t.description && t.description.toLowerCase().includes(searchLower))
-      );
+    // If search filter changes, update URL and reload from API
+    if (filters.search !== undefined) {
+      const newParams = new URLSearchParams(searchParams);
+      if (filters.search && filters.search.trim()) {
+        newParams.set('search', filters.search.trim());
+      } else {
+        newParams.delete('search');
+      }
+      // Update URL and trigger reload
+      setSearchParams(newParams);
+      return; // loadTours will be called by useEffect when searchParams changes
     }
+
+    // For other filters, do client-side filtering
+    let result = [...allTours];
 
     // City filter (provinces contains city IDs)
     if (filters.provinces && filters.provinces.length > 0) {
