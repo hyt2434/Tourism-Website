@@ -459,7 +459,7 @@ export default function SocialPage() {
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <Input
-              placeholder={translations.searchPlaceholder || "Search by hashtag (e.g., #Hanoi, #HaLongTour)..."}
+              placeholder={translations.socialSearchPlaceholder || "Search by hashtag (e.g., #Hanoi, #HaLongTour)..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 rounded-lg h-12"

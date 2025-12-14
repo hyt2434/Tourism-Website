@@ -8,13 +8,16 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
+import { getTranslatedContent } from "../utils/translation";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function TourCarousel() {
-  const { translations } = useLanguage();
+  const { translations, language } = useLanguage();
   const [tours, setTours] = useState([]);
+  const [translatedTours, setTranslatedTours] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [translating, setTranslating] = useState(false);
 
   useEffect(() => {
     fetchHighlightedTours();
@@ -37,6 +40,40 @@ export default function TourCarousel() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (tours.length === 0) return;
+    
+    const translateTours = async () => {
+      setTranslating(true);
+      try {
+        const translated = await Promise.all(
+          tours.map(async (tour) => {
+            const translatedName = await getTranslatedContent(tour.name || '', language);
+            const translatedDescription = await getTranslatedContent(tour.description || '', language);
+            
+            return {
+              ...tour,
+              translatedName,
+              translatedDescription
+            };
+          })
+        );
+        setTranslatedTours(translated);
+      } catch (error) {
+        console.error('Error translating tours:', error);
+        setTranslatedTours(tours.map(tour => ({
+          ...tour,
+          translatedName: tour.name,
+          translatedDescription: tour.description
+        })));
+      } finally {
+        setTranslating(false);
+      }
+    };
+
+    translateTours();
+  }, [language, tours]);
 
   const formatPrice = (price, currency) => {
     if (currency === 'VND') {
@@ -94,54 +131,59 @@ export default function TourCarousel() {
             }}
             className="pb-10"
           >
-            {tours.map((tour) => (
-              <SwiperSlide key={tour.id}>
-                <Link to={`/tours/${tour.id}`}>
-                  <div className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shine-effect group">
-                    <div className="relative">
-                      <img
-                        src={tour.image}
-                        alt={tour.name}
-                        className="w-full h-60 object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      {tour.booking_count > 0 && (
-                        <div className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-                          🔥 {tour.booking_count} {translations.bookings || 'bookings'}
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white line-clamp-2 min-h-[3.5rem]">
-                        {tour.name}
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-400 mt-2 line-clamp-2 text-sm">
-                        {tour.description}
-                      </p>
-                      <div className="mt-3 flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-blue-600 dark:text-blue-400">
-                            {formatPrice(tour.price, tour.currency)}
-                          </p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <CalendarIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {tour.duration}
-                            </p>
-                          </div>
-                        </div>
-                        {tour.rating > 0 && (
-                          <div className="flex items-center gap-1 text-sm">
-                            <span className="text-yellow-400">⭐</span>
-                            <span className="text-gray-700 dark:text-gray-300 font-medium">{tour.rating}</span>
-                            <span className="text-gray-500 dark:text-gray-400">({tour.reviews})</span>
+            {(translatedTours.length > 0 ? translatedTours : tours).map((tour) => {
+              const displayName = tour.translatedName || tour.name || '';
+              const displayDescription = tour.translatedDescription || tour.description || '';
+              
+              return (
+                <SwiperSlide key={tour.id}>
+                  <Link to={`/tours/${tour.id}`}>
+                    <div className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shine-effect group">
+                      <div className="relative">
+                        <img
+                          src={tour.image}
+                          alt={displayName}
+                          className="w-full h-60 object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        {tour.booking_count > 0 && (
+                          <div className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                            🔥 {tour.booking_count} {translations.bookings || 'bookings'}
                           </div>
                         )}
                       </div>
+                      <div className="p-4">
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white line-clamp-2 min-h-[3.5rem]">
+                          {displayName}
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 mt-2 line-clamp-2 text-sm">
+                          {displayDescription}
+                        </p>
+                        <div className="mt-3 flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-blue-600 dark:text-blue-400">
+                              {formatPrice(tour.price, tour.currency)}
+                            </p>
+                            <div className="flex items-center gap-1 mt-1">
+                              <CalendarIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {tour.duration}
+                              </p>
+                            </div>
+                          </div>
+                          {tour.rating > 0 && (
+                            <div className="flex items-center gap-1 text-sm">
+                              <span className="text-yellow-400">⭐</span>
+                              <span className="text-gray-700 dark:text-gray-300 font-medium">{tour.rating}</span>
+                              <span className="text-gray-500 dark:text-gray-400">({tour.reviews})</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              </SwiperSlide>
-            ))}
+                  </Link>
+                </SwiperSlide>
+              );
+            })}
           </Swiper>
 
           {/* Nút Next */}

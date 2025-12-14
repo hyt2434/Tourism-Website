@@ -41,7 +41,8 @@ export default {
   // Bộ lọc
   quickSearch: "Tìm kiếm nhanh",
   searchTourDestination: "Tìm kiếm tour / điểm đến",
-  searchPlaceholder: "Nhập hashtags...",
+  searchPlaceholder: "Nhập điểm đến của bạn...",
+  socialSearchPlaceholder: "Nhập hashtag (ví dụ: #HaNoi, #TourSapa)...",
 
   // Regions
   region: "Vùng miền",

@@ -10,13 +10,17 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import { useLanguage } from "../../context/LanguageContext";
 import { getHomepagePromotions } from "../../api/promotions";
+import { getTranslatedContent } from "../../utils/translation";
 
 export default function Promotions() {
   const [copiedCode, setCopiedCode] = useState(null);
   const [banners, setBanners] = useState([]);
   const [promoCodes, setPromoCodes] = useState([]);
+  const [translatedBanners, setTranslatedBanners] = useState([]);
+  const [translatedPromoCodes, setTranslatedPromoCodes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { translations } = useLanguage();
+  const [translating, setTranslating] = useState(false);
+  const { translations, language } = useLanguage();
 
   useEffect(() => {
     loadPromotions();
@@ -85,6 +89,66 @@ export default function Promotions() {
     }
   };
 
+  useEffect(() => {
+    if (banners.length === 0 && promoCodes.length === 0) return;
+    
+    const translatePromotions = async () => {
+      setTranslating(true);
+      try {
+        const translatedBannersData = await Promise.all(
+          banners.map(async (banner) => {
+            const translatedTitle = await getTranslatedContent(banner.title || '', language);
+            const translatedSubtitle = await getTranslatedContent(banner.subtitle || '', language);
+            const translatedHighlight = banner.highlight ? await getTranslatedContent(banner.highlight, language) : null;
+            const translatedTerms = await getTranslatedContent(banner.terms || '', language);
+            
+            return {
+              ...banner,
+              translatedTitle,
+              translatedSubtitle,
+              translatedHighlight,
+              translatedTerms
+            };
+          })
+        );
+
+        const translatedPromoCodesData = await Promise.all(
+          promoCodes.map(async (promo) => {
+            const translatedTitle = await getTranslatedContent(promo.title || '', language);
+            const translatedSubtitle = await getTranslatedContent(promo.subtitle || '', language);
+            
+            return {
+              ...promo,
+              translatedTitle,
+              translatedSubtitle
+            };
+          })
+        );
+
+        setTranslatedBanners(translatedBannersData);
+        setTranslatedPromoCodes(translatedPromoCodesData);
+      } catch (error) {
+        console.error('Error translating promotions:', error);
+        setTranslatedBanners(banners.map(banner => ({
+          ...banner,
+          translatedTitle: banner.title,
+          translatedSubtitle: banner.subtitle,
+          translatedHighlight: banner.highlight,
+          translatedTerms: banner.terms
+        })));
+        setTranslatedPromoCodes(promoCodes.map(promo => ({
+          ...promo,
+          translatedTitle: promo.title,
+          translatedSubtitle: promo.subtitle
+        })));
+      } finally {
+        setTranslating(false);
+      }
+    };
+
+    translatePromotions();
+  }, [language, banners, promoCodes]);
+
   const handleCopyCode = (code, index) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(index);
@@ -109,7 +173,7 @@ export default function Promotions() {
         </h2>
 
         {/* 🖼️ Banner Swiper */}
-        {banners.length > 0 && (
+        {(banners.length > 0 || translatedBanners.length > 0) && (
           <div className="relative mb-16">
             {/* Previous Button */}
             <button
@@ -141,36 +205,43 @@ export default function Promotions() {
               style={{ height: '280px' }}
               className="pb-12"
             >
-              {banners.map((banner, i) => (
-              <SwiperSlide key={i} style={{ height: '280px' }}>
-                <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow h-full w-full group shine-effect">
-                  <img
-                    src={banner.image}
-                    alt={banner.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-transparent to-black/30 dark:from-black/60 dark:to-black/40"></div>
-                  <div className="absolute inset-0 p-4 flex flex-col justify-between h-full">
-                    <div className="flex-shrink-0 overflow-hidden">
-                      <h3 className="text-white font-bold text-lg md:text-xl mb-1 drop-shadow-lg line-clamp-2 break-words">
-                        {banner.title}
-                      </h3>
-                      <p className="text-white font-semibold text-sm md:text-base drop-shadow-md line-clamp-2 break-words">
-                        {banner.subtitle}
-                      </p>
-                      {banner.highlight && (
-                        <div className="mt-2 inline-block bg-yellow-400 text-gray-900 font-bold text-xs px-3 py-1 rounded-full whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
-                          {banner.highlight}
+              {(translatedBanners.length > 0 ? translatedBanners : banners).map((banner, i) => {
+                const displayTitle = banner.translatedTitle || banner.title || '';
+                const displaySubtitle = banner.translatedSubtitle || banner.subtitle || '';
+                const displayHighlight = banner.translatedHighlight || banner.highlight;
+                const displayTerms = banner.translatedTerms || banner.terms || '';
+                
+                return (
+                  <SwiperSlide key={i} style={{ height: '280px' }}>
+                    <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow h-full w-full group shine-effect">
+                      <img
+                        src={banner.image}
+                        alt={displayTitle}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-transparent to-black/30 dark:from-black/60 dark:to-black/40"></div>
+                      <div className="absolute inset-0 p-4 flex flex-col justify-between h-full">
+                        <div className="flex-shrink-0 overflow-hidden">
+                          <h3 className="text-white font-bold text-lg md:text-xl mb-1 drop-shadow-lg line-clamp-2 break-words">
+                            {displayTitle}
+                          </h3>
+                          <p className="text-white font-semibold text-sm md:text-base drop-shadow-md line-clamp-2 break-words">
+                            {displaySubtitle}
+                          </p>
+                          {displayHighlight && (
+                            <div className="mt-2 inline-block bg-yellow-400 text-gray-900 font-bold text-xs px-3 py-1 rounded-full whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+                              {displayHighlight}
+                            </div>
+                          )}
                         </div>
-                      )}
+                        <p className="text-white/90 text-[10px] md:text-xs flex-shrink-0 mt-auto line-clamp-1">
+                          {displayTerms}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-white/90 text-[10px] md:text-xs flex-shrink-0 mt-auto line-clamp-1">
-                      {banner.terms}
-                    </p>
-                  </div>
-                </div>
-              </SwiperSlide>
-              ))}
+                  </SwiperSlide>
+                );
+              })}
             </Swiper>
             
             {/* Pagination */}
@@ -187,7 +258,7 @@ export default function Promotions() {
         )}
 
         {/* 💰 Promo Code Swiper */}
-        {promoCodes.length > 0 && (
+        {(promoCodes.length > 0 || translatedPromoCodes.length > 0) && (
           <>
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -228,8 +299,11 @@ export default function Promotions() {
                 }}
                 className="pb-7"
               >
-                {promoCodes.map((promo, index) => {
+                {(translatedPromoCodes.length > 0 ? translatedPromoCodes : promoCodes).map((promo, index) => {
               const Icon = promo.icon;
+              const displayTitle = promo.translatedTitle || promo.title || '';
+              const displaySubtitle = promo.translatedSubtitle || promo.subtitle || '';
+              
               return (
                 <SwiperSlide key={index}>
                   <div
@@ -245,10 +319,10 @@ export default function Promotions() {
                       </div>
                       <div className="flex-grow min-w-0 overflow-hidden">
                         <h3 className="text-sm font-bold text-title dark:text-white mb-1 leading-tight line-clamp-2">
-                          {promo.title}
+                          {displayTitle}
                         </h3>
                         <p className="text-xs text-body dark:text-gray-300 line-clamp-2">
-                          {promo.subtitle}
+                          {displaySubtitle}
                         </p>
                       </div>
                     </div>
@@ -296,7 +370,7 @@ export default function Promotions() {
           </>
         )}
 
-        {banners.length === 0 && promoCodes.length === 0 && (
+        {banners.length === 0 && promoCodes.length === 0 && translatedBanners.length === 0 && translatedPromoCodes.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400">No active promotions at the moment.</p>
           </div>

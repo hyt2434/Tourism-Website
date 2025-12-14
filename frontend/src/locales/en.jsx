@@ -35,7 +35,8 @@ export default {
   filterTitle: "Search Filters",
   quickSearch: "Quick Search",
   searchTourDestination: "Search tour / destination",
-  searchPlaceholder: "Enter hashtags...",
+  searchPlaceholder: "Enter destination city...",
+  socialSearchPlaceholder: "Enter hashtag (e.g., #HaNoi, #TourSapa)...",
 
   // Regions
   region: "Region",
