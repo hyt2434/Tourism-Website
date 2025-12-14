@@ -25,11 +25,11 @@ export default function BookingManagementTab() {
         setBookings(response.bookings || []);
         setTotalRevenue(response.total_revenue || 0);
       } else {
-        throw new Error(response.message || 'Failed to load bookings');
+        throw new Error(response.message || (t.failedToLoadBookings || 'Failed to load bookings'));
       }
     } catch (err) {
       console.error('Error loading bookings:', err);
-      setError(err.message || 'Failed to load bookings');
+      setError(err.message || (t.failedToLoadBookings || 'Failed to load bookings'));
     } finally {
       setLoading(false);
     }
@@ -38,50 +38,32 @@ export default function BookingManagementTab() {
   const getStatusBadge = (status) => {
     const statusConfig = {
       confirmed: {
-        bg: '#dcfce7',
-        darkBg: '#14532d',
-        text: '#166534',
-        darkText: '#86efac',
         icon: CheckCircle,
-        label: t.bookingStatusConfirmed || 'Confirmed'
+        label: t.bookingStatusConfirmed || 'Confirmed',
+        className: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
       },
       cancelled: {
-        bg: '#fee2e2',
-        darkBg: '#7f1d1d',
-        text: '#991b1b',
-        darkText: '#fca5a5',
         icon: XCircle,
-        label: t.bookingStatusCancelled || 'Cancelled'
+        label: t.bookingStatusCancelled || 'Cancelled',
+        className: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
       },
       completed: {
-        bg: '#dbeafe',
-        darkBg: '#1e3a8a',
-        text: '#1e40af',
-        darkText: '#93c5fd',
         icon: CheckCircle,
-        label: t.bookingStatusCompleted || 'Completed'
+        label: t.bookingStatusCompleted || 'Completed',
+        className: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
       }
     };
 
     const config = statusConfig[status] || {
-      bg: '#f3f4f6',
-      darkBg: '#1f2937',
-      text: '#374151',
-      darkText: '#d1d5db',
       icon: AlertCircle,
-      label: status
+      label: status,
+      className: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
     };
 
     const Icon = config.icon;
 
     return (
-      <span 
-        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium"
-        style={{
-          backgroundColor: config.bg,
-          color: config.text
-        }}
-      >
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${config.className}`}>
         <Icon className="w-4 h-4" />
         {config.label}
       </span>
@@ -89,7 +71,7 @@ export default function BookingManagementTab() {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return t.notAvailable || 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
@@ -111,21 +93,21 @@ export default function BookingManagementTab() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <AlertCircle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
           <p className="text-red-600 dark:text-red-400">{error}</p>
           <button
             onClick={loadBookings}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="mt-4 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
           >
             {t.retry || 'Retry'}
           </button>
@@ -148,124 +130,82 @@ export default function BookingManagementTab() {
 
       {/* Revenue Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div 
-          className="rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border"
-          style={{
-            backgroundColor: 'white',
-            borderColor: '#e5e7eb'
-          }}
-        >
+        <div className="rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
-              <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 {t.totalBookings || 'Total Bookings'}
               </p>
-              <p className="text-xl sm:text-2xl font-bold mt-1" style={{ color: '#111827' }}>
+              <p className="text-xl sm:text-2xl font-bold mt-1 text-gray-900 dark:text-white">
                 {bookings.length}
               </p>
             </div>
-            <div 
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2"
-              style={{ backgroundColor: '#dbeafe' }}
-            >
-              <Package className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: '#2563eb' }} />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 bg-blue-100 dark:bg-blue-900/30">
+              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </div>
 
-        <div 
-          className="rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border"
-          style={{
-            backgroundColor: 'white',
-            borderColor: '#e5e7eb'
-          }}
-        >
+        <div className="rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
-              <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 {t.platformRevenue || 'Platform Revenue (10%)'}
               </p>
-              <p className="text-xl sm:text-2xl font-bold mt-1 truncate" style={{ color: '#059669' }}>
+              <p className="text-xl sm:text-2xl font-bold mt-1 truncate text-green-600 dark:text-green-400">
                 {formatPrice(totalRevenue)}
               </p>
             </div>
-            <div 
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2"
-              style={{ backgroundColor: '#d1fae5' }}
-            >
-              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: '#059669' }} />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 bg-green-100 dark:bg-green-900/30">
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </div>
 
-        <div 
-          className="rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border"
-          style={{
-            backgroundColor: 'white',
-            borderColor: '#e5e7eb'
-          }}
-        >
+        <div className="rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
-              <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 {t.confirmedBookings || 'Confirmed'}
               </p>
-              <p className="text-xl sm:text-2xl font-bold mt-1" style={{ color: '#059669' }}>
+              <p className="text-xl sm:text-2xl font-bold mt-1 text-green-600 dark:text-green-400">
                 {bookings.filter(b => b.status === 'confirmed').length}
               </p>
             </div>
-            <div 
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2"
-              style={{ backgroundColor: '#d1fae5' }}
-            >
-              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: '#059669' }} />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 bg-green-100 dark:bg-green-900/30">
+              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </div>
 
-        <div 
-          className="rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border"
-          style={{
-            backgroundColor: 'white',
-            borderColor: '#e5e7eb'
-          }}
-        >
+        <div className="rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
-              <p className="text-xs sm:text-sm" style={{ color: '#6b7280' }}>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 {t.completedBookings || 'Completed'}
               </p>
-              <p className="text-xl sm:text-2xl font-bold mt-1" style={{ color: '#2563eb' }}>
+              <p className="text-xl sm:text-2xl font-bold mt-1 text-blue-600 dark:text-blue-400">
                 {bookings.filter(b => b.status === 'completed').length}
               </p>
             </div>
-            <div 
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2"
-              style={{ backgroundColor: '#dbeafe' }}
-            >
-              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: '#2563eb' }} />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 bg-blue-100 dark:bg-blue-900/30">
+              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-1.5 sm:gap-2 border-b overflow-x-auto" style={{ borderColor: '#e5e7eb' }}>
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
         {['all', 'confirmed', 'completed', 'cancelled'].map((status) => (
           <button
             key={status}
             onClick={() => setFilterStatus(status)}
             className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
               filterStatus === status
-                ? 'border-b-2'
-                : ''
+                ? 'border-b-2 border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
-            style={filterStatus === status ? {
-              color: '#2563eb',
-              borderColor: '#2563eb'
-            } : {
-              color: '#6b7280'
-            }}
           >
             {status === 'all' 
               ? (t.allBookings || 'All')
@@ -276,13 +216,7 @@ export default function BookingManagementTab() {
               : (t.cancelled || 'Cancelled')
             }
             {status !== 'all' && (
-              <span 
-                className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs rounded-full"
-                style={{
-                  backgroundColor: '#f3f4f6',
-                  color: '#374151'
-                }}
-              >
+              <span className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                 {bookings.filter(b => b.status === status).length}
               </span>
             )}
@@ -292,15 +226,9 @@ export default function BookingManagementTab() {
 
       {/* Bookings List */}
       {filteredBookings.length === 0 ? (
-        <div 
-          className="rounded-lg sm:rounded-xl shadow-lg p-8 sm:p-12 text-center border"
-          style={{
-            backgroundColor: 'white',
-            borderColor: '#e5e7eb'
-          }}
-        >
-          <Calendar className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4" style={{ color: '#9ca3af' }} />
-          <p style={{ color: '#6b7280' }} className="text-base sm:text-lg">
+        <div className="rounded-lg sm:rounded-xl shadow-lg p-8 sm:p-12 text-center border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <Calendar className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-400 dark:text-gray-500" />
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
             {t.noBookingsFound || 'No bookings found'}
           </p>
         </div>
@@ -309,11 +237,7 @@ export default function BookingManagementTab() {
           {filteredBookings.map((booking) => (
             <div
               key={booking.id}
-              className="rounded-lg sm:rounded-xl shadow-lg border overflow-hidden hover:shadow-xl transition-shadow"
-              style={{
-                backgroundColor: 'white',
-                borderColor: '#e5e7eb'
-              }}
+              className="rounded-lg sm:rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden hover:shadow-xl transition-shadow"
             >
               <div className="p-4 sm:p-6">
                 <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
@@ -333,11 +257,11 @@ export default function BookingManagementTab() {
                     {/* Header with Status */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3">
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-lg sm:text-xl font-bold truncate" style={{ color: '#111827' }}>
+                        <h3 className="text-lg sm:text-xl font-bold truncate text-gray-900 dark:text-white">
                           {booking.tour_name}
                         </h3>
-                        <p className="text-xs sm:text-sm mt-1" style={{ color: '#6b7280' }}>
-                          Booking ID: #{booking.id}
+                        <p className="text-xs sm:text-sm mt-1 text-gray-500 dark:text-gray-400">
+                          {t.bookingId || 'Booking ID'}: #{booking.id}
                         </p>
                       </div>
                       <div className="flex-shrink-0">{getStatusBadge(booking.status)}</div>
@@ -346,58 +270,55 @@ export default function BookingManagementTab() {
                     {/* Customer Info */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" style={{ color: '#6b7280' }} />
-                        <span className="text-sm" style={{ color: '#374151' }}>
+                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
                           {booking.full_name}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4" style={{ color: '#6b7280' }} />
-                        <span className="text-sm" style={{ color: '#374151' }}>
+                        <Mail className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
                           {booking.email}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4" style={{ color: '#6b7280' }} />
-                        <span className="text-sm" style={{ color: '#374151' }}>
+                        <Phone className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
                           {booking.phone}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" style={{ color: '#6b7280' }} />
-                        <span className="text-sm" style={{ color: '#374151' }}>
+                        <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
                           {formatDate(booking.departure_date)}
                         </span>
                       </div>
                     </div>
 
                     {/* Revenue Breakdown */}
-                    <div 
-                      className="p-4 rounded-lg"
-                      style={{ backgroundColor: '#f9fafb' }}
-                    >
+                    <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-900/50">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                          <p className="text-xs font-medium" style={{ color: '#6b7280' }}>
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
                             {t.totalPrice || 'Total Price'}
                           </p>
-                          <p className="text-lg font-bold mt-1" style={{ color: '#111827' }}>
+                          <p className="text-lg font-bold mt-1 text-gray-900 dark:text-white">
                             {formatPrice(booking.total_price)}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs font-medium" style={{ color: '#6b7280' }}>
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
                             {t.platformRevenue || 'Platform Revenue (10%)'}
                           </p>
-                          <p className="text-lg font-bold mt-1" style={{ color: '#059669' }}>
+                          <p className="text-lg font-bold mt-1 text-green-600 dark:text-green-400">
                             {formatPrice(booking.service_fee)}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs font-medium" style={{ color: '#6b7280' }}>
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
                             {t.partnerPool || 'Partner Pool (90%)'}
                           </p>
-                          <p className="text-lg font-bold mt-1" style={{ color: '#2563eb' }}>
+                          <p className="text-lg font-bold mt-1 text-blue-600 dark:text-blue-400">
                             {formatPrice(booking.partner_pool)}
                           </p>
                         </div>

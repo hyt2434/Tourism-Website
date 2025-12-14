@@ -179,17 +179,17 @@ export default function AdminPage() {
                   <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 h-auto">
                     <TabsTrigger
                       value="bookings"
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow transition-all"
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow transition-all text-gray-700 dark:text-gray-300"
                     >
                       <Package className="w-4 h-4" />
-                      Individual Bookings
+                      {translations.individualBookings || "Individual Bookings"}
                     </TabsTrigger>
                     <TabsTrigger
                       value="schedules"
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow transition-all"
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow transition-all text-gray-700 dark:text-gray-300"
                     >
                       <Clock className="w-4 h-4" />
-                      Schedule Management
+                      {translations.scheduleManagement || "Schedule Management"}
                     </TabsTrigger>
                   </TabsList>
 

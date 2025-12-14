@@ -564,11 +564,11 @@ export default function TourManagementTab() {
     
     try {
       await deleteTour(tourId);
-      toast.success('Tour deleted successfully');
+      toast.success(translations.tourDeletedSuccess || 'Tour deleted successfully');
       loadTours(currentPage, searchQuery);
     } catch (error) {
       console.error('Error deleting tour:', error);
-      toast.error('Failed to delete tour');
+      toast.error(translations.failedToDeleteTour || 'Failed to delete tour');
     }
   };
 
@@ -591,7 +591,7 @@ export default function TourManagementTab() {
       setSchedules(data || []);
     } catch (error) {
       console.error('Error loading schedules:', error);
-      toast.error('Failed to load schedules');
+      toast.error(translations.failedToLoadSchedules || 'Failed to load schedules');
     } finally {
       setLoadingSchedules(false);
     }
@@ -609,23 +609,23 @@ export default function TourManagementTab() {
       });
       setNewSchedule({ departure_datetime: '' });
       await loadSchedules(currentScheduleTour.id);
-      toast.success('Schedule added successfully');
+      toast.success(translations.scheduleAddedSuccess || 'Schedule added successfully');
     } catch (error) {
       console.error('Error adding schedule:', error);
-      toast.error('Failed to add schedule');
+      toast.error(translations.failedToAddSchedule || 'Failed to add schedule');
     }
   };
 
   const handleDeleteSchedule = async (scheduleId) => {
-    if (!confirm('Are you sure you want to delete this schedule?')) return;
+    if (!confirm(translations.confirmDeleteSchedule || 'Are you sure you want to delete this schedule?')) return;
 
     try {
       await deleteTourSchedule(currentScheduleTour.id, scheduleId);
       await loadSchedules(currentScheduleTour.id);
-      toast.success('Schedule deleted successfully');
+      toast.success(translations.scheduleDeletedSuccess || 'Schedule deleted successfully');
     } catch (error) {
       console.error('Error deleting schedule:', error);
-      toast.error(error.message || 'Failed to delete schedule');
+      toast.error(error.message || (translations.failedToDeleteSchedule || 'Failed to delete schedule'));
     }
   };
 
@@ -637,7 +637,7 @@ export default function TourManagementTab() {
       await loadSchedules(currentScheduleTour.id);
     } catch (error) {
       console.error('Error updating schedule:', error);
-      toast.error('Failed to update schedule');
+      toast.error(translations.failedToUpdateSchedule || 'Failed to update schedule');
     }
   };
 
@@ -798,17 +798,17 @@ export default function TourManagementTab() {
       
       if (editingTour) {
         await updateTour(editingTour.id, tourData);
-        toast.success('Tour updated successfully');
+        toast.success(translations.tourUpdatedSuccess || 'Tour updated successfully');
       } else {
         await createTour(tourData);
-        toast.success('Tour created successfully');
+        toast.success(translations.tourCreatedSuccess || 'Tour created successfully');
       }
       
       resetForm();
       loadTours(currentPage, searchQuery);
     } catch (error) {
       console.error('Error saving tour:', error);
-      toast.error('Failed to save tour: ' + (error.response?.data?.error || error.message));
+      toast.error((translations.failedToSaveTour || 'Failed to save tour') + ': ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -886,7 +886,7 @@ export default function TourManagementTab() {
   };
 
   const addImage = () => {
-    const url = prompt('Enter image URL:');
+    const url = prompt(translations.enterImageUrl || 'Enter image URL:');
     if (url) {
       setFormData({
         ...formData,
@@ -939,7 +939,7 @@ export default function TourManagementTab() {
   };
 
   const addRestaurant = (dayNumber) => {
-    const restaurantId = prompt('Enter restaurant ID:');
+    const restaurantId = prompt(translations.enterRestaurantId || 'Enter restaurant ID:');
     if (restaurantId) {
       setFormData({
         ...formData,
@@ -975,8 +975,8 @@ export default function TourManagementTab() {
               disabled={loading}
             >
               <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? 'animate-spin' : ''}`} /> 
-              <span className="hidden sm:inline">Sync All Tours</span>
-              <span className="sm:hidden">Sync</span>
+              <span className="hidden sm:inline">{translations.syncAllTours || "Sync All Tours"}</span>
+              <span className="sm:hidden">{translations.sync || "Sync"}</span>
             </Button>
             <Button 
               onClick={() => setShowForm(true)}
@@ -984,7 +984,7 @@ export default function TourManagementTab() {
             >
               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
               <span className="hidden sm:inline">{translations.createNewTour || "Create New Tour"}</span>
-              <span className="sm:hidden">New Tour</span>
+              <span className="sm:hidden">{translations.newTour || "New Tour"}</span>
             </Button>
           </div>
         )}
@@ -994,8 +994,8 @@ export default function TourManagementTab() {
             className="flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4 w-full sm:w-auto"
           >
             <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
-            <span className="hidden sm:inline">Create New Promotion</span>
-            <span className="sm:hidden">New Promotion</span>
+            <span className="hidden sm:inline">{translations.createNewPromotion || "Create New Promotion"}</span>
+            <span className="sm:hidden">{translations.newPromotion || "New Promotion"}</span>
           </Button>
         )}
       </div>
@@ -1003,8 +1003,8 @@ export default function TourManagementTab() {
       {/* Section Tabs */}
       <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2 mb-4 sm:mb-6 gap-1 p-1">
-          <TabsTrigger value="tours" className="text-xs sm:text-sm px-2 sm:px-4 py-2">Tours</TabsTrigger>
-          <TabsTrigger value="promotions" className="text-xs sm:text-sm px-2 sm:px-4 py-2">Promotions</TabsTrigger>
+          <TabsTrigger value="tours" className="text-xs sm:text-sm px-2 sm:px-4 py-2">{translations.toursTab || "Tours"}</TabsTrigger>
+          <TabsTrigger value="promotions" className="text-xs sm:text-sm px-2 sm:px-4 py-2">{translations.promotionsTab || "Promotions"}</TabsTrigger>
         </TabsList>
 
         {/* Tours Section */}
@@ -1016,7 +1016,7 @@ export default function TourManagementTab() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
               <Input
-                placeholder="Search tours by name..."
+                placeholder={translations.searchToursPlaceholder || "Search tours by name..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 sm:pl-10 h-10 sm:h-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 text-sm sm:text-base"
@@ -1040,7 +1040,7 @@ export default function TourManagementTab() {
                       )}
                       <div className="min-w-0 flex-1">
                         <h3 className="text-lg sm:text-xl font-semibold truncate">{tour.name}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">{tour.duration} {tour.duration === 1 ? 'day' : `days ${tour.duration - 1} ${tour.duration - 1 === 1 ? 'night' : 'nights'}`}</p>
+                        <p className="text-xs sm:text-sm text-gray-600">{tour.duration} {tour.duration === 1 ? (translations.day || 'day') : `${translations.days || 'days'} ${tour.duration - 1} ${tour.duration - 1 === 1 ? (translations.night || 'night') : (translations.nights || 'nights')}`}</p>
                       </div>
                     </div>
                     
@@ -1057,7 +1057,7 @@ export default function TourManagementTab() {
                         <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-500 flex-shrink-0" />
                         <span className="truncate">
                           {tour.number_of_members > 0
-                            ? `${(Math.ceil((tour.total_price / tour.number_of_members) / 1000) * 1000).toLocaleString()} ${tour.currency}/person (${tour.number_of_members} people)`
+                            ? `${(Math.ceil((tour.total_price / tour.number_of_members) / 1000) * 1000).toLocaleString()} ${tour.currency}/${translations.perPerson || 'person'} (${tour.number_of_members} ${translations.people || 'people'})`
                             : `${tour.total_price.toLocaleString()} ${tour.currency}`
                           }
                         </span>
@@ -1082,11 +1082,11 @@ export default function TourManagementTab() {
                       variant="outline" 
                       size="sm"
                       onClick={() => handleManageSchedules(tour)}
-                      title="Manage Schedules"
+                      title={translations.manageSchedules || "Manage Schedules"}
                       className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
                     >
                       <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline ml-2">Schedules</span>
+                      <span className="hidden sm:inline ml-2">{translations.schedules || "Schedules"}</span>
                     </Button>
                     <Button 
                       variant="outline" 
@@ -1095,7 +1095,7 @@ export default function TourManagementTab() {
                       className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
                     >
                       <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline ml-2">Edit</span>
+                      <span className="hidden sm:inline ml-2">{translations.edit || "Edit"}</span>
                     </Button>
                     <Button 
                       variant="destructive" 
@@ -1104,7 +1104,7 @@ export default function TourManagementTab() {
                       className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
                     >
                       <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline ml-2">Delete</span>
+                      <span className="hidden sm:inline ml-2">{translations.delete || "Delete"}</span>
                     </Button>
                   </div>
                 </div>
@@ -1117,7 +1117,7 @@ export default function TourManagementTab() {
           {!loading && totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
               <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
-                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalTours)} of {totalTours} tours
+                {(translations.showingTours || "Showing {from} to {to} of {total} tours").replace('{from}', ((currentPage - 1) * pageSize) + 1).replace('{to}', Math.min(currentPage * pageSize, totalTours)).replace('{total}', totalTours)}
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <Button
@@ -1128,7 +1128,7 @@ export default function TourManagementTab() {
                   className="h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
                 >
                   <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
-                  <span className="hidden sm:inline">Previous</span>
+                  <span className="hidden sm:inline">{translations.previous || "Previous"}</span>
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -1162,7 +1162,7 @@ export default function TourManagementTab() {
                   disabled={currentPage === totalPages}
                   className="h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
                 >
-                  <span className="hidden sm:inline">Next</span>
+                  <span className="hidden sm:inline">{translations.next || "Next"}</span>
                   <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:ml-1" />
                 </Button>
               </div>
@@ -1215,7 +1215,7 @@ export default function TourManagementTab() {
                       <Label htmlFor="number_of_members" className="text-sm font-medium">
                         {translations.numberOfMembers || "Number of Members"} *
                         {roomBooking.room_id && (
-                          <span className="text-xs text-gray-500 ml-2">(Auto-calculated from rooms)</span>
+                          <span className="text-xs text-gray-500 ml-2">{translations.autoCalculatedFromRooms || "(Auto-calculated from rooms)"}</span>
                         )}
                       </Label>
                       <Input
@@ -1807,7 +1807,7 @@ export default function TourManagementTab() {
 
       {/* Schedule Management Modal */}
       {showScheduleModal && currentScheduleTour && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/50 dark:bg-black/70 overflow-y-auto" onClick={() => setShowScheduleModal(false)}>
           <div 
             className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-5xl w-full mx-auto border border-gray-200 dark:border-gray-700"
             style={{ marginTop: `${modalScrollPosition}px`, marginBottom: '32px' }}
@@ -1819,7 +1819,7 @@ export default function TourManagementTab() {
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                      Schedule Management
+                      {translations.scheduleManagement || "Schedule Management"}
                     </h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       {currentScheduleTour.name}
@@ -1843,34 +1843,34 @@ export default function TourManagementTab() {
                 <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Plus className="w-4 h-4" />
-                    Add New Departure
+                    {translations.addNewDeparture || "Add New Departure"}
                   </h3>
                 </div>
                 <div className="p-4">
                   <div className="grid md:grid-cols-3 gap-4 items-end">
                     <div className="md:col-span-2">
                       <Label className="text-sm font-medium mb-2 block text-gray-700 dark:text-gray-300">
-                        Departure Date & Time
+                        {translations.departureDateAndTime || "Departure Date & Time"}
                       </Label>
                       <Input
                         type="datetime-local"
                         value={newSchedule.departure_datetime}
                         onChange={(e) => setNewSchedule({ departure_datetime: e.target.value })}
-                        className="h-10 border-gray-300 dark:border-gray-600"
+                        className="h-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                       />
                       <div className="mt-2 flex items-start gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
                         <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                         <p className="text-xs text-blue-700 dark:text-blue-300">
-                          Return date calculated based on tour duration: <strong>{currentScheduleTour.duration} days</strong>
+                          {(translations.returnDateCalculated || "Return date calculated based on tour duration: {days} days").replace('{days}', currentScheduleTour.duration)}
                         </p>
                       </div>
                     </div>
                     <Button 
                       onClick={handleAddSchedule}
-                      className="h-10 bg-blue-600 hover:bg-blue-700 text-white"
+                      className="h-10 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Add Schedule
+                      {translations.addSchedule || "Add Schedule"}
                     </Button>
                   </div>
                 </div>
@@ -1880,24 +1880,24 @@ export default function TourManagementTab() {
               <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Available Departures
+                    <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                    {translations.availableDepartures || "Available Departures"}
                   </h3>
                 </div>
                 <div className="p-4">
                   {loadingSchedules ? (
                     <div className="text-center py-12">
-                      <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600"></div>
-                      <p className="mt-3 text-gray-600 dark:text-gray-400 text-sm">Loading schedules...</p>
+                      <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 dark:border-gray-700 border-t-blue-600 dark:border-t-blue-400"></div>
+                      <p className="mt-3 text-gray-600 dark:text-gray-400 text-sm">{translations.loadingSchedules || "Loading schedules..."}</p>
                     </div>
                   ) : schedules.length === 0 ? (
                     <div className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
                       <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
-                        No schedules yet
+                        {translations.noSchedulesYet || "No schedules yet"}
                       </p>
                       <p className="text-gray-500 dark:text-gray-500 text-xs mt-1">
-                        Add your first departure using the form above
+                        {translations.addFirstDeparture || "Add your first departure using the form above"}
                       </p>
                     </div>
                   ) : (
@@ -1905,7 +1905,7 @@ export default function TourManagementTab() {
                       {schedules.map((schedule, index) => (
                         <div
                           key={schedule.id}
-                          className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all"
+                          className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all"
                         >
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex-1 grid md:grid-cols-3 gap-4 items-center">
@@ -1913,13 +1913,13 @@ export default function TourManagementTab() {
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
                                   <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Departure</span>
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{translations.departure || "Departure"}</span>
                                 </div>
                                 <p className="font-semibold text-gray-900 dark:text-white text-sm">
                                   {formatDateTime(schedule.departure_datetime)}
                                 </p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                  Return: {formatDateTime(schedule.return_datetime)}
+                                  {translations.return || "Return"}: {formatDateTime(schedule.return_datetime)}
                                 </p>
                               </div>
                               
@@ -1927,14 +1927,14 @@ export default function TourManagementTab() {
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
                                   <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Availability</span>
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{translations.availability || "Availability"}</span>
                                 </div>
                                 <div className="flex items-baseline gap-1">
                                   <span className="text-2xl font-bold text-gray-900 dark:text-white">{schedule.slots_available}</span>
                                   <span className="text-gray-400 dark:text-gray-500 text-sm">/ {schedule.max_slots}</span>
                                 </div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                  {schedule.slots_booked} booked
+                                  {schedule.slots_booked} {translations.booked || "booked"}
                                 </p>
                               </div>
                               
@@ -1947,7 +1947,7 @@ export default function TourManagementTab() {
                                       : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                                   }`}
                                 >
-                                  {schedule.is_active ? 'Active' : 'Inactive'}
+                                  {schedule.is_active ? (translations.active || 'Active') : (translations.inactive || 'Inactive')}
                                 </span>
                               </div>
                             </div>
@@ -1958,9 +1958,9 @@ export default function TourManagementTab() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleToggleScheduleActive(schedule)}
-                                className="h-8 px-3 text-xs border-gray-300 dark:border-gray-600"
+                                className="h-8 px-3 text-xs border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                               >
-                                {schedule.is_active ? 'Deactivate' : 'Activate'}
+                                {schedule.is_active ? (translations.deactivate || 'Deactivate') : (translations.activate || 'Activate')}
                               </Button>
                               <Button
                                 variant="destructive"
@@ -1969,8 +1969,8 @@ export default function TourManagementTab() {
                                 disabled={schedule.slots_booked > 0}
                                 title={
                                   schedule.slots_booked > 0
-                                    ? 'Cannot delete schedule with bookings'
-                                    : 'Delete schedule'
+                                    ? (translations.cannotDeleteScheduleWithBookings || 'Cannot delete schedule with bookings')
+                                    : (translations.deleteSchedule || 'Delete schedule')
                                 }
                                 className="h-8 px-3 text-xs"
                               >
