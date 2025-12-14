@@ -176,7 +176,7 @@ function EnhancedBookingForm({
                         upgrade_price: parseFloat(standardRoom.deluxe_upgrade_price),
                         is_available: true,
                         amenities: standardRoom.amenities,
-                        description: 'Nâng cấp tất cả phòng lên Deluxe'
+                        upgradeType: 'Deluxe' // Store type instead of description
                     });
                 }
                 
@@ -191,7 +191,7 @@ function EnhancedBookingForm({
                         upgrade_price: parseFloat(standardRoom.suite_upgrade_price),
                         is_available: true,
                         amenities: standardRoom.amenities,
-                        description: 'Nâng cấp tất cả phòng lên Suite'
+                        upgradeType: 'Suite' // Store type instead of description
                     });
                 }
             }
@@ -347,7 +347,7 @@ function EnhancedBookingForm({
                 return;
             }
             if (numberOfPeople > selectedSchedule.slots_available) {
-                toast.warning(`Chỉ còn ${selectedSchedule.slots_available} chỗ trống`);
+                toast.warning((translations.onlyXSlotsLeftMessage || "Chỉ còn {count} chỗ trống").replace('{count}', selectedSchedule.slots_available));
                 return;
             }
         }
@@ -470,7 +470,7 @@ function EnhancedBookingForm({
             const result = await createBooking(bookingData);
             
             if (result.success) {
-                toast.success(`Đặt tour thành công!\n\nMã đặt tour: ${result.booking_id}\nChúng tôi đã gửi email xác nhận đến ${userInfo.email}`, 8000);
+                toast.success(`${translations.bookingSuccess || "Đặt tour thành công!"}\n\n${translations.bookingId || "Mã đặt tour"}: ${result.booking_id}\n${translations.confirmationEmailSent || "Chúng tôi đã gửi email xác nhận đến"} ${userInfo.email}`, 8000);
                 
                 // Clear card information after successful booking
                 if (paymentMethod === "card" && elements) {
@@ -492,7 +492,7 @@ function EnhancedBookingForm({
             }
         } catch (error) {
             console.error('Booking error:', error);
-            toast.error(`Đặt tour thất bại: ${error.message}`);
+            toast.error(`${translations.bookingFailed || "Đặt tour thất bại"}: ${error.message}`);
         }
     };
 
@@ -505,10 +505,10 @@ function EnhancedBookingForm({
                 <div className="flex items-center justify-between p-4 sm:p-5 lg:p-6 border-b border-gray-200 dark:border-gray-700">
                     <div>
                         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                            Đặt tour
+                            {translations.bookTour || "Đặt tour"}
                         </h2>
                         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Bước {currentStep}/3
+                            {translations.step || "Bước"} {currentStep}/3
                         </p>
                     </div>
                     <button
@@ -630,7 +630,7 @@ function EnhancedBookingForm({
                             </Button>
                         ) : (
                             <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
-                                Xác nhận đặt tour
+                                {translations.confirmBooking || "Xác nhận đặt tour"}
                             </Button>
                         )}
                     </div>
@@ -684,11 +684,11 @@ function Step1DatePeople({
                                                 </span>
                                             </div>
                                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                Về: {retDate.toLocaleDateString('vi-VN')}
+                                                {translations.return || "Về"}: {retDate.toLocaleDateString('vi-VN')}
                                             </p>
                                         </div>
                                         <Badge variant={schedule.slots_available > 10 ? "default" : "destructive"}>
-                                            {schedule.slots_available} chỗ trống
+                                            {schedule.slots_available} {translations.slotsAvailableShort || "chỗ trống"}
                                         </Badge>
                                     </div>
                                 </div>
@@ -776,6 +776,7 @@ function Step2Customize({
     priceBreakdown,
     translations
 }) {
+    const toast = useToast();
     // Check if user has opted out of any meals
     const hasOptedOutMeals = () => {
         return Object.values(selectedMeals).some(selected => !selected);
@@ -818,10 +819,10 @@ function Step2Customize({
             <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-4">
                     <Hotel className="w-5 h-5 text-purple-500" />
-                    <h3 className="text-lg font-semibold">Nâng cấp phòng (tùy chọn)</h3>
+                    <h3 className="text-lg font-semibold">{translations.upgradeRoom || "Nâng cấp phòng (tùy chọn)"}</h3>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                    ℹ️ Mỗi phòng cho 2 người. Số phòng: {Math.ceil(numberOfPeople / 2)}
+                    {translations.roomInfo || "ℹ️ Mỗi phòng cho 2 người. Số phòng"}: {Math.ceil(numberOfPeople / 2)}
                 </p>
                 
                 {availableRoomUpgrades.length === 0 ? (
@@ -841,7 +842,7 @@ function Step2Customize({
                                 <div>
                                     <p className="font-medium">{translations.currentRoom || "Current Room (Standard)"}</p>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        Đã bao gồm trong giá tour
+                                        {translations.includedInTourPrice || "Đã bao gồm trong giá tour"}
                                     </p>
                                 </div>
                                 {!roomUpgrade && <Check className="w-5 h-5 text-blue-500" />}
@@ -883,10 +884,14 @@ function Step2Customize({
                                                     {room.bed_type} • {room.room_size}m²
                                                 </p>
                                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {room.description}
+                                                    {room.upgradeType === 'Deluxe' 
+                                                        ? (translations.upgradeAllRoomsToDeluxe || 'Nâng cấp tất cả phòng lên Deluxe')
+                                                        : room.upgradeType === 'Suite'
+                                                        ? (translations.upgradeAllRoomsToSuite || 'Nâng cấp tất cả phòng lên Suite')
+                                                        : room.description}
                                                 </p>
                                                 <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-                                                    +{room.upgrade_price?.toLocaleString()} VND/phòng/đêm
+                                                    +{room.upgrade_price?.toLocaleString()} VND{translations.perRoomPerNightShort || "/phòng/đêm"}
                                                 </p>
                                             </>
                                         )}
@@ -1001,7 +1006,7 @@ function Step2Customize({
                             <div className="flex-1">
                                 <p className="font-medium">🚌 {translations.outboundTrip || "Outbound Trip"} ({tourData.departure_city?.name || tourData.departure_city} → {tourData.destination_city?.name || tourData.destination_city})</p>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    Từ {tourData.departure_city?.name || tourData.departure_city} đến {tourData.destination_city?.name || tourData.destination_city}
+                                    {translations.from || "Từ"} {tourData.departure_city?.name || tourData.departure_city} {translations.to || "đến"} {tourData.destination_city?.name || tourData.destination_city}
                                 </p>
                             </div>
                         </label>
@@ -1018,7 +1023,7 @@ function Step2Customize({
                             <div className="flex-1">
                                 <p className="font-medium">🚌 {translations.returnTrip || "Return Trip"} ({tourData.destination_city?.name || tourData.destination_city} → {tourData.departure_city?.name || tourData.departure_city})</p>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    Từ {tourData.destination_city?.name || tourData.destination_city} về {tourData.departure_city?.name || tourData.departure_city}
+                                    {translations.from || "Từ"} {tourData.destination_city?.name || tourData.destination_city} {translations.backTo || "về"} {tourData.departure_city?.name || tourData.departure_city}
                                 </p>
                             </div>
                         </label>
@@ -1323,7 +1328,7 @@ function Step3Confirm({
                     )}
                     <div className="border-t border-gray-300 dark:border-gray-600 pt-3 mt-3">
                         <div className="flex justify-between text-lg font-bold">
-                            <span>Tổng tiền:</span>
+                            <span>{translations.totalAmount || "Tổng tiền"}:</span>
                             <span className="text-blue-600 dark:text-blue-400">
                                 {priceBreakdown.total.toLocaleString()} VND
                             </span>

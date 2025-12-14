@@ -155,7 +155,7 @@ const TourReviews = ({ tourId }) => {
                 </div>
             ) : (
                 <div className="text-center py-8 text-gray-500">
-                    <p>Chưa có đánh giá nào cho tour này</p>
+                    <p>{translations?.noReviewsForTour || "Chưa có đánh giá nào cho tour này"}</p>
                 </div>
             )}
 

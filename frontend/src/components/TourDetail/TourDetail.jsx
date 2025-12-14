@@ -14,6 +14,7 @@ import { getPublicTourDetail } from "../../api/tours";
 import { getAvailableSchedules } from "../../api/tours";
 import { addFavorite, removeFavorite, checkFavorite } from "../../api/favorites";
 import TourReviews from "../TourReviews";
+import { getTranslatedContent } from "../../utils/translation";
 import {
   CheckCircle,
   X,
@@ -41,7 +42,7 @@ import { ReviewCard } from "./ReviewCard";
 import TourMap from "./TourMap";
 
 export default function TourDetail() {
-  const { translations } = useLanguage();
+  const { translations, language } = useLanguage();
   const toast = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -58,6 +59,9 @@ export default function TourDetail() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [userId, setUserId] = useState(null);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [translatedItinerary, setTranslatedItinerary] = useState([]);
+  const [translatedIncluded, setTranslatedIncluded] = useState(null);
+  const [translating, setTranslating] = useState(false);
   const headerButtonRef = useRef(null);
 
   // Helper function to check if user can book
@@ -100,6 +104,165 @@ export default function TourDetail() {
       toast.error('Failed to load tour details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Translate itinerary and included content
+  useEffect(() => {
+    if (tourData && language) {
+      translateContent();
+    }
+  }, [tourData, language]);
+
+  const translateContent = async () => {
+    if (!tourData) return;
+    
+    setTranslating(true);
+    try {
+      // Translate itinerary
+      if (tourData.itinerary && tourData.itinerary.length > 0) {
+        const translatedItineraryData = await Promise.all(
+          tourData.itinerary.map(async (day) => {
+            const translatedDay = { ...day };
+            
+            if (day.day_title) {
+              translatedDay.translatedDayTitle = await getTranslatedContent(day.day_title, language);
+            }
+            if (day.day_summary) {
+              translatedDay.translatedDaySummary = await getTranslatedContent(day.day_summary, language);
+            }
+            
+            // Translate checkpoints
+            if (day.checkpoints) {
+              const translatedCheckpoints = { ...day.checkpoints };
+              
+              // Translate morning checkpoints
+              if (day.checkpoints.morning) {
+                translatedCheckpoints.morning = await Promise.all(
+                  day.checkpoints.morning.map(async (cp) => ({
+                    ...cp,
+                    translatedActivityTitle: cp.activity_title ? await getTranslatedContent(cp.activity_title, language) : null,
+                    translatedActivityDescription: cp.activity_description ? await getTranslatedContent(cp.activity_description, language) : null,
+                    translatedLocation: cp.location ? await getTranslatedContent(cp.location, language) : null,
+                  }))
+                );
+              }
+              
+              // Translate noon checkpoints
+              if (day.checkpoints.noon) {
+                translatedCheckpoints.noon = await Promise.all(
+                  day.checkpoints.noon.map(async (cp) => ({
+                    ...cp,
+                    translatedActivityTitle: cp.activity_title ? await getTranslatedContent(cp.activity_title, language) : null,
+                    translatedActivityDescription: cp.activity_description ? await getTranslatedContent(cp.activity_description, language) : null,
+                    translatedLocation: cp.location ? await getTranslatedContent(cp.location, language) : null,
+                  }))
+                );
+              }
+              
+              // Translate evening checkpoints
+              if (day.checkpoints.evening) {
+                translatedCheckpoints.evening = await Promise.all(
+                  day.checkpoints.evening.map(async (cp) => ({
+                    ...cp,
+                    translatedActivityTitle: cp.activity_title ? await getTranslatedContent(cp.activity_title, language) : null,
+                    translatedActivityDescription: cp.activity_description ? await getTranslatedContent(cp.activity_description, language) : null,
+                    translatedLocation: cp.location ? await getTranslatedContent(cp.location, language) : null,
+                  }))
+                );
+              }
+              
+              translatedDay.translatedCheckpoints = translatedCheckpoints;
+            }
+            
+            return translatedDay;
+          })
+        );
+        setTranslatedItinerary(translatedItineraryData);
+      }
+
+      // Translate included content
+      const translatedIncludedData = { ...tourData };
+      
+      // Translate accommodation
+      if (tourData.accommodationDetails) {
+        translatedIncludedData.accommodationDetails = {
+          ...tourData.accommodationDetails,
+          translatedName: tourData.accommodationDetails.name ? await getTranslatedContent(tourData.accommodationDetails.name, language) : null,
+          translatedDescription: tourData.accommodationDetails.description ? await getTranslatedContent(tourData.accommodationDetails.description, language) : null,
+          translatedAddress: tourData.accommodationDetails.address ? await getTranslatedContent(tourData.accommodationDetails.address, language) : null,
+        };
+      }
+      
+      // Translate room bookings
+      if (tourData.roomBookings && tourData.roomBookings.length > 0) {
+        translatedIncludedData.roomBookings = await Promise.all(
+          tourData.roomBookings.map(async (room) => ({
+            ...room,
+            translatedName: room.name ? await getTranslatedContent(room.name, language) : null,
+            translatedBedType: room.bedType ? await getTranslatedContent(room.bedType, language) : null,
+            translatedViewType: room.viewType ? await getTranslatedContent(room.viewType, language) : null,
+            translatedAmenities: room.amenities ? await Promise.all(
+              room.amenities.map(amenity => getTranslatedContent(amenity, language))
+            ) : null,
+          }))
+        );
+      }
+      
+      // Translate meals
+      if (tourData.selectedSetMeals && tourData.selectedSetMeals.length > 0) {
+        translatedIncludedData.selectedSetMeals = await Promise.all(
+          tourData.selectedSetMeals.map(async (meal) => ({
+            ...meal,
+            translatedRestaurantName: meal.restaurant_name ? await getTranslatedContent(meal.restaurant_name, language) : null,
+            translatedCuisineType: meal.cuisine_type ? await getTranslatedContent(meal.cuisine_type, language) : null,
+            translatedSetMealDescription: meal.set_meal_description ? await getTranslatedContent(meal.set_meal_description, language) : null,
+            translatedMenuItems: meal.menu_items ? await Promise.all(
+              meal.menu_items.map(async (item) => ({
+                ...item,
+                translatedName: item.name ? await getTranslatedContent(item.name, language) : null,
+                translatedDescription: item.description ? await getTranslatedContent(item.description, language) : null,
+              }))
+            ) : null,
+          }))
+        );
+      }
+      
+      // Translate transportation
+      if (tourData.services?.transportation) {
+        translatedIncludedData.services = {
+          ...tourData.services,
+          transportation: {
+            ...tourData.services.transportation,
+            translatedServiceName: tourData.services.transportation.service_name ? await getTranslatedContent(tourData.services.transportation.service_name, language) : null,
+            translatedDescription: tourData.services.transportation.description ? await getTranslatedContent(tourData.services.transportation.description, language) : null,
+          },
+        };
+      }
+      
+      // Translate included items
+      if (tourData.included && tourData.included.length > 0) {
+        translatedIncludedData.translatedIncluded = await Promise.all(
+          tourData.included.map(item => getTranslatedContent(item, language))
+        );
+      }
+      
+      // Translate tour locations
+      if (tourData.tourLocations && tourData.tourLocations.length > 0) {
+        translatedIncludedData.translatedTourLocations = await Promise.all(
+          tourData.tourLocations.map(async (location) => ({
+            ...location,
+            translatedName: location.name ? await getTranslatedContent(location.name, language) : null,
+            translatedDescription: location.description ? await getTranslatedContent(location.description, language) : null,
+          }))
+        );
+      }
+      
+      setTranslatedIncluded(translatedIncludedData);
+    } catch (error) {
+      console.error('Error translating content:', error);
+    } finally {
+      setTranslating(false);
     }
   };
 
@@ -596,118 +759,146 @@ export default function TourDetail() {
 
               <TabsContent value="itinerary" className="mt-6">
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 space-y-6 border border-gray-200 dark:border-gray-700">
+                  {translating && (
+                    <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                      {translations.loading || "Đang dịch nội dung..."}
+                    </div>
+                  )}
                   {tourData.itinerary && tourData.itinerary.length > 0 ? (
-                    tourData.itinerary.map((day) => (
-                      <div key={day.day_number || day.id} className="border-l-4 border-blue-500 pl-6 pb-6">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-12 h-12 rounded-full bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center font-semibold text-lg shadow-md">
-                            {day.day_number || day.day}
+                    (translatedItinerary.length > 0 ? translatedItinerary : tourData.itinerary).map((day, dayIndex) => {
+                      const originalDay = tourData.itinerary[dayIndex];
+                      const checkpoints = day.translatedCheckpoints || day.checkpoints || originalDay?.checkpoints;
+                      
+                      return (
+                        <div key={day.day_number || day.id || dayIndex} className="border-l-4 border-blue-500 pl-6 pb-6">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-12 h-12 rounded-full bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center font-semibold text-lg shadow-md">
+                              {day.day_number || day.day}
+                            </div>
+                            <div>
+                              <h4 className="text-lg font-bold text-gray-900 dark:text-white">
+                                {translations.day || "Ngày"} {day.day_number || day.day}
+                              </h4>
+                              {(day.translatedDayTitle || day.day_title) && (
+                                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                                  {day.translatedDayTitle || day.day_title}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="text-lg font-bold text-gray-900 dark:text-white">
-                              Ngày {day.day_number || day.day}
-                            </h4>
-                            {day.day_title && (
-                              <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                                {day.day_title}
-                              </p>
-                            )}
-                          </div>
+                          
+                          {(day.translatedDaySummary || day.day_summary) && (
+                            <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed whitespace-pre-line">
+                              {day.translatedDaySummary || day.day_summary}
+                            </p>
+                          )}
+
+                          {/* Time checkpoints if available */}
+                          {checkpoints && (
+                            <div className="space-y-3 mt-4">
+                              {/* Morning */}
+                              {checkpoints.morning && checkpoints.morning.length > 0 && (
+                                <div>
+                                  <h5 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                                    🌅 {translations.morning || "Buổi sáng"}
+                                  </h5>
+                                  <div className="space-y-2">
+                                    {checkpoints.morning.map((cp, idx) => (
+                                      <div key={cp.id || idx} className="flex gap-2 text-sm">
+                                        <span className="font-medium text-blue-600 dark:text-blue-400 min-w-[60px]">
+                                          {cp.checkpoint_time}
+                                        </span>
+                                        <div className="flex-1">
+                                          <p className="font-medium text-gray-900 dark:text-white">
+                                            {cp.translatedActivityTitle || cp.activity_title}
+                                          </p>
+                                          {(cp.translatedActivityDescription || cp.activity_description) && (
+                                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                              {cp.translatedActivityDescription || cp.activity_description}
+                                            </p>
+                                          )}
+                                          {(cp.translatedLocation || cp.location) && (
+                                            <p className="text-gray-500 dark:text-gray-500 text-xs flex items-center gap-1 mt-1">
+                                              <MapPin className="w-3 h-3" /> {cp.translatedLocation || cp.location}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Noon */}
+                              {checkpoints.noon && checkpoints.noon.length > 0 && (
+                                <div>
+                                  <h5 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                                    ☀️ {translations.noon || "Buổi trưa"}
+                                  </h5>
+                                  <div className="space-y-2">
+                                    {checkpoints.noon.map((cp, idx) => (
+                                      <div key={cp.id || idx} className="flex gap-2 text-sm">
+                                        <span className="font-medium text-blue-600 dark:text-blue-400 min-w-[60px]">
+                                          {cp.checkpoint_time}
+                                        </span>
+                                        <div className="flex-1">
+                                          <p className="font-medium text-gray-900 dark:text-white">
+                                            {cp.translatedActivityTitle || cp.activity_title}
+                                          </p>
+                                          {(cp.translatedActivityDescription || cp.activity_description) && (
+                                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                              {cp.translatedActivityDescription || cp.activity_description}
+                                            </p>
+                                          )}
+                                          {(cp.translatedLocation || cp.location) && (
+                                            <p className="text-gray-500 dark:text-gray-500 text-xs flex items-center gap-1 mt-1">
+                                              <MapPin className="w-3 h-3" /> {cp.translatedLocation || cp.location}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Evening */}
+                              {checkpoints.evening && checkpoints.evening.length > 0 && (
+                                <div>
+                                  <h5 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                                    🌙 {translations.evening || "Buổi tối"}
+                                  </h5>
+                                  <div className="space-y-2">
+                                    {checkpoints.evening.map((cp, idx) => (
+                                      <div key={cp.id || idx} className="flex gap-2 text-sm">
+                                        <span className="font-medium text-blue-600 dark:text-blue-400 min-w-[60px]">
+                                          {cp.checkpoint_time}
+                                        </span>
+                                        <div className="flex-1">
+                                          <p className="font-medium text-gray-900 dark:text-white">
+                                            {cp.translatedActivityTitle || cp.activity_title}
+                                          </p>
+                                          {(cp.translatedActivityDescription || cp.activity_description) && (
+                                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                              {cp.translatedActivityDescription || cp.activity_description}
+                                            </p>
+                                          )}
+                                          {(cp.translatedLocation || cp.location) && (
+                                            <p className="text-gray-500 dark:text-gray-500 text-xs flex items-center gap-1 mt-1">
+                                              <MapPin className="w-3 h-3" /> {cp.translatedLocation || cp.location}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        
-                        {day.day_summary && (
-                          <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed whitespace-pre-line">
-                            {day.day_summary}
-                          </p>
-                        )}
-
-                        {/* Time checkpoints if available */}
-                        {day.checkpoints && (
-                          <div className="space-y-3 mt-4">
-                            {/* Morning */}
-                            {day.checkpoints.morning && day.checkpoints.morning.length > 0 && (
-                              <div>
-                                <h5 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">🌅 Buổi sáng</h5>
-                                <div className="space-y-2">
-                                  {day.checkpoints.morning.map((cp, idx) => (
-                                    <div key={cp.id || idx} className="flex gap-2 text-sm">
-                                      <span className="font-medium text-blue-600 dark:text-blue-400 min-w-[60px]">
-                                        {cp.checkpoint_time}
-                                      </span>
-                                      <div className="flex-1">
-                                        <p className="font-medium text-gray-900 dark:text-white">{cp.activity_title}</p>
-                                        {cp.activity_description && (
-                                          <p className="text-gray-600 dark:text-gray-400 text-sm">{cp.activity_description}</p>
-                                        )}
-                                        {cp.location && (
-                                          <p className="text-gray-500 dark:text-gray-500 text-xs flex items-center gap-1 mt-1">
-                                            <MapPin className="w-3 h-3" /> {cp.location}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Noon */}
-                            {day.checkpoints.noon && day.checkpoints.noon.length > 0 && (
-                              <div>
-                                <h5 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">☀️ Buổi trưa</h5>
-                                <div className="space-y-2">
-                                  {day.checkpoints.noon.map((cp, idx) => (
-                                    <div key={cp.id || idx} className="flex gap-2 text-sm">
-                                      <span className="font-medium text-blue-600 dark:text-blue-400 min-w-[60px]">
-                                        {cp.checkpoint_time}
-                                      </span>
-                                      <div className="flex-1">
-                                        <p className="font-medium text-gray-900 dark:text-white">{cp.activity_title}</p>
-                                        {cp.activity_description && (
-                                          <p className="text-gray-600 dark:text-gray-400 text-sm">{cp.activity_description}</p>
-                                        )}
-                                        {cp.location && (
-                                          <p className="text-gray-500 dark:text-gray-500 text-xs flex items-center gap-1 mt-1">
-                                            <MapPin className="w-3 h-3" /> {cp.location}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Evening */}
-                            {day.checkpoints.evening && day.checkpoints.evening.length > 0 && (
-                              <div>
-                                <h5 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">🌙 Buổi tối</h5>
-                                <div className="space-y-2">
-                                  {day.checkpoints.evening.map((cp, idx) => (
-                                    <div key={cp.id || idx} className="flex gap-2 text-sm">
-                                      <span className="font-medium text-blue-600 dark:text-blue-400 min-w-[60px]">
-                                        {cp.checkpoint_time}
-                                      </span>
-                                      <div className="flex-1">
-                                        <p className="font-medium text-gray-900 dark:text-white">{cp.activity_title}</p>
-                                        {cp.activity_description && (
-                                          <p className="text-gray-600 dark:text-gray-400 text-sm">{cp.activity_description}</p>
-                                        )}
-                                        {cp.location && (
-                                          <p className="text-gray-500 dark:text-gray-500 text-xs flex items-center gap-1 mt-1">
-                                            <MapPin className="w-3 h-3" /> {cp.location}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <p className="text-gray-500 dark:text-gray-400 text-center py-8">
                       {translations.noItinerary || "Chưa có lịch trình chi tiết"}
@@ -718,8 +909,13 @@ export default function TourDetail() {
 
               <TabsContent value="included" className="mt-6">
                 <div className="space-y-6">
+                  {translating && (
+                    <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                      {translations.loading || "Đang dịch nội dung..."}
+                    </div>
+                  )}
                   {/* Accommodation - Display detailed information */}
-                  {tourData.accommodationDetails && (
+                  {(translatedIncluded?.accommodationDetails || tourData.accommodationDetails) && (
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                       <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                         <Hotel className="w-5 h-5 text-purple-500" />
@@ -729,9 +925,9 @@ export default function TourDetail() {
                         <div className="flex items-start justify-between mb-3">
                           <div>
                             <h5 className="font-semibold text-gray-900 dark:text-white mb-1">
-                              {tourData.accommodationDetails.name}
+                              {(translatedIncluded?.accommodationDetails?.translatedName || tourData.accommodationDetails?.name)}
                             </h5>
-                            {tourData.accommodationDetails.star_rating && (
+                            {tourData.accommodationDetails?.star_rating && (
                               <div className="flex items-center gap-1 mb-2">
                                 {[...Array(tourData.accommodationDetails.star_rating)].map((_, i) => (
                                   <span key={i} className="text-yellow-500">⭐</span>
@@ -740,63 +936,63 @@ export default function TourDetail() {
                             )}
                           </div>
                         </div>
-                        {tourData.accommodationDetails.address && (
+                        {(translatedIncluded?.accommodationDetails?.translatedAddress || tourData.accommodationDetails?.address) && (
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 flex items-start gap-2">
                             <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                            {tourData.accommodationDetails.address}
+                            {translatedIncluded?.accommodationDetails?.translatedAddress || tourData.accommodationDetails?.address}
                           </p>
                         )}
-                        {tourData.accommodationDetails.description && (
+                        {(translatedIncluded?.accommodationDetails?.translatedDescription || tourData.accommodationDetails?.description) && (
                           <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                            {tourData.accommodationDetails.description}
+                            {translatedIncluded?.accommodationDetails?.translatedDescription || tourData.accommodationDetails?.description}
                           </p>
                         )}
                         
                         {/* Room Details */}
-                        {tourData.roomBookings && tourData.roomBookings.length > 0 && (
+                        {((translatedIncluded?.roomBookings || tourData.roomBookings) && (translatedIncluded?.roomBookings || tourData.roomBookings).length > 0) && (
                           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                             <h6 className="font-medium text-gray-900 dark:text-white mb-3">
-                              {translations.roomDetails || "Room Details"} ({tourData.roomBookings.reduce((sum, r) => sum + r.quantity, 0)} {translations.rooms || "rooms"})
+                              {translations.roomDetails || "Room Details"} ({(translatedIncluded?.roomBookings || tourData.roomBookings).reduce((sum, r) => sum + r.quantity, 0)} {translations.rooms || "rooms"})
                             </h6>
                             <div className="grid md:grid-cols-2 gap-3">
-                              {tourData.roomBookings.map((room, idx) => (
+                              {(translatedIncluded?.roomBookings || tourData.roomBookings).map((room, idx) => (
                                 <div key={idx} className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3">
                                   {room.image && (
                                     <img
                                       src={room.image}
-                                      alt={room.name}
+                                      alt={room.translatedName || room.name}
                                       className="w-full h-32 object-cover rounded mb-2"
                                     />
                                   )}
                                   <div className="flex items-start justify-between mb-2">
                                     <h6 className="font-medium text-sm text-gray-900 dark:text-white">
-                                      {room.name || room.roomType}
+                                      {room.translatedName || room.name || room.roomType}
                                     </h6>
                                     <Badge variant="secondary" className="text-xs">
-                                      {room.quantity} phòng
+                                      {room.quantity} {translations.roomUnit || "phòng"}
                                     </Badge>
                                   </div>
                                   <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
-                                    {room.bedType && (
-                                      <p>🛏️ {room.bedType}</p>
+                                    {(room.translatedBedType || room.bedType) && (
+                                      <p>🛏️ {room.translatedBedType || room.bedType}</p>
                                     )}
                                     {room.maxAdults && (
                                       <p>
                                         <Users className="w-3 h-3 inline mr-1" />
-                                        {room.maxAdults} người lớn
-                                        {room.maxChildren ? ` + ${room.maxChildren} trẻ em` : ''}
+                                        {room.maxAdults} {translations.adults || "người lớn"}
+                                        {room.maxChildren ? ` + ${room.maxChildren} ${translations.children || "trẻ em"}` : ''}
                                       </p>
                                     )}
                                     {room.roomSize && (
                                       <p>📐 {room.roomSize}m²</p>
                                     )}
-                                    {room.viewType && (
-                                      <p>👁️ {room.viewType}</p>
+                                    {(room.translatedViewType || room.viewType) && (
+                                      <p>👁️ {room.translatedViewType || room.viewType}</p>
                                     )}
                                   </div>
-                                  {room.amenities && room.amenities.length > 0 && (
+                                  {((room.translatedAmenities || room.amenities) && (room.translatedAmenities || room.amenities).length > 0) && (
                                     <div className="mt-2 flex flex-wrap gap-1">
-                                      {room.amenities.slice(0, 3).map((amenity, i) => (
+                                      {(room.translatedAmenities || room.amenities).slice(0, 3).map((amenity, i) => (
                                         <span key={i} className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded">
                                           {amenity}
                                         </span>
@@ -813,7 +1009,7 @@ export default function TourDetail() {
                   )}
 
                   {/* Restaurants - Display set meals with details */}
-                  {tourData.selectedSetMeals && tourData.selectedSetMeals.length > 0 && (
+                  {((translatedIncluded?.selectedSetMeals || tourData.selectedSetMeals) && (translatedIncluded?.selectedSetMeals || tourData.selectedSetMeals).length > 0) && (
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                       <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                         <Utensils className="w-5 h-5 text-orange-500" />
@@ -822,7 +1018,7 @@ export default function TourDetail() {
                       <div className="space-y-4">
                         {/* Group by day */}
                         {Object.entries(
-                          tourData.selectedSetMeals.reduce((acc, meal) => {
+                          (translatedIncluded?.selectedSetMeals || tourData.selectedSetMeals).reduce((acc, meal) => {
                             if (!acc[meal.day_number]) acc[meal.day_number] = [];
                             acc[meal.day_number].push(meal);
                             return acc;
@@ -853,32 +1049,32 @@ export default function TourDetail() {
                                       </div>
                                       <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1">
                                         <Utensils className="w-3 h-3" />
-                                        {meal.restaurant_name}
-                                        {meal.cuisine_type && ` • ${meal.cuisine_type}`}
+                                        {meal.translatedRestaurantName || meal.restaurant_name}
+                                        {(meal.translatedCuisineType || meal.cuisine_type) && ` • ${meal.translatedCuisineType || meal.cuisine_type}`}
                                       </p>
-                                      {meal.set_meal_description && (
+                                      {(meal.translatedSetMealDescription || meal.set_meal_description) && (
                                         <p className="text-xs text-gray-700 dark:text-gray-300 mb-2">
-                                          {meal.set_meal_description}
+                                          {meal.translatedSetMealDescription || meal.set_meal_description}
                                         </p>
                                       )}
                                     </div>
                                   </div>
                                   
                                   {/* Menu items in set meal */}
-                                  {meal.menu_items && meal.menu_items.length > 0 && (
+                                  {((meal.translatedMenuItems || meal.menu_items) && (meal.translatedMenuItems || meal.menu_items).length > 0) && (
                                     <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                                       <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Món ăn:
+                                        {translations.menuItems || "Món ăn"}:
                                       </p>
                                       <div className="grid grid-cols-2 gap-2">
-                                        {meal.menu_items.map((item, i) => (
+                                        {(meal.translatedMenuItems || meal.menu_items).map((item, i) => (
                                           <div key={i} className="text-xs text-gray-600 dark:text-gray-400">
                                             <span className="font-medium text-gray-800 dark:text-gray-200">
-                                              • {item.name}
+                                              • {item.translatedName || item.name}
                                             </span>
-                                            {item.description && (
+                                            {(item.translatedDescription || item.description) && (
                                               <p className="text-gray-500 dark:text-gray-500 ml-3 line-clamp-1">
-                                                {item.description}
+                                                {item.translatedDescription || item.description}
                                               </p>
                                             )}
                                           </div>
@@ -897,7 +1093,7 @@ export default function TourDetail() {
                   )}
 
                   {/* Transportation */}
-                  {tourData.services?.transportation && (
+                  {(translatedIncluded?.services?.transportation || tourData.services?.transportation) && (
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                       <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                         <Car className="w-5 h-5 text-blue-500" />
@@ -906,60 +1102,71 @@ export default function TourDetail() {
                       <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
                         <h5 className="font-semibold text-gray-900 dark:text-white mb-3">
                           {(() => {
-                            if (tourData.services.transportation.service_name) {
+                            const transportation = translatedIncluded?.services?.transportation || tourData.services?.transportation;
+                            if (transportation.translatedServiceName || transportation.service_name) {
+                              const serviceName = transportation.translatedServiceName || transportation.service_name;
                               // Capitalize first letter of vehicle type only (e.g., "bus - 30A-12345" -> "Bus - 30A-12345")
-                              const parts = tourData.services.transportation.service_name.split(' - ');
+                              const parts = serviceName.split(' - ');
                               if (parts.length > 0) {
                                 const vehicleType = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
                                 return parts.length > 1 ? `${vehicleType} - ${parts.slice(1).join(' - ')}` : vehicleType;
                               }
-                              return tourData.services.transportation.service_name;
+                              return serviceName;
                             }
-                            if (tourData.services.transportation.vehicle_type) {
-                              return tourData.services.transportation.vehicle_type.charAt(0).toUpperCase() + 
-                                     tourData.services.transportation.vehicle_type.slice(1).toLowerCase();
+                            if (transportation.vehicle_type) {
+                              return transportation.vehicle_type.charAt(0).toUpperCase() + 
+                                     transportation.vehicle_type.slice(1).toLowerCase();
                             }
                             return '';
                           })()}
                         </h5>
                         <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                          {tourData.services.transportation.vehicle_type && (
-                            <p className="flex items-center gap-2">
-                              <Car className="w-4 h-4" />
-                              <span>
-                                {translations.vehicleType || "Loại xe"}: {
-                                  tourData.services.transportation.vehicle_type.charAt(0).toUpperCase() + 
-                                  tourData.services.transportation.vehicle_type.slice(1).toLowerCase()
-                                }
-                              </span>
-                            </p>
-                          )}
-                          {tourData.services.transportation.license_plate && (
-                            <p>{translations.licensePlate || "Biển số"}: {tourData.services.transportation.license_plate}</p>
-                          )}
-                          {tourData.services.transportation.brand && (
-                            <p>{translations.brand || "Hãng"}: {tourData.services.transportation.brand}</p>
-                          )}
-                          {tourData.services.transportation.capacity && (
-                            <p>{translations.capacity || "Sức chứa"}: {tourData.services.transportation.capacity} {translations.people || "người"}</p>
-                          )}
-                          {tourData.services.transportation.description && (
-                            <p className="mt-2 text-gray-700 dark:text-gray-300">{tourData.services.transportation.description}</p>
-                          )}
+                          {(() => {
+                            const transportation = translatedIncluded?.services?.transportation || tourData.services?.transportation;
+                            return (
+                              <>
+                                {transportation.vehicle_type && (
+                                  <p className="flex items-center gap-2">
+                                    <Car className="w-4 h-4" />
+                                    <span>
+                                      {translations.vehicleType || "Loại xe"}: {
+                                        transportation.vehicle_type.charAt(0).toUpperCase() + 
+                                        transportation.vehicle_type.slice(1).toLowerCase()
+                                      }
+                                    </span>
+                                  </p>
+                                )}
+                                {transportation.license_plate && (
+                                  <p>{translations.licensePlate || "Biển số"}: {transportation.license_plate}</p>
+                                )}
+                                {transportation.brand && (
+                                  <p>{translations.brand || "Hãng"}: {transportation.brand}</p>
+                                )}
+                                {transportation.capacity && (
+                                  <p>{translations.capacity || "Sức chứa"}: {transportation.capacity} {translations.people || "người"}</p>
+                                )}
+                                {(transportation.translatedDescription || transportation.description) && (
+                                  <p className="mt-2 text-gray-700 dark:text-gray-300">
+                                    {transportation.translatedDescription || transportation.description}
+                                  </p>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
                   )}
 
                   {/* Included Items (if any) */}
-                  {tourData.included && tourData.included.length > 0 && (
+                  {((translatedIncluded?.translatedIncluded || tourData.included) && (translatedIncluded?.translatedIncluded || tourData.included).length > 0) && (
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                       <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                         <CheckCircle className="w-5 h-5 text-green-500" />
                         {translations.tourIncludedItems || "Bao gồm"}
                       </h4>
                       <ul className="space-y-2">
-                        {tourData.included.map((item, index) => (
+                        {(translatedIncluded?.translatedIncluded || tourData.included).map((item, index) => (
                           <li
                             key={index}
                             className="flex items-center gap-2 text-gray-700 dark:text-gray-300"
@@ -1013,14 +1220,14 @@ export default function TourDetail() {
                   )}
 
                   {/* Danh sách địa điểm trong tour */}
-                  {tourData.tourLocations &&
-                    tourData.tourLocations.length > 0 && (
+                  {((translatedIncluded?.translatedTourLocations || tourData.tourLocations) &&
+                    (translatedIncluded?.translatedTourLocations || tourData.tourLocations).length > 0) && (
                       <div className="mt-8">
                         <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                          Các địa điểm tham quan
+                          {translations.tourAttractions || "Các địa điểm tham quan"}
                         </h4>
                         <div className="grid md:grid-cols-2 gap-4">
-                          {tourData.tourLocations.map((location, index) => (
+                          {(translatedIncluded?.translatedTourLocations || tourData.tourLocations).map((location, index) => (
                             <div
                               key={index}
                               className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
@@ -1031,14 +1238,16 @@ export default function TourDetail() {
                                 </div>
                                 <div className="flex-1">
                                   <h5 className="font-semibold text-gray-900 dark:text-white mb-1">
-                                    {location.name}
+                                    {location.translatedName || location.name}
                                   </h5>
-                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                    {location.description}
-                                  </p>
+                                  {(location.translatedDescription || location.description) && (
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                      {location.translatedDescription || location.description}
+                                    </p>
+                                  )}
                                   {location.visitDay && (
                                     <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                                      Ngày {location.visitDay}
+                                      {translations.day || "Ngày"} {location.visitDay}
                                     </span>
                                   )}
                                 </div>
