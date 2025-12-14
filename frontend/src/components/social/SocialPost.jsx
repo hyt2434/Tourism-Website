@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -13,31 +13,124 @@ import {
   Heart,
   MessageCircle,
   Send,
-  Bookmark,
   MoreHorizontal,
   MapPin,
   Flag,
+  Trash2,
 } from "lucide-react";
 import ImageWithFallback from "../../figma/ImageWithFallback.jsx";
 import { useLanguage } from "../../context/LanguageContext";
 import CommentDialog from "./CommentDialog";
-import UserProfileDialog from "./UserProfileDialog"; // 👈 import
-import { Link } from "react-router-dom";
+import UserProfileDialog from "./UserProfileDialog";
+import { Link, useNavigate } from "react-router-dom";
+import { toggleLike, deletePost, getHashtagInfo } from "../../api/social";
+import { useToast } from "../../context/ToastContext";
+import { getTranslatedContent } from "../../utils/translation";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 
 export default function SocialPost({
   post,
   onServiceClick,
   onReport,
   getUserPosts,
+  onLikeUpdate, // Callback to update parent state
 }) {
   const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [showUserProfile, setShowUserProfile] = useState(false); // 👈 thêm state
-  const { translations } = useLanguage();
+  const [showUserProfile, setShowUserProfile] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
+  const [translatedCaption, setTranslatedCaption] = useState("");
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { translations, language } = useLanguage();
+  const toast = useToast();
+
+  // Get current user to check if admin
+  const getCurrentUser = () => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
+  };
+
+  const currentUser = getCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
+
+  const handleDeletePostClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeletePost = async () => {
+    try {
+      await deletePost(post.id);
+      toast.success("Post deleted successfully");
+      // Refresh posts by calling parent callback if available
+      if (onLikeUpdate) {
+        onLikeUpdate(post.id, false, true); // Pass delete flag
+      }
+      // Reload page or refresh posts list
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+      toast.error(error.message || "Failed to delete post");
+    } finally {
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  // Auto-translate caption based on user language
+  useEffect(() => {
+    const translateCaption = async () => {
+      const originalCaption = post.caption || "";
+      if (!originalCaption.trim()) {
+        setTranslatedCaption("");
+        return;
+      }
+
+      setIsTranslating(true);
+      try {
+        const translated = await getTranslatedContent(originalCaption, language);
+        setTranslatedCaption(translated);
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTranslatedCaption(originalCaption);
+      } finally {
+        setIsTranslating(false);
+      }
+    };
+
+    translateCaption();
+  }, [post.caption, language]);
+
+  // Use translated content or fallback to original
+  const displayContent = translatedCaption || post.caption || "";
 
   // 👈 Lấy tất cả posts của user này
   const userPosts = getUserPosts ? getUserPosts(post?.user?.id) : [post];
+
+  const handleLike = async () => {
+    if (!post?.id) return;
+
+    try {
+      setIsLiking(true);
+      const result = await toggleLike(post.id);
+      const newLiked = result.status === "liked";
+      setLiked(newLiked);
+      
+      // Update parent if callback provided
+      if (onLikeUpdate) {
+        onLikeUpdate(post.id, newLiked);
+      }
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
+      toast.error("Failed to like post");
+    } finally {
+      setIsLiking(false);
+    }
+  };
 
   return (
     <>
@@ -92,16 +185,26 @@ export default function SocialPost({
                 <Flag className="w-4 h-4 mr-2" />
                 {translations.reportPost}
               </DropdownMenuItem>
+              {isAdmin && (
+                <DropdownMenuItem 
+                  onClick={handleDeletePost}
+                  className="cursor-pointer text-red-600 dark:text-red-400"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Post
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
         {/* Post Image */}
-        <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-900">
+        <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-900 overflow-hidden">
           <ImageWithFallback
             src={post.image}
             alt={post.caption}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover max-w-full max-h-full"
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
           />
           {post.status === "pending" && (
             <div className="absolute top-3 right-3">
@@ -123,7 +226,8 @@ export default function SocialPost({
                 variant="ghost"
                 size="sm"
                 className="h-auto p-0 hover:bg-transparent hover:scale-110 transition-transform"
-                onClick={() => setLiked(!liked)}
+                onClick={handleLike}
+                disabled={isLiking}
               >
                 <Heart
                   className={`w-7 h-7 transition-all ${
@@ -149,25 +253,11 @@ export default function SocialPost({
                 <Send className="w-7 h-7 text-black dark:text-white" />
               </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-auto p-0 hover:bg-transparent hover:scale-110 transition-transform"
-              onClick={() => setSaved(!saved)}
-            >
-              <Bookmark
-                className={`w-7 h-7 transition-all ${
-                  saved
-                    ? "fill-current text-black dark:text-white scale-110"
-                    : "text-black dark:text-white"
-                }`}
-              />
-            </Button>
           </div>
 
           {/* Likes count */}
           <p className="mb-2 text-sm font-semibold text-black dark:text-white">
-            {(post.likes + (liked ? 1 : 0)).toLocaleString()}{" "}
+            {post.likes?.toLocaleString() || 0}{" "}
             {translations.likes}
           </p>
 
@@ -176,20 +266,44 @@ export default function SocialPost({
             <span className="font-semibold mr-2">
               {post?.user?.username || "Unknown"}
             </span>
-            <span className="text-gray-800 dark:text-gray-200">{post.caption}</span>
+            <span className="text-gray-800 dark:text-gray-200">{displayContent}</span>
           </div>
 
           {/* Hashtags */}
-          <div className="flex flex-wrap gap-1 mb-2">
-            {post.hashtags.map((tag, index) => (
-              <span
-                key={index}
-                className="text-sm text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+          {post.hashtags && post.hashtags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {post.hashtags.map((tag, index) => {
+                const hashtagText = tag.startsWith('#') ? tag : `#${tag}`;
+                return (
+                  <span
+                    key={index}
+                    className="text-sm text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (onHashtagClick) {
+                        onHashtagClick(hashtagText);
+                      } else {
+                        // Fallback: handle directly if no prop provided
+                        try {
+                          const hashtagInfo = await getHashtagInfo(hashtagText);
+                          if (hashtagInfo && hashtagInfo.name) {
+                            navigate(`/tour?search=${encodeURIComponent(hashtagInfo.name)}`);
+                          } else {
+                            toast.error("Could not find information for this hashtag");
+                          }
+                        } catch (error) {
+                          console.error("Failed to get hashtag info:", error);
+                          toast.error("Failed to load hashtag information");
+                        }
+                      }
+                    }}
+                  >
+                    {hashtagText}
+                  </span>
+                );
+              })}
+            </div>
+          )}
 
           {/* Comments preview */}
           {post.comments > 0 && (
@@ -239,6 +353,18 @@ export default function SocialPost({
         onOpenChange={setShowUserProfile}
         user={post?.user}
         userPosts={userPosts}
+      />
+
+      {/* Delete Post Confirmation Dialog */}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title={translations.deletePost || "Delete Post"}
+        description={translations.deletePostConfirm || "Are you sure you want to delete this post? This action cannot be undone."}
+        onConfirm={handleDeletePost}
+        confirmText={translations.delete || "Delete"}
+        cancelText={translations.cancel || "Cancel"}
+        variant="danger"
       />
     </>
   );

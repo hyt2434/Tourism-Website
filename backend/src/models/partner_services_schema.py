@@ -98,7 +98,7 @@ def create_partner_service_tables():
                 
                 -- Room Information
                 name VARCHAR(200) NOT NULL, -- 'Deluxe Suite', 'Standard Room', etc.
-                room_type VARCHAR(100), -- 'Single', 'Double', 'Suite', 'Family'
+                room_type VARCHAR(100) CHECK (room_type IN ('Standard', 'Standard Quad', 'Deluxe', 'Suite')), -- Room type classification
                 description TEXT,
                 
                 -- Capacity
@@ -108,17 +108,21 @@ def create_partner_service_tables():
                 
                 -- Size & Features
                 room_size DECIMAL(10, 2), -- in square meters
-                bed_type VARCHAR(100), -- 'King', 'Queen', 'Twin', etc.
+                bed_type VARCHAR(100) CHECK (bed_type IN ('Double', 'Queen', 'King', 'Twin')), -- Bed type options
                 view_type VARCHAR(100), -- 'Sea View', 'Mountain View', 'City View'
                 
                 -- Amenities specific to room
                 amenities TEXT[], -- ['TV', 'Mini Bar', 'Balcony', 'Bath Tub']
                 
-                -- Pricing
+                -- Pricing for Standard rooms only (base price)
                 base_price DECIMAL(10, 2) NOT NULL,
                 weekend_price DECIMAL(10, 2),
                 holiday_price DECIMAL(10, 2),
                 currency VARCHAR(10) DEFAULT 'VND',
+                
+                -- Upgrade pricing (for Standard rooms only, NULL for Deluxe/Suite)
+                deluxe_upgrade_price DECIMAL(10, 2) DEFAULT 0, -- Additional cost to upgrade to Deluxe
+                suite_upgrade_price DECIMAL(10, 2) DEFAULT 0, -- Additional cost to upgrade to Suite
                 
                 -- Availability
                 is_available BOOLEAN DEFAULT TRUE,
@@ -239,6 +243,50 @@ def create_partner_service_tables():
                 -- Metadata
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
+        # =====================================================================
+        # RESTAURANT SET MEALS TABLE (Combo meals for 2 people)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS restaurant_set_meals (
+                id SERIAL PRIMARY KEY,
+                restaurant_id INTEGER REFERENCES restaurant_services(id) ON DELETE CASCADE,
+                
+                -- Set Meal Information
+                name VARCHAR(200) NOT NULL,
+                description TEXT,
+                
+                -- Meal Session (morning, noon, evening)
+                meal_session VARCHAR(20) NOT NULL CHECK (meal_session IN ('morning', 'noon', 'evening')),
+                
+                -- Pricing (automatically calculated from menu items, for 2 people)
+                total_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
+                currency VARCHAR(10) DEFAULT 'VND',
+                
+                -- Availability
+                is_available BOOLEAN DEFAULT TRUE,
+                
+                -- Metadata
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
+        # =====================================================================
+        # SET MEAL ITEMS TABLE (Many-to-many relationship)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS restaurant_set_meal_items (
+                id SERIAL PRIMARY KEY,
+                set_meal_id INTEGER REFERENCES restaurant_set_meals(id) ON DELETE CASCADE,
+                menu_item_id INTEGER REFERENCES restaurant_menu_items(id) ON DELETE CASCADE,
+                
+                -- Metadata
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                UNIQUE(set_meal_id, menu_item_id)
             );
         """)
         

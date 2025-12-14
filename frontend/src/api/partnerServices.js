@@ -221,6 +221,46 @@ export const restaurantAPI = {
       return response.json();
     },
   },
+
+  // Set Meal management
+  setMeals: {
+    getAll: async (restaurantId) => {
+      const response = await fetch(`${API_BASE_URL}/api/partner/restaurants/${restaurantId}/set-meals`, {
+        headers: getHeaders(),
+      });
+      if (!response.ok) throw new Error('Failed to fetch set meals');
+      return response.json();
+    },
+
+    create: async (restaurantId, data) => {
+      const response = await fetch(`${API_BASE_URL}/api/partner/restaurants/${restaurantId}/set-meals`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to create set meal');
+      return response.json();
+    },
+
+    update: async (restaurantId, setMealId, data) => {
+      const response = await fetch(`${API_BASE_URL}/api/partner/restaurants/${restaurantId}/set-meals/${setMealId}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to update set meal');
+      return response.json();
+    },
+
+    delete: async (restaurantId, setMealId) => {
+      const response = await fetch(`${API_BASE_URL}/api/partner/restaurants/${restaurantId}/set-meals/${setMealId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      if (!response.ok) throw new Error('Failed to delete set meal');
+      return response.json();
+    },
+  },
 };
 
 // =====================================================================

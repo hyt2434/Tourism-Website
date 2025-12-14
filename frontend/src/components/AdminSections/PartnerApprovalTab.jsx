@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "../ui/dialog";
 import { useLanguage } from "../../context/LanguageContext";
+import { useToast } from "../../context/ToastContext";
 import { 
   getPendingPartnerRegistrations, 
   approvePartnerRegistration, 
@@ -27,6 +28,7 @@ import {
 
 export default function PartnerApprovalTab() {
   const { translations: t } = useLanguage();
+  const toast = useToast();
   const [pendingPartners, setPendingPartners] = useState([]);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -43,7 +45,7 @@ export default function PartnerApprovalTab() {
       setPendingPartners(data);
     } catch (error) {
       console.error("Error fetching pending partners:", error);
-      alert("Failed to load pending partner registrations. Please try again.");
+      toast.error("Failed to load pending partner registrations. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -60,10 +62,10 @@ export default function PartnerApprovalTab() {
       setPendingPartners(prev => prev.filter(p => p.id !== partnerId));
       
       // Show credentials to admin
-      alert(`Partner approved successfully!\n\nUser account created:\nEmail: ${result.email}\nTemporary Password: ${result.temporaryPassword}\n\nPlease send these credentials to the partner via email.`);
+      toast.success(`Partner approved successfully!\n\nUser account created:\nEmail: ${result.email}\nTemporary Password: ${result.temporaryPassword}\n\nPlease send these credentials to the partner via email.`);
     } catch (error) {
       console.error("Error approving partner:", error);
-      alert(`Failed to approve partner: ${error.message}`);
+      toast.error(`Failed to approve partner: ${error.message}`);
     }
   };
 
@@ -75,10 +77,10 @@ export default function PartnerApprovalTab() {
       await rejectPartnerRegistration(partnerId, reason);
       
       setPendingPartners(prev => prev.filter(p => p.id !== partnerId));
-      alert("Partner registration rejected successfully.");
+      toast.success("Partner registration rejected successfully.");
     } catch (error) {
       console.error("Error rejecting partner:", error);
-      alert(`Failed to reject partner: ${error.message}`);
+      toast.error(`Failed to reject partner: ${error.message}`);
     }
   };
 
@@ -125,10 +127,10 @@ export default function PartnerApprovalTab() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading...</div>
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
           ) : pendingPartners.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Clock className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <Clock className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-500" />
               <p>{t.noPendingRegistrations}</p>
             </div>
           ) : (
@@ -156,21 +158,21 @@ export default function PartnerApprovalTab() {
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
                           <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4" />
+                            <Mail className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                             {partner.email}
                           </div>
                           <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4" />
+                            <Phone className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                             {partner.phone}
                           </div>
                           <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4" />
-                            Submitted: {formatDate(partner.submittedAt)}
+                            <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                            {t.submitted || 'Submitted'}: {formatDate(partner.submittedAt)}
                           </div>
                           {partner.starRating && (
                             <div className="flex items-center gap-2">
-                              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                              {partner.starRating} Star Rating
+                              <Star className="w-4 h-4 fill-yellow-400 dark:fill-yellow-500 text-yellow-400 dark:text-yellow-500" />
+                              {partner.starRating} {t.starRating || 'Star Rating'}
                             </div>
                           )}
                         </div>
@@ -188,26 +190,26 @@ export default function PartnerApprovalTab() {
                             variant="outline"
                             size="sm"
                             onClick={() => setSelectedPartner(partner)}
-                            className="dark:border-gray-600"
+                            className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                           >
                             <Eye className="w-4 h-4 mr-1" />
-                            View Details
+                            {t.viewDetails || 'View Details'}
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="!max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800">
+                        <DialogContent className="!max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                           <DialogHeader>
-                            <DialogTitle className="text-2xl">{partner.businessName}</DialogTitle>
-                            <DialogDescription>Complete registration details</DialogDescription>
+                            <DialogTitle className="text-2xl text-gray-900 dark:text-white">{partner.businessName}</DialogTitle>
+                            <DialogDescription className="text-gray-600 dark:text-gray-400">{t.completeRegistrationDetails || 'Complete registration details'}</DialogDescription>
                           </DialogHeader>
                           
                           <div className="space-y-4 mt-4">
                             <div className="grid grid-cols-2 gap-4">
                               <div>
-                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Email</label>
+                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.email || 'Email'}</label>
                                 <p className="text-gray-900 dark:text-white">{partner.email}</p>
                               </div>
                               <div>
-                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Phone</label>
+                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.phone || 'Phone'}</label>
                                 <p className="text-gray-900 dark:text-white">{partner.phone}</p>
                               </div>
                             </div>
@@ -216,30 +218,30 @@ export default function PartnerApprovalTab() {
                               <>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
-                                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Star Rating</label>
-                                    <p className="text-gray-900 dark:text-white">{partner.starRating} Stars</p>
+                                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.starRating || 'Star Rating'}</label>
+                                    <p className="text-gray-900 dark:text-white">{partner.starRating} {t.stars || 'Stars'}</p>
                                   </div>
                                   <div>
-                                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Price Range</label>
+                                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.priceRange || 'Price Range'}</label>
                                     <p className="text-gray-900 dark:text-white">{partner.priceRange}</p>
                                   </div>
                                 </div>
                                 
                                 <div>
-                                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Amenities</label>
+                                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.amenities || 'Amenities'}</label>
                                   <div className="flex flex-wrap gap-2 mt-1">
                                     {partner.amenities?.map((amenity, idx) => (
-                                      <Badge key={idx} variant="secondary">{amenity}</Badge>
+                                      <Badge key={idx} variant="secondary" className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">{amenity}</Badge>
                                     ))}
                                   </div>
                                 </div>
                                 
                                 <div>
-                                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Branches</label>
+                                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.branches || 'Branches'}</label>
                                   <div className="space-y-2 mt-1">
                                     {partner.branches?.map((branch, idx) => (
-                                      <div key={idx} className="bg-gray-100 dark:bg-gray-700 p-2 rounded">
-                                        <p className="font-medium">{branch.city}</p>
+                                      <div key={idx} className="bg-gray-100 dark:bg-gray-700 p-2 rounded border border-gray-200 dark:border-gray-600">
+                                        <p className="font-medium text-gray-900 dark:text-white">{branch.city}</p>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">{branch.address}</p>
                                       </div>
                                     ))}
@@ -251,16 +253,16 @@ export default function PartnerApprovalTab() {
                             {partner.type === "transportation" && (
                               <>
                                 <div>
-                                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Vehicle Types</label>
+                                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.vehicleTypes || 'Vehicle Types'}</label>
                                   <div className="flex flex-wrap gap-2 mt-1">
                                     {partner.vehicleTypes?.map((type, idx) => (
-                                      <Badge key={idx} variant="secondary">{type}</Badge>
+                                      <Badge key={idx} variant="secondary" className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">{type}</Badge>
                                     ))}
                                   </div>
                                 </div>
                                 
                                 <div>
-                                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Routes</label>
+                                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.routes || 'Routes'}</label>
                                   <div className="flex flex-wrap gap-2 mt-1">
                                     {partner.routes?.map((route, idx) => (
                                       <Badge key={idx} className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{route}</Badge>
@@ -271,7 +273,7 @@ export default function PartnerApprovalTab() {
                             )}
                             
                             <div>
-                              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Description</label>
+                              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t.description || 'Description'}</label>
                               <p className="text-gray-900 dark:text-white mt-1">{partner.description}</p>
                             </div>
                           </div>
@@ -280,20 +282,21 @@ export default function PartnerApprovalTab() {
                       
                       <Button
                         onClick={() => handleApprove(partner.id)}
-                        className="bg-green-600 hover:bg-green-700 text-white"
+                        className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white"
                         size="sm"
                       >
                         <CheckCircle2 className="w-4 h-4 mr-1" />
-                        Approve
+                        {t.approve || 'Approve'}
                       </Button>
                       
                       <Button
                         onClick={() => handleReject(partner.id)}
                         variant="destructive"
                         size="sm"
+                        className="dark:bg-red-700 dark:hover:bg-red-800"
                       >
                         <XCircle className="w-4 h-4 mr-1" />
-                        Reject
+                        {t.reject || 'Reject'}
                       </Button>
                     </div>
                   </div>

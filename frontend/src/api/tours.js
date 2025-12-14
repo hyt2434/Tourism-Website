@@ -36,9 +36,7 @@ export const getPublishedTours = async (filters = {}) => {
     if (filters.max_duration) params.append('max_duration', filters.max_duration);
     if (filters.number_of_members) params.append('number_of_members', filters.number_of_members);
     
-    const url = params.toString() 
-      ? `${API_BASE_URL}/api/tours?${params.toString()}`
-      : `${API_BASE_URL}/api/tours`;
+    const url = `${API_BASE_URL}/api/tours${params.toString() ? `?${params.toString()}` : ''}`;
     
     const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to fetch published tours');
@@ -199,18 +197,104 @@ export const calculateTourPrice = async (data) => {
 };
 
 /**
- * Sync all tour prices (recalculate based on current service prices)
+ * Sync all tours (recalculate number of members and prices based on current data)
  */
-export const syncAllTourPrices = async () => {
+export const syncAllTours = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/admin/tours/sync-all-prices`, {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tours/sync-all-tours`, {
       method: 'POST',
       headers: getAuthHeaders()
     });
-    if (!response.ok) throw new Error('Failed to sync tour prices');
+    if (!response.ok) throw new Error('Failed to sync tours');
     return response.json();
   } catch (error) {
-    console.error('Error syncing tour prices:', error);
+    console.error('Error syncing tours:', error);
+    throw error;
+  }
+};
+
+// Keep old function for backward compatibility
+export const syncAllTourPrices = syncAllTours;
+
+/**
+ * Get all schedules for a tour (admin)
+ */
+export const getTourSchedules = async (tourId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tours/${tourId}/schedules`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch tour schedules');
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching tour schedules:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get available schedules for a tour (public - for booking)
+ */
+export const getAvailableSchedules = async (tourId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/tours/${tourId}/schedules`);
+    if (!response.ok) throw new Error('Failed to fetch available schedules');
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching available schedules:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new schedule for a tour (admin)
+ */
+export const createTourSchedule = async (tourId, scheduleData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tours/${tourId}/schedules`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(scheduleData)
+    });
+    if (!response.ok) throw new Error('Failed to create schedule');
+    return response.json();
+  } catch (error) {
+    console.error('Error creating schedule:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a tour schedule (admin)
+ */
+export const updateTourSchedule = async (tourId, scheduleId, scheduleData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tours/${tourId}/schedules/${scheduleId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(scheduleData)
+    });
+    if (!response.ok) throw new Error('Failed to update schedule');
+    return response.json();
+  } catch (error) {
+    console.error('Error updating schedule:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a tour schedule (admin)
+ */
+export const deleteTourSchedule = async (tourId, scheduleId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tours/${tourId}/schedules/${scheduleId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to delete schedule');
+    return response.json();
+  } catch (error) {
+    console.error('Error deleting schedule:', error);
     throw error;
   }
 };

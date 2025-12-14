@@ -17,3 +17,4 @@ pytest
 flask_bcrypt
 requests-oauthlib
 stripe>=7.0.0
+sendgrid>=6.11.0

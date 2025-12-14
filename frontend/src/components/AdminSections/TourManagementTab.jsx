@@ -32,10 +32,15 @@ import {
   deleteTour,
   getAvailableServices,
   calculateTourPrice,
-  syncAllTourPrices
+  syncAllTourPrices,
+  getTourSchedules,
+  createTourSchedule,
+  updateTourSchedule,
+  deleteTourSchedule
 } from '../../api/tours';
 import { getCities } from '../../api/cities';
 import { useLanguage } from '../../context/LanguageContext';
+import { useToast } from '../../context/ToastContext';
 import { 
   getAllPromotions, 
   createPromotion, 
@@ -73,12 +78,21 @@ const TIME_PERIODS = ['morning', 'noon', 'evening'];
 
 export default function TourManagementTab() {
   const { translations } = useLanguage();
+  const toast = useToast();
   const [activeSection, setActiveSection] = useState('tours'); // 'tours' or 'promotions'
   const [tours, setTours] = useState([]);
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingTour, setEditingTour] = useState(null);
+  
+  // Schedule management state
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [currentScheduleTour, setCurrentScheduleTour] = useState(null);
+  const [schedules, setSchedules] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [newSchedule, setNewSchedule] = useState({ departure_datetime: '' });
+  const [modalScrollPosition, setModalScrollPosition] = useState(0);
   
   // Pagination and search state
   const [currentPage, setCurrentPage] = useState(1);
@@ -119,11 +133,12 @@ export default function TourManagementTab() {
   
   const [selectedAccommodationRooms, setSelectedAccommodationRooms] = useState([]);
   const [selectedRestaurantMenus, setSelectedRestaurantMenus] = useState({}); // dayNumber -> menu items
+  const [selectedRestaurantSetMeals, setSelectedRestaurantSetMeals] = useState({}); // restaurantId -> set meals array
   const [loadingServiceDetails, setLoadingServiceDetails] = useState(false);
   
   // State for selected items (persists across tab switches)
-  const [selectedRoomIds, setSelectedRoomIds] = useState([]);
-  const [selectedMenuItemIds, setSelectedMenuItemIds] = useState({}); // dayNumber -> array of item IDs
+  const [roomBooking, setRoomBooking] = useState({ room_id: null, quantity: 1 }); // Single room + quantity
+  const [selectedSetMeals, setSelectedSetMeals] = useState([]); // Array of {set_meal_id, day_number, meal_session}
 
   // Form state
   const [formData, setFormData] = useState({
@@ -181,20 +196,50 @@ export default function TourManagementTab() {
     }
   }, [formData.destination_city_id, formData.departure_city_id]);
 
+  // Auto-calculate number of members from room booking
+  useEffect(() => {
+    if (roomBooking.room_id && roomBooking.quantity > 0 && selectedAccommodationRooms.length > 0) {
+      const room = selectedAccommodationRooms.find(r => r.id === roomBooking.room_id);
+      if (room) {
+        // Standard room = 2 people, Standard Quad = 4 people
+        const peoplePerRoom = room.roomType === 'Standard Quad' ? 4 : 2;
+        const totalMembers = peoplePerRoom * roomBooking.quantity;
+
+        if (totalMembers !== formData.number_of_members) {
+          console.log(`Auto-calculating members: ${totalMembers} from ${roomBooking.quantity} rooms`);
+          setFormData(prev => ({
+            ...prev,
+            number_of_members: totalMembers
+          }));
+        }
+      }
+    } else if (!roomBooking.room_id && formData.number_of_members !== 0) {
+      // Reset to 0 when no room selected
+      setFormData(prev => ({
+        ...prev,
+        number_of_members: 0
+      }));
+    }
+  }, [roomBooking, selectedAccommodationRooms, formData.number_of_members]);
+
+  // Scroll to top when creating, editing, or canceling tour form
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [showForm, editingTour]);
+
   useEffect(() => {
     console.log('Services changed, triggering price calculation');
     console.log('Current services:', formData.services);
-    console.log('Selected rooms:', selectedRoomIds);
-    console.log('Selected menu items:', selectedMenuItemIds);
+    console.log('Room booking:', roomBooking);
+    console.log('Selected set meals:', selectedSetMeals);
     
-    // Calculate if we have any services selected OR any room/menu selections
-    const hasAccommodationWithRooms = formData.services?.accommodation && selectedRoomIds.length > 0;
-    const hasRestaurantsWithMenus = formData.services?.restaurants?.length > 0 && 
-      Object.keys(selectedMenuItemIds).some(day => selectedMenuItemIds[day]?.length > 0);
+    // Calculate if we have any services selected OR any room/meal selections
+    const hasAccommodationWithRoom = formData.services?.accommodation && roomBooking.room_id && roomBooking.quantity > 0;
+    const hasRestaurantsWithSetMeals = formData.services?.restaurants?.length > 0 && selectedSetMeals.length > 0;
     const hasTransportation = formData.services?.transportation;
     
-    // Calculate if ANY service is selected (even without room/menu details)
-    const hasAnyService = hasAccommodationWithRooms || hasRestaurantsWithMenus || hasTransportation;
+    // Calculate if ANY service is selected (even without room/set meal details)
+    const hasAnyService = hasAccommodationWithRoom || hasRestaurantsWithSetMeals || hasTransportation;
     
     if (hasAnyService) {
       calculatePrice();
@@ -205,8 +250,8 @@ export default function TourManagementTab() {
     }
   }, [
     JSON.stringify(formData.services),
-    JSON.stringify(selectedRoomIds),
-    JSON.stringify(selectedMenuItemIds)
+    JSON.stringify(roomBooking),
+    JSON.stringify(selectedSetMeals)
   ]);
 
   const loadTours = async (page = 1, search = '') => {
@@ -218,7 +263,7 @@ export default function TourManagementTab() {
       setTotalTours(data.total || 0);
     } catch (error) {
       console.error('Error loading tours:', error);
-      alert('Failed to load tours');
+      toast.error('Failed to load tours');
     } finally {
       setLoading(false);
     }
@@ -287,7 +332,7 @@ export default function TourManagementTab() {
       setSelectedAccommodationRooms(data || []);
     } catch (error) {
       console.error('Error loading accommodation rooms:', error);
-      alert('Failed to load accommodation rooms: ' + error.message);
+      toast.error('Failed to load accommodation rooms: ' + error.message);
     } finally {
       setLoadingServiceDetails(false);
     }
@@ -337,25 +382,75 @@ export default function TourManagementTab() {
       }));
     } catch (error) {
       console.error('Error loading restaurant menu:', error);
-      alert('Failed to load restaurant menu: ' + error.message);
+      toast.error('Failed to load restaurant menu: ' + error.message);
     } finally {
       setLoadingServiceDetails(false);
     }
   };
 
-  const calculatePrice = async () => {
+  const loadRestaurantSetMeals = async (restaurantId, dayNumber) => {
+    setLoadingServiceDetails(true);
     try {
-      console.log('Calculating price for services:', formData.services);
-      console.log('With selected rooms:', selectedRoomIds);
-      console.log('With selected menu items:', selectedMenuItemIds);
-      console.log('Duration:', formData.duration);
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const userId = user?.id || '';
+      const userEmail = user?.email || '';
       
-      // Send all data to the API including duration for nights calculation
+      console.log('Loading set meals for restaurant:', restaurantId);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/tours/restaurants/${restaurantId}/set-meals`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-ID': userId,
+          'X-User-Email': userEmail
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to load set meals');
+      }
+      
+      const data = await response.json();
+      console.log('Set meals data:', data);
+      setSelectedRestaurantSetMeals(prev => ({
+        ...prev,
+        [restaurantId]: data || []
+      }));
+    } catch (error) {
+      console.error('Error loading restaurant set meals:', error);
+      toast.error('Failed to load restaurant set meals: ' + error.message);
+    } finally {
+      setLoadingServiceDetails(false);
+    }
+  };
+
+  const calculatePrice = async (overrideData = null) => {
+    try {
+      // Use override data if provided (for handleEdit), otherwise use current state
+      const services = overrideData?.services || formData.services;
+      const roomBookingData = overrideData?.roomBooking || roomBooking;
+      const setMealsData = overrideData?.selectedSetMeals || selectedSetMeals;
+      const duration = overrideData?.duration || formData.duration;
+      const members = overrideData?.number_of_members || formData.number_of_members;
+      
+      console.log('Calculating price for services:', services);
+      console.log('Room booking:', roomBookingData);
+      console.log('Selected set meals:', setMealsData);
+      console.log('Duration:', duration);
+      console.log('Number of members:', members);
+      
+      // Send all data to the API including duration for nights calculation and number of members
       const requestData = {
-        services: formData.services,
-        selectedRooms: selectedRoomIds,
-        selectedMenuItems: selectedMenuItemIds,
-        duration: formData.duration  // Include duration to calculate number of nights
+        services: services,
+        roomBookings: roomBookingData.room_id ? [{
+          room_id: roomBookingData.room_id,
+          quantity: roomBookingData.quantity
+        }] : [],
+        selectedSetMeals: setMealsData,
+        duration: duration,  // Include duration to calculate number of nights
+        number_of_members: members  // Include number of members for transportation pricing
       };
       
       console.log('Sending to API:', requestData);
@@ -391,17 +486,29 @@ export default function TourManagementTab() {
     setShowForm(false);
     setCalculatedPrice(0);
     setPriceBreakdown(null);
-    setSelectedRoomIds([]);
-    setSelectedMenuItemIds({});
+    setRoomBooking({ room_id: null, quantity: 1 });
+    setSelectedSetMeals([]);
     setSelectedAccommodationRooms([]);
     setSelectedRestaurantMenus({});
+    setSelectedRestaurantSetMeals({});
   };
 
   const handleEdit = async (tour) => {
     try {
       const detail = await getTourDetail(tour.id);
-      setEditingTour(detail);
-      setFormData({
+      
+      // Prepare room booking data
+      const roomBookingData = detail.roomBookings && detail.roomBookings.length > 0
+        ? {
+            room_id: detail.roomBookings[0].room_id,
+            quantity: detail.roomBookings[0].quantity
+          }
+        : { room_id: null, quantity: 1 };
+      
+      const setMealsData = detail.selectedSetMeals || [];
+      
+      // Prepare form data
+      const formDataToSet = {
         name: detail.name,
         duration: detail.duration,
         description: detail.description,
@@ -417,28 +524,38 @@ export default function TourManagementTab() {
           accommodation: null,
           transportation: null
         }
-      });
+      };
       
-      // Set selected rooms and menu items
-      setSelectedRoomIds(detail.selectedRooms || []);
-      setSelectedMenuItemIds(detail.selectedMenuItems || {});
+      setEditingTour(detail);
+      setFormData(formDataToSet);
+      setRoomBooking(roomBookingData);
+      setSelectedSetMeals(setMealsData);
       
       // Load room details if accommodation is selected
       if (detail.services?.accommodation?.service_id) {
         await loadAccommodationRooms(detail.services.accommodation.service_id);
       }
       
-      // Load menu details for each restaurant
+      // Load set meal details for each restaurant
       if (detail.services?.restaurants) {
         for (const restaurant of detail.services.restaurants) {
-          await loadRestaurantMenu(restaurant.service_id, restaurant.day_number);
+          await loadRestaurantSetMeals(restaurant.service_id, restaurant.day_number);
         }
       }
       
       setShowForm(true);
+      
+      // Calculate price with the loaded data immediately
+      await calculatePrice({
+        services: formDataToSet.services,
+        roomBooking: roomBookingData,
+        selectedSetMeals: setMealsData,
+        duration: formDataToSet.duration,
+        number_of_members: formDataToSet.number_of_members
+      });
     } catch (error) {
       console.error('Error loading tour details:', error);
-      alert('Failed to load tour details');
+      toast.error('Failed to load tour details');
     }
   };
 
@@ -447,25 +564,106 @@ export default function TourManagementTab() {
     
     try {
       await deleteTour(tourId);
-      alert('Tour deleted successfully');
+      toast.success(translations.tourDeletedSuccess || 'Tour deleted successfully');
       loadTours(currentPage, searchQuery);
     } catch (error) {
       console.error('Error deleting tour:', error);
-      alert('Failed to delete tour');
+      toast.error(translations.failedToDeleteTour || 'Failed to delete tour');
     }
   };
 
+  // Schedule Management Functions
+  const handleManageSchedules = async (tour) => {
+    // Capture current scroll position to center modal in viewport
+    const scrollY = window.scrollY;
+    const viewportHeight = window.innerHeight;
+    // Position modal higher - closer to top of viewport
+    setModalScrollPosition(scrollY - (viewportHeight * 0.4)); // Move up by 50% of viewport
+    setCurrentScheduleTour(tour);
+    setShowScheduleModal(true);
+    await loadSchedules(tour.id);
+  };
+
+  const loadSchedules = async (tourId) => {
+    setLoadingSchedules(true);
+    try {
+      const data = await getTourSchedules(tourId);
+      setSchedules(data || []);
+    } catch (error) {
+      console.error('Error loading schedules:', error);
+      toast.error(translations.failedToLoadSchedules || 'Failed to load schedules');
+    } finally {
+      setLoadingSchedules(false);
+    }
+  };
+
+  const handleAddSchedule = async () => {
+    if (!newSchedule.departure_datetime) {
+      toast.warning('Please select a departure date and time');
+      return;
+    }
+
+    try {
+      await createTourSchedule(currentScheduleTour.id, {
+        departure_datetime: newSchedule.departure_datetime
+      });
+      setNewSchedule({ departure_datetime: '' });
+      await loadSchedules(currentScheduleTour.id);
+      toast.success(translations.scheduleAddedSuccess || 'Schedule added successfully');
+    } catch (error) {
+      console.error('Error adding schedule:', error);
+      toast.error(translations.failedToAddSchedule || 'Failed to add schedule');
+    }
+  };
+
+  const handleDeleteSchedule = async (scheduleId) => {
+    if (!confirm(translations.confirmDeleteSchedule || 'Are you sure you want to delete this schedule?')) return;
+
+    try {
+      await deleteTourSchedule(currentScheduleTour.id, scheduleId);
+      await loadSchedules(currentScheduleTour.id);
+      toast.success(translations.scheduleDeletedSuccess || 'Schedule deleted successfully');
+    } catch (error) {
+      console.error('Error deleting schedule:', error);
+      toast.error(error.message || (translations.failedToDeleteSchedule || 'Failed to delete schedule'));
+    }
+  };
+
+  const handleToggleScheduleActive = async (schedule) => {
+    try {
+      await updateTourSchedule(currentScheduleTour.id, schedule.id, {
+        is_active: !schedule.is_active
+      });
+      await loadSchedules(currentScheduleTour.id);
+    } catch (error) {
+      console.error('Error updating schedule:', error);
+      toast.error(translations.failedToUpdateSchedule || 'Failed to update schedule');
+    }
+  };
+
+  const formatDateTime = (dateTimeString) => {
+    if (!dateTimeString) return '';
+    const date = new Date(dateTimeString);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const handleSyncAllPrices = async () => {
-    if (!confirm('Are you sure you want to sync all tour prices? This will recalculate prices based on current service prices.')) return;
+    if (!confirm('Are you sure you want to sync all tours? This will recalculate number of members and prices based on current room selections and service prices.')) return;
     
     setLoading(true);
     try {
       const result = await syncAllTourPrices();
-      alert(`Successfully synced ${result.updated_count} out of ${result.total_tours} tours.${result.errors ? `\n\nErrors: ${result.errors.join('\n')}` : ''}`);
-      loadTours(currentPage, searchQuery); // Reload tours to show updated prices
+      toast.success(`Successfully synced ${result.updated_count} out of ${result.total_tours} tours.${result.errors ? `\n\nErrors: ${result.errors.join('\n')}` : ''}`);
+      loadTours(currentPage, searchQuery); // Reload tours to show updated data
     } catch (error) {
-      console.error('Error syncing tour prices:', error);
-      alert('Failed to sync tour prices: ' + (error.message || 'Unknown error'));
+      console.error('Error syncing tours:', error);
+      toast.error('Failed to sync tours: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -478,7 +676,7 @@ export default function TourManagementTab() {
       setPromotions(data);
     } catch (error) {
       console.error('Error loading promotions:', error);
-      alert('Failed to load promotions');
+      toast.error('Failed to load promotions');
     }
   };
 
@@ -532,11 +730,11 @@ export default function TourManagementTab() {
     
     try {
       await deletePromotion(promotionId);
-      alert('Promotion deleted successfully');
+      toast.success('Promotion deleted successfully');
       loadPromotions();
     } catch (error) {
       console.error('Error deleting promotion:', error);
-      alert('Failed to delete promotion');
+      toast.error('Failed to delete promotion');
     }
   };
 
@@ -547,10 +745,10 @@ export default function TourManagementTab() {
     try {
       if (editingPromotion) {
         await updatePromotion(editingPromotion.id, promotionFormData);
-        alert('Promotion updated successfully');
+        toast.success('Promotion updated successfully');
       } else {
         await createPromotion(promotionFormData);
-        alert('Promotion created successfully');
+        toast.success('Promotion created successfully');
       }
       
       setShowPromotionForm(false);
@@ -575,7 +773,7 @@ export default function TourManagementTab() {
       loadPromotions();
     } catch (error) {
       console.error('Error saving promotion:', error);
-      alert('Failed to save promotion: ' + (error.message || 'Unknown error'));
+      toast.error('Failed to save promotion: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -586,26 +784,31 @@ export default function TourManagementTab() {
     setLoading(true);
 
     try {
-      // Prepare data with selected items
+      // Prepare data with room bookings and set meals
       const tourData = {
         ...formData,
-        selectedRooms: selectedRoomIds,
-        selectedMenuItems: selectedMenuItemIds
+        roomBookings: roomBooking.room_id ? [{
+          room_id: roomBooking.room_id,
+          quantity: roomBooking.quantity
+        }] : [],
+        selectedSetMeals: selectedSetMeals
       };
+      
+      console.log('Submitting tour data:', tourData);
       
       if (editingTour) {
         await updateTour(editingTour.id, tourData);
-        alert('Tour updated successfully');
+        toast.success(translations.tourUpdatedSuccess || 'Tour updated successfully');
       } else {
         await createTour(tourData);
-        alert('Tour created successfully');
+        toast.success(translations.tourCreatedSuccess || 'Tour created successfully');
       }
       
       resetForm();
       loadTours(currentPage, searchQuery);
     } catch (error) {
       console.error('Error saving tour:', error);
-      alert('Failed to save tour: ' + (error.response?.data?.error || error.message));
+      toast.error((translations.failedToSaveTour || 'Failed to save tour') + ': ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -683,7 +886,7 @@ export default function TourManagementTab() {
   };
 
   const addImage = () => {
-    const url = prompt('Enter image URL:');
+    const url = prompt(translations.enterImageUrl || 'Enter image URL:');
     if (url) {
       setFormData({
         ...formData,
@@ -712,7 +915,7 @@ export default function TourManagementTab() {
       });
     } catch (error) {
       console.error('Error processing images:', error);
-      alert('Failed to process images');
+      toast.error('Failed to process images');
     }
   };
 
@@ -736,7 +939,7 @@ export default function TourManagementTab() {
   };
 
   const addRestaurant = (dayNumber) => {
-    const restaurantId = prompt('Enter restaurant ID:');
+    const restaurantId = prompt(translations.enterRestaurantId || 'Enter restaurant ID:');
     if (restaurantId) {
       setFormData({
         ...formData,
@@ -756,100 +959,110 @@ export default function TourManagementTab() {
   };
 
   if (loading && !showForm) {
-    return <div className="p-8 text-center">{translations.loadingTours || "Loading tours..."}</div>;
+    return <div className="p-4 sm:p-6 lg:p-8 text-center text-sm sm:text-base">{translations.loadingTours || "Loading tours..."}</div>;
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">{translations.tourManagement || "Tour Management"}</h2>
+    <div className="p-4 sm:p-5 lg:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold">{translations.tourManagement || "Tour Management"}</h2>
         {activeSection === 'tours' && !showForm && (
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
             <Button 
               onClick={handleSyncAllPrices}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4"
               disabled={loading}
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> 
-              Sync All Tour Prices
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? 'animate-spin' : ''}`} /> 
+              <span className="hidden sm:inline">{translations.syncAllTours || "Sync All Tours"}</span>
+              <span className="sm:hidden">{translations.sync || "Sync"}</span>
             </Button>
             <Button 
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4"
             >
-              <Plus className="w-4 h-4" /> {translations.createNewTour || "Create New Tour"}
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+              <span className="hidden sm:inline">{translations.createNewTour || "Create New Tour"}</span>
+              <span className="sm:hidden">{translations.newTour || "New Tour"}</span>
             </Button>
           </div>
         )}
         {activeSection === 'promotions' && !showPromotionForm && (
           <Button 
             onClick={() => setShowPromotionForm(true)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 text-xs sm:text-sm px-3 sm:px-4 w-full sm:w-auto"
           >
-            <Plus className="w-4 h-4" /> Create New Promotion
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> 
+            <span className="hidden sm:inline">{translations.createNewPromotion || "Create New Promotion"}</span>
+            <span className="sm:hidden">{translations.newPromotion || "New Promotion"}</span>
           </Button>
         )}
       </div>
 
       {/* Section Tabs */}
       <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-          <TabsTrigger value="tours">Tours</TabsTrigger>
-          <TabsTrigger value="promotions">Promotions</TabsTrigger>
+        <TabsList className="grid w-full max-w-md grid-cols-2 mb-4 sm:mb-6 gap-1 p-1">
+          <TabsTrigger value="tours" className="text-xs sm:text-sm px-2 sm:px-4 py-2">{translations.toursTab || "Tours"}</TabsTrigger>
+          <TabsTrigger value="promotions" className="text-xs sm:text-sm px-2 sm:px-4 py-2">{translations.promotionsTab || "Promotions"}</TabsTrigger>
         </TabsList>
 
         {/* Tours Section */}
         <TabsContent value="tours" className="mt-0">
           {!showForm ? (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* Search Bar */}
-          <div className="flex gap-4">
+          <div className="flex gap-3 sm:gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
               <Input
-                placeholder="Search tours by name..."
+                placeholder={translations.searchToursPlaceholder || "Search tours by name..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400"
+                className="pl-9 sm:pl-10 h-10 sm:h-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 text-sm sm:text-base"
               />
             </div>
           </div>
           
-          <div className="grid gap-4">
+          <div className="grid gap-3 sm:gap-4">
           {tours.map((tour) => (
             <Card key={tour.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+              <CardContent className="p-4 sm:p-5 lg:p-6">
+                <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
+                  <div className="flex-1 min-w-0 w-full">
+                    <div className="flex items-start sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-2">
                       {tour.primary_image && (
                         <img 
                           src={tour.primary_image} 
                           alt={tour.name}
-                          className="w-20 h-20 object-cover rounded-lg"
+                          className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0"
                         />
                       )}
-                      <div>
-                        <h3 className="text-xl font-semibold">{tour.name}</h3>
-                        <p className="text-sm text-gray-600">{tour.duration}</p>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-lg sm:text-xl font-semibold truncate">{tour.name}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600">{tour.duration} {tour.duration === 1 ? (translations.day || 'day') : `${translations.days || 'days'} ${tour.duration - 1} ${tour.duration - 1 === 1 ? (translations.night || 'night') : (translations.nights || 'nights')}`}</p>
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="w-4 h-4 text-blue-500" />
-                        <span>{translations.from || "From"}: {tour.departure_city.name}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mt-3 sm:mt-4">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm min-w-0">
+                        <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
+                        <span className="truncate">{translations.from || "From"}: {tour.departure_city.name}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="w-4 h-4 text-green-500" />
-                        <span>{translations.to || "To"}: {tour.destination_city.name}</span>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm min-w-0">
+                        <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                        <span className="truncate">{translations.to || "To"}: {tour.destination_city.name}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="w-4 h-4 text-yellow-500" />
-                        <span>{tour.total_price.toLocaleString()} {tour.currency}</span>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm min-w-0">
+                        <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-500 flex-shrink-0" />
+                        <span className="truncate">
+                          {tour.number_of_members > 0
+                            ? `${(Math.ceil((tour.total_price / tour.number_of_members) / 1000) * 1000).toLocaleString()} ${tour.currency}/${translations.perPerson || 'person'} (${tour.number_of_members} ${translations.people || 'people'})`
+                            : `${tour.total_price.toLocaleString()} ${tour.currency}`
+                          }
+                        </span>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <span className={`px-2 py-1 rounded text-xs ${
                           tour.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
@@ -864,20 +1077,34 @@ export default function TourManagementTab() {
                     </div>
                   </div>
                   
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-start lg:justify-end">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleManageSchedules(tour)}
+                      title={translations.manageSchedules || "Manage Schedules"}
+                      className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
+                    >
+                      <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline ml-2">{translations.schedules || "Schedules"}</span>
+                    </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleEdit(tour)}
+                      className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline ml-2">{translations.edit || "Edit"}</span>
                     </Button>
                     <Button 
                       variant="destructive" 
                       size="sm"
                       onClick={() => handleDelete(tour.id)}
+                      className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline ml-2">{translations.delete || "Delete"}</span>
                     </Button>
                   </div>
                 </div>
@@ -888,20 +1115,20 @@ export default function TourManagementTab() {
           
           {/* Pagination */}
           {!loading && totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalTours)} of {totalTours} tours
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
+                {(translations.showingTours || "Showing {from} to {to} of {total} tours").replace('{from}', ((currentPage - 1) * pageSize) + 1).replace('{to}', Math.min(currentPage * pageSize, totalTours)).replace('{total}', totalTours)}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="h-9"
+                  className="h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Previous
+                  <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+                  <span className="hidden sm:inline">{translations.previous || "Previous"}</span>
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -921,7 +1148,7 @@ export default function TourManagementTab() {
                         variant={currentPage === pageNum ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(pageNum)}
-                        className="h-9 w-9"
+                        className="h-8 w-8 sm:h-9 sm:w-9 text-xs sm:text-sm"
                       >
                         {pageNum}
                       </Button>
@@ -933,10 +1160,10 @@ export default function TourManagementTab() {
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
-                  className="h-9"
+                  className="h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
                 >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <span className="hidden sm:inline">{translations.next || "Next"}</span>
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:ml-1" />
                 </Button>
               </div>
             </div>
@@ -945,45 +1172,52 @@ export default function TourManagementTab() {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-8">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 gap-2 mb-6">
-              <TabsTrigger value="basic" className="px-4 py-3">{translations.basicInfo || "Basic Info"}</TabsTrigger>
-              <TabsTrigger value="images" className="px-4 py-3">{translations.tourImages || "Images"}</TabsTrigger>
-              <TabsTrigger value="itinerary" className="px-4 py-3">{translations.dailyItinerary || "Itinerary"}</TabsTrigger>
-              <TabsTrigger value="services" className="px-4 py-3">{translations.tourServices || "Services"}</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 gap-2 mb-6 bg-gray-100 dark:bg-gray-800 h-12">
+              <TabsTrigger value="basic" className="px-4 py-3 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 text-gray-700 dark:text-gray-300">{translations.basicInfo || "Basic Info"}</TabsTrigger>
+              <TabsTrigger value="images" className="px-4 py-3 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 text-gray-700 dark:text-gray-300">{translations.tourImages || "Images"}</TabsTrigger>
+              <TabsTrigger value="itinerary" className="px-4 py-3 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 text-gray-700 dark:text-gray-300">{translations.dailyItinerary || "Itinerary"}</TabsTrigger>
+              <TabsTrigger value="services" className="px-4 py-3 h-full data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 text-gray-700 dark:text-gray-300">{translations.tourServices || "Services"}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="space-y-6 mt-6">
-              <Card className="shadow-sm">
+              <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl">{translations.tourInformation || "Tour Information"}</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl text-gray-900 dark:text-white">{translations.tourInformation || "Tour Information"}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-medium">{translations.tourName || "Tour Name"} *</Label>
+                    <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">{translations.tourName || "Tour Name"} *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       required
-                      className="h-11"
+                      className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder={translations.tourNamePlaceholder || "e.g., Explore Beautiful Da Nang"}
                     />
                   </div>
 
                   <div className="grid grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="duration" className="text-sm font-medium">{translations.duration || "Duration"} *</Label>
+                      <Label htmlFor="duration" className="text-sm font-medium text-gray-700 dark:text-gray-300">{translations.duration || "Duration"} (days) *</Label>
                       <Input
                         id="duration"
+                        type="number"
+                        min="1"
                         value={formData.duration}
-                        onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                        onChange={(e) => setFormData({...formData, duration: parseInt(e.target.value) || ''})}
                         required
-                        className="h-11"
-                        placeholder={translations.durationPlaceholder || "e.g., 3 days 2 nights"}
+                        className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                        placeholder={translations.durationPlaceholder || "e.g., 3 for 3 days 2 nights"}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="number_of_members" className="text-sm font-medium">{translations.numberOfMembers || "Number of Members"} *</Label>
+                      <Label htmlFor="number_of_members" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {translations.numberOfMembers || "Number of Members"} *
+                        {roomBooking.room_id && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{translations.autoCalculatedFromRooms || "(Auto-calculated from rooms)"}</span>
+                        )}
+                      </Label>
                       <Input
                         id="number_of_members"
                         type="number"
@@ -991,41 +1225,43 @@ export default function TourManagementTab() {
                         value={formData.number_of_members}
                         onChange={(e) => setFormData({...formData, number_of_members: parseInt(e.target.value) || 1})}
                         required
-                        className="h-11"
+                        className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                         placeholder={translations.numberOfMembersPlaceholder || "e.g., 4"}
+                        readOnly={roomBooking.room_id !== null}
+                        disabled={roomBooking.room_id !== null}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium">{translations.calculatedPriceTotal || "Calculated Price (Total)"}</Label>
-                      <div className="flex items-center gap-3 h-11 px-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-md border border-green-200/60 shadow-sm">
-                        <DollarSign className="w-5 h-5 text-green-600" />
-                        <span className="font-semibold text-green-700 text-base">{calculatedPrice.toLocaleString()} VND</span>
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">{translations.calculatedPriceTotal || "Calculated Price (Total)"}</Label>
+                      <div className="flex items-center gap-3 h-11 px-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-md border border-green-200/60 dark:border-green-800/60 shadow-sm">
+                        <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        <span className="font-semibold text-green-700 dark:text-green-300 text-base">{calculatedPrice.toLocaleString()} VND</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="description" className="text-sm font-medium">{translations.tourDescriptionLabel || "Description"} *</Label>
+                    <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300">{translations.tourDescriptionLabel || "Description"} *</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                       required
                       rows={5}
-                      className="resize-none"
+                      className="resize-none bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder={translations.tourDescriptionPlaceholder || "Describe the tour highlights and key experiences..."}
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="departure_city" className="text-sm font-medium">{translations.departureCity || "Departure City"} *</Label>
+                      <Label htmlFor="departure_city" className="text-sm font-medium text-gray-700 dark:text-gray-300">{translations.departureCity || "Departure City"} *</Label>
                       <select
                         id="departure_city"
                         value={formData.departure_city_id}
                         onChange={(e) => setFormData({...formData, departure_city_id: parseInt(e.target.value)})}
                         required
-                        className="w-full h-11 px-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        className="w-full h-11 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
                       >
                         <option value="">{translations.selectDepartureCity || "Select departure city"}</option>
                         {cities.map(city => (
@@ -1034,13 +1270,13 @@ export default function TourManagementTab() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="destination_city" className="text-sm font-medium">{translations.destinationCity || "Destination City"} *</Label>
+                      <Label htmlFor="destination_city" className="text-sm font-medium text-gray-700 dark:text-gray-300">{translations.destinationCity || "Destination City"} *</Label>
                       <select
                         id="destination_city"
                         value={formData.destination_city_id}
                         onChange={(e) => setFormData({...formData, destination_city_id: parseInt(e.target.value)})}
                         required
-                        className="w-full h-11 px-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        className="w-full h-11 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
                       >
                         <option value="">{translations.selectDestinationCity || "Select destination city"}</option>
                         {cities.map(city => (
@@ -1056,18 +1292,18 @@ export default function TourManagementTab() {
                         type="checkbox"
                         checked={formData.is_active}
                         onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
-                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer bg-white dark:bg-gray-700"
                       />
-                      <span className="text-sm font-medium group-hover:text-gray-700 transition-colors">{translations.active || "Active"}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{translations.active || "Active"}</span>
                     </label>
                     <label className="flex items-center gap-3 cursor-pointer group">
                       <input
                         type="checkbox"
                         checked={formData.is_published}
                         onChange={(e) => setFormData({...formData, is_published: e.target.checked})}
-                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer bg-white dark:bg-gray-700"
                       />
-                      <span className="text-sm font-medium group-hover:text-gray-700 transition-colors">{translations.published || "Published"}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{translations.published || "Published"}</span>
                     </label>
                   </div>
                 </CardContent>
@@ -1075,16 +1311,16 @@ export default function TourManagementTab() {
             </TabsContent>
 
             <TabsContent value="images" className="space-y-6 mt-6">
-              <Card className="shadow-sm">
+              <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-3 text-xl">
-                    <ImageIcon className="w-5 h-5" />
+                  <CardTitle className="flex items-center gap-3 text-lg sm:text-xl text-gray-900 dark:text-white">
+                    <ImageIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                     {translations.tourImages || "Tour Images"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Upload Area */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200">
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-12 text-center hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-all duration-200 bg-gray-50/50 dark:bg-gray-900/50">
                     <input
                       type="file"
                       multiple
@@ -1094,9 +1330,9 @@ export default function TourManagementTab() {
                       id="image-upload"
                     />
                     <label htmlFor="image-upload" className="cursor-pointer block">
-                      <Upload className="w-14 h-14 mx-auto mb-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                      <p className="text-lg font-semibold text-gray-700 mb-2">{translations.clickOrDragImages || "Click or drag images here"}</p>
-                      <p className="text-sm text-gray-500">{translations.uploadMultipleImages || "Upload multiple images (JPG, PNG, WebP)"}</p>
+                      <Upload className="w-14 h-14 mx-auto mb-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors" />
+                      <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{translations.clickOrDragImages || "Click or drag images here"}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{translations.uploadMultipleImages || "Upload multiple images (JPG, PNG, WebP)"}</p>
                     </label>
                   </div>
 
@@ -1105,7 +1341,7 @@ export default function TourManagementTab() {
                     <div className="grid grid-cols-3 gap-6">
                       {formData.images.map((image, idx) => (
                         <div key={idx} className={`relative group border-2 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-200 ${
-                          image.is_primary ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 hover:border-blue-300'
+                          image.is_primary ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500'
                         }`}>
                           <img 
                             src={image.url} 
@@ -1113,7 +1349,7 @@ export default function TourManagementTab() {
                             className="w-full h-52 object-cover"
                           />
                           {image.is_primary && (
-                            <span className="absolute top-3 left-3 bg-blue-500 text-white text-xs px-3 py-1.5 rounded-full font-semibold shadow-md flex items-center gap-1">
+                            <span className="absolute top-3 left-3 bg-blue-500 dark:bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full font-semibold shadow-md flex items-center gap-1">
                               <Star className="w-3 h-3 fill-white" />
                               {translations.primaryImage || "Primary Image"}
                             </span>
@@ -1123,7 +1359,7 @@ export default function TourManagementTab() {
                               type="button"
                               variant={image.is_primary ? "default" : "secondary"}
                               size="sm"
-                              className={`shadow-md ${image.is_primary ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-white hover:bg-gray-50'}`}
+                              className={`shadow-md ${image.is_primary ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-900 dark:text-white'}`}
                               onClick={() => setPrimaryImage(idx)}
                               title={translations.setAsPrimary || "Set as primary image"}
                             >
@@ -1140,7 +1376,7 @@ export default function TourManagementTab() {
                               <Trash className="w-4 h-4" />
                             </Button>
                           </div>
-                          <div className="p-4 bg-white border-t border-gray-100">
+                          <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
                             <Input
                               value={image.caption || ''}
                               onChange={(e) => {
@@ -1149,7 +1385,7 @@ export default function TourManagementTab() {
                                 setFormData({...formData, images: updated});
                               }}
                               placeholder="Add caption..."
-                              className="text-sm h-9"
+                              className="text-sm h-9 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                             />
                           </div>
                         </div>
@@ -1161,11 +1397,11 @@ export default function TourManagementTab() {
             </TabsContent>
 
             <TabsContent value="itinerary" className="space-y-6 mt-6">
-              <Card className="shadow-sm">
+              <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <CardHeader className="pb-4">
                   <div className="flex justify-between items-center">
-                    <CardTitle className="flex items-center gap-3 text-xl">
-                      <Calendar className="w-5 h-5" />
+                    <CardTitle className="flex items-center gap-3 text-lg sm:text-xl text-gray-900 dark:text-white">
+                      <Calendar className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                       {translations.dailyItinerary || "Daily Itinerary"}
                     </CardTitle>
                     <Button type="button" onClick={addDay} size="sm" className="gap-2">
@@ -1198,22 +1434,23 @@ export default function TourManagementTab() {
                   itinerary={formData.itinerary}
                   onChange={(services) => setFormData({...formData, services})}
                   onLoadAccommodationRooms={loadAccommodationRooms}
-                  onLoadRestaurantMenu={loadRestaurantMenu}
+                  onLoadRestaurantSetMeals={loadRestaurantSetMeals}
                   selectedRooms={selectedAccommodationRooms}
-                  selectedMenus={selectedRestaurantMenus}
+                  selectedRestaurantSetMeals={selectedRestaurantSetMeals}
                   loadingDetails={loadingServiceDetails}
                   departureCityId={formData.departure_city_id}
                   destinationCityId={formData.destination_city_id}
                   cities={cities}
-                  selectedRoomIds={selectedRoomIds}
-                  setSelectedRoomIds={setSelectedRoomIds}
-                  selectedMenuItemIds={selectedMenuItemIds}
-                  setSelectedMenuItemIds={setSelectedMenuItemIds}
+                  roomBooking={roomBooking}
+                  setRoomBooking={setRoomBooking}
+                  selectedSetMeals={selectedSetMeals}
+                  setSelectedSetMeals={setSelectedSetMeals}
+                  numberOfMembers={formData.number_of_members}
                 />
               ) : (
-                <Card className="shadow-sm">
-                  <CardContent className="p-12 text-center text-gray-500">
-                    <Info className="w-14 h-14 mx-auto mb-4 text-gray-400" />
+                <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                  <CardContent className="p-12 text-center text-gray-500 dark:text-gray-400">
+                    <Info className="w-14 h-14 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
                     <p className="text-base">{translations.pleaseSelectCities || "Please select departure and destination cities first"}</p>
                   </CardContent>
                 </Card>
@@ -1221,8 +1458,8 @@ export default function TourManagementTab() {
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-end gap-4 sticky bottom-0 bg-white/95 backdrop-blur-sm p-6 border-t border-gray-200 shadow-lg mt-8">
-            <Button type="button" variant="outline" onClick={resetForm} className="gap-2 min-w-[120px] h-11">
+          <div className="flex justify-end gap-4 sticky bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm p-6 border-t border-gray-200 dark:border-gray-700 shadow-lg mt-8">
+            <Button type="button" variant="outline" onClick={resetForm} className="gap-2 min-w-[120px] h-11 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
               <X className="w-4 h-4" /> {translations.cancel || "Cancel"}
             </Button>
             <Button type="submit" disabled={loading} className="min-w-[150px] h-11 gap-2">
@@ -1253,7 +1490,7 @@ export default function TourManagementTab() {
           
           <div className="grid gap-4">
           {promotions.map((promotion) => (
-            <Card key={promotion.id} className="hover:shadow-lg transition-shadow">
+            <Card key={promotion.id} className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -1266,17 +1503,17 @@ export default function TourManagementTab() {
                         />
                       )}
                       <div>
-                        <h3 className="text-xl font-semibold">{promotion.title || promotion.code}</h3>
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{promotion.title || promotion.code}</h3>
                         {promotion.subtitle && (
-                          <p className="text-sm text-gray-600">{promotion.subtitle}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{promotion.subtitle}</p>
                         )}
-                        <p className="text-sm text-gray-500">Code: {promotion.code}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Code: {promotion.code}</p>
                       </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="w-4 h-4 text-yellow-500" />
+                      <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <DollarSign className="w-4 h-4 text-yellow-500 dark:text-yellow-400" />
                         <span>
                           {promotion.discount_type === 'percentage' 
                             ? `${promotion.discount_value}% off`
@@ -1285,16 +1522,16 @@ export default function TourManagementTab() {
                       </div>
                       <div className="flex gap-2">
                         <span className={`px-2 py-1 rounded text-xs ${
-                          promotion.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          promotion.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
                         }`}>
                           {promotion.is_active ? 'Active' : 'Inactive'}
                         </span>
                         {promotion.show_on_homepage && (
-                          <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                          <span className="px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
                             Homepage
                           </span>
                         )}
-                        <span className="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">
+                        <span className="px-2 py-1 rounded text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
                           {promotion.promotion_type || 'promo_code'}
                         </span>
                       </div>
@@ -1306,6 +1543,7 @@ export default function TourManagementTab() {
                       variant="outline" 
                       size="sm"
                       onClick={() => handlePromotionEdit(promotion)}
+                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -1322,9 +1560,9 @@ export default function TourManagementTab() {
             </Card>
           ))}
           {promotions.length === 0 && (
-            <Card>
-              <CardContent className="p-12 text-center text-gray-500">
-                <Info className="w-14 h-14 mx-auto mb-4 text-gray-400" />
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+              <CardContent className="p-12 text-center text-gray-500 dark:text-gray-400">
+                <Info className="w-14 h-14 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
                 <p className="text-base">No promotions yet. Create your first promotion!</p>
               </CardContent>
             </Card>
@@ -1333,21 +1571,21 @@ export default function TourManagementTab() {
         </div>
       ) : activeSection === 'promotions' && showPromotionForm ? (
         <form onSubmit={handlePromotionSubmit} className="space-y-6">
-          <Card className="shadow-sm">
+          <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl">
+              <CardTitle className="text-lg sm:text-xl text-gray-900 dark:text-white">
                 {editingPromotion ? 'Edit Promotion' : 'Create New Promotion'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="promotion_type">Promotion Type *</Label>
+                  <Label htmlFor="promotion_type" className="text-gray-700 dark:text-gray-300">Promotion Type *</Label>
                   <select
                     id="promotion_type"
                     value={promotionFormData.promotion_type}
                     onChange={(e) => setPromotionFormData({...promotionFormData, promotion_type: e.target.value})}
-                    className="w-full h-11 px-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-11 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400"
                     required
                   >
                     <option value="promo_code">Promo Code</option>
@@ -1355,13 +1593,13 @@ export default function TourManagementTab() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="code">Promo Code *</Label>
+                  <Label htmlFor="code" className="text-gray-700 dark:text-gray-300">Promo Code *</Label>
                   <Input
                     id="code"
                     value={promotionFormData.code}
                     onChange={(e) => setPromotionFormData({...promotionFormData, code: e.target.value})}
                     required
-                    className="h-11"
+                    className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     placeholder="e.g., TRAVELNEW"
                   />
                 </div>
@@ -1369,12 +1607,12 @@ export default function TourManagementTab() {
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="discount_type">Discount Type *</Label>
+                  <Label htmlFor="discount_type" className="text-gray-700 dark:text-gray-300">Discount Type *</Label>
                   <select
                     id="discount_type"
                     value={promotionFormData.discount_type}
                     onChange={(e) => setPromotionFormData({...promotionFormData, discount_type: e.target.value})}
-                    className="w-full h-11 px-3 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-11 px-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400"
                     required
                   >
                     <option value="percentage">Percentage</option>
@@ -1382,14 +1620,14 @@ export default function TourManagementTab() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="discount_value">Discount Value *</Label>
+                  <Label htmlFor="discount_value" className="text-gray-700 dark:text-gray-300">Discount Value *</Label>
                   <Input
                     id="discount_value"
                     type="number"
                     value={promotionFormData.discount_value}
                     onChange={(e) => setPromotionFormData({...promotionFormData, discount_value: e.target.value})}
                     required
-                    className="h-11"
+                    className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     placeholder="e.g., 10 or 50000"
                   />
                 </div>
@@ -1399,22 +1637,22 @@ export default function TourManagementTab() {
               {promotionFormData.promotion_type === 'banner' && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="image">Image URL</Label>
+                    <Label htmlFor="image" className="text-gray-700 dark:text-gray-300">Image URL</Label>
                     <Input
                       id="image"
                       value={promotionFormData.image}
                       onChange={(e) => setPromotionFormData({...promotionFormData, image: e.target.value})}
-                      className="h-11"
+                      className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder="https://example.com/image.jpg"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="highlight">Highlight Text</Label>
+                    <Label htmlFor="highlight" className="text-gray-700 dark:text-gray-300">Highlight Text</Label>
                     <Input
                       id="highlight"
                       value={promotionFormData.highlight}
                       onChange={(e) => setPromotionFormData({...promotionFormData, highlight: e.target.value})}
-                      className="h-11"
+                      className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder="e.g., Save up to 1 Million"
                     />
                   </div>
@@ -1425,23 +1663,23 @@ export default function TourManagementTab() {
               {promotionFormData.show_on_homepage && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="title">Title * {promotionFormData.show_on_homepage && '(Required for homepage)'}</Label>
+                    <Label htmlFor="title" className="text-gray-700 dark:text-gray-300">Title * {promotionFormData.show_on_homepage && '(Required for homepage)'}</Label>
                     <Input
                       id="title"
                       value={promotionFormData.title}
                       onChange={(e) => setPromotionFormData({...promotionFormData, title: e.target.value})}
-                      className="h-11"
+                      className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder={promotionFormData.promotion_type === 'banner' ? "e.g., Chill this weekend" : "e.g., Get up to 50,000 VND off"}
                       required={promotionFormData.show_on_homepage}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="subtitle">Subtitle</Label>
+                    <Label htmlFor="subtitle" className="text-gray-700 dark:text-gray-300">Subtitle</Label>
                     <Input
                       id="subtitle"
                       value={promotionFormData.subtitle}
                       onChange={(e) => setPromotionFormData({...promotionFormData, subtitle: e.target.value})}
-                      className="h-11"
+                      className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       placeholder={promotionFormData.promotion_type === 'banner' ? "e.g., Up to 30% off" : "e.g., Valid for your first booking"}
                     />
                   </div>
@@ -1450,58 +1688,58 @@ export default function TourManagementTab() {
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="start_date">Start Date</Label>
+                  <Label htmlFor="start_date" className="text-gray-700 dark:text-gray-300">Start Date</Label>
                   <Input
                     id="start_date"
                     type="date"
                     value={promotionFormData.start_date}
                     onChange={(e) => setPromotionFormData({...promotionFormData, start_date: e.target.value})}
-                    className="h-11"
+                    className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="end_date">End Date</Label>
+                  <Label htmlFor="end_date" className="text-gray-700 dark:text-gray-300">End Date</Label>
                   <Input
                     id="end_date"
                     type="date"
                     value={promotionFormData.end_date}
                     onChange={(e) => setPromotionFormData({...promotionFormData, end_date: e.target.value})}
-                    className="h-11"
+                    className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="max_uses">Max Uses (leave empty for unlimited)</Label>
+                <Label htmlFor="max_uses" className="text-gray-700 dark:text-gray-300">Max Uses (leave empty for unlimited)</Label>
                 <Input
                   id="max_uses"
                   type="number"
                   value={promotionFormData.max_uses || ''}
                   onChange={(e) => setPromotionFormData({...promotionFormData, max_uses: e.target.value ? parseInt(e.target.value) : null})}
-                  className="h-11"
+                  className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                   placeholder="e.g., 100"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="conditions">Conditions</Label>
+                <Label htmlFor="conditions" className="text-gray-700 dark:text-gray-300">Conditions</Label>
                 <Textarea
                   id="conditions"
                   value={promotionFormData.conditions}
                   onChange={(e) => setPromotionFormData({...promotionFormData, conditions: e.target.value})}
                   rows={3}
-                  className="resize-none"
+                  className="resize-none bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                   placeholder="Terms and conditions..."
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="terms">Terms Text (for display)</Label>
+                <Label htmlFor="terms" className="text-gray-700 dark:text-gray-300">Terms Text (for display)</Label>
                 <Input
                   id="terms"
                   value={promotionFormData.terms}
                   onChange={(e) => setPromotionFormData({...promotionFormData, terms: e.target.value})}
-                  className="h-11"
+                  className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                   placeholder="Terms & Conditions apply."
                 />
               </div>
@@ -1512,24 +1750,24 @@ export default function TourManagementTab() {
                     type="checkbox"
                     checked={promotionFormData.is_active}
                     onChange={(e) => setPromotionFormData({...promotionFormData, is_active: e.target.checked})}
-                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer bg-white dark:bg-gray-700"
                   />
-                  <span className="text-sm font-medium">Active</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Active</span>
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={promotionFormData.show_on_homepage}
                     onChange={(e) => setPromotionFormData({...promotionFormData, show_on_homepage: e.target.checked})}
-                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer bg-white dark:bg-gray-700"
                   />
-                  <span className="text-sm font-medium">Show on Homepage</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Show on Homepage</span>
                 </label>
               </div>
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-4 sticky bottom-0 bg-white/95 backdrop-blur-sm p-6 border-t border-gray-200 shadow-lg mt-8">
+          <div className="flex justify-end gap-4 sticky bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm p-6 border-t border-gray-200 dark:border-gray-700 shadow-lg mt-8">
             <Button 
               type="button" 
               variant="outline" 
@@ -1554,7 +1792,7 @@ export default function TourManagementTab() {
                   terms: 'Terms & Conditions apply.'
                 });
               }} 
-              className="gap-2 min-w-[120px] h-11"
+              className="gap-2 min-w-[120px] h-11 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <X className="w-4 h-4" /> Cancel
             </Button>
@@ -1567,6 +1805,190 @@ export default function TourManagementTab() {
           ) : null}
         </TabsContent>
       </Tabs>
+
+      {/* Schedule Management Modal */}
+      {showScheduleModal && currentScheduleTour && (
+        <div className="fixed inset-0 z-50 bg-black/50 dark:bg-black/70 overflow-y-auto" onClick={() => setShowScheduleModal(false)}>
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-5xl w-full mx-auto border border-gray-200 dark:border-gray-700"
+            style={{ marginTop: `${modalScrollPosition}px`, marginBottom: '32px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+              {/* Header - Simple & Clean */}
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                      {translations.scheduleManagement || "Schedule Management"}
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {currentScheduleTour.name}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowScheduleModal(false)}
+                    className="hover:bg-gray-200 dark:hover:bg-gray-700"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Content */}
+            <div className="overflow-y-auto p-6 max-h-[calc(100vh-200px)]">
+              {/* Add New Schedule Card */}
+              <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    {translations.addNewDeparture || "Add New Departure"}
+                  </h3>
+                </div>
+                <div className="p-4">
+                  <div className="grid md:grid-cols-3 gap-4 items-end">
+                    <div className="md:col-span-2">
+                      <Label className="text-sm font-medium mb-2 block text-gray-700 dark:text-gray-300">
+                        {translations.departureDateAndTime || "Departure Date & Time"}
+                      </Label>
+                      <Input
+                        type="datetime-local"
+                        value={newSchedule.departure_datetime}
+                        onChange={(e) => setNewSchedule({ departure_datetime: e.target.value })}
+                        className="h-10 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                      <div className="mt-2 flex items-start gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                        <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          {(translations.returnDateCalculated || "Return date calculated based on tour duration: {days} days").replace('{days}', currentScheduleTour.duration)}
+                        </p>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={handleAddSchedule}
+                      className="h-10 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      {translations.addSchedule || "Add Schedule"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Existing Schedules */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                    {translations.availableDepartures || "Available Departures"}
+                  </h3>
+                </div>
+                <div className="p-4">
+                  {loadingSchedules ? (
+                    <div className="text-center py-12">
+                      <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 dark:border-gray-700 border-t-blue-600 dark:border-t-blue-400"></div>
+                      <p className="mt-3 text-gray-600 dark:text-gray-400 text-sm">{translations.loadingSchedules || "Loading schedules..."}</p>
+                    </div>
+                  ) : schedules.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
+                      <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
+                        {translations.noSchedulesYet || "No schedules yet"}
+                      </p>
+                      <p className="text-gray-500 dark:text-gray-500 text-xs mt-1">
+                        {translations.addFirstDeparture || "Add your first departure using the form above"}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {schedules.map((schedule, index) => (
+                        <div
+                          key={schedule.id}
+                          className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all"
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1 grid md:grid-cols-3 gap-4 items-center">
+                              {/* Date & Time */}
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{translations.departure || "Departure"}</span>
+                                </div>
+                                <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                                  {formatDateTime(schedule.departure_datetime)}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                  {translations.return || "Return"}: {formatDateTime(schedule.return_datetime)}
+                                </p>
+                              </div>
+                              
+                              {/* Slots Info */}
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{translations.availability || "Availability"}</span>
+                                </div>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-2xl font-bold text-gray-900 dark:text-white">{schedule.slots_available}</span>
+                                  <span className="text-gray-400 dark:text-gray-500 text-sm">/ {schedule.max_slots}</span>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                  {schedule.slots_booked} {translations.booked || "booked"}
+                                </p>
+                              </div>
+                              
+                              {/* Status Badge */}
+                              <div className="flex items-center justify-center">
+                                <span
+                                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                    schedule.is_active
+                                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                                  }`}
+                                >
+                                  {schedule.is_active ? (translations.active || 'Active') : (translations.inactive || 'Inactive')}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {/* Actions */}
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleScheduleActive(schedule)}
+                                className="h-8 px-3 text-xs border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
+                                {schedule.is_active ? (translations.deactivate || 'Deactivate') : (translations.activate || 'Activate')}
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteSchedule(schedule.id)}
+                                disabled={schedule.slots_booked > 0}
+                                title={
+                                  schedule.slots_booked > 0
+                                    ? (translations.cannotDeleteScheduleWithBookings || 'Cannot delete schedule with bookings')
+                                    : (translations.deleteSchedule || 'Delete schedule')
+                                }
+                                className="h-8 px-3 text-xs"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1577,7 +1999,7 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
   const [expanded, setExpanded] = useState(true);
 
   return (
-    <div className="border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white shadow-sm hover:shadow-md transition-shadow">
+    <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-800 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">
           <Button
@@ -1585,11 +2007,11 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
             variant="ghost"
             size="sm"
             onClick={() => setExpanded(!expanded)}
-            className="h-9 w-9"
+            className="h-9 w-9 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </Button>
-          <h3 className="font-semibold text-lg">{translations.day || "Day"} {day.day_number}</h3>
+          <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{translations.day || "Day"} {day.day_number}</h3>
         </div>
         <Button
           type="button"
@@ -1608,7 +2030,7 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
             <Input
               value={day.day_title || ''}
               onChange={(e) => onUpdate(dayIndex, 'day_title', e.target.value)}
-              className="h-11"
+              className="h-11 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
               placeholder={translations.dayTitlePlaceholder || "Day title (e.g., Arrival and City Tour)"}
             />
           </div>
@@ -1616,48 +2038,48 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
             <Textarea
               value={day.day_summary || ''}
               onChange={(e) => onUpdate(dayIndex, 'day_summary', e.target.value)}
-              className="resize-none"
+              className="resize-none bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
               placeholder={translations.daySummaryPlaceholder || "Brief day summary"}
               rows={3}
             />
           </div>
 
           {TIME_PERIODS.map(period => (
-            <div key={period} className="border-l-4 border-blue-500 pl-5 space-y-4">
+            <div key={period} className="border-l-4 border-blue-500 dark:border-blue-400 pl-5 space-y-4">
               <div className="flex justify-between items-center">
-                <h4 className="font-semibold capitalize text-base">{period}</h4>
+                <h4 className="font-semibold capitalize text-base text-gray-900 dark:text-white">{period}</h4>
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   onClick={() => onAddCheckpoint(dayIndex, period)}
-                  className="gap-2"
+                  className="gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   <Plus className="w-3 h-3" /> {translations.checkpoint || "Checkpoint"}
                 </Button>
               </div>
 
               {day.checkpoints[period].map((checkpoint, cpIdx) => (
-                <div key={cpIdx} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm space-y-3">
+                <div key={cpIdx} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm space-y-3">
                   <div className="flex gap-3">
                     <Input
                       type="time"
                       value={checkpoint.checkpoint_time}
                       onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'checkpoint_time', e.target.value)}
-                      className="w-36 h-10"
+                      className="w-36 h-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     />
                     <Input
                       value={checkpoint.activity_title}
                       onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'activity_title', e.target.value)}
                       placeholder={translations.activityTitle || "Activity title"}
-                      className="flex-1 h-10"
+                      className="flex-1 h-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => onRemoveCheckpoint(dayIndex, period, cpIdx)}
-                      className="h-10 w-10"
+                      className="h-10 w-10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -1665,13 +2087,13 @@ function DayEditor({ day, dayIndex, onUpdate, onRemove, onAddCheckpoint, onRemov
                   <Input
                     value={checkpoint.location || ''}
                     onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'location', e.target.value)}
-                    className="h-10"
+                    className="h-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     placeholder={translations.location || "Location"}
                   />
                   <Textarea
                     value={checkpoint.activity_description || ''}
                     onChange={(e) => onUpdateCheckpoint(dayIndex, period, cpIdx, 'activity_description', e.target.value)}
-                    className="resize-none"
+                    className="resize-none bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     placeholder={translations.activityDescription || "Activity description"}
                     rows={2}
                   />
@@ -1692,19 +2114,27 @@ function ServicesEditor({
   itinerary, 
   onChange, 
   onLoadAccommodationRooms,
-  onLoadRestaurantMenu,
+  onLoadRestaurantSetMeals,
   selectedRooms,
-  selectedMenus,
+  selectedRestaurantSetMeals,
   loadingDetails,
   departureCityId,
   destinationCityId,
   cities,
-  selectedRoomIds,
-  setSelectedRoomIds,
-  selectedMenuItemIds,
-  setSelectedMenuItemIds
+  roomBooking,
+  setRoomBooking,
+  selectedSetMeals,
+  setSelectedSetMeals,
+  numberOfMembers
 }) {
   const { translations } = useLanguage();
+  
+  // Filter transportation based on number of members (max passengers should be >= members AND <= 2× number of members)
+  const filteredTransportation = availableServices.transportation?.filter(t => {
+    if (!numberOfMembers) return true; // Show all if no members calculated yet
+    return t.max_passengers >= numberOfMembers && t.max_passengers <= (numberOfMembers * 2);
+  }) || [];
+  
   const handleAccommodationChange = async (serviceId) => {
     onChange({
       ...services,
@@ -1716,7 +2146,7 @@ function ServicesEditor({
     
     if (serviceId) {
       await onLoadAccommodationRooms(parseInt(serviceId));
-      setSelectedRoomIds([]);
+      setRoomBooking({ room_id: null, quantity: 1 });
     }
   };
   
@@ -1728,26 +2158,76 @@ function ServicesEditor({
         day_number: dayNumber,
         notes: ''
       });
-      await onLoadRestaurantMenu(parseInt(serviceId), dayNumber);
+      await onLoadRestaurantSetMeals(parseInt(serviceId), dayNumber);
+      
+      // Auto-select first set meal for each session if none selected yet
+      setTimeout(() => {
+        const restaurantSetMeals = selectedRestaurantSetMeals[parseInt(serviceId)] || [];
+        const sessions = ['morning', 'noon', 'evening'];
+        
+        sessions.forEach(session => {
+          // Check if this day+session already has a selection
+          const alreadySelected = selectedSetMeals.some(sm => 
+            sm.day_number === dayNumber && sm.meal_session === session
+          );
+          
+          if (!alreadySelected) {
+            // Find first set meal for this session
+            const firstSetMeal = restaurantSetMeals.find(sm => sm.mealSession === session);
+            if (firstSetMeal) {
+              setSelectedSetMeals(prev => [...prev, {
+                set_meal_id: firstSetMeal.id,
+                day_number: dayNumber,
+                meal_session: session
+              }]);
+            }
+          }
+        });
+      }, 500); // Wait for set meals to load
     }
     onChange({...services, restaurants: updated});
   };
   
-  const toggleRoomSelection = (roomId) => {
-    setSelectedRoomIds(prev => 
-      prev.includes(roomId) 
-        ? prev.filter(id => id !== roomId)
-        : [...prev, roomId]
-    );
+  const handleRoomSelection = (roomId) => {
+    // Find Standard Double room by default
+    const room = selectedRooms.find(r => r.id === roomId);
+    if (room) {
+      setRoomBooking({ room_id: roomId, quantity: 1 });
+    }
   };
   
-  const toggleMenuItem = (dayNumber, itemId) => {
-    setSelectedMenuItemIds(prev => ({
-      ...prev,
-      [dayNumber]: prev[dayNumber]?.includes(itemId)
-        ? prev[dayNumber].filter(id => id !== itemId)
-        : [...(prev[dayNumber] || []), itemId]
-    }));
+  const handleQuantityChange = (quantity) => {
+    setRoomBooking(prev => ({ ...prev, quantity: Math.max(1, parseInt(quantity) || 1) }));
+  };
+  
+  const toggleSetMeal = (dayNumber, mealSession, setMealId) => {
+    setSelectedSetMeals(prev => {
+      const key = `${dayNumber}-${mealSession}`;
+      const existing = prev.find(sm => sm.day_number === dayNumber && sm.meal_session === mealSession);
+      
+      if (existing && existing.set_meal_id === setMealId) {
+        // Deselect
+        return prev.filter(sm => !(sm.day_number === dayNumber && sm.meal_session === mealSession));
+      } else if (existing) {
+        // Replace
+        return prev.map(sm => 
+          sm.day_number === dayNumber && sm.meal_session === mealSession
+            ? { set_meal_id: setMealId, day_number: dayNumber, meal_session: mealSession }
+            : sm
+        );
+      } else {
+        // Add new
+        return [...prev, { set_meal_id: setMealId, day_number: dayNumber, meal_session: mealSession }];
+      }
+    });
+  };
+  
+  const isSetMealSelected = (dayNumber, mealSession, setMealId) => {
+    return selectedSetMeals.some(sm => 
+      sm.day_number === dayNumber && 
+      sm.meal_session === mealSession && 
+      sm.set_meal_id === setMealId
+    );
   };
   
   const getDepartureCityName = () => {
@@ -1758,24 +2238,193 @@ function ServicesEditor({
     return cities.find(c => c.id === destinationCityId)?.name || 'Destination';
   };
   
+  // Find default Standard Double bed room
+  const defaultRoom = selectedRooms.find(r => 
+    r.roomType === 'Standard' && r.bedType === 'Double'
+  ) || selectedRooms.find(r => r.roomType === 'Standard') || selectedRooms[0];
+  
   return (
     <div className="space-y-8">
-      <Card className="shadow-sm">
+      <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-xl">
-            <Car className="w-5 h-5 text-blue-500" />
+          <CardTitle className="flex items-center gap-3 text-lg sm:text-xl text-gray-900 dark:text-white">
+            <Hotel className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+            {translations.accommodation || "Accommodation"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <select
+            value={services.accommodation?.service_id || ''}
+            onChange={(e) => handleAccommodationChange(e.target.value)}
+            className="w-full h-11 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 transition-colors"
+          >
+            <option value="">{translations.selectAccommodation || "Select accommodation for entire trip"}</option>
+            {availableServices.accommodations?.map(a => (
+              <option key={a.id} value={a.id}>
+                {a.name} - {'⭐'.repeat(a.star_rating || 0)} - 
+                {a.min_price.toLocaleString()} - {a.max_price.toLocaleString()} VND/night
+              </option>
+            ))}
+          </select>
+          
+          {/* Room Booking - Quantity First, then auto-select Standard Double */}
+          {services.accommodation && selectedRooms.length > 0 && (
+            <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h4 className="font-semibold text-lg mb-5 flex items-center gap-3 text-gray-900 dark:text-white">
+                <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                {translations.roomBooking || "Room Booking"}
+              </h4>
+              {loadingDetails ? (
+                <p className="text-center py-8 text-gray-500 dark:text-gray-400">{translations.loadingRooms || "Loading rooms..."}</p>
+              ) : (
+                <div className="space-y-6">
+                  {/* Quantity Input - Primary Field */}
+                  <div>
+                    <Label className="font-medium mb-3 block text-gray-700 dark:text-gray-300">{translations.numberOfRooms || "Number of Rooms"} *</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={roomBooking.quantity}
+                      onChange={(e) => {
+                        const quantity = parseInt(e.target.value) || 1;
+                        handleQuantityChange(quantity);
+                        // Auto-select default room if not selected yet
+                        if (!roomBooking.room_id && defaultRoom) {
+                          handleRoomSelection(defaultRoom.id);
+                        }
+                      }}
+                      className="w-full h-12 text-lg font-semibold bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
+                      placeholder="Enter number of rooms needed"
+                    />
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                      {translations.roomQuantityHint || "How many rooms do you need for this tour?"}
+                    </p>
+                  </div>
+                  
+                  {/* Auto-calculated participants display */}
+                  {roomBooking.quantity > 0 && roomBooking.room_id && numberOfMembers > 0 && (
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-300 dark:border-purple-700 rounded-lg p-4 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                          <div>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{translations.totalParticipants || "Total Participants"}</p>
+                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{numberOfMembers} {translations.people || "people"}</p>
+                          </div>
+                        </div>
+                        <div className="text-right text-sm text-gray-600 dark:text-gray-400">
+                          <p>{roomBooking.quantity} {translations.rooms || "rooms"} × {
+                            selectedRooms.find(r => r.id === roomBooking.room_id)?.roomType === 'Standard Quad' ? '4' : '2'
+                          } {translations.people || "people"}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                            ({selectedRooms.find(r => r.id === roomBooking.room_id)?.roomType || 'Standard'})
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Room Type Selection - Secondary (Optional Override) */}
+                  <div>
+                    <Label className="font-medium mb-3 block text-gray-700 dark:text-gray-300">
+                      {translations.roomType || "Room Type"} 
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(Default: Standard - Double Bed)</span>
+                    </Label>
+                    <select
+                      value={roomBooking.room_id || defaultRoom?.id || ''}
+                      onChange={(e) => handleRoomSelection(parseInt(e.target.value))}
+                      className="w-full h-11 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 transition-colors"
+                    >
+                      {selectedRooms
+                        .filter(r => r.roomType === 'Standard') // Only show Standard rooms
+                        .map(room => (
+                          <option key={room.id} value={room.id}>
+                            {room.roomType} - {room.bedType} - {room.maxAdults || 0} adults
+                            {room.maxChildren ? ` + ${room.maxChildren} children` : ''} - 
+                            {' '}{(room.basePrice || 0).toLocaleString()} VND/night
+                          </option>
+                        ))}
+                    </select>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      {translations.changeRoomTypeHint || "You can change the room type if needed. Standard rooms have 2 people capacity."}
+                    </p>
+                  </div>
+                  
+                  {/* Selected Room Preview */}
+                  {roomBooking.room_id && selectedRooms.find(r => r.id === roomBooking.room_id) && (
+                    <div className="border-2 border-purple-500 dark:border-purple-600 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-5 shadow-lg">
+                      {(() => {
+                        const room = selectedRooms.find(r => r.id === roomBooking.room_id);
+                        return (
+                          <>
+                            {room.images && room.images.length > 0 && (
+                              <img 
+                                src={room.images[0]} 
+                                alt={room.roomType || room.name}
+                                className="w-full h-48 object-cover rounded-lg mb-4"
+                              />
+                            )}
+                            <h5 className="font-semibold text-xl mb-3 text-gray-900 dark:text-white">{room.roomType || room.name}</h5>
+                            <div className="space-y-2 text-sm">
+                              <p className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                                <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                {translations.capacity || "Capacity"}: {room.maxAdults || 0} {translations.adults || "adults"}
+                                {room.maxChildren ? ` + ${room.maxChildren} ${translations.children || "children"}` : ''}
+                              </p>
+                              <p className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                                <DollarSign className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                {(room.basePrice || 0).toLocaleString()} {room.currency || 'VND'}{translations.perNight || "/night"}
+                              </p>
+                              {room.bedType && (
+                                <p className="text-gray-700 dark:text-gray-300">🛏️ {room.bedType} Bed</p>
+                              )}
+                              {room.deluxeUpgradePrice && (
+                                <p className="text-sm text-blue-700 dark:text-blue-400">
+                                  💎 Deluxe Upgrade: +{room.deluxeUpgradePrice.toLocaleString()} VND
+                                </p>
+                              )}
+                              {room.suiteUpgradePrice && (
+                                <p className="text-sm text-blue-700 dark:text-blue-400">
+                                  👑 Suite Upgrade: +{room.suiteUpgradePrice.toLocaleString()} VND
+                                </p>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-xl text-gray-900 dark:text-white">
+            <Car className="w-5 h-5 text-blue-500 dark:text-blue-400" />
             {translations.transportation || "Transportation"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-5 shadow-sm">
-            <div className="flex items-center gap-3 text-sm">
-              <MapPin className="w-5 h-5 text-blue-600" />
-              <span className="font-semibold">{translations.route || "Route"}:</span>
-              <span className="text-blue-700 font-medium">{getDepartureCityName()}</span>
-              <span className="text-gray-400 text-lg">→</span>
-              <span className="text-blue-700 font-medium">{getDestinationCityName()}</span>
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-3 text-sm mb-2">
+              <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{translations.route || "Route"}:</span>
+              <span className="text-blue-700 dark:text-blue-400 font-medium">{getDepartureCityName()}</span>
+              <span className="text-gray-400 dark:text-gray-500 text-lg">→</span>
+              <span className="text-blue-700 dark:text-blue-400 font-medium">{getDestinationCityName()}</span>
             </div>
+            {numberOfMembers > 0 && (
+              <div className="flex items-center gap-3 text-sm">
+                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <span className="font-semibold text-gray-700 dark:text-gray-300">{translations.totalMembers || "Total Members"}:</span>
+                <span className="text-blue-700 dark:text-blue-400 font-medium">{numberOfMembers} {translations.people || "people"}</span>
+                <span className="text-gray-500 dark:text-gray-400 text-xs ml-2">(Showing vehicles ≤ {numberOfMembers * 2} seats)</span>
+              </div>
+            )}
           </div>
           
           <select
@@ -1789,122 +2438,49 @@ function ServicesEditor({
                 } : null
               });
             }}
-            className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="w-full h-11 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
           >
             <option value="">{translations.selectTransportation || "Select transportation for entire trip"}</option>
-            {availableServices.transportation?.map(t => (
+            {filteredTransportation.map(t => (
               <option key={t.id} value={t.id}>
                 {t.vehicle_type} {t.brand ? `(${t.brand})` : ''} - 
                 Plate: {t.license_plate} - 
                 {t.max_passengers} passengers - 
-                {t.base_price.toLocaleString()} VND
+                {t.base_price.toLocaleString()} VND/person
                 {t.pickup_location && ` - Pickup: ${t.pickup_location}`}
                 {t.dropoff_location && ` - Dropoff: ${t.dropoff_location}`}
               </option>
             ))}
           </select>
           
-          {availableServices.transportation?.length === 0 && (
-            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 p-4 rounded-lg">
-              {translations.noTransportationAvailable || "No transportation available for the selected route. Please check departure and destination cities."}
+          {filteredTransportation.length === 0 && numberOfMembers > 0 && (
+            <p className="text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 p-4 rounded-lg">
+              {translations.noTransportationAvailable || `No transportation available for ${numberOfMembers} members. Please select rooms first or check available vehicles.`}
+            </p>
+          )}
+          {filteredTransportation.length === 0 && numberOfMembers === 0 && (
+            <p className="text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 p-4 rounded-lg">
+              {translations.pleaseSelectRoomsFirst || "Please select accommodation rooms first to determine the number of members."}
             </p>
           )}
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm">
+      <Card className="shadow-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-xl">
-            <Hotel className="w-5 h-5 text-purple-500" />
-            {translations.accommodation || "Accommodation"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <select
-            value={services.accommodation?.service_id || ''}
-            onChange={(e) => handleAccommodationChange(e.target.value)}
-            className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-          >
-            <option value="">{translations.selectAccommodation || "Select accommodation for entire trip"}</option>
-            {availableServices.accommodations?.map(a => (
-              <option key={a.id} value={a.id}>
-                {a.name} - {'⭐'.repeat(a.star_rating || 0)} - 
-                {a.min_price.toLocaleString()} - {a.max_price.toLocaleString()} VND/night
-              </option>
-            ))}
-          </select>
-          
-          {/* Room Selection */}
-          {services.accommodation && selectedRooms.length > 0 && (
-            <div className="mt-6 border-t border-gray-200 pt-6">
-              <h4 className="font-semibold text-lg mb-5 flex items-center gap-3">
-                <Users className="w-5 h-5 text-purple-600" />
-                {translations.availableRooms || "Available Rooms"} - {translations.selectRoomsForTour || "Select rooms for this tour"}
-              </h4>
-              {loadingDetails ? (
-                <p className="text-center py-8 text-gray-500">{translations.loadingRooms || "Loading rooms..."}</p>
-              ) : (
-                <div className="grid grid-cols-2 gap-6">
-                  {selectedRooms.map(room => (
-                    <div 
-                      key={room.id}
-                      className={`border-2 rounded-xl p-5 cursor-pointer transition-all ${
-                        selectedRoomIds.includes(room.id)
-                          ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg'
-                          : 'border-gray-200 hover:border-purple-300 hover:shadow-md'
-                      }`}
-                      onClick={() => toggleRoomSelection(room.id)}
-                    >
-                      {room.images && room.images.length > 0 && (
-                        <img 
-                          src={room.images[0]} 
-                          alt={room.roomType || room.name}
-                          className="w-full h-36 object-cover rounded-lg mb-4"
-                        />
-                      )}
-                      <h5 className="font-semibold text-lg mb-3">{room.roomType || room.name}</h5>
-                      <div className="space-y-2 text-sm">
-                        <p className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-purple-600" />
-                          {translations.capacity || "Capacity"}: {room.maxAdults || 0} {translations.adults || "adults"}{room.maxChildren ? ` + ${room.maxChildren} ${translations.children || "children"}` : ''}
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-green-600" />
-                          {(room.basePrice || 0).toLocaleString()} {room.currency || 'VND'}{translations.perNight || "/night"}
-                        </p>
-                        {room.bedType && (
-                          <p className="text-gray-600">🛏️ {room.bedType}</p>
-                        )}
-                      </div>
-                      {selectedRoomIds.includes(room.id) && (
-                        <div className="mt-4 bg-purple-100 rounded-lg p-2.5 text-center text-sm font-semibold text-purple-700">
-                          ✓ {translations.selected || "Selected"}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-sm">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-xl">
-            <UtensilsCrossed className="w-5 h-5 text-orange-500" />
-            {translations.restaurants || "Restaurants"} {translations.onePerDay || "(one per day)"}
+          <CardTitle className="flex items-center gap-3 text-xl text-gray-900 dark:text-white">
+            <UtensilsCrossed className="w-5 h-5 text-orange-500 dark:text-orange-400" />
+            {translations.restaurants || "Restaurants"} - {translations.selectSetMeals || "Select Set Meals Per Day"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {itinerary.map((day, idx) => (
-            <div key={idx} className="border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white">
-              <Label className="font-semibold text-base mb-4 block">{translations.day || "Day"} {day.day_number} - {day.day_title || translations.untitled || 'Untitled'}</Label>
+            <div key={idx} className="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-800">
+              <Label className="font-semibold text-base mb-4 block text-gray-900 dark:text-white">{translations.day || "Day"} {day.day_number} - {day.day_title || translations.untitled || 'Untitled'}</Label>
               <select
                 value={services.restaurants.find(r => r.day_number === day.day_number)?.service_id || ''}
                 onChange={(e) => handleRestaurantChange(day.day_number, e.target.value)}
-                className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                className="w-full h-11 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 dark:focus:border-orange-400 transition-colors mb-6"
               >
                 <option value="">{translations.selectRestaurant || "Select restaurant"}</option>
                 {availableServices.restaurants?.map(r => (
@@ -1914,47 +2490,74 @@ function ServicesEditor({
                 ))}
               </select>
               
-              {/* Menu Selection */}
+              {/* Set Meal Selection per Session */}
               {services.restaurants.find(r => r.day_number === day.day_number) && 
-               selectedMenus[day.day_number]?.length > 0 && (
-                <div className="mt-6 border-t border-gray-200 pt-6">
-                  <h5 className="font-semibold text-base mb-4 flex items-center gap-3">
-                    <Utensils className="w-5 h-5 text-orange-600" />
-                    {translations.menuItems || "Menu Items"} - {translations.selectDishesForDay || "Select dishes for this day"}
+               selectedRestaurantSetMeals[services.restaurants.find(r => r.day_number === day.day_number).service_id]?.length > 0 && (
+                <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h5 className="font-semibold text-base mb-4 flex items-center gap-3 text-gray-900 dark:text-white">
+                    <Utensils className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                    {translations.selectSetMeals || "Select Set Meals by Session"}
                   </h5>
                   {loadingDetails ? (
-                    <p className="text-center py-8 text-gray-500">{translations.loadingMenu || "Loading menu..."}</p>
+                    <p className="text-center py-8 text-gray-500 dark:text-gray-400">{translations.loadingSetMeals || "Loading set meals..."}</p>
                   ) : (
-                    <div className="grid grid-cols-3 gap-4">
-                      {selectedMenus[day.day_number].map(item => (
-                        <div
-                          key={item.id}
-                          className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
-                            selectedMenuItemIds[day.day_number]?.includes(item.id)
-                              ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-amber-50 shadow-lg'
-                              : 'border-gray-200 hover:border-orange-300 hover:shadow-md'
-                          }`}
-                          onClick={() => toggleMenuItem(day.day_number, item.id)}
-                        >
-                          {item.image && (
-                            <img 
-                              src={item.image} 
-                              alt={item.name}
-                              className="w-full h-28 object-cover rounded-lg mb-3"
-                            />
-                          )}
-                          <h6 className="font-semibold text-sm mb-1">{item.name}</h6>
-                          <p className="text-xs text-gray-600 mb-2 line-clamp-2">{item.description}</p>
-                          <p className="text-sm font-bold text-orange-600">
-                            {(item.price || 0).toLocaleString()} {item.currency || 'VND'}
-                          </p>
-                          {selectedMenuItemIds[day.day_number]?.includes(item.id) && (
-                            <div className="mt-3 bg-orange-100 rounded-lg p-2 text-center text-xs font-semibold text-orange-700">
-                              ✓ {translations.selected || "Selected"}
+                    <div className="space-y-6">
+                      {TIME_PERIODS.map(session => {
+                        const sessionSetMeals = selectedRestaurantSetMeals[
+                          services.restaurants.find(r => r.day_number === day.day_number).service_id
+                        ]?.filter(sm => sm.mealSession === session) || [];
+                        
+                        return sessionSetMeals.length > 0 && (
+                          <div key={session} className="border border-orange-200 dark:border-orange-800 rounded-lg p-4 bg-orange-50/50 dark:bg-orange-900/20">
+                            <h6 className="font-semibold text-sm mb-3 capitalize text-orange-800 dark:text-orange-300">
+                              {session === 'morning' && '🌅 Morning'}
+                              {session === 'noon' && '☀️ Noon'}
+                              {session === 'evening' && '🌙 Evening'}
+                            </h6>
+                            <div className="grid grid-cols-2 gap-4">
+                              {sessionSetMeals.map(setMeal => (
+                                <div
+                                  key={setMeal.id}
+                                  className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                                    isSetMealSelected(day.day_number, session, setMeal.id)
+                                      ? 'border-orange-500 dark:border-orange-600 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 shadow-lg'
+                                      : 'border-gray-300 dark:border-gray-600 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md bg-white dark:bg-gray-800'
+                                  }`}
+                                  onClick={() => toggleSetMeal(day.day_number, session, setMeal.id)}
+                                >
+                                  <h6 className="font-semibold text-base mb-2 text-gray-900 dark:text-white">{setMeal.name}</h6>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{setMeal.description}</p>
+                                  
+                                  {/* Display included dishes */}
+                                  {setMeal.menuItems && setMeal.menuItems.length > 0 && (
+                                    <div className="mb-3 text-xs text-gray-700 dark:text-gray-300">
+                                      <p className="font-medium mb-1">{translations.includes || "Includes"}:</p>
+                                      <ul className="list-disc list-inside space-y-0.5">
+                                        {setMeal.menuItems.map(item => (
+                                          <li key={item.id} className="truncate">{item.name}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  
+                                  <p className="text-sm font-bold text-orange-600 dark:text-orange-400 mb-1">
+                                    {(setMeal.totalPrice || 0).toLocaleString()} VND
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {translations.perPerson || "Per person"}
+                                  </p>
+                                  
+                                  {isSetMealSelected(day.day_number, session, setMeal.id) && (
+                                    <div className="mt-3 bg-orange-500 dark:bg-orange-600 text-white rounded-lg p-2 text-center text-xs font-semibold">
+                                      ✓ {translations.selected || "Selected"}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
                             </div>
-                          )}
-                        </div>
-                      ))}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

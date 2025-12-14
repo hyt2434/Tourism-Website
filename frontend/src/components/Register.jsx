@@ -9,7 +9,8 @@ import {
   EyeSlashIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from '../context/LanguageContext';
+import { useToast } from '../context/ToastContext';
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -20,12 +21,13 @@ export default function Register() {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const navigate = useNavigate();
   const { translations } = useLanguage();
+  const toast = useToast();
 
   const handleRegister = async (e) => {
     e.preventDefault();
 
     if (!agreeToTerms) {
-      alert(translations.agreeTerms);
+      toast.warning(translations.agreeTerms);
       return;
     }
 
@@ -37,14 +39,14 @@ export default function Register() {
       setIsLoading(false);
 
       if (result.message) {
-        alert(translations.registerSuccess);
+        toast.success(translations.registerSuccess);
         navigate("/login");
       } else {
-        alert(result.error || translations.registerFail);
+        toast.error(result.error || translations.registerFail);
       }
     } catch (error) {
       setIsLoading(false);
-      alert(translations.networkError);
+      toast.error(translations.networkError);
       console.error(error);
     }
   };

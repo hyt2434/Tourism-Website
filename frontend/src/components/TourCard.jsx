@@ -2,6 +2,7 @@ import { Heart, MapPin, Calendar, Users } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
+import { useToast } from "../context/ToastContext";
 import { checkFavorite, addFavorite, removeFavorite } from "../api/favorites";
 
 export default function TourCard({ tour, viewMode = "grid" }) {
@@ -10,6 +11,7 @@ export default function TourCard({ tour, viewMode = "grid" }) {
   const [userId, setUserId] = useState(null);
   const [loadingFavorite, setLoadingFavorite] = useState(false);
   const { translations } = useLanguage();
+  const toast = useToast();
 
   // Check user role and load favorite status from localStorage
   useEffect(() => {
@@ -56,7 +58,7 @@ export default function TourCard({ tour, viewMode = "grid" }) {
       }
     } catch (error) {
       console.error("Error toggling favorite:", error);
-      alert("Failed to update favorite. Please try again.");
+      toast.error("Failed to update favorite. Please try again.");
     } finally {
       setLoadingFavorite(false);
     }
@@ -154,6 +156,7 @@ export default function TourCard({ tour, viewMode = "grid" }) {
               </p>
               <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
                 {tour.price.toLocaleString("vi-VN")} đ
+                <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">{translations.perPerson}</span>
               </p>
             </div>
             {userRole !== "partner" && (
@@ -208,7 +211,7 @@ export default function TourCard({ tour, viewMode = "grid" }) {
       </div>
 
       {/* Content */}
-      <div className="p-4 flex flex-col h-full">
+      <div className="p-4 flex flex-col flex-1">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 min-h-[3.5rem] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
           {tour.name}
         </h3>
@@ -222,7 +225,10 @@ export default function TourCard({ tour, viewMode = "grid" }) {
           {tour.duration && (
             <div className="flex items-center gap-2">
               <Calendar size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
-              <span>{tour.duration}</span>
+              <span>
+                {tour.duration} {tour.duration === 1 ? translations.day : translations.days}
+                {tour.duration > 1 && ` ${tour.duration - 1} ${tour.duration - 1 === 1 ? translations.night : translations.nights}`}
+              </span>
             </div>
           )}
 
@@ -249,20 +255,23 @@ export default function TourCard({ tour, viewMode = "grid" }) {
         ) : null}
 
         {/* Price */}
-        <div className="flex items-end justify-between pt-3 border-t border-gray-100 dark:border-gray-700 transition-colors mt-auto">
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {translations.from}
-            </p>
-            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-              {tour.price.toLocaleString("vi-VN")} đ
-            </p>
+        <div className="pt-3 border-t border-gray-100 dark:border-gray-700 transition-colors mt-auto">
+          <div className="flex flex-col gap-3">
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {translations.from}
+              </p>
+              <p className="text-xl font-bold text-blue-600 dark:text-blue-400 break-words">
+                {tour.price.toLocaleString("vi-VN")} đ
+                <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">{translations.perPerson}</span>
+              </p>
+            </div>
+            {userRole !== "partner" && (
+              <button className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
+                {translations.bookNow}
+              </button>
+            )}
           </div>
-          {userRole !== "partner" && (
-            <button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
-              {translations.bookNow}
-            </button>
-          )}
         </div>
       </div>
     </Link>

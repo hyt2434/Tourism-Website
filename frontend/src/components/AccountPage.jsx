@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useLanguage } from "../context/LanguageContext";
-import { Calendar, Heart, Settings, Package, Clock, MapPin, Star, X, Eye } from "lucide-react";
+import { useLanguage } from '../context/LanguageContext';
+import { useToast } from '../context/ToastContext';
+import { Calendar, Heart, Settings, Package, Clock, MapPin, Star, X, Eye, MessageSquare, ListChecks } from "lucide-react";
 import { getUserBookings, getBookingDetails } from "../api/bookings";
 import { getUserFavorites } from "../api/favorites";
+import { checkCanReview, checkCanReviewServices } from "../api/reviews";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import TourReviewForm from "./TourReviewForm";
+import ServiceReviewForm from "./ServiceReviewForm";
 
 export default function AccountPage() {
   const navigate = useNavigate();
@@ -21,6 +25,12 @@ export default function AccountPage() {
   const [showBookingDetail, setShowBookingDetail] = useState(false);
   const [bookingDetail, setBookingDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [reviewBooking, setReviewBooking] = useState(null);
+  const [bookingReviewStatus, setBookingReviewStatus] = useState({});
+  const [showServiceReviewDialog, setShowServiceReviewDialog] = useState(false);
+  const [serviceReviewBooking, setServiceReviewBooking] = useState(null);
+  const [bookingServiceReviewStatus, setBookingServiceReviewStatus] = useState({});
 
   useEffect(() => {
     // Check if user is a client
@@ -60,6 +70,14 @@ export default function AccountPage() {
       const result = await getUserBookings(userId);
       if (result.success) {
         setBookings(result.bookings || []);
+        // Check review status for each completed booking
+        const completedBookings = (result.bookings || []).filter(
+          b => b.tour_schedule_status === 'completed'
+        );
+        completedBookings.forEach(booking => {
+          checkBookingReviewStatus(booking.id);
+          checkBookingServiceReviewStatus(booking.id);
+        });
       }
     } catch (error) {
       console.error("Failed to load bookings:", error);
@@ -92,10 +110,99 @@ export default function AccountPage() {
       }
     } catch (error) {
       console.error("Failed to load booking details:", error);
-      alert("Failed to load booking details");
+      toast.error("Failed to load booking details");
     } finally {
       setLoadingDetail(false);
     }
+  };
+
+  const checkBookingReviewStatus = async (bookingId) => {
+    try {
+      const result = await checkCanReview(bookingId);
+      setBookingReviewStatus(prev => ({
+        ...prev,
+        [bookingId]: result
+      }));
+    } catch (error) {
+      console.error("Failed to check review status:", error);
+    }
+  };
+
+  const checkBookingServiceReviewStatus = async (bookingId) => {
+    try {
+      const result = await checkCanReviewServices(bookingId);
+      setBookingServiceReviewStatus(prev => ({
+        ...prev,
+        [bookingId]: result
+      }));
+    } catch (error) {
+      console.error("Failed to check service review status:", error);
+    }
+  };
+
+  const handleWriteReview = async (booking) => {
+    // Check if can review first
+    try {
+      const token = localStorage.getItem('token');
+      console.log('Token exists:', !!token);
+      console.log('Token value:', token ? token.substring(0, 20) + '...' : 'null');
+      
+      if (!token) {
+        toast.warning('Please login to write a review');
+        return;
+      }
+
+      console.log('Calling checkCanReview for booking:', booking.id);
+      const result = await checkCanReview(booking.id);
+      
+      console.log('Can review result:', result);
+      
+      if (!result) {
+        toast.error('Không nhận được phản hồi từ server');
+        return;
+      }
+      
+      if (result.success && result.can_review) {
+        setReviewBooking({
+          bookingId: booking.id,
+          tourId: booking.tour_id,
+          tourName: booking.tour_name
+        });
+        setShowReviewDialog(true);
+      } else if (result.success && result.has_review) {
+        toast.warning('Bạn đã đánh giá tour này rồi');
+      } else {
+        toast.warning(result.message || 'Bạn chưa thể đánh giá tour này');
+      }
+    } catch (error) {
+      console.error('Error checking review eligibility:', error);
+      toast.error('Không thể kiểm tra trạng thái đánh giá: ' + error.message);
+    }
+  };
+
+  const handleReviewSuccess = (review) => {
+    setShowReviewDialog(false);
+    setReviewBooking(null);
+    toast.success("Review submitted successfully!");
+    // Refresh bookings to update review status
+    if (userId) loadBookings(userId);
+  };
+
+  const handleWriteServiceReview = (booking) => {
+    setServiceReviewBooking({
+      bookingId: booking.id,
+      tourId: booking.tour_id,
+      tourName: booking.tour_name
+    });
+    setShowServiceReviewDialog(true);
+  };
+
+  const handleServiceReviewSuccess = (data) => {
+    setShowServiceReviewDialog(false);
+    setServiceReviewBooking(null);
+    toast.success("Đánh giá dịch vụ đã được gửi thành công!");
+    // Refresh service review status
+    if (userId) loadBookings(userId);
   };
 
   const formatDate = (dateString) => {
@@ -200,7 +307,7 @@ export default function AccountPage() {
                       {translations.accountPage.noOtherBookings}
                     </p>
                     <button
-                      onClick={() => navigate("/tour")}
+                      onClick={() => navigate("/tours")}
                       className="mt-4 bg-indigo-600 text-white px-6 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
                     >
                       {translations.exploreTours}
@@ -260,6 +367,44 @@ export default function AccountPage() {
                             <Eye size={18} />
                             {translations.accountPage.viewDetails}
                           </button>
+                          {booking.tour_schedule_status === 'completed' && (
+                            <>
+                              {bookingReviewStatus[booking.id]?.has_review ? (
+                                <button
+                                  disabled
+                                  className="flex-1 bg-gray-400 text-white py-2.5 px-4 rounded-lg cursor-not-allowed font-medium flex items-center justify-center gap-2 opacity-70"
+                                >
+                                  <Star size={18} className="fill-white" />
+                                  Đã đánh giá
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleWriteReview(booking)}
+                                  className="flex-1 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+                                >
+                                  <MessageSquare size={18} />
+                                  Viết đánh giá
+                                </button>
+                              )}
+                              {bookingServiceReviewStatus[booking.id]?.has_reviewed_all ? (
+                                <button
+                                  disabled
+                                  className="flex-1 bg-gray-400 text-white py-2.5 px-4 rounded-lg cursor-not-allowed font-medium flex items-center justify-center gap-2 opacity-70"
+                                >
+                                  <ListChecks size={18} />
+                                  Đã đánh giá DV
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleWriteServiceReview(booking)}
+                                  className="flex-1 bg-purple-600 text-white py-2.5 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
+                                >
+                                  <ListChecks size={18} />
+                                  Đánh giá DV
+                                </button>
+                              )}
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -302,7 +447,7 @@ export default function AccountPage() {
                     {favorites.map((favorite) => (
                       <Link
                         key={favorite.id}
-                        to={`/tour/${favorite.tour_id}`}
+                        to={`/tours/${favorite.tour_id}`}
                         className="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700"
                       >
                         {favorite.tour.image && (
@@ -464,6 +609,40 @@ export default function AccountPage() {
               )}
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Review Dialog */}
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto bg-white dark:bg-gray-900 p-0">
+          {reviewBooking && (
+            <TourReviewForm
+              bookingId={reviewBooking.bookingId}
+              tourId={reviewBooking.tourId}
+              onSuccess={handleReviewSuccess}
+              onCancel={() => {
+                setShowReviewDialog(false);
+                setReviewBooking(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Service Review Dialog */}
+      <Dialog open={showServiceReviewDialog} onOpenChange={setShowServiceReviewDialog}>
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto bg-white dark:bg-gray-900 p-0">
+          {serviceReviewBooking && (
+            <ServiceReviewForm
+              bookingId={serviceReviewBooking.bookingId}
+              tourId={serviceReviewBooking.tourId}
+              onSuccess={handleServiceReviewSuccess}
+              onCancel={() => {
+                setShowServiceReviewDialog(false);
+                setServiceReviewBooking(null);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

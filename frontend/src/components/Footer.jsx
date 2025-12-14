@@ -26,18 +26,18 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-section dark:bg-gray-800 py-12 transition-colors duration-300">
-      <div className="container mx-auto px-36 max-w-container">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center lg:justify-items-start text-center lg:text-left">
+    <footer className="bg-section dark:bg-gray-800 py-8 sm:py-10 lg:py-12 transition-colors duration-300">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-24 max-w-container">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 justify-items-center lg:justify-items-start text-center lg:text-left">
           {/* Column 1 - Brand */}
-          <div>
-            <h3 className="text-lg font-bold text-title dark:text-white mb-3">
+          <div className="w-full sm:w-auto">
+            <h3 className="text-base sm:text-lg font-bold text-title dark:text-white mb-2 sm:mb-3">
               MagicViet
             </h3>
-            <p className="text-sm text-body dark:text-gray-300 mb-4 leading-relaxed">
+            <p className="text-xs sm:text-sm text-body dark:text-gray-300 mb-3 sm:mb-4 leading-relaxed max-w-xs mx-auto lg:mx-0">
               {translations.footerDescription}
             </p>
-            <div className="flex gap-4 justify-center lg:justify-start">
+            <div className="flex gap-3 sm:gap-4 justify-center lg:justify-start">
               {["facebook", "instagram", "twitter", "youtube"].map((platform) => (
                 <a
                   key={platform}
@@ -52,11 +52,11 @@ export default function Footer() {
           </div>
 
           {/* Column 2 - Popular Provinces */}
-          <div>
-            <h3 className="text-lg font-bold text-title dark:text-white mb-3">
+          <div className="w-full sm:w-auto">
+            <h3 className="text-base sm:text-lg font-bold text-title dark:text-white mb-2 sm:mb-3">
               {translations.popularProvinces}
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-1.5 sm:space-y-2">
               {popularProvinces.map((province) => (
                 <li key={province}>
                   <a
@@ -71,11 +71,11 @@ export default function Footer() {
           </div>
 
           {/* Column 3 - More Destinations */}
-          <div>
-            <h3 className="text-lg font-bold text-title dark:text-white mb-3">
+          <div className="w-full sm:w-auto">
+            <h3 className="text-base sm:text-lg font-bold text-title dark:text-white mb-2 sm:mb-3">
               {translations.moreDestinations}
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-1.5 sm:space-y-2">
               {moreDestinations.map((destination) => (
                 <li key={destination}>
                   <a
@@ -90,11 +90,11 @@ export default function Footer() {
           </div>
 
           {/* Column 4 - Legal */}
-          <div>
-            <h3 className="text-lg font-bold text-title dark:text-white mb-3">
+          <div className="w-full sm:w-auto">
+            <h3 className="text-base sm:text-lg font-bold text-title dark:text-white mb-2 sm:mb-3">
               {translations.legal}
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-1.5 sm:space-y-2">
               {legal.map((item) => (
                 <li key={item}>
                   <a

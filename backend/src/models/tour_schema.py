@@ -240,6 +240,42 @@ def create_tour_tables():
         """)
         
         # =====================================================================
+        # TOUR SCHEDULES TABLE (Available departure dates for tours)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS tour_schedules (
+                id SERIAL PRIMARY KEY,
+                tour_id INTEGER NOT NULL REFERENCES tours_admin(id) ON DELETE CASCADE,
+                
+                -- Departure Information
+                departure_datetime TIMESTAMP NOT NULL, -- Date and time of departure
+                return_datetime TIMESTAMP NOT NULL, -- Auto-calculated: departure + duration
+                
+                -- Capacity Management
+                max_slots INTEGER NOT NULL, -- Max number of people (from tour's number_of_members)
+                slots_booked INTEGER DEFAULT 0, -- Number of slots already booked
+                slots_available INTEGER GENERATED ALWAYS AS (max_slots - slots_booked) STORED,
+                
+                -- Status
+                is_active BOOLEAN DEFAULT TRUE, -- Can be deactivated without deletion
+                status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'ongoing', 'completed', 'cancelled')),
+                
+                -- Metadata
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                CONSTRAINT valid_slots CHECK (slots_booked >= 0 AND slots_booked <= max_slots),
+                CONSTRAINT valid_datetime CHECK (return_datetime > departure_datetime)
+            );
+        """)
+        
+        # Create index for tour schedules
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_tour_schedules_tour 
+                ON tour_schedules(tour_id, departure_datetime);
+        """)
+        
+        # =====================================================================
         # TOUR SELECTED ROOMS TABLE (Selected accommodation rooms for tours)
         # =====================================================================
         cur.execute("""
@@ -264,6 +300,112 @@ def create_tour_tables():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(tour_id, menu_item_id, day_number)
             );
+        """)
+        
+        # =====================================================================
+        # TOUR SELECTED SET MEALS TABLE (Selected restaurant set meals for tours)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS tour_selected_set_meals (
+                id SERIAL PRIMARY KEY,
+                tour_id INTEGER NOT NULL REFERENCES tours_admin(id) ON DELETE CASCADE,
+                set_meal_id INTEGER NOT NULL REFERENCES restaurant_set_meals(id) ON DELETE CASCADE,
+                day_number INTEGER NOT NULL,
+                meal_session VARCHAR(20) NOT NULL CHECK (meal_session IN ('morning', 'noon', 'evening')),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(tour_id, set_meal_id, day_number, meal_session)
+            );
+        """)
+        
+        # =====================================================================
+        # TOUR ROOM BOOKINGS TABLE (Track room selection and quantity)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS tour_room_bookings (
+                id SERIAL PRIMARY KEY,
+                tour_id INTEGER NOT NULL REFERENCES tours_admin(id) ON DELETE CASCADE,
+                room_id INTEGER NOT NULL REFERENCES accommodation_rooms(id) ON DELETE CASCADE,
+                quantity INTEGER NOT NULL DEFAULT 1, -- Number of rooms booked
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(tour_id, room_id)
+            );
+        """)
+        
+        # =====================================================================
+        # PARTNER REVENUE PENDING TABLE (Track revenue distributions to partners)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS partner_revenue_pending (
+                id SERIAL PRIMARY KEY,
+                schedule_id INTEGER NOT NULL REFERENCES tour_schedules(id) ON DELETE CASCADE,
+                partner_id INTEGER NOT NULL,
+                partner_type VARCHAR(50) NOT NULL,
+                amount DECIMAL(14, 2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'failed')),
+                paid_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                CONSTRAINT unique_schedule_partner UNIQUE (schedule_id, partner_id, partner_type)
+            );
+        """)
+        
+        # Create indexes for partner revenue
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_partner_revenue_partner 
+            ON partner_revenue_pending(partner_id, status);
+        """)
+        
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_partner_revenue_schedule 
+            ON partner_revenue_pending(schedule_id);
+        """)
+        
+        # =====================================================================
+        # PARTNER REVENUE TABLE (Aggregated revenue per partner - no duplicates)
+        # =====================================================================
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS partner_revenue (
+                id SERIAL PRIMARY KEY,
+                partner_id INTEGER NOT NULL UNIQUE,
+                amount DECIMAL(18, 2) NOT NULL DEFAULT 0.00,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
+        # Ensure existing tables have sufficient precision for large payouts
+        cur.execute("""
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'partner_revenue_pending'
+                      AND column_name = 'amount'
+                      AND (numeric_precision IS NULL OR numeric_precision < 14)
+                ) THEN
+                    ALTER TABLE partner_revenue_pending
+                    ALTER COLUMN amount TYPE DECIMAL(14,2)
+                    USING amount::DECIMAL(14,2);
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'partner_revenue'
+                      AND column_name = 'amount'
+                      AND (numeric_precision IS NULL OR numeric_precision < 14)
+                ) THEN
+                    ALTER TABLE partner_revenue
+                    ALTER COLUMN amount TYPE DECIMAL(14,2)
+                    USING amount::DECIMAL(14,2);
+                END IF;
+            END $$;
+        """)
+        
+        # Create index for partner revenue sorting
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_partner_revenue_amount 
+            ON partner_revenue(amount DESC);
         """)
         
         conn.commit()

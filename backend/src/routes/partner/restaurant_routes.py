@@ -773,3 +773,313 @@ def delete_menu_item(restaurant_id, menu_item_id):
         if conn:
             conn.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+# =====================================================================
+# SET MEAL ENDPOINTS (New)
+# =====================================================================
+
+@restaurant_bp.route('/<int:restaurant_id>/set-meals', methods=['GET'])
+def get_set_meals(restaurant_id):
+    """Get all set meals for a restaurant"""
+    try:
+        partner_id = request.headers.get('X-User-ID')
+        
+        if not partner_id:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        conn = get_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cur = conn.cursor()
+        
+        # Verify ownership
+        cur.execute("SELECT partner_id FROM restaurant_services WHERE id = %s", (restaurant_id,))
+        row = cur.fetchone()
+        
+        if not row or str(row[0]) != str(partner_id):
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        # Get set meals
+        cur.execute("""
+            SELECT id, name, description, meal_session, total_price, currency, is_available, created_at, updated_at
+            FROM restaurant_set_meals
+            WHERE restaurant_id = %s
+            ORDER BY meal_session, created_at DESC
+        """, (restaurant_id,))
+        
+        rows = cur.fetchall()
+        set_meals = []
+        
+        for row in rows:
+            set_meal_id = row[0]
+            
+            # Get menu items for this set meal
+            cur.execute("""
+                SELECT rmi.id, rmi.name, rmi.price, rmi.category
+                FROM restaurant_set_meal_items rsmi
+                JOIN restaurant_menu_items rmi ON rsmi.menu_item_id = rmi.id
+                WHERE rsmi.set_meal_id = %s
+            """, (set_meal_id,))
+            
+            menu_items = [{
+                'id': item[0],
+                'name': item[1],
+                'price': float(item[2]) if item[2] else 0,
+                'category': item[3]
+            } for item in cur.fetchall()]
+            
+            set_meals.append({
+                'id': set_meal_id,
+                'name': row[1],
+                'description': row[2],
+                'mealSession': row[3],
+                'totalPrice': float(row[4]) if row[4] else 0,
+                'currency': row[5],
+                'isAvailable': row[6],
+                'menuItems': menu_items,
+                'createdAt': row[7].isoformat() if row[7] else None,
+                'updatedAt': row[8].isoformat() if row[8] else None
+            })
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify(set_meals), 200
+        
+    except Exception as e:
+        print(f"Error fetching set meals: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@restaurant_bp.route('/<int:restaurant_id>/set-meals', methods=['POST'])
+def create_set_meal(restaurant_id):
+    """Create a new set meal"""
+    try:
+        partner_id = request.headers.get('X-User-ID')
+        
+        if not partner_id:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        data = request.get_json()
+        
+        conn = get_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cur = conn.cursor()
+        
+        # Verify ownership
+        cur.execute("SELECT partner_id FROM restaurant_services WHERE id = %s", (restaurant_id,))
+        row = cur.fetchone()
+        
+        if not row or str(row[0]) != str(partner_id):
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        # Calculate total price from selected menu items
+        menu_item_ids = data.get('menuItemIds', [])
+        if not menu_item_ids:
+            return jsonify({'error': 'At least one menu item is required'}), 400
+        
+        total_price = 0
+        for item_id in menu_item_ids:
+            cur.execute("SELECT price FROM restaurant_menu_items WHERE id = %s AND restaurant_id = %s", (item_id, restaurant_id))
+            price_row = cur.fetchone()
+            if price_row:
+                total_price += float(price_row[0]) if price_row[0] else 0
+        
+        # Insert set meal
+        cur.execute("""
+            INSERT INTO restaurant_set_meals (restaurant_id, name, description, meal_session, total_price, currency)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (
+            restaurant_id,
+            data['name'],
+            data.get('description'),
+            data['mealSession'],
+            total_price,
+            data.get('currency', 'VND')
+        ))
+        
+        set_meal_id = cur.fetchone()[0]
+        
+        # Insert set meal items
+        for item_id in menu_item_ids:
+            cur.execute("""
+                INSERT INTO restaurant_set_meal_items (set_meal_id, menu_item_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
+            """, (set_meal_id, item_id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'message': 'Set meal created successfully',
+            'id': set_meal_id,
+            'totalPrice': total_price
+        }), 201
+        
+    except Exception as e:
+        print(f"Error creating set meal: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@restaurant_bp.route('/<int:restaurant_id>/set-meals/<int:set_meal_id>', methods=['PUT'])
+def update_set_meal(restaurant_id, set_meal_id):
+    """Update a set meal"""
+    try:
+        partner_id = request.headers.get('X-User-ID')
+        
+        if not partner_id:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        data = request.get_json()
+        
+        conn = get_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cur = conn.cursor()
+        
+        # Verify ownership
+        cur.execute("""
+            SELECT rs.partner_id 
+            FROM restaurant_set_meals rsm
+            JOIN restaurant_services rs ON rsm.restaurant_id = rs.id
+            WHERE rsm.id = %s AND rsm.restaurant_id = %s
+        """, (set_meal_id, restaurant_id))
+        
+        row = cur.fetchone()
+        
+        if not row or str(row[0]) != str(partner_id):
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        # Recalculate total price if menu items changed
+        total_price = 0
+        menu_item_ids = data.get('menuItemIds', [])
+        
+        if menu_item_ids:
+            for item_id in menu_item_ids:
+                cur.execute("SELECT price FROM restaurant_menu_items WHERE id = %s AND restaurant_id = %s", (item_id, restaurant_id))
+                price_row = cur.fetchone()
+                if price_row:
+                    total_price += float(price_row[0]) if price_row[0] else 0
+            
+            # Update set meal
+            cur.execute("""
+                UPDATE restaurant_set_meals SET
+                    name = %s,
+                    description = %s,
+                    meal_session = %s,
+                    total_price = %s,
+                    is_available = %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s AND restaurant_id = %s
+            """, (
+                data.get('name'),
+                data.get('description'),
+                data.get('mealSession'),
+                total_price,
+                data.get('isAvailable', True),
+                set_meal_id,
+                restaurant_id
+            ))
+            
+            # Delete old set meal items
+            cur.execute("DELETE FROM restaurant_set_meal_items WHERE set_meal_id = %s", (set_meal_id,))
+            
+            # Insert new set meal items
+            for item_id in menu_item_ids:
+                cur.execute("""
+                    INSERT INTO restaurant_set_meal_items (set_meal_id, menu_item_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT DO NOTHING
+                """, (set_meal_id, item_id))
+        else:
+            # Just update basic info
+            cur.execute("""
+                UPDATE restaurant_set_meals SET
+                    name = %s,
+                    description = %s,
+                    meal_session = %s,
+                    is_available = %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s AND restaurant_id = %s
+            """, (
+                data.get('name'),
+                data.get('description'),
+                data.get('mealSession'),
+                data.get('isAvailable', True),
+                set_meal_id,
+                restaurant_id
+            ))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({'message': 'Set meal updated successfully'}), 200
+        
+    except Exception as e:
+        print(f"Error updating set meal: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@restaurant_bp.route('/<int:restaurant_id>/set-meals/<int:set_meal_id>', methods=['DELETE'])
+def delete_set_meal(restaurant_id, set_meal_id):
+    """Delete a set meal"""
+    try:
+        partner_id = request.headers.get('X-User-ID')
+        
+        if not partner_id:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        conn = get_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+        
+        cur = conn.cursor()
+        
+        # Verify ownership
+        cur.execute("""
+            SELECT rs.partner_id 
+            FROM restaurant_set_meals rsm
+            JOIN restaurant_services rs ON rsm.restaurant_id = rs.id
+            WHERE rsm.id = %s AND rsm.restaurant_id = %s
+        """, (set_meal_id, restaurant_id))
+        
+        row = cur.fetchone()
+        
+        if not row or str(row[0]) != str(partner_id):
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        # Delete set meal (cascade will delete set_meal_items)
+        cur.execute("DELETE FROM restaurant_set_meals WHERE id = %s", (set_meal_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({'message': 'Set meal deleted successfully'}), 200
+        
+    except Exception as e:
+        print(f"Error deleting set meal: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({'error': str(e)}), 500

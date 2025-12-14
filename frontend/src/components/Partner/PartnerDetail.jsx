@@ -1,22 +1,112 @@
-import { useParams, Link } from "react-router-dom";
-import { mockPartners } from "./PartnerData";
+import { useEffect, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
-import { Star, MapPin, Phone, Globe, Mail, Award, Users, TrendingUp, CheckCircle2, ArrowRight, Calendar, DollarSign, Clock, MessageCircle, Heart, Share2, Sparkles } from "lucide-react";
+import { Star, Phone, Globe, Mail, Award, Users, TrendingUp, CheckCircle2, ArrowRight, Calendar, Clock, MessageCircle, Heart, Share2, Sparkles, X, MapPin, User, Trash2 } from "lucide-react";
+import { getPartnerDetail } from "../../api/partners";
+import { deleteServiceReview } from "../../api/reviews";
+import { useLanguage } from "../../context/LanguageContext";
+import { useToast } from "../../context/ToastContext";
 
 export default function PartnerDetail() {
   const { id } = useParams();
-  const partner = mockPartners.find((p) => p.id === parseInt(id));
+  const navigate = useNavigate();
+  const { translations: t, language } = useLanguage();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedReview, setSelectedReview] = useState(null);
+  const [showDetailPanel, setShowDetailPanel] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [data, setData] = useState({
+    partner: null,
+    tours: [],
+    services: { accommodations: [], restaurants: [], transportations: [] },
+    reviews: []
+  });
+
+  useEffect(() => {
+    // Scroll to top when component mounts or id changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    const fetchDetail = async () => {
+      try {
+        const res = await getPartnerDetail(id);
+        if (res?.success) {
+          setData({
+            partner: res.partner,
+            tours: res.tours || [],
+            services: res.services || { accommodations: [], restaurants: [], transportations: [] },
+            reviews: res.reviews || []
+          });
+        } else {
+          setError(res?.message || t?.failedToLoadPartnerDetail || "Failed to load partner detail");
+        }
+      } catch (err) {
+        setError(err.message || t?.failedToLoadPartnerDetail || "Failed to load partner detail");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetail();
+    checkAdminStatus();
+  }, [id]);
+
+  const checkAdminStatus = () => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      const userData = JSON.parse(user);
+      setIsAdmin(userData.role === 'admin');
+    }
+  };
+
+  const handleDeleteServiceReview = async (reviewId, e) => {
+    e.stopPropagation(); // Prevent card click event
+    
+    if (!window.confirm(t?.confirmDeleteServiceReview || 'Are you sure you want to delete this service review?')) {
+      return;
+    }
+
+    try {
+      setDeletingId(reviewId);
+      const data = await deleteServiceReview(reviewId);
+      
+      if (data.success) {
+        toast.success(t?.serviceReviewDeleted || 'Service review deleted successfully');
+        // Remove review from list
+        setData(prev => ({
+          ...prev,
+          reviews: prev.reviews.filter(r => r.id !== reviewId)
+        }));
+        // Close panel if this review is currently shown
+        if (selectedReview?.id === reviewId) {
+          setShowDetailPanel(false);
+          setSelectedReview(null);
+        }
+      } else {
+        toast.error(data.message || t?.failedToDeleteServiceReview || 'Failed to delete service review');
+      }
+    } catch (error) {
+      console.error('Error deleting service review:', error);
+      toast.error(t?.failedToDeleteServiceReview || 'Failed to delete service review');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const partner = data.partner;
+  const avatar = partner?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(partner?.name || t?.partner || "Partner")}&background=0D8ABC&color=fff`;
 
   if (!partner) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="text-6xl">❌</div>
-          <p className="text-xl text-gray-600 font-medium">Partner not found</p>
+          <div className="text-6xl">{loading ? "⏳" : "❌"}</div>
+          <p className="text-xl text-gray-600 dark:text-gray-300 font-medium">{loading ? (t?.loading || "Loading...") : (error || t?.partnerNotFound || "Partner not found")}</p>
           <Link to="/partner">
             <Button className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600">
               <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
-              Back to Partners
+              {t?.backToPartners || "Back to Partners"}
             </Button>
           </Link>
         </div>
@@ -25,179 +115,142 @@ export default function PartnerDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-cyan-400/20 to-blue-400/20 rounded-full blur-3xl animate-pulse delay-700"></div>
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-purple-400/20 dark:from-blue-600/10 dark:to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-cyan-400/20 to-blue-400/20 dark:from-cyan-600/10 dark:to-blue-600/10 rounded-full blur-3xl animate-pulse delay-700"></div>
       </div>
 
       <div className="container mx-auto px-6 py-12 relative z-10">
         {/* Back Button */}
-        <Link to="/partner" className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-8 transition-colors">
+        <Link to="/partner" className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 mb-8 transition-colors">
           <ArrowRight className="w-4 h-4 rotate-180" />
-          <span className="font-medium">Back to Partners</span>
+          <span className="font-medium">{t?.backToPartners || "Back to Partners"}</span>
         </Link>
 
         {/* Hero Header Section */}
-        <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl p-8 md:p-12 mb-8 border border-white/20 relative overflow-hidden">
+        <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl shadow-2xl p-8 md:p-12 mb-8 border border-white/20 dark:border-gray-700/50 relative overflow-hidden">
           {/* Decorative gradient */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 dark:from-blue-600/20 dark:to-purple-600/20 rounded-full blur-3xl"></div>
           
           <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center md:items-start">
             {/* Logo with premium effect */}
             <div className="relative flex-shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full blur-2xl opacity-40"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full blur-2xl opacity-40 dark:opacity-30"></div>
               <img
-                src={partner.logo}
+                src={avatar}
                 alt={partner.name}
-                className="relative w-48 h-48 rounded-full object-cover border-8 border-white shadow-2xl ring-4 ring-blue-100"
+                className="relative w-48 h-48 rounded-full object-cover border-8 border-white dark:border-gray-700 shadow-2xl ring-4 ring-blue-100 dark:ring-blue-900/50"
               />
-              <div className="absolute -bottom-3 -right-3 bg-gradient-to-r from-green-400 to-emerald-500 w-14 h-14 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
+              <div className="absolute -bottom-3 -right-3 bg-gradient-to-r from-green-400 to-emerald-500 w-14 h-14 rounded-full border-4 border-white dark:border-gray-800 flex items-center justify-center shadow-lg">
                 <CheckCircle2 className="w-7 h-7 text-white" />
               </div>
               <div className="absolute -top-3 -left-3 bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1 rounded-full text-white text-xs font-bold shadow-lg flex items-center gap-1">
                 <Award className="w-3 h-3" />
-                Verified
+                {t?.partnerVerified || "Verified"}
               </div>
             </div>
 
-            <div className="flex-1 space-y-5 text-center md:text-left">
+            <div className="flex-1 space-y-4 sm:space-y-5 text-center md:text-left min-w-0">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold mb-3">
-                  <Sparkles className="w-3 h-3" />
-                  Premium Partner
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-semibold mb-2 sm:mb-3">
+                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  {t?.premiumPartner || "Premium Partner"}
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-900 bg-clip-text text-transparent mb-3">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-900 dark:from-white dark:via-blue-300 dark:to-purple-300 bg-clip-text text-transparent mb-2 sm:mb-3 break-words">
                   {partner.name}
                 </h1>
-                <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
-                  {partner.description || partner.tourCore}
+                <p className="text-sm sm:text-base md:text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-2xl mx-auto md:mx-0">
+                  {partner.description || partner.tourCore || t?.partnerSubtitle || ""}
                 </p>
               </div>
 
               {/* Rating */}
-              <div className="flex items-center gap-3 justify-center md:justify-start">
-                <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2 sm:gap-3 justify-center md:justify-start">
+                <div className="flex items-center gap-0.5 sm:gap-1">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
                       key={i}
-                      className={`w-6 h-6 ${i < (partner.rating || 4) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
+                      className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 ${i < Math.round(partner.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300 dark:text-gray-600'}`}
                     />
                   ))}
                 </div>
-                <span className="text-gray-600 font-semibold">
-                  {partner.rating || 4}.0
+                <span className="text-sm sm:text-base text-gray-600 dark:text-gray-300 font-semibold">
+                  {(partner.rating ?? 0).toFixed ? (partner.rating ?? 0).toFixed(1) : (partner.rating ?? 0)}
                 </span>
-                <span className="text-gray-500">(230 reviews)</span>
               </div>
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                {[
-                  { icon: Users, label: "Guests", value: "15K+" },
-                  { icon: Calendar, label: "Since", value: partner.date },
-                  { icon: TrendingUp, label: "Growth", value: "+45%" },
-                  { icon: Award, label: "Rating", value: "5.0★" }
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
+                {[ 
+                  { icon: Users, label: t?.supportTour || "Support Tour", value: data.tours.length },
+                  { icon: Calendar, label: t?.partnerTypeLabel || "Type", value: partner.partner_type || t?.partner || "Partner" },
+                  { icon: TrendingUp, label: t?.partnerStats4 || "Growth", value: "+45%" },
+                  { icon: Award, label: t?.partnerStats3 || "Rating", value: `${(partner.rating ?? 0).toFixed ? (partner.rating ?? 0).toFixed(1) : (partner.rating ?? 0)}★` }
                 ].map((stat, idx) => (
-                  <div key={idx} className="bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-center">
-                    <stat.icon className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-                    <div className="text-lg font-bold text-gray-900">{stat.value}</div>
-                    <div className="text-xs text-gray-600">{stat.label}</div>
+                  <div key={idx} className="bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-3 border border-white/20 dark:border-gray-600/50 text-center">
+                    <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 mx-auto mb-1" />
+                    <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">{stat.value}</div>
+                    <div className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">{stat.label}</div>
                   </div>
                 ))}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3 justify-center md:justify-start pt-4">
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 h-11 px-6">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Book Now
-                </Button>
-                <Button variant="outline" className="h-11 px-6 border-2 hover:bg-white/80">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Contact
-                </Button>
-                <Button variant="outline" className="h-11 w-11 p-0 border-2 hover:bg-white/80">
-                  <Heart className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" className="h-11 w-11 p-0 border-2 hover:bg-white/80">
-                  <Share2 className="w-4 h-4" />
-                </Button>
               </div>
             </div>
           </div>
         </div>
 
         {/* Contact Information Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 p-2.5 flex-shrink-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 border border-white/20 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 p-2 sm:p-2.5 flex-shrink-0">
                 <Mail className="w-full h-full text-white" />
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-500 mb-1">Email</p>
-                <p className="font-semibold text-gray-900 text-sm">contact@{partner.name.replace(/\s+/g, "").toLowerCase()}.com</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">{t?.email || "Email"}</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate">
+                  {partner.email || t?.notAvailable || "N/A"}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 p-2.5 flex-shrink-0">
+          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 border border-white/20 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 p-2 sm:p-2.5 flex-shrink-0">
                 <Phone className="w-full h-full text-white" />
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-500 mb-1">Phone</p>
-                <p className="font-semibold text-gray-900">+84 123 456 789</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 p-2.5 flex-shrink-0">
-                <Globe className="w-full h-full text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-500 mb-1">Website</p>
-                <a 
-                  href={`https://www.${partner.name.replace(/\s+/g, "").toLowerCase()}.com`} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  className="font-semibold text-blue-600 hover:text-blue-700 hover:underline text-sm flex items-center gap-1"
-                >
-                  Visit site
-                  <ArrowRight className="w-3 h-3" />
-                </a>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">{t?.phone || "Phone"}</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate">
+                  {partner.phone || t?.notAvailable || "N/A"}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
         {/* About Section */}
-        <section className="bg-white/70 backdrop-blur-xl rounded-3xl p-8 md:p-10 shadow-xl border border-white/20 mb-8">
-          <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
-            About {partner.name}
+        <section className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 dark:border-gray-700/50 mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-300 bg-clip-text text-transparent">
+            {t?.aboutPartner || "About"} {partner.name}
           </h2>
           
-          <div className="space-y-4">
-            <p className="text-gray-700 leading-relaxed text-lg">
-              {partner.name} has been one of our trusted travel partners, providing guests with exceptional
-              service, comfort, and unforgettable experiences. Whether you're exploring Vietnam's
-              breathtaking landscapes or relaxing at a seaside resort, {partner.name} ensures every trip is memorable.
+          <div className="space-y-3 sm:space-y-4">
+            <p className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+              {(t?.partnerAboutDescription || "{name} has been one of our trusted travel partners, providing guests with exceptional service, comfort, and unforgettable experiences. Whether you're exploring Vietnam's breathtaking landscapes or relaxing at a seaside resort, {name} ensures every trip is memorable.").replace(/{name}/g, partner.name)}
             </p>
 
             {/* Success metrics */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6 mt-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 p-2.5 flex-shrink-0">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800/50 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 mt-4 sm:mt-6">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 p-2 sm:p-2.5 flex-shrink-0">
                   <TrendingUp className="w-full h-full text-white" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-green-800 mb-2">Partnership Success Story</h3>
-                  <p className="text-green-700 leading-relaxed">{partner.benefit}</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base sm:text-lg font-bold text-green-800 dark:text-green-300 mb-1 sm:mb-2">{t?.partnershipSuccessStory || "Partnership Success Story"}</h3>
+                  <p className="text-sm sm:text-base text-green-700 dark:text-green-300 leading-relaxed">{partner.benefit}</p>
                 </div>
               </div>
             </div>
@@ -205,66 +258,76 @@ export default function PartnerDetail() {
         </section>
 
         {/* Available Tours Section */}
-        <section className="bg-white/70 backdrop-blur-xl rounded-3xl p-8 md:p-10 shadow-xl border border-white/20 mb-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
-              Available Tours
+        <section className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 dark:border-gray-700/50 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-300 bg-clip-text text-transparent">
+              {t?.availableTours || "Available Tours"}
             </h2>
-            <Button variant="outline" className="border-2">
-              View All
-              <ArrowRight className="w-4 h-4 ml-2" />
+            <Button variant="outline" className="border-2 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 text-sm sm:text-base w-full sm:w-auto">
+              {t?.viewAll || "View All"}
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-2" />
             </Button>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {data.tours.length === 0 && (
+              <div className="text-gray-500 dark:text-gray-400">{t?.noToursLinked || "No tours linked to this partner yet."}</div>
+            )}
+            {data.tours.map((tour) => (
               <div 
-                key={i} 
-                className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]"
+                key={tour.tour_id} 
+                className="group bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]"
               >
                 {/* Tour Image */}
-                <div className="relative overflow-hidden h-48">
+                <div className="relative overflow-hidden h-40 sm:h-48">
                   <img
-                    src={`https://source.unsplash.com/600x400/?travel,vietnam,${i}`}
-                    alt="Tour"
+                    src={tour.image_url || `https://source.unsplash.com/600x400/?travel,vietnam,${tour.tour_id}`}
+                    alt={tour.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   
                   {/* Badges */}
-                  <div className="absolute top-3 left-3 flex gap-2">
-                    <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                      Featured
+                  <div className="absolute top-2 sm:top-3 left-2 sm:left-3 flex gap-1.5 sm:gap-2">
+                    <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
+                      {t?.featured || "Featured"}
                     </span>
                   </div>
                   
-                  <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-                    <div>
-                      <h3 className="text-white font-bold text-lg">Tour Package #{i}</h3>
-                      <p className="text-white/90 text-sm flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {2 + i} days / {1 + i} nights
+                  <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 flex items-end justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-white font-bold text-base sm:text-lg truncate">{tour.name}</h3>
+                      <p className="text-white/90 text-xs sm:text-sm flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                        <span className="truncate">{tour.duration || t?.tourDuration || "Flexible"}</span>
                       </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Tour Details */}
-                <div className="p-5 space-y-4">
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    A specially curated travel experience with {partner.name}. Enjoy breathtaking landscapes and cultural immersion.
+                <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
+                  <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed">
+                    {t?.completedBookings || "Completed bookings"}: {tour.completed_bookings}
                   </p>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                    <div>
-                      <p className="text-xs text-gray-500">Starting from</p>
-                      <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        ${299 * i}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <div className="w-full sm:w-auto">
+                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t?.startingFrom || "Starting from"}</p>
+                      <p className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+                        {tour.price_per_person ? (
+                          <>
+                            {tour.price_per_person.toLocaleString('vi-VN')} ₫
+                            <span className="text-[10px] sm:text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">{t?.perPerson || "/person"}</span>
+                          </>
+                        ) : (
+                          t?.contactForPrice || "Contact"
+                        )}
                       </p>
                     </div>
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg">
-                      Book Now
-                      <ArrowRight className="w-4 h-4 ml-2" />
+                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg text-xs sm:text-sm w-full sm:w-auto" onClick={() => window.location.href = `/tours/${tour.tour_id}`}>
+                      {t?.bookNow || "Book Now"}
+                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1.5 sm:ml-2" />
                     </Button>
                   </div>
                 </div>
@@ -273,194 +336,227 @@ export default function PartnerDetail() {
           </div>
         </section>
 
-        {/* Customer Reviews Section */}
-        <section className="bg-white/70 backdrop-blur-xl rounded-3xl p-8 md:p-10 shadow-xl border border-white/20 mb-8">
-          <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
-            Customer Reviews
-          </h2>
-
-          {/* Rating Summary */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 mb-8 border border-blue-100">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="text-center">
-                  <div className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    4.0
-                  </div>
-                  <div className="flex items-center gap-1 mt-2">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-5 h-5 ${i < 4 ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">Based on 3 reviews</p>
-                </div>
-                
-                <div className="h-16 w-px bg-gray-300 hidden md:block"></div>
-                
-                <div className="space-y-2">
-                  {[5, 4, 3, 2, 1].map((stars) => (
-                    <div key={stars} className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600 w-8">{stars}★</span>
-                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"
-                          style={{ width: `${stars === 5 ? 33 : stars === 4 ? 33 : stars === 3 ? 33 : 0}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm text-gray-500">{stars === 5 || stars === 4 || stars === 3 ? '1' : '0'}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg h-11">
-                <Star className="w-4 h-4 mr-2" />
-                Write a Review
-              </Button>
-            </div>
+        {/* Reviews Section */}
+        <section className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 dark:border-gray-700/50 mb-6 sm:mb-8">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-300 bg-clip-text text-transparent">
+              {t?.reviews || "Service Reviews"}
+            </h2>
           </div>
+          {data.reviews.length === 0 ? (
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t?.noReviews || "No reviews yet."}</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+              {data.reviews.map((rev) => (
+                <div 
+                  key={rev.id} 
+                  onClick={() => {
+                    setSelectedReview(rev);
+                    setShowDetailPanel(true);
+                  }}
+                  className="border border-gray-200 dark:border-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.02] group relative"
+                >
+                  {/* Admin Delete Button */}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => handleDeleteServiceReview(rev.id, e)}
+                      disabled={deletingId === rev.id}
+                      className="absolute top-2 sm:top-3 right-2 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-md sm:rounded-lg transition-colors z-10 disabled:opacity-50"
+                      title={t?.deleteServiceReview || "Delete service review"}
+                    >
+                      <Trash2 size={16} className={`sm:w-[18px] sm:h-[18px] ${deletingId === rev.id ? 'animate-pulse' : ''}`} />
+                    </button>
+                  )}
+                  {/* Tour Info */}
+                  <div className="mb-2 sm:mb-3 pb-2 sm:pb-3 border-b border-gray-200 dark:border-gray-700 pr-8 sm:pr-10 md:pr-12">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                      <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      <h4 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">{rev.tour_name || t?.tour || "Tour"}</h4>
+                    </div>
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                      <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                      <span className="truncate">{rev.created_at ? new Date(rev.created_at).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                    </div>
+                  </div>
 
-          {/* Reviews List */}
-          <div className="space-y-6">
-            {[
-              {
-                name: "Linh Tran",
-                date: "Oct 12, 2024",
-                rating: 5,
-                comment: "Amazing experience! Everything was well organized and the staff were very friendly. The tour exceeded all my expectations!",
-              },
-              {
-                name: "John Nguyen",
-                date: "Sep 5, 2024",
-                rating: 4,
-                comment: "Great tour, but wish the trip lasted a bit longer! Highly recommend for families.",
-              },
-              {
-                name: "Sara Pham",
-                date: "Aug 20, 2024",
-                rating: 3,
-                comment: "Good service overall, but hotel could be improved. The destinations were beautiful though.",
-              },
-            ].map((review, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300">
-                <div className="flex items-start gap-4">
-                  <img
-                    src={`https://source.unsplash.com/50x50/?face,person,${i}`}
-                    alt={review.name}
-                    className="w-12 h-12 rounded-full object-cover ring-2 ring-blue-100"
-                  />
-                  
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="font-bold text-gray-900">{review.name}</p>
-                        <p className="text-sm text-gray-500">{review.date}</p>
+                  {/* User Info */}
+                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{rev.username || t?.anonymous || "Anonymous"}</span>
+                  </div>
+
+                  {/* Service Review */}
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2.5 sm:p-3">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                        <span className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white truncate">{rev.service_name || t?.service || "Service"}</span>
+                        <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium flex-shrink-0 ${
+                          rev.service_type === 'accommodation' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                          rev.service_type === 'restaurant' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+                          'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                        }`}>
+                          {rev.service_type === 'accommodation' ? (t?.serviceTypeAccommodation || t?.accommodation || 'Accommodation') :
+                           rev.service_type === 'restaurant' ? (t?.serviceTypeRestaurant || t?.restaurant || 'Restaurant') :
+                           (t?.serviceTypeTransportation || t?.transportation || 'Transportation')}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: 5 }).map((_, index) => (
-                          <Star
-                            key={index}
-                            className={`w-4 h-4 ${
-                              index < review.rating ? "text-amber-400 fill-amber-400" : "text-gray-300"
-                            }`}
-                          />
+                      <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${i < (rev.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300 dark:text-gray-600'}`} />
                         ))}
                       </div>
                     </div>
-                    
-                    <p className="text-gray-700 leading-relaxed">{review.comment}</p>
-                    
-                    <div className="flex items-center gap-4 mt-4 text-sm">
-                      <button className="flex items-center gap-1 text-gray-500 hover:text-blue-600 transition-colors">
-                        <Heart className="w-4 h-4" />
-                        Helpful (12)
-                      </button>
-                      <button className="text-gray-500 hover:text-blue-600 transition-colors">
-                        Reply
-                      </button>
-                    </div>
+                    {rev.review_text && (
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{rev.review_text}</p>
+                    )}
+                  </div>
+
+                  {/* Click hint */}
+                  <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 text-center group-hover:underline">{t?.clickToViewDetails || "Click to view details"}</p>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+        </section>
 
-          {/* Add Review Form */}
-          <div className="mt-8 bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-6 border border-gray-200">
-            <h3 className="text-xl font-bold mb-4 text-gray-900">Leave a Review</h3>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                alert("✅ Your review has been submitted!");
+        {/* Review Detail Panel */}
+        {showDetailPanel && selectedReview && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
+              onClick={() => {
+                setShowDetailPanel(false);
+                setSelectedReview(null);
               }}
-              className="space-y-4"
-            >
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Your Rating</label>
+            />
+            <div className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white dark:bg-gray-800 shadow-2xl z-50 overflow-y-auto transform transition-transform">
+              <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t?.reviewDetails || "Review Details"}</h2>
                 <div className="flex items-center gap-2">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <button type="button" key={i} className="hover:scale-110 transition-transform">
-                      <Star className="w-8 h-8 text-gray-300 hover:text-amber-400 hover:fill-amber-400" />
+                  {/* Admin Delete Button */}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteServiceReview(selectedReview.id, e);
+                      }}
+                      disabled={deletingId === selectedReview.id}
+                      className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg transition-colors disabled:opacity-50"
+                      title={t?.deleteServiceReview || "Delete service review"}
+                    >
+                      <Trash2 size={20} className={deletingId === selectedReview.id ? 'animate-pulse' : ''} />
                     </button>
-                  ))}
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowDetailPanel(false);
+                      setSelectedReview(null);
+                    }}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                  </button>
                 </div>
               </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Your Review</label>
-                <textarea
-                  placeholder="Share your experience with this partner..."
-                  className="w-full border-2 border-gray-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-h-[120px]"
-                  required
-                ></textarea>
+
+              <div className="p-6 space-y-6">
+                {/* Tour Information */}
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-3 mb-3">
+                    <MapPin className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      {selectedReview.tour_name || t?.tour || "Tour"}
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Calendar className="w-4 h-4" />
+                    <span>{t?.reviewedOn || "Reviewed on"} {selectedReview.created_at ? new Date(selectedReview.created_at).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                  </div>
+                </div>
+
+                {/* Reviewer Information */}
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <User className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-lg text-gray-900 dark:text-white">
+                      {selectedReview.username || t?.anonymous || "Anonymous"}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t?.customer || "Customer"}</p>
+                  </div>
+                </div>
+
+                {/* Service Review */}
+                <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                        {selectedReview.service_name || t?.service || "Service"}
+                      </h4>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        selectedReview.service_type === 'accommodation' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                        selectedReview.service_type === 'restaurant' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                        'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      }`}>
+                        {selectedReview.service_type === 'accommodation' ? (t?.serviceTypeAccommodation || t?.accommodation || 'Accommodation') :
+                         selectedReview.service_type === 'restaurant' ? (t?.serviceTypeRestaurant || t?.restaurant || 'Restaurant') :
+                         (t?.serviceTypeTransportation || t?.transportation || 'Transportation')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Service Rating */}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t?.rating || "Rating"}</p>
+                    <div className="flex items-center gap-2">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-6 h-6 ${
+                            i < (selectedReview.rating || 0)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                      <span className="text-2xl font-bold text-gray-900 dark:text-white">{selectedReview.rating || 0}/5</span>
+                    </div>
+                  </div>
+
+                  {/* Service Review Text */}
+                  {selectedReview.review_text && (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t?.reviews || "Review"}</p>
+                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                        {selectedReview.review_text}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Navigate to Tour Button */}
+                {selectedReview.tour_id && (
+                  <div className="sticky bottom-0 bg-white dark:bg-gray-800 pt-4 pb-2 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => navigate(`/tours/${selectedReview.tour_id}`)}
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-4 px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
+                    >
+                      <span>{t?.viewTourDetails || "View Tour Details"}</span>
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
+                )}
               </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg h-11 px-8"
-              >
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Submit Review
-              </Button>
-            </form>
-          </div>
-        </section>
-
-        {/* Contact CTA Section */}
-        <section className="relative bg-gradient-to-br from-white/90 to-blue-50/90 backdrop-blur-xl rounded-3xl shadow-2xl p-10 border border-white/20 text-center overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-pink-600/5 rounded-3xl"></div>
-          
-          <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
-              <MessageCircle className="w-4 h-4" />
-              We're here to help
             </div>
-
-            <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-900 bg-clip-text text-transparent">
-              Get in Touch with {partner.name}
-            </h2>
-            
-            <p className="text-gray-600 text-lg leading-relaxed">
-              Have questions or special requests? Contact {partner.name} directly or message through our platform.
-              Our team is available 24/7 to assist you.
-            </p>
-
-            <div className="flex flex-wrap gap-4 justify-center pt-4">
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 h-12 px-8">
-                <MessageCircle className="w-5 h-5 mr-2" />
-                Contact Partner
-              </Button>
-              <Button variant="outline" className="h-12 px-8 border-2">
-                <Phone className="w-5 h-5 mr-2" />
-                Call Now
-              </Button>
-            </div>
-          </div>
-        </section>
+          </>
+        )}
       </div>
     </div>
   );
 }
+

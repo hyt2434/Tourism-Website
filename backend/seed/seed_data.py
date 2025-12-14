@@ -25,6 +25,17 @@ sys.path.insert(0, backend_dir)
 
 from config.database import get_connection
 from seed.import_tour_images import import_tour_images
+from src.models.models import ensure_base_tables, create_tables
+from src.models.partner_services_schema import create_partner_service_tables
+from src.models.tour_schema import create_tour_tables
+from src.models.tour_reviews_schema import create_tour_reviews_table
+from src.services.city_init import init_cities
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from migrate_social_hashtag import create_social_hashtag_table, update_posts_table
+from migrate_posts_table import add_posts_table_columns
+from migrate_social_soft_delete import add_social_soft_delete_columns
 
 bcrypt = Bcrypt()
 
@@ -51,6 +62,48 @@ def load_city_ids():
         cur.execute("SELECT id, name FROM cities")
         for row in cur.fetchall():
             CITY_IDS[row[1]] = row[0]
+    finally:
+        cur.close()
+        conn.close()
+
+def initialize_partner_revenue():
+    """Initialize partner_revenue table with all partner IDs set to 0 amount"""
+    conn = get_connection()
+    if not conn:
+        print("❌ Cannot initialize partner_revenue: Database connection failed.")
+        return
+    
+    cur = conn.cursor()
+    try:
+        # Check if partner_revenue already has data
+        cur.execute("SELECT COUNT(*) FROM partner_revenue")
+        if cur.fetchone()[0] > 0:
+            print("ℹ️  Partner revenue table already initialized. Skipping.")
+            return
+        
+        # Get all partner IDs from users table
+        cur.execute("""
+            SELECT id FROM users 
+            WHERE role = 'partner' AND partner_type IS NOT NULL
+        """)
+        partner_ids = [row[0] for row in cur.fetchall()]
+        
+        # Insert all partners with 0 amount
+        for partner_id in partner_ids:
+            cur.execute("""
+                INSERT INTO partner_revenue (partner_id, amount, created_at, updated_at)
+                VALUES (%s, 0.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT (partner_id) DO NOTHING
+            """, (partner_id,))
+        
+        conn.commit()
+        print(f"✅ Initialized partner_revenue table with {len(partner_ids)} partners")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Error initializing partner_revenue: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         cur.close()
         conn.close()
@@ -381,24 +434,96 @@ def create_accommodations(user_ids):
             
             acc_id = cur.fetchone()[0]
             
-            # Create rooms for each accommodation (reduced prices - 60% of original)
+            # Create rooms for each accommodation with NEW LOGIC:
+            # - At least 2 Standard rooms (2 people each) with different descriptions
+            # - At least 2 Standard Quad rooms (4 people each) with different descriptions
+            # - Each Standard room has upgrade pricing for Deluxe and Suite
+            
+            # Calculate upgrade prices (Deluxe = +30%, Suite = +80%)
+            standard_price = int(acc['min_price'] * 0.6)
+            deluxe_upgrade = int(standard_price * 0.3)
+            suite_upgrade = int(standard_price * 0.8)
+            
             rooms_data = [
-                {'name': 'Phòng Standard', 'room_type': 'Double', 'max_adults': 2, 'max_children': 1,
-                 'base_price': int(acc['min_price'] * 0.6), 'weekend_price': int(acc['min_price'] * 0.6 * 1.2), 'holiday_price': int(acc['min_price'] * 0.6 * 1.5)},
-                {'name': 'Phòng Deluxe', 'room_type': 'Double', 'max_adults': 2, 'max_children': 2,
-                 'base_price': int((acc['min_price'] + acc['max_price']) / 2 * 0.6), 'weekend_price': int((acc['min_price'] + acc['max_price']) / 2 * 0.6 * 1.2),
-                 'holiday_price': int((acc['min_price'] + acc['max_price']) / 2 * 0.6 * 1.5)},
-                {'name': 'Phòng Suite', 'room_type': 'Suite', 'max_adults': 4, 'max_children': 2,
-                 'base_price': int(acc['max_price'] * 0.6), 'weekend_price': int(acc['max_price'] * 0.6 * 1.2), 'holiday_price': int(acc['max_price'] * 0.6 * 1.5)}
+                # Standard Rooms (2 people each)
+                {
+                    'name': 'Phòng Standard Giường Đôi',
+                    'room_type': 'Standard',
+                    'bed_type': 'Double',
+                    'description': 'Phòng tiêu chuẩn với giường đôi, view thành phố, đầy đủ tiện nghi cơ bản.',
+                    'max_adults': 2,
+                    'max_children': 1,
+                    'base_price': standard_price,
+                    'weekend_price': int(standard_price * 1.2),
+                    'holiday_price': int(standard_price * 1.5),
+                    'deluxe_upgrade_price': deluxe_upgrade,
+                    'suite_upgrade_price': suite_upgrade
+                },
+                {
+                    'name': 'Phòng Standard Giường Queen',
+                    'room_type': 'Standard',
+                    'bed_type': 'Queen',
+                    'description': 'Phòng tiêu chuẩn với giường queen, không gian rộng rãi, view đẹp.',
+                    'max_adults': 2,
+                    'max_children': 1,
+                    'base_price': standard_price,
+                    'weekend_price': int(standard_price * 1.2),
+                    'holiday_price': int(standard_price * 1.5),
+                    'deluxe_upgrade_price': deluxe_upgrade,
+                    'suite_upgrade_price': suite_upgrade
+                },
+                {
+                    'name': 'Phòng Standard Giường King',
+                    'room_type': 'Standard',
+                    'bed_type': 'King',
+                    'description': 'Phòng tiêu chuẩn với giường king size, thoải mái và sang trọng.',
+                    'max_adults': 2,
+                    'max_children': 1,
+                    'base_price': int(standard_price * 1.1),
+                    'weekend_price': int(standard_price * 1.1 * 1.2),
+                    'holiday_price': int(standard_price * 1.1 * 1.5),
+                    'deluxe_upgrade_price': deluxe_upgrade,
+                    'suite_upgrade_price': suite_upgrade
+                },
+                # Standard Quad Rooms (4 people each)
+                {
+                    'name': 'Phòng Standard Quad - Family',
+                    'room_type': 'Standard Quad',
+                    'bed_type': 'Twin',
+                    'description': 'Phòng gia đình 4 người với 2 giường đôi, tiện nghi đầy đủ, phù hợp cho gia đình.',
+                    'max_adults': 4,
+                    'max_children': 2,
+                    'base_price': int(standard_price * 1.8),
+                    'weekend_price': int(standard_price * 1.8 * 1.2),
+                    'holiday_price': int(standard_price * 1.8 * 1.5),
+                    'deluxe_upgrade_price': int(deluxe_upgrade * 1.5),
+                    'suite_upgrade_price': int(suite_upgrade * 1.5)
+                },
+                {
+                    'name': 'Phòng Standard Quad - Deluxe View',
+                    'room_type': 'Standard Quad',
+                    'bed_type': 'Twin',
+                    'description': 'Phòng gia đình 4 người với view đẹp, không gian rộng, 2 giường lớn.',
+                    'max_adults': 4,
+                    'max_children': 2,
+                    'base_price': int(standard_price * 1.9),
+                    'weekend_price': int(standard_price * 1.9 * 1.2),
+                    'holiday_price': int(standard_price * 1.9 * 1.5),
+                    'deluxe_upgrade_price': int(deluxe_upgrade * 1.5),
+                    'suite_upgrade_price': int(suite_upgrade * 1.5)
+                }
             ]
             
             for room in rooms_data:
                 cur.execute("""
                     INSERT INTO accommodation_rooms
-                    (accommodation_id, name, room_type, max_adults, max_children, base_price, weekend_price, holiday_price, is_available)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE)
-                """, (acc_id, room['name'], room['room_type'], room['max_adults'], room['max_children'],
-                      room['base_price'], room['weekend_price'], room['holiday_price']))
+                    (accommodation_id, name, room_type, description, bed_type, max_adults, max_children, 
+                     base_price, weekend_price, holiday_price, deluxe_upgrade_price, suite_upgrade_price, is_available)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
+                """, (acc_id, room['name'], room['room_type'], room['description'], room['bed_type'],
+                      room['max_adults'], room['max_children'], room['base_price'], 
+                      room['weekend_price'], room['holiday_price'], 
+                      room['deluxe_upgrade_price'], room['suite_upgrade_price']))
             
             print(f"✅ Created accommodation: {acc['name']} with {len(rooms_data)} rooms")
         
@@ -1499,10 +1624,86 @@ def create_restaurants(user_ids):
                     INSERT INTO restaurant_menu_items
                     (restaurant_id, name, description, category, price, meal_types, is_available, is_popular)
                     VALUES (%s, %s, %s, %s, %s, %s::jsonb, TRUE, %s)
+                    RETURNING id
                 """, (rest_id, item['name'], item['description'], item['category'], item['price'],
                       meal_types_json, item.get('is_popular', False)))
+                item['id'] = cur.fetchone()[0]
             
-            print(f"✅ Created restaurant: {rest['name']} with {len(menu_items)} menu items")
+            # Create set meals for each session (morning, noon, evening)
+            # Each set meal contains multiple dishes and is for 2 people
+            set_meals = []
+            
+            # Morning set meals (if restaurant has breakfast items)
+            morning_items = [item for item in menu_items if item.get('meal_types', {}).get('breakfast', False)]
+            if len(morning_items) >= 2:
+                set_meals.append({
+                    'name': 'Set Sáng Đặc Biệt',
+                    'description': 'Set ăn sáng đầy đủ cho 2 người',
+                    'meal_session': 'morning',
+                    'item_ids': [item['id'] for item in morning_items[:3]]  # Take first 3 items
+                })
+            
+            # Noon set meals (lunch)
+            noon_items = [item for item in menu_items if item.get('meal_types', {}).get('lunch', False)]
+            if len(noon_items) >= 2:
+                # Create 2 different noon sets
+                set_meals.append({
+                    'name': 'Set Trưa A',
+                    'description': 'Set ăn trưa phong phú cho 2 người',
+                    'meal_session': 'noon',
+                    'item_ids': [item['id'] for item in noon_items[:3]]  # Take first 3 items
+                })
+                if len(noon_items) >= 4:
+                    set_meals.append({
+                        'name': 'Set Trưa B',
+                        'description': 'Set ăn trưa đa dạng cho 2 người',
+                        'meal_session': 'noon',
+                        'item_ids': [item['id'] for item in noon_items[1:4]]  # Take items 2-4
+                    })
+            
+            # Evening set meals (dinner)
+            evening_items = [item for item in menu_items if item.get('meal_types', {}).get('dinner', False)]
+            if len(evening_items) >= 2:
+                # Create 2 different evening sets
+                set_meals.append({
+                    'name': 'Set Tối A',
+                    'description': 'Set ăn tối thịnh soạn cho 2 người',
+                    'meal_session': 'evening',
+                    'item_ids': [item['id'] for item in evening_items[:3]]  # Take first 3 items
+                })
+                if len(evening_items) >= 4:
+                    set_meals.append({
+                        'name': 'Set Tối B',
+                        'description': 'Set ăn tối hấp dẫn cho 2 người',
+                        'meal_session': 'evening',
+                        'item_ids': [item['id'] for item in evening_items[1:4]]  # Take items 2-4
+                    })
+            
+            # Insert set meals
+            for set_meal in set_meals:
+                # Calculate total price from menu items
+                total_price = sum(menu_items[i-1]['price'] for i in range(len(menu_items)) 
+                                if menu_items[i].get('id') in set_meal['item_ids'])
+                
+                cur.execute("""
+                    INSERT INTO restaurant_set_meals
+                    (restaurant_id, name, description, meal_session, total_price, currency, is_available)
+                    VALUES (%s, %s, %s, %s, %s, 'VND', TRUE)
+                    RETURNING id
+                """, (rest_id, set_meal['name'], set_meal['description'], 
+                      set_meal['meal_session'], total_price))
+                
+                set_meal_id = cur.fetchone()[0]
+                
+                # Link menu items to this set meal
+                for item_id in set_meal['item_ids']:
+                    cur.execute("""
+                        INSERT INTO restaurant_set_meal_items (set_meal_id, menu_item_id)
+                        VALUES (%s, %s)
+                        ON CONFLICT DO NOTHING
+                    """, (set_meal_id, item_id))
+            
+            print(f"✅ Created restaurant: {rest['name']} with {len(menu_items)} menu items and {len(set_meals)} set meals")
         
         conn.commit()
         print(f"\n✅ Created {len(restaurants)} restaurants successfully!")
@@ -1769,6 +1970,403 @@ def create_transportation(user_ids):
                 'base_price': 200000,
                 'holiday_price': 250000,
                 'phone': '0234123458'
+            },
+            # Small capacity vehicles (4-seater cars)
+            {
+                'partner_key': 'transport1@example.com_partner_transportation',
+                'description': 'Xe 4 chỗ Hà Nội - Sapa',
+                'vehicle_type': 'Car',
+                'brand': 'Toyota Vios',
+                'license_plate': '29G-11111',
+                'max_passengers': 4,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Lào Cai',
+                'base_price': 100000,
+                'holiday_price': 120000,
+                'phone': '0241234575'
+            },
+            {
+                'partner_key': 'transport1@example.com_partner_transportation',
+                'description': 'Xe 4 chỗ Hà Nội - Hạ Long',
+                'vehicle_type': 'Car',
+                'brand': 'Honda City',
+                'license_plate': '29H-22222',
+                'max_passengers': 4,
+                'features': ['AC', 'WiFi'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Quảng Ninh',
+                'base_price': 80000,
+                'holiday_price': 100000,
+                'phone': '0241234576'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 4 chỗ Sài Gòn - Đà Lạt',
+                'vehicle_type': 'Car',
+                'brand': 'Toyota Vios',
+                'license_plate': '51I-33333',
+                'max_passengers': 4,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Lâm Đồng',
+                'base_price': 90000,
+                'holiday_price': 110000,
+                'phone': '0281234575'
+            },
+            # Medium capacity vehicles (7-seater vans)
+            {
+                'partner_key': 'transport1@example.com_partner_transportation',
+                'description': 'Xe 7 chỗ Hà Nội - Ninh Bình',
+                'vehicle_type': 'Van',
+                'brand': 'Toyota Innova',
+                'license_plate': '29I-44444',
+                'max_passengers': 7,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Ninh Bình',
+                'base_price': 60000,
+                'holiday_price': 75000,
+                'phone': '0241234577'
+            },
+            {
+                'partner_key': 'transport4@example.com_partner_transportation',
+                'description': 'Xe 7 chỗ Đà Nẵng - Hội An',
+                'vehicle_type': 'Van',
+                'brand': 'Mitsubishi Xpander',
+                'license_plate': '43G-55555',
+                'max_passengers': 7,
+                'features': ['AC', 'WiFi'],
+                'departure_city': 'Đà Nẵng',
+                'destination_city': 'Quảng Nam',
+                'base_price': 40000,
+                'holiday_price': 50000,
+                'phone': '0236123459'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 7 chỗ Sài Gòn - Mũi Né',
+                'vehicle_type': 'Van',
+                'brand': 'Toyota Innova',
+                'license_plate': '51J-66666',
+                'max_passengers': 7,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Bình Thuận',
+                'base_price': 80000,
+                'holiday_price': 95000,
+                'phone': '0281234576'
+            },
+            # Small buses (12-16 seater)
+            {
+                'partner_key': 'transport5@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Hà Nội - Sapa',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '29J-77777',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Lào Cai',
+                'base_price': 70000,
+                'holiday_price': 85000,
+                'phone': '0241234578'
+            },
+            {
+                'partner_key': 'transport6@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Hà Nội - Hạ Long',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '29K-88888',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Quảng Ninh',
+                'base_price': 60000,
+                'holiday_price': 72000,
+                'phone': '0241234579'
+            },
+            {
+                'partner_key': 'transport3@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Đà Nẵng - Huế',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '43H-99999',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi'],
+                'departure_city': 'Đà Nẵng',
+                'destination_city': 'Thừa Thiên Huế',
+                'base_price': 50000,
+                'holiday_price': 60000,
+                'phone': '0236123460'
+            },
+            {
+                'partner_key': 'transport7@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Sài Gòn - Đà Lạt',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '51K-AAAAA',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Lâm Đồng',
+                'base_price': 75000,
+                'holiday_price': 90000,
+                'phone': '0281234577'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Sài Gòn - Vũng Tàu',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '51L-BBBBB',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Bà Rịa - Vũng Tàu',
+                'base_price': 55000,
+                'holiday_price': 65000,
+                'phone': '0281234578'
+            },
+            {
+                'partner_key': 'transport4@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Đà Nẵng - Nha Trang',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '43I-CCCCC',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Đà Nẵng',
+                'destination_city': 'Khánh Hòa',
+                'base_price': 85000,
+                'holiday_price': 100000,
+                'phone': '0236123461'
+            },
+            # Additional 10 vehicles for better coverage
+            {
+                'partner_key': 'transport1@example.com_partner_transportation',
+                'description': 'Xe 7 chỗ Hà Nội - Đà Nẵng',
+                'vehicle_type': 'Van',
+                'brand': 'Toyota Innova',
+                'license_plate': '29L-11111',
+                'max_passengers': 7,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Đà Nẵng',
+                'base_price': 120000,
+                'holiday_price': 145000,
+                'phone': '0241234580'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 4 chỗ Sài Gòn - Cần Thơ',
+                'vehicle_type': 'Car',
+                'brand': 'Toyota Vios',
+                'license_plate': '51M-22222',
+                'max_passengers': 4,
+                'features': ['AC', 'WiFi'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Cần Thơ',
+                'base_price': 70000,
+                'holiday_price': 85000,
+                'phone': '0281234580'
+            },
+            {
+                'partner_key': 'transport3@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Đà Nẵng - Hội An',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '43J-33333',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Đà Nẵng',
+                'destination_city': 'Quảng Nam',
+                'base_price': 45000,
+                'holiday_price': 55000,
+                'phone': '0236123462'
+            },
+            {
+                'partner_key': 'transport4@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Hà Nội - Huế',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '29M-44444',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Thừa Thiên Huế',
+                'base_price': 95000,
+                'holiday_price': 115000,
+                'phone': '0241234581'
+            },
+            {
+                'partner_key': 'transport5@example.com_partner_transportation',
+                'description': 'Xe 7 chỗ Sài Gòn - Phú Quốc',
+                'vehicle_type': 'Van',
+                'brand': 'Mitsubishi Xpander',
+                'license_plate': '51N-55555',
+                'max_passengers': 7,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Kiên Giang',
+                'base_price': 150000,
+                'holiday_price': 180000,
+                'phone': '0281234581'
+            },
+            {
+                'partner_key': 'transport6@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Hà Nội - Cao Bằng',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '29N-66666',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Cao Bằng',
+                'base_price': 85000,
+                'holiday_price': 105000,
+                'phone': '0241234582'
+            },
+            {
+                'partner_key': 'transport7@example.com_partner_transportation',
+                'description': 'Xe 4 chỗ Đà Nẵng - Huế',
+                'vehicle_type': 'Car',
+                'brand': 'Honda City',
+                'license_plate': '43K-77777',
+                'max_passengers': 4,
+                'features': ['AC', 'WiFi'],
+                'departure_city': 'Đà Nẵng',
+                'destination_city': 'Thừa Thiên Huế',
+                'base_price': 55000,
+                'holiday_price': 68000,
+                'phone': '0236123463'
+            },
+            {
+                'partner_key': 'transport8@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Sài Gòn - Nha Trang',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '51O-88888',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'USB Charging', 'Reclining Seats'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Khánh Hòa',
+                'base_price': 110000,
+                'holiday_price': 135000,
+                'phone': '0281234582'
+            },
+            {
+                'partner_key': 'transport1@example.com_partner_transportation',
+                'description': 'Xe 7 chỗ Hà Nội - Lạng Sơn',
+                'vehicle_type': 'Van',
+                'brand': 'Toyota Innova',
+                'license_plate': '29O-99999',
+                'max_passengers': 7,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Lạng Sơn',
+                'base_price': 75000,
+                'holiday_price': 92000,
+                'phone': '0241234583'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Sài Gòn - Tây Ninh',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '51P-AAAAA',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Tây Ninh',
+                'base_price': 65000,
+                'holiday_price': 78000,
+                'phone': '0281234583'
+            },
+            # Additional vehicles for missing routes (user-reported)
+            {
+                'partner_key': 'transport5@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Hà Nội - Cao Bằng',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '29P-11111',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hà Nội',
+                'destination_city': 'Cao Bằng',
+                'base_price': 90000,
+                'holiday_price': 110000,
+                'phone': '0241234590'
+            },
+            {
+                'partner_key': 'transport3@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Đà Nẵng - Thừa Thiên Huế',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '43L-22222',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Đà Nẵng',
+                'destination_city': 'Thừa Thiên Huế',
+                'base_price': 52000,
+                'holiday_price': 62000,
+                'phone': '0236123470'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Hồ Chí Minh - Đà Nẵng',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '51Q-33333',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Đà Nẵng',
+                'base_price': 125000,
+                'holiday_price': 150000,
+                'phone': '0281234591'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Hồ Chí Minh - Bình Thuận',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '51R-44444',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Bình Thuận',
+                'base_price': 70000,
+                'holiday_price': 85000,
+                'phone': '0281234592'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 16 chỗ Hồ Chí Minh - Kiên Giang',
+                'vehicle_type': 'Minibus',
+                'brand': 'Ford Transit',
+                'license_plate': '51S-55555',
+                'max_passengers': 16,
+                'features': ['AC', 'WiFi', 'Reclining Seats'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Kiên Giang',
+                'base_price': 135000,
+                'holiday_price': 165000,
+                'phone': '0281234593'
+            },
+            {
+                'partner_key': 'transport2@example.com_partner_transportation',
+                'description': 'Xe 12 chỗ Hồ Chí Minh - Cần Thơ',
+                'vehicle_type': 'Minibus',
+                'brand': 'Hyundai Solati',
+                'license_plate': '51T-66666',
+                'max_passengers': 12,
+                'features': ['AC', 'WiFi', 'USB Charging'],
+                'departure_city': 'Hồ Chí Minh',
+                'destination_city': 'Cần Thơ',
+                'base_price': 58000,
+                'holiday_price': 70000,
+                'phone': '0281234594'
             }
         ]
         
@@ -1886,6 +2484,64 @@ def _validate_tour_services(cur, destination_city_id, departure_city_id, num_day
     
     return (accommodation_id, restaurant_ids, transportation_id)
 
+def _calculate_tour_price(cur, tour_id, num_days, number_of_members):
+    """Calculate tour price based on actual services"""
+    accommodation_cost = 0
+    restaurant_cost = 0
+    transportation_cost = 0
+    
+    # Calculate number of nights (days - 1, minimum 1)
+    num_nights = max(1, num_days - 1)
+    
+    # Get accommodation cost from room bookings
+    cur.execute("""
+        SELECT ar.base_price, ar.bed_type, trb.quantity
+        FROM tour_room_bookings trb
+        JOIN accommodation_rooms ar ON trb.room_id = ar.id
+        WHERE trb.tour_id = %s
+    """, (tour_id,))
+    room_bookings = cur.fetchall()
+    
+    for base_price, bed_type, quantity in room_bookings:
+        if base_price:
+            # Cost = base_price × quantity × num_nights
+            accommodation_cost += float(base_price) * quantity * num_nights
+    
+    # Get restaurant cost from selected set meals
+    cur.execute("""
+        SELECT rsm.total_price
+        FROM tour_selected_set_meals tssm
+        JOIN restaurant_set_meals rsm ON tssm.set_meal_id = rsm.id
+        WHERE tssm.tour_id = %s
+    """, (tour_id,))
+    set_meal_prices = cur.fetchall()
+    
+    # Each set meal is for 2 people, multiply by number of meals needed
+    meals_needed = (number_of_members + 1) // 2  # Ceiling division
+    for price_tuple in set_meal_prices:
+        if price_tuple[0]:
+            restaurant_cost += float(price_tuple[0]) * meals_needed
+    
+    # Get transportation cost
+    cur.execute("""
+        SELECT ts.base_price
+        FROM tour_services tsv
+        JOIN transportation_services ts ON tsv.transportation_id = ts.id
+        WHERE tsv.tour_id = %s AND tsv.service_type = 'transportation'
+    """, (tour_id,))
+    trans_result = cur.fetchone()
+    
+    if trans_result and trans_result[0]:
+        # Transportation cost per person, multiply by members, round trip
+        price_per_person = float(trans_result[0])
+        transportation_cost = price_per_person * number_of_members * 2
+    
+    # Calculate total and round to nearest 10,000
+    total_price = accommodation_cost + restaurant_cost + transportation_cost
+    total_price = round(total_price / 10000) * 10000
+    
+    return max(total_price, 100000)  # Minimum 100,000 VND
+
 def _create_tour_itinerary_and_services(cur, tour_id, num_days, destination_city_id, departure_city_id, number_of_members):
     """Create daily itinerary, time checkpoints, and link services for a tour"""
     try:
@@ -1915,28 +2571,63 @@ def _create_tour_itinerary_and_services(cur, tour_id, num_days, destination_city
             """, (destination_city_id, num_days - len(restaurant_ids)))
             restaurant_ids.extend([row[0] for row in cur.fetchall()])
         
-        # Get transportation - try exact route first (both directions)
+        # Get transportation - filter based on number of members (capacity >= members AND <= 2 * number_of_members)
+        min_capacity = number_of_members
+        max_capacity = number_of_members * 2
+        
+        # Get city names for logging
+        cur.execute("SELECT name FROM cities WHERE id = %s", (departure_city_id,))
+        dep_result = cur.fetchone()
+        dep_city_name = dep_result[0] if dep_result else f"City {departure_city_id}"
+        
+        cur.execute("SELECT name FROM cities WHERE id = %s", (destination_city_id,))
+        dest_result = cur.fetchone()
+        dest_city_name = dest_result[0] if dest_result else f"City {destination_city_id}"
+        
+        # Try exact route first (both directions) with appropriate capacity
         cur.execute("""
-            SELECT id FROM transportation_services 
+            SELECT id, vehicle_type, max_passengers, license_plate FROM transportation_services 
             WHERE ((departure_city_id = %s AND destination_city_id = %s)
                OR (departure_city_id = %s AND destination_city_id = %s))
             AND is_active = TRUE 
+            AND max_passengers >= %s AND max_passengers <= %s
+            ORDER BY max_passengers ASC
             LIMIT 1
-        """, (departure_city_id, destination_city_id, destination_city_id, departure_city_id))
+        """, (departure_city_id, destination_city_id, destination_city_id, departure_city_id, min_capacity, max_capacity))
         transportation_result = cur.fetchone()
         
         if not transportation_result:
-            # Try one-way routes (departure or destination matches either city)
+            # Try one-way routes (departure or destination matches either city) with appropriate capacity
             cur.execute("""
-                SELECT id FROM transportation_services 
+                SELECT id, vehicle_type, max_passengers, license_plate FROM transportation_services 
                 WHERE ((departure_city_id = %s OR destination_city_id = %s)
                    OR (departure_city_id = %s OR destination_city_id = %s))
                 AND is_active = TRUE 
+                AND max_passengers >= %s AND max_passengers <= %s
+                ORDER BY max_passengers ASC
                 LIMIT 1
-            """, (departure_city_id, departure_city_id, destination_city_id, destination_city_id))
+            """, (departure_city_id, departure_city_id, destination_city_id, destination_city_id, min_capacity, max_capacity))
             transportation_result = cur.fetchone()
         
-        transportation_id = transportation_result[0] if transportation_result else None
+        if not transportation_result:
+            # If still no match, try any transportation for this route without capacity filter
+            print(f"   ⚠️  No transportation found for {dep_city_name} → {dest_city_name} with capacity {min_capacity}-{max_capacity} ({number_of_members} members)")
+            cur.execute("""
+                SELECT id, vehicle_type, max_passengers, license_plate FROM transportation_services 
+                WHERE ((departure_city_id = %s AND destination_city_id = %s)
+                   OR (departure_city_id = %s AND destination_city_id = %s))
+                AND is_active = TRUE 
+                ORDER BY max_passengers ASC
+                LIMIT 1
+            """, (departure_city_id, destination_city_id, destination_city_id, departure_city_id))
+            transportation_result = cur.fetchone()
+        
+        if transportation_result:
+            transportation_id = transportation_result[0]
+            print(f"   ✓ Assigned {transportation_result[1]} ({transportation_result[3]}) - {transportation_result[2]} seats for {number_of_members} members")
+        else:
+            transportation_id = None
+            print(f"   ❌ NO TRANSPORTATION AVAILABLE for {dep_city_name} → {dest_city_name}")
         
         # Create daily itinerary for each day
         for day_num in range(1, num_days + 1):
@@ -2250,61 +2941,50 @@ def _create_tour_itinerary_and_services(cur, tour_id, num_days, destination_city
         
         # Link accommodation (one for the whole trip)
         if accommodation_id:
-            # Select enough rooms to accommodate all members
-            # Get all available rooms with their capacity
+            # Select ONE Standard room type and set quantity based on members
             cur.execute("""
-                SELECT id, max_adults, max_children, base_price 
+                SELECT id, room_type, base_price 
                 FROM accommodation_rooms 
-                WHERE accommodation_id = %s AND is_available = TRUE
-                ORDER BY base_price ASC
+                WHERE accommodation_id = %s AND is_available = TRUE AND room_type = 'Standard'
+                ORDER BY bed_type = 'Double' DESC, base_price ASC
+                LIMIT 1
             """, (accommodation_id,))
-            all_rooms = cur.fetchall()
+            room = cur.fetchone()
             
-            if not all_rooms:
-                print(f"   ⚠️  Warning: No available rooms for accommodation {accommodation_id}")
+            if not room:
+                print(f"   ⚠️  Warning: No Standard rooms available for accommodation {accommodation_id}")
             else:
-                # Select rooms to accommodate all members
-                selected_rooms = []
-                total_capacity = 0
-                total_cost = 0
+                room_id, room_type, base_price = room
                 
-                for room in all_rooms:
-                    room_id, max_adults, max_children, base_price = room
-                    room_capacity = max_adults + max_children
-                    
-                    if total_capacity < number_of_members:
-                        selected_rooms.append((room_id, base_price, room_capacity))
-                        total_capacity += room_capacity
-                        # Calculate cost per room: base_price * num_days, but cap at reasonable limit
-                        room_cost = float(base_price) * num_days
-                        # Cap individual room cost to prevent overflow (max 99,999,999.99)
-                        if room_cost > 99999999.99:
-                            room_cost = 99999999.99
-                        total_cost += room_cost
-                    
-                    if total_capacity >= number_of_members:
-                        break
+                # Calculate quantity needed: Standard = 2 people per room, Standard Quad = 4 people per room
+                people_per_room = 4 if room_type == 'Standard Quad' else 2
+                quantity = (number_of_members + people_per_room - 1) // people_per_room  # Ceiling division
                 
-                if total_capacity < number_of_members:
-                    print(f"   ⚠️  Warning: Not enough room capacity for {number_of_members} members. Selected {total_capacity} capacity.")
+                # Ensure we have at least 1 room
+                if quantity < 1:
+                    quantity = 1
                 
-                # Insert accommodation service with total cost (cap to prevent overflow)
-                service_cost = min(total_cost, 99999999.99)
+                print(f"   📊 Calculating rooms: {number_of_members} people ÷ {people_per_room} people/room = {quantity} rooms")
+                
+                # Insert room booking with quantity
+                cur.execute("""
+                    INSERT INTO tour_room_bookings (tour_id, room_id, quantity)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (tour_id, room_id) DO UPDATE SET quantity = EXCLUDED.quantity
+                """, (tour_id, room_id, quantity))
+                
+                # Calculate total accommodation cost
+                service_cost = float(base_price) * quantity * num_days
+                service_cost = min(service_cost, 99999999.99)  # Cap to prevent overflow
+                
+                # Insert accommodation service with total cost
                 cur.execute("""
                     INSERT INTO tour_services
                     (tour_id, service_type, accommodation_id, service_cost)
                     VALUES (%s, 'accommodation', %s, %s)
                 """, (tour_id, accommodation_id, service_cost))
                 
-                # Insert selected rooms
-                for room_id, _, _ in selected_rooms:
-                    cur.execute("""
-                        INSERT INTO tour_selected_rooms (tour_id, room_id)
-                        VALUES (%s, %s)
-                        ON CONFLICT (tour_id, room_id) DO NOTHING
-                    """, (tour_id, room_id))
-                
-                print(f"   ✓ Selected {len(selected_rooms)} room(s) with total capacity {total_capacity} for {number_of_members} members")
+                print(f"   ✓ Booked {quantity} {room_type} room(s) for {number_of_members} members ({people_per_room} people/room)")
         else:
             print(f"   ⚠️  Warning: No accommodation found for tour {tour_id}")
         
@@ -2324,7 +3004,7 @@ def _create_tour_itinerary_and_services(cur, tour_id, num_days, destination_city
         else:
             print(f"   ⚠️  Warning: No transportation found for tour {tour_id}")
         
-        # Select menu items for each day - only if restaurant is assigned for that day
+        # Select set meals for each day and session - only if restaurant is assigned for that day
         for day_num in range(1, num_days + 1):
             # Get the restaurant assigned for this day
             cur.execute("""
@@ -2344,25 +3024,34 @@ def _create_tour_itinerary_and_services(cur, tour_id, num_days, destination_city
                 rest_name_result = cur.fetchone()
                 rest_name = rest_name_result[0] if rest_name_result else f"Restaurant {restaurant_id}"
                 
-                cur.execute("""
-                    SELECT id FROM restaurant_menu_items 
-                    WHERE restaurant_id = %s AND is_available = TRUE 
-                    LIMIT 2
-                """, (restaurant_id,))
-                menu_item_ids = [row[0] for row in cur.fetchall()]
+                # Get set meals for each session (morning, noon, evening)
+                sessions = ['morning', 'noon', 'evening']
+                selected_count = 0
                 
-                if menu_item_ids:
-                    for menu_item_id in menu_item_ids:
+                for session in sessions:
+                    cur.execute("""
+                        SELECT id FROM restaurant_set_meals 
+                        WHERE restaurant_id = %s AND meal_session = %s AND is_available = TRUE 
+                        ORDER BY RANDOM()
+                        LIMIT 1
+                    """, (restaurant_id, session))
+                    set_meal = cur.fetchone()
+                    
+                    if set_meal:
+                        set_meal_id = set_meal[0]
                         cur.execute("""
-                            INSERT INTO tour_selected_menu_items (tour_id, menu_item_id, day_number)
-                            VALUES (%s, %s, %s)
-                            ON CONFLICT (tour_id, menu_item_id, day_number) DO NOTHING
-                        """, (tour_id, menu_item_id, day_num))
-                    print(f"   ✓ Selected {len(menu_item_ids)} menu items from {rest_name} for day {day_num}")
+                            INSERT INTO tour_selected_set_meals (tour_id, set_meal_id, day_number, meal_session)
+                            VALUES (%s, %s, %s, %s)
+                            ON CONFLICT (tour_id, set_meal_id, day_number, meal_session) DO NOTHING
+                        """, (tour_id, set_meal_id, day_num, session))
+                        selected_count += 1
+                
+                if selected_count > 0:
+                    print(f"   ✓ Selected {selected_count} set meal(s) from {rest_name} for day {day_num}")
                 else:
-                    print(f"   ⚠️  Warning: No menu items available for restaurant {rest_name} (ID: {restaurant_id}) on day {day_num}")
+                    print(f"   ⚠️  Warning: No set meals available for restaurant {rest_name} (ID: {restaurant_id}) on day {day_num}")
             else:
-                print(f"   ⚠️  Warning: No restaurant assigned for day {day_num}, skipping menu items")
+                print(f"   ⚠️  Warning: No restaurant assigned for day {day_num}, skipping set meals")
         
     except Exception as e:
         print(f"   ⚠️  Warning: Could not create itinerary/services for tour {tour_id}: {e}")
@@ -2399,7 +3088,7 @@ def create_tours(user_ids):
         tours = [
             {
                 'name': 'Tour Hà Nội - Sapa 3 ngày 2 đêm',
-                'duration': '3 days 2 nights',
+                'duration': 3,
                 'description': 'Khám phá thủ đô Hà Nội và vùng núi Sapa với cảnh quan tuyệt đẹp, văn hóa dân tộc đặc sắc. Tham quan Hồ Hoàn Kiếm, Phố Cổ, Fansipan, Bản Cát Cát.',
                 'departure_city': 'Hà Nội',
                 'destination_city': 'Lào Cai',
@@ -2408,7 +3097,7 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Hạ Long Bay 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Du thuyền vịnh Hạ Long - Di sản thiên nhiên thế giới. Tham quan hang động, chèo kayak, tắm biển, thưởng thức hải sản tươi ngon.',
                 'departure_city': 'Hà Nội',
                 'destination_city': 'Quảng Ninh',
@@ -2417,34 +3106,34 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Đà Lạt - Thành phố ngàn hoa 4 ngày 3 đêm',
-                'duration': '4 days 3 nights',
+                'duration': 4,
                 'description': 'Khám phá Đà Lạt với khí hậu mát mẻ, cảnh quan đẹp như tranh. Tham quan Hồ Xuân Hương, Thung lũng Tình Yêu, Vườn hoa, Đồi chè Cầu Đất.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Lâm Đồng',
-                'number_of_members': 8,
+                'number_of_members': 12,
                 'total_price': 6000000
             },
             {
                 'name': 'Tour Nha Trang - Biển đảo 3 ngày 2 đêm',
-                'duration': '3 days 2 nights',
+                'duration': 3,
                 'description': 'Nghỉ dưỡng tại Nha Trang với bãi biển đẹp, nước trong xanh. Tham quan Vinpearl, Đảo Hòn Mun, Tháp Bà Ponagar, tắm biển, lặn biển.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Khánh Hòa',
-                'number_of_members': 8,
+                'number_of_members': 12,  # 6 rooms × 2 people
                 'total_price': 4500000
             },
             {
                 'name': 'Tour Huế - Cố đô 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Tham quan Cố đô Huế với các di tích lịch sử: Đại Nội, Lăng Tự Đức, Chùa Thiên Mụ, Sông Hương. Thưởng thức ẩm thực cung đình.',
                 'departure_city': 'Đà Nẵng',
                 'destination_city': 'Thừa Thiên Huế',
-                'number_of_members': 6,
+                'number_of_members': 8,
                 'total_price': 2500000
             },
             {
                 'name': 'Tour Hội An - Phố cổ 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Khám phá Phố cổ Hội An - Di sản văn hóa thế giới. Tham quan Chùa Cầu, Nhà cổ, Làng gốm Thanh Hà, làm đèn lồng, thưởng thức cao lầu.',
                 'departure_city': 'Đà Nẵng',
                 'destination_city': 'Quảng Nam',
@@ -2453,25 +3142,25 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Mũi Né - Phan Thiết 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Nghỉ dưỡng tại Mũi Né với đồi cát đỏ, bãi biển đẹp. Tham quan Suối Tiên, Làng chài, thưởng thức hải sản tươi sống.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Bình Thuận',
-                'number_of_members': 8,
+                'number_of_members': 10,
                 'total_price': 2800000
             },
             {
                 'name': 'Tour Cần Thơ - Miền Tây 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Khám phá miền Tây sông nước. Đi chợ nổi Cái Răng, vườn trái cây, làng nghề, thưởng thức đặc sản miền Tây.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Cần Thơ',
-                'number_of_members': 8,
+                'number_of_members': 12,
                 'total_price': 2000000
             },
             {
                 'name': 'Tour Phú Quốc - Đảo ngọc 4 ngày 3 đêm',
-                'duration': '4 days 3 nights',
+                'duration': 4,
                 'description': 'Nghỉ dưỡng tại Phú Quốc với bãi biển đẹp nhất Việt Nam. Tham quan Vinpearl Safari, Cáp treo Hòn Thơm, Làng chài, tắm biển, lặn ngắm san hô.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Kiên Giang',
@@ -2480,29 +3169,29 @@ def create_tours(user_ids):
             },
             {
                 'name': 'Tour Ninh Bình - Tam Cốc Bích Động 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Tham quan Ninh Bình với cảnh quan non nước hữu tình. Đi thuyền Tam Cốc, thăm Chùa Bái Đính, Tràng An, Hang Múa.',
                 'departure_city': 'Hà Nội',
                 'destination_city': 'Ninh Bình',
-                'number_of_members': 6,
+                'number_of_members': 4,
                 'total_price': 1800000
             },
             {
                 'name': 'Tour Đà Nẵng - Bà Nà Hills 2 ngày 1 đêm',
-                'duration': '2 days 1 night',
+                'duration': 2,
                 'description': 'Khám phá Đà Nẵng và Bà Nà Hills. Đi cáp treo, tham quan Cầu Vàng, Làng Pháp, tắm biển Mỹ Khê, thưởng thức ẩm thực địa phương.',
                 'departure_city': 'Hồ Chí Minh',
                 'destination_city': 'Đà Nẵng',
-                'number_of_members': 10,
+                'number_of_members': 8,
                 'total_price': 3200000
             },
             {
                 'name': 'Tour Cao Bằng - Thác Bản Giốc 3 ngày 2 đêm',
-                'duration': '3 days 2 nights',
+                'duration': 3,
                 'description': 'Khám phá Cao Bằng với cảnh quan núi non hùng vĩ. Tham quan Thác Bản Giốc, Động Ngườm Ngao, Pác Bó, văn hóa dân tộc đặc sắc.',
                 'departure_city': 'Hà Nội',
                 'destination_city': 'Cao Bằng',
-                'number_of_members': 6,
+                'number_of_members': 10,
                 'total_price': 4500000
             }
         ]
@@ -2523,10 +3212,8 @@ def create_tours(user_ids):
                 print(f"⚠️  Warning: Tour '{tour['name']}' has same departure and destination city ({tour['departure_city']}). Skipping.")
                 continue
             
-            # Parse duration to get number of days (e.g., "3 days 2 nights" -> 3 days)
-            import re
-            duration_match = re.search(r'(\d+)\s*days?', tour['duration'].lower())
-            num_days = int(duration_match.group(1)) if duration_match else 2
+            # Duration is now stored as integer representing number of days
+            num_days = tour['duration']
             
             # Validate that all required services exist BEFORE creating the tour
             services = _validate_tour_services(cur, dest_city_id, dep_city_id, num_days)
@@ -2552,13 +3239,36 @@ def create_tours(user_ids):
                 # Create daily itinerary and services for this tour
                 _create_tour_itinerary_and_services(cur, tour_id, num_days, dest_city_id, dep_city_id, tour['number_of_members'])
                 
+                # Calculate actual price based on services
+                actual_price = _calculate_tour_price(cur, tour_id, num_days, tour['number_of_members'])
+                
+                # Update tour with calculated price
+                cur.execute("""
+                    UPDATE tours_admin SET total_price = %s WHERE id = %s
+                """, (actual_price, tour_id))
+                
                 # Verify services were assigned
                 cur.execute("""
                     SELECT COUNT(*) FROM tour_services WHERE tour_id = %s
                 """, (tour_id,))
                 service_count = cur.fetchone()[0]
                 
-                print(f"✅ Created tour: {tour['name']} (ID: {tour_id}) with {num_days} days itinerary, {service_count} services assigned")
+                # Create 3 tour schedules starting from now
+                from datetime import datetime, timedelta
+                now = datetime.now()
+                for schedule_num in range(3):
+                    # Schedule departures: today + 7, 14, 21 days
+                    departure_dt = now + timedelta(days=7 * (schedule_num + 1))
+                    # Return date = departure + duration - 1 (e.g., 2 days tour = day 1 depart, day 2 return)
+                    return_dt = departure_dt + timedelta(days=num_days - 1)
+                    
+                    cur.execute("""
+                        INSERT INTO tour_schedules
+                        (tour_id, departure_datetime, return_datetime, max_slots, is_active)
+                        VALUES (%s, %s, %s, %s, TRUE)
+                    """, (tour_id, departure_dt, return_dt, tour['number_of_members']))
+                
+                print(f"✅ Created tour: {tour['name']} (ID: {tour_id}) with {num_days} days itinerary, {service_count} services assigned, 3 schedules")
             except Exception as tour_error:
                 print(f"⚠️  Error creating tour '{tour['name']}': {tour_error}")
                 import traceback
@@ -2851,6 +3561,233 @@ def create_promotions():
         cur.close()
         conn.close()
 
+def create_tour_schedules():
+    """Create tour schedules for the next 30 days"""
+    import json
+    from datetime import datetime, timedelta
+    
+    conn = get_connection()
+    if not conn:
+        print("❌ Cannot create tour schedules: Database connection failed.")
+        return
+    
+    cur = conn.cursor()
+    
+    try:
+        # Get all tours
+        cur.execute("SELECT id, number_of_members, duration FROM tours_admin WHERE is_active = TRUE")
+        tours = cur.fetchall()
+        
+        if not tours:
+            print("⚠️  No tours found. Skipping schedule creation.")
+            return
+        
+        schedules_created = 0
+        
+        for tour_id, max_slots, duration in tours:
+            # Parse duration
+            try:
+                duration_int = int(duration) if isinstance(duration, str) else duration
+            except:
+                duration_int = int(''.join(filter(str.isdigit, str(duration))))
+            
+            # Create 3 schedules for each tour (weekly departures)
+            for week in range(3):
+                departure = datetime.now() + timedelta(days=7 * week + 3)  # Start 3 days from now
+                return_date = departure + timedelta(days=duration_int)
+                
+                cur.execute("""
+                    INSERT INTO tour_schedules 
+                    (tour_id, departure_datetime, return_datetime, max_slots, status)
+                    VALUES (%s, %s, %s, %s, 'pending')
+                    RETURNING id
+                """, (tour_id, departure, return_date, max_slots))
+                
+                schedule_id = cur.fetchone()[0]
+                schedules_created += 1
+        
+        conn.commit()
+        print(f"✅ Created {schedules_created} tour schedules successfully!")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Error creating tour schedules: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        cur.close()
+        conn.close()
+
+def create_sample_bookings(user_ids):
+    """Create sample bookings with customizations"""
+    import json
+    from datetime import datetime, timedelta
+    
+    conn = get_connection()
+    if not conn:
+        print("❌ Cannot create bookings: Database connection failed.")
+        return
+    
+    cur = conn.cursor()
+    
+    try:
+        # Get pending schedules with slots available
+        cur.execute("""
+            SELECT ts.id, ts.tour_id, ts.departure_datetime, ts.return_datetime, 
+                   ts.max_slots, t.total_price, t.name
+            FROM tour_schedules ts
+            INNER JOIN tours_admin t ON ts.tour_id = t.id
+            WHERE ts.status = 'pending' AND ts.slots_available > 0
+            ORDER BY ts.departure_datetime
+            LIMIT 10
+        """)
+        
+        schedules = cur.fetchall()
+        
+        if not schedules:
+            print("⚠️  No available schedules found. Skipping booking creation.")
+            return
+        
+        # Get client user IDs
+        client_users = [uid for key, uid in user_ids.items() if 'client' in key]
+        if not client_users:
+            print("⚠️  No client users found. Skipping booking creation.")
+            return
+        
+        bookings_created = 0
+        
+        for i, schedule in enumerate(schedules[:5]):  # Create bookings for first 5 schedules
+            schedule_id, tour_id, departure, return_date, max_slots, total_price, tour_name = schedule
+            
+            # Get tour services to build customizations
+            cur.execute("""
+                SELECT tsr.room_id, ar.base_price
+                FROM tour_selected_rooms tsr
+                INNER JOIN accommodation_rooms ar ON tsr.room_id = ar.id
+                WHERE tsr.tour_id = %s
+                LIMIT 1
+            """, (tour_id,))
+            
+            room_info = cur.fetchone()
+            
+            cur.execute("""
+                SELECT day_number, meal_session
+                FROM tour_selected_set_meals
+                WHERE tour_id = %s
+                ORDER BY day_number, meal_session
+            """, (tour_id,))
+            
+            meals = cur.fetchall()
+            
+            # Create customizations
+            customizations = {
+                'default_room': {
+                    'room_id': room_info[0] if room_info else None,
+                    'room_price': float(room_info[1]) if room_info else 0
+                },
+                'room_upgrade': None,
+                'selected_meals': [
+                    {'day_number': meal[0], 'meal_session': meal[1]}
+                    for meal in meals
+                ],
+                'transport_options': {
+                    'outbound': True,
+                    'return': True
+                },
+                'actual_people_count': 2
+            }
+            
+            # Calculate total price - use the tour's total price for 2 people
+            booking_total_price = total_price
+            
+            # Create booking
+            client_id = client_users[i % len(client_users)]
+            
+            cur.execute("""
+                INSERT INTO bookings 
+                (tour_id, tour_schedule_id, user_id, full_name, email, phone,
+                 departure_date, return_date, number_of_guests, total_price, 
+                 payment_method, customizations, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'confirmed')
+                RETURNING id
+            """, (
+                tour_id, schedule_id, client_id,
+                f'Customer {i+1}', f'customer{i+1}@example.com', f'090{i+1}234567',
+                departure.date(), return_date.date(), 2, booking_total_price,
+                'credit_card', json.dumps(customizations)
+            ))
+            
+            booking_id = cur.fetchone()[0]
+            
+            # Update schedule slots_booked
+            cur.execute("""
+                UPDATE tour_schedules
+                SET slots_booked = slots_booked + 2
+                WHERE id = %s
+            """, (schedule_id,))
+            
+            bookings_created += 1
+        
+        conn.commit()
+        print(f"✅ Created {bookings_created} sample bookings with customizations!")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Error creating bookings: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        cur.close()
+        conn.close()
+
+def ensure_tables_for_seed():
+    """Create all required tables so seed_data can run standalone."""
+    print("📦 Creating database tables (standalone seed)...")
+    try:
+        # Base tables first (cities, users)
+        ensure_base_tables()
+            
+        # Partner services tables (needed by tours)
+        create_partner_service_tables()
+            
+        # Tour tables (depend on cities/users and partner services)
+        create_tour_tables()
+            
+        # Remaining core tables (bookings, favorites, social, etc.)
+        create_tables()
+            
+        # Tour reviews table (depends on bookings)
+        create_tour_reviews_table()
+            
+        # Initialize cities data if missing
+        init_cities()
+        
+        # Create social_hashtag table and update posts table
+        try:
+            create_social_hashtag_table()
+            update_posts_table()
+        except Exception as e:
+            print(f"⚠️  Warning: Could not create social_hashtag table: {e}")
+        
+        # Add new columns to posts table
+        try:
+            add_posts_table_columns()
+        except Exception as e:
+            print(f"⚠️  Warning: Could not add posts table columns: {e}")
+        
+        # Add soft delete columns to posts and comments
+        try:
+            add_social_soft_delete_columns()
+        except Exception as e:
+            print(f"⚠️  Warning: Could not add soft delete columns: {e}")
+
+        print("✅ All tables created/verified for seed run.")
+    except Exception as e:
+        print(f"❌ Error ensuring tables for seed: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
 def main():
     """Main function to seed all data"""
     print("=" * 60)
@@ -2858,77 +3795,8 @@ def main():
     print("=" * 60)
     print()
     
-    # First, ensure all tables are created
-    print("📦 Creating database tables...")
-    try:
-        # Create a minimal Flask app context for table creation
-        from flask import Flask
-        app = Flask(__name__)
-        app.bcrypt = bcrypt
-        
-        with app.app_context():
-            # Create cities and users tables first (needed by everything)
-            conn = get_connection()
-            if conn:
-                cur = conn.cursor()
-                
-                # Create cities table
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS cities (
-                        id SERIAL PRIMARY KEY,
-                        name VARCHAR(100) NOT NULL UNIQUE,
-                        code VARCHAR(10),
-                        region VARCHAR(50)
-                    );
-                """)
-                
-                # Create users table (needed by tours_admin and partner services)
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id SERIAL PRIMARY KEY,
-                        username VARCHAR(100) NOT NULL,
-                        email VARCHAR(100) UNIQUE NOT NULL,
-                        password VARCHAR(255),
-                        phone VARCHAR(20),
-                        avatar_url TEXT,
-                        role VARCHAR(20) DEFAULT 'client' CHECK (role IN ('admin', 'client', 'partner')),
-                        partner_type VARCHAR(50) CHECK (partner_type IN ('accommodation', 'transportation', 'restaurant') OR partner_type IS NULL),
-                        status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended', 'pending')),
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """)
-                
-                conn.commit()
-                cur.close()
-                conn.close()
-                print("✅ Cities and users tables created/verified")
-            
-            # Create partner service tables FIRST (needed by tour_services)
-            from src.models.partner_services_schema import create_partner_service_tables
-            create_partner_service_tables()
-            print("✅ Partner service tables created/verified")
-            
-            # Create tour tables (tours_admin references cities and users, tour_services references partner services)
-            from src.models.tour_schema import create_tour_tables
-            create_tour_tables()
-            print("✅ Tour tables created/verified")
-            
-            # Create remaining core tables (posts, comments, bookings, etc.)
-            from src.models.models import create_tables
-            create_tables()
-            print("✅ Core tables created/verified")
-            
-            # Initialize cities
-            from src.services.city_init import init_cities
-            init_cities()
-            print("✅ Cities initialized")
-        
-    except Exception as e:
-        print(f"❌ Error creating tables: {e}")
-        import traceback
-        traceback.print_exc()
-        return
-    
+    # Ensure schema exists so this script can run standalone
+    ensure_tables_for_seed()
     print()
     
     # Load city IDs
@@ -2942,12 +3810,12 @@ def main():
     user_ids = create_users()
     print()
     
-    # Create partner services
+    # Create partner services FIRST (tours need these to be available)
     print("🏨 Creating accommodation services...")
     create_accommodations(user_ids)
     print()
     
-    print("🍽️  Creating restaurant services...")
+    print("🍽️  Creating restaurant services (with set meals)...")
     create_restaurants(user_ids)
     print()
     
@@ -2955,9 +3823,14 @@ def main():
     create_transportation(user_ids)
     print()
     
-    # Create tours
-    print("🗺️  Creating tours...")
+    # Create tours AFTER services are ready
+    print("🗺️  Creating tours (linking to services and set meals)...")
     create_tours(user_ids)
+    print()
+    
+    # Initialize partner revenue table
+    print("💰 Initializing partner revenue table...")
+    initialize_partner_revenue()
     print()
     
     # Create promotions

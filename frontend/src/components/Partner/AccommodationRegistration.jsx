@@ -5,11 +5,13 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { ArrowLeft, CheckCircle2, Plus, X, Shield, Star } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
+import { useToast } from "../../context/ToastContext";
 import { getCities } from "../../api/cities";
 import { submitPartnerRegistration } from "../../api/partnerRegistrations";
 
 export default function AccommodationRegistration({ onBack, onSubmit }) {
   const { translations: t } = useLanguage();
+  const toast = useToast();
   const [cities, setCities] = useState([]);
   const [formData, setFormData] = useState({
     businessName: "",
@@ -119,9 +121,9 @@ export default function AccommodationRegistration({ onBack, onSubmit }) {
       const result = await submitPartnerRegistration(registrationData);
       
       if (onSubmit) onSubmit(registrationData);
-      alert(t.partnerRegisterSuccess || "Registration submitted successfully! Please wait for admin approval.");
+      toast.success(t.partnerRegisterSuccess || "Registration submitted successfully! Please wait for admin approval.");
     } catch (error) {
-      alert(`Failed to submit registration: ${error.message}`);
+      toast.error(`Failed to submit registration: ${error.message}`);
     }
   };
 
