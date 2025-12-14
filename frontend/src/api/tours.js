@@ -12,7 +12,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
  */
 const getAuthHeaders = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const userId = user.id || '';
+  const userId = user.id ? String(user.id) : '';
   const userEmail = user.email || '';
   return {
     'Content-Type': 'application/json',

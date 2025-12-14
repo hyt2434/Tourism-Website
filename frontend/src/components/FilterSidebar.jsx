@@ -102,11 +102,30 @@ export default function FilterSidebar({ onFilterChange, initialFilters = {} }) {
 
   const handleArrayFilter = (key, value) => {
     const currentArray = filters[key];
-    const newArray = currentArray.includes(value)
-      ? currentArray.filter((item) => item !== value)
-      : [...currentArray, value];
+    const isAdding = !currentArray.includes(value);
+    const newArray = isAdding
+      ? [...currentArray, value]
+      : currentArray.filter((item) => item !== value);
 
     const newFilters = { ...filters, [key]: newArray };
+    
+    // If region is being selected/deselected, automatically add/remove all cities in that region
+    if (key === 'regions') {
+      const regionCities = regionsData[value] || [];
+      const currentProvinces = newFilters.provinces || [];
+      
+      if (isAdding) {
+        // Add all cities in this region to provinces
+        const cityIds = regionCities.map(city => city.id.toString());
+        const updatedProvinces = [...new Set([...currentProvinces, ...cityIds])];
+        newFilters.provinces = updatedProvinces;
+      } else {
+        // Remove all cities in this region from provinces
+        const cityIds = regionCities.map(city => city.id.toString());
+        newFilters.provinces = currentProvinces.filter(id => !cityIds.includes(id));
+      }
+    }
+    
     setFilters(newFilters);
   };
 

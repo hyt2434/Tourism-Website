@@ -22,6 +22,7 @@ export default function ToursPage() {
   const [currentWeather] = useState("sunny");
   const [currentPage, setCurrentPage] = useState(1);
   const toursPerPage = 9;
+  const [activeFilters, setActiveFilters] = useState({}); // Store active filters to re-apply after API reload
 
   // Load tours from API with URL params
   useEffect(() => {
@@ -51,7 +52,15 @@ export default function ToursPage() {
       const tours = await getPublishedTours(filters);
 
       setAllTours(tours);
-      setFilteredTours(tours);
+      
+      // After API reload, re-apply client-side filters if any are active
+      if (Object.keys(activeFilters).length > 0) {
+        const filtered = applyFiltersToTours(tours, activeFilters);
+        setFilteredTours(filtered);
+        applySorting(filtered, sortBy);
+      } else {
+        setFilteredTours(tours);
+      }
     } catch (error) {
       console.error('Error loading tours:', error);
       setAllTours([]);
@@ -87,53 +96,139 @@ export default function ToursPage() {
     return filters;
   };
 
-  const handleFilterChange = (filters) => {
-    // If search filter changes, update URL and reload from API
-    if (filters.search !== undefined) {
-      const newParams = new URLSearchParams(searchParams);
-      if (filters.search && filters.search.trim()) {
-        newParams.set('search', filters.search.trim());
-      } else {
-        newParams.delete('search');
-      }
-      // Update URL and trigger reload
-      setSearchParams(newParams);
-      return; // loadTours will be called by useEffect when searchParams changes
-    }
-
-    // For other filters, do client-side filtering
-    let result = [...allTours];
-
+  // Helper function to apply filters to tours
+  const applyFiltersToTours = (tours, filters) => {
+    let result = [...tours];
+    console.log('applyFiltersToTours - input:', tours.length, 'tours, filters:', filters);
+    
     // City filter (provinces contains city IDs)
     if (filters.provinces && filters.provinces.length > 0) {
       const cityIds = filters.provinces.map(id => parseInt(id));
+      console.log('Filtering by cities:', cityIds);
+      const beforeCount = result.length;
       result = result.filter((t) => {
-        // Check if tour's destination or departure city matches any selected city
         const destCityId = t.destination_city?.id;
         const depCityId = t.departure_city?.id;
-        return cityIds.includes(destCityId) || cityIds.includes(depCityId);
+        const matches = cityIds.includes(destCityId) || cityIds.includes(depCityId);
+        if (!matches) {
+          console.log('Tour', t.id, 'does not match cities. dest:', destCityId, 'dep:', depCityId);
+        }
+        return matches;
       });
+      console.log('City filter:', beforeCount, '->', result.length);
     }
 
     // Price filter
-    if (filters.maxPrice && filters.maxPrice < 10000000) {
-      result = result.filter((t) => t.price <= filters.maxPrice);
+    if (filters.minPrice !== undefined && filters.minPrice > 0) {
+      const beforeCount = result.length;
+      result = result.filter((t) => {
+        const tourPrice = t.price_per_person || t.price || 0;
+        return tourPrice >= filters.minPrice;
+      });
+      console.log('Min price filter:', beforeCount, '->', result.length);
+    }
+    if (filters.maxPrice !== undefined && filters.maxPrice < 10000000) {
+      const beforeCount = result.length;
+      result = result.filter((t) => {
+        const tourPrice = t.price_per_person || t.price || 0;
+        return tourPrice <= filters.maxPrice;
+      });
+      console.log('Max price filter:', beforeCount, '->', result.length, 'maxPrice:', filters.maxPrice);
     }
 
-    // Rating filter (if rating is implemented)
-    if (filters.minRating > 0) {
-      result = result.filter((t) => (t.rating || 0) >= filters.minRating);
+    // Rating filter
+    if (filters.minRating !== undefined && filters.minRating > 0) {
+      const beforeCount = result.length;
+      result = result.filter((t) => {
+        const tourRating = t.rating || 0;
+        return tourRating >= filters.minRating;
+      });
+      console.log('Rating filter:', beforeCount, '->', result.length, 'minRating:', filters.minRating);
     }
 
-    // Tour types filter (if tour types are implemented)
+    // Tour types filter
     if (filters.tourTypes && filters.tourTypes.length > 0) {
+      const beforeCount = result.length;
       result = result.filter((t) =>
         t.type && t.type.some((type) => filters.tourTypes.includes(type))
       );
+      console.log('Tour types filter:', beforeCount, '->', result.length);
     }
 
-    setFilteredTours(result);
-    applySorting(result, sortBy);
+    console.log('applyFiltersToTours - output:', result.length, 'tours');
+    return result;
+  };
+
+  const handleFilterChange = (filters) => {
+    console.log('handleFilterChange called with:', filters);
+    console.log('allTours length:', allTours.length);
+    
+    // Store active filters (excluding search, as that's handled by API)
+    // Only store filters that are actually set (not default/empty values)
+    const clientSideFilters = {};
+    if (filters.provinces && filters.provinces.length > 0) {
+      clientSideFilters.provinces = filters.provinces;
+    }
+    if (filters.minPrice !== undefined && filters.minPrice > 0) {
+      clientSideFilters.minPrice = filters.minPrice;
+    }
+    if (filters.maxPrice !== undefined && filters.maxPrice < 10000000) {
+      clientSideFilters.maxPrice = filters.maxPrice;
+    }
+    if (filters.minRating !== undefined && filters.minRating > 0) {
+      clientSideFilters.minRating = filters.minRating;
+    }
+    if (filters.tourTypes && filters.tourTypes.length > 0) {
+      clientSideFilters.tourTypes = filters.tourTypes;
+    }
+    
+    console.log('Stored active filters:', clientSideFilters);
+    setActiveFilters(clientSideFilters);
+    
+    // Handle search filter separately - update URL if search is provided
+    const hasSearch = filters.search !== undefined && filters.search && filters.search.trim();
+    if (hasSearch) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('search', filters.search.trim());
+      setSearchParams(newParams);
+      
+      // If search is the ONLY filter, return early to let API reload handle it
+      const hasOtherFilters = (clientSideFilters.provinces && clientSideFilters.provinces.length > 0) ||
+                              (clientSideFilters.minPrice !== undefined && clientSideFilters.minPrice > 0) ||
+                              (clientSideFilters.maxPrice !== undefined && clientSideFilters.maxPrice < 10000000) ||
+                              (clientSideFilters.minRating !== undefined && clientSideFilters.minRating > 0) ||
+                              (clientSideFilters.tourTypes && clientSideFilters.tourTypes.length > 0);
+      
+      if (!hasOtherFilters) {
+        setActiveFilters({}); // Clear filters if only search
+        return; // loadTours will be called by useEffect when searchParams changes
+      }
+      // If there are other filters, API will reload and then we'll apply filters in loadTours
+      return;
+    }
+
+    // For other filters (no search or empty search), do client-side filtering immediately
+    if (allTours.length === 0) {
+      console.warn('No tours to filter!');
+      return;
+    }
+    
+    // Check if there are any active filters
+    const hasActiveFilters = Object.keys(clientSideFilters).length > 0;
+    console.log('Has active filters?', hasActiveFilters, clientSideFilters);
+    
+    if (hasActiveFilters) {
+      let result = applyFiltersToTours(allTours, clientSideFilters);
+      console.log('After filtering:', result.length, 'tours out of', allTours.length);
+      setFilteredTours(result);
+      applySorting(result, sortBy);
+    } else {
+      // No filters, show all tours
+      console.log('No active filters, showing all tours');
+      setFilteredTours(allTours);
+      applySorting(allTours, sortBy);
+    }
+    
     setCurrentPage(1); // Reset to first page when filters change
   };
 

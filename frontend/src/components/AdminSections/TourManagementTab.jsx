@@ -785,13 +785,45 @@ export default function TourManagementTab() {
 
     try {
       // Prepare data with room bookings and set meals
+      // Ensure all ID fields are strings and numeric fields are properly typed
+      
+      // Process services object to convert IDs to strings
+      const processedServices = {
+        restaurants: formData.services?.restaurants?.map(r => ({
+          ...r,
+          id: r.id ? String(r.id) : r.id,
+          restaurant_id: r.restaurant_id ? String(r.restaurant_id) : r.restaurant_id
+        })) || [],
+        accommodation: formData.services?.accommodation ? {
+          ...formData.services.accommodation,
+          id: formData.services.accommodation.id ? String(formData.services.accommodation.id) : formData.services.accommodation.id
+        } : null,
+        transportation: formData.services?.transportation ? {
+          ...formData.services.transportation,
+          id: formData.services.transportation.id ? String(formData.services.transportation.id) : formData.services.transportation.id
+        } : null
+      };
+      
       const tourData = {
         ...formData,
+        // Convert city IDs to strings if they exist
+        destination_city_id: formData.destination_city_id ? String(formData.destination_city_id) : '',
+        departure_city_id: formData.departure_city_id ? String(formData.departure_city_id) : '',
+        // Ensure duration is a number (parse if string)
+        duration: formData.duration ? parseInt(formData.duration) || 0 : 0,
+        // Ensure number_of_members is a number
+        number_of_members: parseInt(formData.number_of_members) || 0,
+        // Use processed services with string IDs
+        services: processedServices,
         roomBookings: roomBooking.room_id ? [{
-          room_id: roomBooking.room_id,
-          quantity: roomBooking.quantity
+          room_id: roomBooking.room_id ? String(roomBooking.room_id) : null,
+          quantity: parseInt(roomBooking.quantity) || 1
         }] : [],
-        selectedSetMeals: selectedSetMeals
+        selectedSetMeals: selectedSetMeals.map(meal => ({
+          ...meal,
+          restaurant_id: meal.restaurant_id ? String(meal.restaurant_id) : null,
+          set_meal_id: meal.set_meal_id ? String(meal.set_meal_id) : null
+        }))
       };
       
       console.log('Submitting tour data:', tourData);
