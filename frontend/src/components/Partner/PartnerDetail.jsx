@@ -10,7 +10,7 @@ import { useToast } from "../../context/ToastContext";
 export default function PartnerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { translations: t } = useLanguage();
+  const { translations: t, language } = useLanguage();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,10 +40,10 @@ export default function PartnerDetail() {
             reviews: res.reviews || []
           });
         } else {
-          setError(res?.message || "Failed to load partner detail");
+          setError(res?.message || t?.failedToLoadPartnerDetail || "Failed to load partner detail");
         }
       } catch (err) {
-        setError(err.message || "Failed to load partner detail");
+        setError(err.message || t?.failedToLoadPartnerDetail || "Failed to load partner detail");
       } finally {
         setLoading(false);
       }
@@ -63,7 +63,7 @@ export default function PartnerDetail() {
   const handleDeleteServiceReview = async (reviewId, e) => {
     e.stopPropagation(); // Prevent card click event
     
-    if (!window.confirm('Are you sure you want to delete this service review?')) {
+    if (!window.confirm(t?.confirmDeleteServiceReview || 'Are you sure you want to delete this service review?')) {
       return;
     }
 
@@ -84,25 +84,25 @@ export default function PartnerDetail() {
           setSelectedReview(null);
         }
       } else {
-        toast.error(data.message || 'Failed to delete service review');
+        toast.error(data.message || t?.failedToDeleteServiceReview || 'Failed to delete service review');
       }
     } catch (error) {
       console.error('Error deleting service review:', error);
-      toast.error('Failed to delete service review');
+      toast.error(t?.failedToDeleteServiceReview || 'Failed to delete service review');
     } finally {
       setDeletingId(null);
     }
   };
 
   const partner = data.partner;
-  const avatar = partner?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(partner?.name || "Partner")}&background=0D8ABC&color=fff`;
+  const avatar = partner?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(partner?.name || t?.partner || "Partner")}&background=0D8ABC&color=fff`;
 
   if (!partner) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col items-center justify-center">
         <div className="text-center space-y-4">
           <div className="text-6xl">{loading ? "⏳" : "❌"}</div>
-          <p className="text-xl text-gray-600 font-medium">{loading ? (t?.loading || "Loading...") : (error || t?.partnerNotFound || "Partner not found")}</p>
+          <p className="text-xl text-gray-600 dark:text-gray-300 font-medium">{loading ? (t?.loading || "Loading...") : (error || t?.partnerNotFound || "Partner not found")}</p>
           <Link to="/partner">
             <Button className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600">
               <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
@@ -115,35 +115,35 @@ export default function PartnerDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-cyan-400/20 to-blue-400/20 rounded-full blur-3xl animate-pulse delay-700"></div>
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-purple-400/20 dark:from-blue-600/10 dark:to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-cyan-400/20 to-blue-400/20 dark:from-cyan-600/10 dark:to-blue-600/10 rounded-full blur-3xl animate-pulse delay-700"></div>
       </div>
 
       <div className="container mx-auto px-6 py-12 relative z-10">
         {/* Back Button */}
-        <Link to="/partner" className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-8 transition-colors">
+        <Link to="/partner" className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 mb-8 transition-colors">
           <ArrowRight className="w-4 h-4 rotate-180" />
           <span className="font-medium">{t?.backToPartners || "Back to Partners"}</span>
         </Link>
 
         {/* Hero Header Section */}
-        <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl p-8 md:p-12 mb-8 border border-white/20 relative overflow-hidden">
+        <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl shadow-2xl p-8 md:p-12 mb-8 border border-white/20 dark:border-gray-700/50 relative overflow-hidden">
           {/* Decorative gradient */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 dark:from-blue-600/20 dark:to-purple-600/20 rounded-full blur-3xl"></div>
           
           <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center md:items-start">
             {/* Logo with premium effect */}
             <div className="relative flex-shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full blur-2xl opacity-40"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full blur-2xl opacity-40 dark:opacity-30"></div>
               <img
                 src={avatar}
                 alt={partner.name}
-                className="relative w-48 h-48 rounded-full object-cover border-8 border-white shadow-2xl ring-4 ring-blue-100"
+                className="relative w-48 h-48 rounded-full object-cover border-8 border-white dark:border-gray-700 shadow-2xl ring-4 ring-blue-100 dark:ring-blue-900/50"
               />
-              <div className="absolute -bottom-3 -right-3 bg-gradient-to-r from-green-400 to-emerald-500 w-14 h-14 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
+              <div className="absolute -bottom-3 -right-3 bg-gradient-to-r from-green-400 to-emerald-500 w-14 h-14 rounded-full border-4 border-white dark:border-gray-800 flex items-center justify-center shadow-lg">
                 <CheckCircle2 className="w-7 h-7 text-white" />
               </div>
               <div className="absolute -top-3 -left-3 bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1 rounded-full text-white text-xs font-bold shadow-lg flex items-center gap-1">
@@ -154,14 +154,14 @@ export default function PartnerDetail() {
 
             <div className="flex-1 space-y-4 sm:space-y-5 text-center md:text-left min-w-0">
               <div>
-                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-blue-100 text-blue-700 text-xs sm:text-sm font-semibold mb-2 sm:mb-3">
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-semibold mb-2 sm:mb-3">
                   <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                   {t?.premiumPartner || "Premium Partner"}
                 </div>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-900 bg-clip-text text-transparent mb-2 sm:mb-3 break-words">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-900 dark:from-white dark:via-blue-300 dark:to-purple-300 bg-clip-text text-transparent mb-2 sm:mb-3 break-words">
                   {partner.name}
                 </h1>
-                <p className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto md:mx-0">
+                <p className="text-sm sm:text-base md:text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-2xl mx-auto md:mx-0">
                   {partner.description || partner.tourCore || t?.partnerSubtitle || ""}
                 </p>
               </div>
@@ -172,11 +172,11 @@ export default function PartnerDetail() {
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
                       key={i}
-                      className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 ${i < Math.round(partner.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
+                      className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 ${i < Math.round(partner.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300 dark:text-gray-600'}`}
                     />
                   ))}
                 </div>
-                <span className="text-sm sm:text-base text-gray-600 font-semibold">
+                <span className="text-sm sm:text-base text-gray-600 dark:text-gray-300 font-semibold">
                   {(partner.rating ?? 0).toFixed ? (partner.rating ?? 0).toFixed(1) : (partner.rating ?? 0)}
                 </span>
               </div>
@@ -185,14 +185,14 @@ export default function PartnerDetail() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
                 {[ 
                   { icon: Users, label: t?.supportTour || "Support Tour", value: data.tours.length },
-                  { icon: Calendar, label: t?.partnerTypeLabel || "Type", value: partner.partner_type || "Partner" },
+                  { icon: Calendar, label: t?.partnerTypeLabel || "Type", value: partner.partner_type || t?.partner || "Partner" },
                   { icon: TrendingUp, label: t?.partnerStats4 || "Growth", value: "+45%" },
                   { icon: Award, label: t?.partnerStats3 || "Rating", value: `${(partner.rating ?? 0).toFixed ? (partner.rating ?? 0).toFixed(1) : (partner.rating ?? 0)}★` }
                 ].map((stat, idx) => (
-                  <div key={idx} className="bg-white/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-3 border border-white/20 text-center">
-                    <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mx-auto mb-1" />
-                    <div className="text-base sm:text-lg font-bold text-gray-900">{stat.value}</div>
-                    <div className="text-[10px] sm:text-xs text-gray-600">{stat.label}</div>
+                  <div key={idx} className="bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-3 border border-white/20 dark:border-gray-600/50 text-center">
+                    <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 mx-auto mb-1" />
+                    <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">{stat.value}</div>
+                    <div className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">{stat.label}</div>
                   </div>
                 ))}
               </div>
@@ -202,28 +202,28 @@ export default function PartnerDetail() {
 
         {/* Contact Information Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div className="bg-white/70 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 border border-white/20 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 p-2 sm:p-2.5 flex-shrink-0">
                 <Mail className="w-full h-full text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-500 mb-1">{t?.email || "Email"}</p>
-                <p className="text-sm sm:text-base font-semibold text-gray-900 truncate">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">{t?.email || "Email"}</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate">
                   {partner.email || t?.notAvailable || "N/A"}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white/70 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 border border-white/20 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 p-2 sm:p-2.5 flex-shrink-0">
                 <Phone className="w-full h-full text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm text-gray-500 mb-1">{t?.phone || "Phone"}</p>
-                <p className="text-sm sm:text-base font-semibold text-gray-900 truncate">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">{t?.phone || "Phone"}</p>
+                <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate">
                   {partner.phone || t?.notAvailable || "N/A"}
                 </p>
               </div>
@@ -232,25 +232,25 @@ export default function PartnerDetail() {
         </div>
 
         {/* About Section */}
-        <section className="bg-white/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 mb-6 sm:mb-8">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
+        <section className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 dark:border-gray-700/50 mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-300 bg-clip-text text-transparent">
             {t?.aboutPartner || "About"} {partner.name}
           </h2>
           
           <div className="space-y-3 sm:space-y-4">
-            <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
               {(t?.partnerAboutDescription || "{name} has been one of our trusted travel partners, providing guests with exceptional service, comfort, and unforgettable experiences. Whether you're exploring Vietnam's breathtaking landscapes or relaxing at a seaside resort, {name} ensures every trip is memorable.").replace(/{name}/g, partner.name)}
             </p>
 
             {/* Success metrics */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 mt-4 sm:mt-6">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800/50 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 mt-4 sm:mt-6">
               <div className="flex items-start gap-3 sm:gap-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 p-2 sm:p-2.5 flex-shrink-0">
                   <TrendingUp className="w-full h-full text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-base sm:text-lg font-bold text-green-800 mb-1 sm:mb-2">{t?.partnershipSuccessStory || "Partnership Success Story"}</h3>
-                  <p className="text-sm sm:text-base text-green-700 leading-relaxed">{partner.benefit}</p>
+                  <h3 className="text-base sm:text-lg font-bold text-green-800 dark:text-green-300 mb-1 sm:mb-2">{t?.partnershipSuccessStory || "Partnership Success Story"}</h3>
+                  <p className="text-sm sm:text-base text-green-700 dark:text-green-300 leading-relaxed">{partner.benefit}</p>
                 </div>
               </div>
             </div>
@@ -258,12 +258,12 @@ export default function PartnerDetail() {
         </section>
 
         {/* Available Tours Section */}
-        <section className="bg-white/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 mb-6 sm:mb-8">
+        <section className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 dark:border-gray-700/50 mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-300 bg-clip-text text-transparent">
               {t?.availableTours || "Available Tours"}
             </h2>
-            <Button variant="outline" className="border-2 text-sm sm:text-base w-full sm:w-auto">
+            <Button variant="outline" className="border-2 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 text-sm sm:text-base w-full sm:w-auto">
               {t?.viewAll || "View All"}
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-2" />
             </Button>
@@ -271,12 +271,12 @@ export default function PartnerDetail() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {data.tours.length === 0 && (
-              <div className="text-gray-500">{t?.noToursLinked || "No tours linked to this partner yet."}</div>
+              <div className="text-gray-500 dark:text-gray-400">{t?.noToursLinked || "No tours linked to this partner yet."}</div>
             )}
             {data.tours.map((tour) => (
               <div 
                 key={tour.tour_id} 
-                className="group bg-white rounded-xl sm:rounded-2xl overflow-hidden border border-gray-200 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]"
+                className="group bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-all duration-500 hover:scale-[1.02]"
               >
                 {/* Tour Image */}
                 <div className="relative overflow-hidden h-40 sm:h-48">
@@ -307,18 +307,18 @@ export default function PartnerDetail() {
 
                 {/* Tour Details */}
                 <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                  <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm leading-relaxed">
                     {t?.completedBookings || "Completed bookings"}: {tour.completed_bookings}
                   </p>
 
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-gray-200">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <div className="w-full sm:w-auto">
-                      <p className="text-[10px] sm:text-xs text-gray-500">{t?.startingFrom || "Starting from"}</p>
-                      <p className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t?.startingFrom || "Starting from"}</p>
+                      <p className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
                         {tour.price_per_person ? (
                           <>
                             {tour.price_per_person.toLocaleString('vi-VN')} ₫
-                            <span className="text-[10px] sm:text-xs font-normal text-gray-500 ml-1">/person</span>
+                            <span className="text-[10px] sm:text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">{t?.perPerson || "/person"}</span>
                           </>
                         ) : (
                           t?.contactForPrice || "Contact"
@@ -337,14 +337,14 @@ export default function PartnerDetail() {
         </section>
 
         {/* Reviews Section */}
-        <section className="bg-white/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 mb-6 sm:mb-8">
+        <section className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 shadow-xl border border-white/20 dark:border-gray-700/50 mb-6 sm:mb-8">
           <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-300 bg-clip-text text-transparent">
               {t?.reviews || "Service Reviews"}
             </h2>
           </div>
           {data.reviews.length === 0 ? (
-            <p className="text-sm sm:text-base text-gray-500">{t?.noReviews || "No reviews yet."}</p>
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t?.noReviews || "No reviews yet."}</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {data.reviews.map((rev) => (
@@ -354,7 +354,7 @@ export default function PartnerDetail() {
                     setSelectedReview(rev);
                     setShowDetailPanel(true);
                   }}
-                  className="border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 bg-white shadow-sm hover:shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.02] group relative"
+                  className="border border-gray-200 dark:border-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg cursor-pointer transition-all duration-300 hover:scale-[1.02] group relative"
                 >
                   {/* Admin Delete Button */}
                   {isAdmin && (
@@ -362,40 +362,40 @@ export default function PartnerDetail() {
                       onClick={(e) => handleDeleteServiceReview(rev.id, e)}
                       disabled={deletingId === rev.id}
                       className="absolute top-2 sm:top-3 right-2 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-md sm:rounded-lg transition-colors z-10 disabled:opacity-50"
-                      title="Delete service review"
+                      title={t?.deleteServiceReview || "Delete service review"}
                     >
                       <Trash2 size={16} className={`sm:w-[18px] sm:h-[18px] ${deletingId === rev.id ? 'animate-pulse' : ''}`} />
                     </button>
                   )}
                   {/* Tour Info */}
-                  <div className="mb-2 sm:mb-3 pb-2 sm:pb-3 border-b border-gray-200 pr-8 sm:pr-10 md:pr-12">
+                  <div className="mb-2 sm:mb-3 pb-2 sm:pb-3 border-b border-gray-200 dark:border-gray-700 pr-8 sm:pr-10 md:pr-12">
                     <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                      <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
-                      <h4 className="font-semibold text-sm sm:text-base text-gray-900 group-hover:text-blue-600 transition-colors truncate">{rev.tour_name || t?.tour || "Tour"}</h4>
+                      <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      <h4 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">{rev.tour_name || t?.tour || "Tour"}</h4>
                     </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-gray-500">
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                       <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
-                      <span className="truncate">{rev.created_at ? new Date(rev.created_at).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                      <span className="truncate">{rev.created_at ? new Date(rev.created_at).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
                     </div>
                   </div>
 
                   {/* User Info */}
                   <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">{rev.username || t?.anonymous || "Anonymous"}</span>
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{rev.username || t?.anonymous || "Anonymous"}</span>
                   </div>
 
                   {/* Service Review */}
-                  <div className="bg-gray-50 rounded-lg p-2.5 sm:p-3">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2.5 sm:p-3">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-                        <span className="font-medium text-xs sm:text-sm text-gray-900 truncate">{rev.service_name || t?.service || "Service"}</span>
+                        <span className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white truncate">{rev.service_name || t?.service || "Service"}</span>
                         <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium flex-shrink-0 ${
-                          rev.service_type === 'accommodation' ? 'bg-blue-100 text-blue-700' :
-                          rev.service_type === 'restaurant' ? 'bg-orange-100 text-orange-700' :
-                          'bg-green-100 text-green-700'
+                          rev.service_type === 'accommodation' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                          rev.service_type === 'restaurant' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+                          'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                         }`}>
                           {rev.service_type === 'accommodation' ? (t?.serviceTypeAccommodation || t?.accommodation || 'Accommodation') :
                            rev.service_type === 'restaurant' ? (t?.serviceTypeRestaurant || t?.restaurant || 'Restaurant') :
@@ -404,18 +404,18 @@ export default function PartnerDetail() {
                       </div>
                       <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${i < (rev.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
+                          <Star key={i} className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${i < (rev.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300 dark:text-gray-600'}`} />
                         ))}
                       </div>
                     </div>
                     {rev.review_text && (
-                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{rev.review_text}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{rev.review_text}</p>
                     )}
                   </div>
 
                   {/* Click hint */}
-                  <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200">
-                    <p className="text-[10px] sm:text-xs text-blue-600 text-center group-hover:underline">{t?.clickToViewDetails || "Click to view details"}</p>
+                  <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 text-center group-hover:underline">{t?.clickToViewDetails || "Click to view details"}</p>
                   </div>
                 </div>
               ))}
@@ -446,7 +446,7 @@ export default function PartnerDetail() {
                       }}
                       disabled={deletingId === selectedReview.id}
                       className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg transition-colors disabled:opacity-50"
-                      title="Delete service review"
+                      title={t?.deleteServiceReview || "Delete service review"}
                     >
                       <Trash2 size={20} className={deletingId === selectedReview.id ? 'animate-pulse' : ''} />
                     </button>
@@ -474,7 +474,7 @@ export default function PartnerDetail() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <Calendar className="w-4 h-4" />
-                    <span>{t?.reviewedOn || "Reviewed on"} {selectedReview.created_at ? new Date(selectedReview.created_at).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                    <span>{t?.reviewedOn || "Reviewed on"} {selectedReview.created_at ? new Date(selectedReview.created_at).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
                   </div>
                 </div>
 

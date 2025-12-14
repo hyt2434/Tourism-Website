@@ -342,6 +342,10 @@ export default {
   anonymous: "Anonymous",
   partnerNotFound: "Partner not found",
   serviceReviewDeleted: "Service review deleted successfully",
+  failedToLoadPartnerDetail: "Failed to load partner detail",
+  confirmDeleteServiceReview: "Are you sure you want to delete this service review?",
+  failedToDeleteServiceReview: "Failed to delete service review",
+  deleteServiceReview: "Delete service review",
   partnerAboutDescription: "{name} has been one of our trusted travel partners, providing guests with exceptional service, comfort, and unforgettable experiences. Whether you're exploring Vietnam's breathtaking landscapes or relaxing at a seaside resort, {name} ensures every trip is memorable.",
   partnerViewDetails: "View Details",
   partnerRegisterBtn: "Register as Partner Now",
@@ -665,7 +669,7 @@ export default {
   networkError: "Network error. Please try again.",
 
   slotsLeft: "slots left",
-  reviews: "reviews",
+  reviews: "Reviews",
   bookNow: "Book Now",
 
   highlights: "Highlights",

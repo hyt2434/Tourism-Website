@@ -719,9 +719,18 @@ export default function TourDetail() {
                     </h3>
                     <div className="space-y-4">
                       {tourData.partners.map((partner, index) => (
-                        <div key={partner.id || index} className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-b-0 last:pb-0">
+                        <div 
+                          key={partner.id || partner.partner_id || index} 
+                          className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-b-0 last:pb-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg p-3 -m-3 transition-colors group"
+                          onClick={() => {
+                            const partnerId = partner.id || partner.partner_id;
+                            if (partnerId) {
+                              navigate(`/partner/${partnerId}`);
+                            }
+                          }}
+                        >
                           <div>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                               {partner.name}
                             </p>
                             {partner.partner_type && (
