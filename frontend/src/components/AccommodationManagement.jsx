@@ -254,27 +254,27 @@ const AccommodationManagement = () => {
   const amenitiesList = ['wifi', 'parking', 'pool', 'gym', 'restaurant', 'spa', 'airConditioning', 'tv', 'minibar', 'balcony'];
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">{t.serviceManagement.accommodations}</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t.serviceManagement.accommodations}</h2>
         <button
           onClick={() => {
             resetForm();
             setShowForm(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-800"
         >
           {t.serviceManagement.addAccommodation}
         </button>
       </div>
 
-      {error && <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>}
+      {error && <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-4 rounded mb-4">{error}</div>}
 
       {/* Accommodation List */}
       {!showForm && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {accommodations.map((acc) => (
-            <div key={acc.id} className="border rounded-lg p-4 shadow hover:shadow-lg transition">
+            <div key={acc.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow hover:shadow-lg transition bg-white dark:bg-gray-800">
               {acc.primaryImage && (
                 <img
                   src={acc.primaryImage}
@@ -282,8 +282,8 @@ const AccommodationManagement = () => {
                   className="w-full h-48 object-cover rounded mb-3"
                 />
               )}
-              <h3 className="font-bold text-lg mb-2">{acc.name}</h3>
-              <p className="text-gray-600 text-sm mb-2">
+              <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">{acc.name}</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
                 {cities.find(c => c.id === acc.cityId)?.name || acc.cityId}
               </p>
               <div className="flex items-center mb-2">
@@ -292,7 +292,7 @@ const AccommodationManagement = () => {
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={() => handleEdit(acc)}
-                  className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                  className="bg-green-600 dark:bg-green-700 text-white px-3 py-1 rounded text-sm hover:bg-green-700 dark:hover:bg-green-800"
                 >
                   {t.serviceManagement.edit}
                 </button>
@@ -301,13 +301,13 @@ const AccommodationManagement = () => {
                     setSelectedAccommodation(acc);
                     loadRooms(acc.id);
                   }}
-                  className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
+                  className="bg-purple-600 dark:bg-purple-700 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 dark:hover:bg-purple-800"
                 >
                   {t.serviceManagement.rooms}
                 </button>
                 <button
                   onClick={() => handleDelete(acc.id)}
-                  className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                  className="bg-red-600 dark:bg-red-700 text-white px-3 py-1 rounded text-sm hover:bg-red-700 dark:hover:bg-red-800"
                 >
                   {t.serviceManagement.delete}
                 </button>
@@ -319,28 +319,28 @@ const AccommodationManagement = () => {
 
       {/* Accommodation Form */}
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-bold mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
             {selectedAccommodation ? t.serviceManagement.editAccommodation : t.serviceManagement.addAccommodation}
           </h3>
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.accommodationName} *</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.accommodationName} *</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.city}</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.city}</label>
                 <select
                   value={formData.cityId}
                   onChange={(e) => setFormData({ ...formData, cityId: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option value="">{t.serviceManagement.selectCity || 'Select City'}</option>
                   {cities.map((city) => (
@@ -351,29 +351,29 @@ const AccommodationManagement = () => {
                 </select>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.address}</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.address}</label>
                 <input
                   type="text"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.accommodationDescription}</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.accommodationDescription}</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   rows="3"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.starRating}</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.starRating}</label>
                 <select
                   value={formData.starRating}
                   onChange={(e) => setFormData({ ...formData, starRating: parseInt(e.target.value) })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   {[1, 2, 3, 4, 5].map((star) => (
                     <option key={star} value={star}>{star} ⭐</option>
@@ -381,37 +381,37 @@ const AccommodationManagement = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.phone}</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.phone}</label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.checkInTime}</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.checkInTime}</label>
                 <input
                   type="time"
                   value={formData.checkInTime}
                   onChange={(e) => setFormData({ ...formData, checkInTime: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.checkOutTime}</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.checkOutTime}</label>
                 <input
                   type="time"
                   value={formData.checkOutTime}
                   onChange={(e) => setFormData({ ...formData, checkOutTime: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-2">{t.serviceManagement.amenities}</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t.serviceManagement.amenities}</label>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                   {amenitiesList.map((amenity) => (
-                    <label key={amenity} className="flex items-center gap-2">
+                    <label key={amenity} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                       <input
                         type="checkbox"
                         checked={formData.amenities.includes(amenity)}
@@ -422,6 +422,7 @@ const AccommodationManagement = () => {
                             setFormData({ ...formData, amenities: formData.amenities.filter((a) => a !== amenity) });
                           }
                         }}
+                        className="text-blue-600 dark:text-blue-400"
                       />
                       <span className="text-sm">{t.serviceManagement[amenity]}</span>
                     </label>
@@ -429,22 +430,22 @@ const AccommodationManagement = () => {
                 </div>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.uploadImages}</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.uploadImages}</label>
                 <input
                   type="file"
                   accept="image/*"
                   multiple
                   onChange={handleImageUpload}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-300"
                 />
-                <p className="text-xs text-gray-500 mt-1">{t.serviceManagement.dragDropImages}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t.serviceManagement.dragDropImages}</p>
               </div>
             </div>
             <div className="flex gap-2 mt-6">
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                className="bg-blue-600 dark:bg-blue-700 text-white px-6 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50"
               >
                 {loading ? 'Saving...' : t.serviceManagement.save}
               </button>
@@ -454,7 +455,7 @@ const AccommodationManagement = () => {
                   setShowForm(false);
                   resetForm();
                 }}
-                className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600"
+                className="bg-gray-500 dark:bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-600 dark:hover:bg-gray-700"
               >
                 {t.serviceManagement.cancel}
               </button>
@@ -465,20 +466,20 @@ const AccommodationManagement = () => {
 
       {/* Rooms Modal */}
       {selectedAccommodation && !showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">{t.serviceManagement.rooms} - {selectedAccommodation.name}</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t.serviceManagement.rooms} - {selectedAccommodation.name}</h3>
               <button
                 onClick={() => setSelectedAccommodation(null)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl"
               >
                 ×
               </button>
             </div>
             <button
               onClick={() => setShowRoomForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700"
+              className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700 dark:hover:bg-blue-800"
             >
               {t.serviceManagement.addRoom}
             </button>
@@ -486,38 +487,38 @@ const AccommodationManagement = () => {
             {/* Room List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {rooms.map((room) => (
-                <div key={room.id} className="border rounded p-4 flex flex-col h-full">
+                <div key={room.id} className="border border-gray-200 dark:border-gray-700 rounded p-4 flex flex-col h-full bg-white dark:bg-gray-800">
                   {room.images && room.images.length > 0 && (
                     <img src={room.images[0]} alt={room.name} className="w-full h-32 object-cover rounded mb-2" />
                   )}
                   <div className="flex-grow">
-                    <h4 className="font-bold line-clamp-1">{room.name}</h4>
-                    <p className="text-sm text-gray-600 line-clamp-1">{room.roomType}</p>
-                    <p className="text-sm text-gray-600">{t.serviceManagement.bedType}: {room.bedType}</p>
-                    <p className="text-sm text-gray-600">
+                    <h4 className="font-bold line-clamp-1 text-gray-900 dark:text-white">{room.name}</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">{room.roomType}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t.serviceManagement.bedType}: {room.bedType}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       Số người tối đa: {room.maxAdults} adults, {room.maxChildren} children
                     </p>
-                    <p className="text-lg font-bold text-blue-600 mt-2">{room.basePrice?.toLocaleString()} VND</p>
+                    <p className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-2">{room.basePrice?.toLocaleString()} VND</p>
                     {room.weekendPrice > 0 && (
-                      <p className="text-sm text-gray-600">Weekend: {room.weekendPrice?.toLocaleString()} VND</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Weekend: {room.weekendPrice?.toLocaleString()} VND</p>
                     )}
                   </div>
-                  <div className="mt-3 pt-3 border-t">
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <div className="mb-2">
-                      <span className={`text-xs px-2 py-1 rounded ${room.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      <span className={`text-xs px-2 py-1 rounded ${room.isAvailable ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'}`}>
                         {room.isAvailable ? t.serviceManagement.available : 'Unavailable'}
                       </span>
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditRoom(room)}
-                        className="flex-1 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                        className="flex-1 bg-green-600 dark:bg-green-700 text-white px-3 py-1 rounded text-sm hover:bg-green-700 dark:hover:bg-green-800"
                       >
                         {t.serviceManagement.edit}
                       </button>
                       <button
                         onClick={() => handleDeleteRoom(room.id)}
-                        className="flex-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                        className="flex-1 bg-red-600 dark:bg-red-700 text-white px-3 py-1 rounded text-sm hover:bg-red-700 dark:hover:bg-red-800"
                       >
                         {t.serviceManagement.delete}
                       </button>
@@ -529,37 +530,37 @@ const AccommodationManagement = () => {
 
             {/* Room Form */}
             {showRoomForm && (
-              <div className="mt-6 border-t pt-4">
-                <h4 className="font-bold mb-3">{selectedRoom ? (t.serviceManagement.editRoom || 'Edit Room') : t.serviceManagement.addRoom}</h4>
+              <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <h4 className="font-bold mb-3 text-gray-900 dark:text-white">{selectedRoom ? (t.serviceManagement.editRoom || 'Edit Room') : t.serviceManagement.addRoom}</h4>
                 <form onSubmit={handleRoomSubmit}>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">{t.serviceManagement.roomName || 'Room Name'} *</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.roomName || 'Room Name'} *</label>
                       <input
                         type="text"
                         value={roomFormData.name}
                         onChange={(e) => setRoomFormData({ ...roomFormData, name: e.target.value })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         required
                         placeholder="e.g., Deluxe Ocean View"
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="block text-sm font-medium mb-1">{t.serviceManagement.description || 'Description'}</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.description || 'Description'}</label>
                       <textarea
                         value={roomFormData.description}
                         onChange={(e) => setRoomFormData({ ...roomFormData, description: e.target.value })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         rows="2"
                         placeholder="Room description..."
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">{t.serviceManagement.bedType}</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.bedType}</label>
                       <select
                         value={roomFormData.bedType}
                         onChange={(e) => setRoomFormData({ ...roomFormData, bedType: e.target.value })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       >
                         <option value="Double">{t.serviceManagement.doubleBed || 'Double Bed'}</option>
                         <option value="Queen">{t.serviceManagement.queenBed || 'Queen Bed'}</option>
@@ -568,7 +569,7 @@ const AccommodationManagement = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Room Type</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Room Type</label>
                       <select
                         value={roomFormData.roomType}
                         onChange={(e) => {
@@ -580,106 +581,106 @@ const AccommodationManagement = () => {
                             maxChildren: newRoomType === 'Standard Quad' ? 2 : 1
                           });
                         }}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       >
                         <option value="Standard">Standard (2 people)</option>
                         <option value="Standard Quad">Standard Quad (4 people)</option>
                       </select>
-                      <p className="text-xs text-gray-500 mt-1">Partners can only create Standard rooms</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Partners can only create Standard rooms</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">{t.serviceManagement.maxAdults || 'Max Adults'}</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.maxAdults || 'Max Adults'}</label>
                       <input
                         type="number"
                         value={roomFormData.maxAdults}
                         onChange={(e) => setRoomFormData({ ...roomFormData, maxAdults: parseInt(e.target.value) })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         min="1"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">{t.serviceManagement.maxChildren || 'Max Children'}</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.maxChildren || 'Max Children'}</label>
                       <input
                         type="number"
                         value={roomFormData.maxChildren}
                         onChange={(e) => setRoomFormData({ ...roomFormData, maxChildren: parseInt(e.target.value) })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         min="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">{t.serviceManagement.totalRooms || 'Total Rooms'}</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.totalRooms || 'Total Rooms'}</label>
                       <input
                         type="number"
                         value={roomFormData.totalRooms}
                         onChange={(e) => setRoomFormData({ ...roomFormData, totalRooms: parseInt(e.target.value) })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         min="1"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">{t.serviceManagement.basePrice || 'Base Price'} (VND) *</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.basePrice || 'Base Price'} (VND) *</label>
                       <input
                         type="number"
                         value={roomFormData.basePrice}
                         onChange={(e) => setRoomFormData({ ...roomFormData, basePrice: parseFloat(e.target.value) })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         min="0"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">{t.serviceManagement.weekendPrice || 'Weekend Price'} (VND)</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.weekendPrice || 'Weekend Price'} (VND)</label>
                       <input
                         type="number"
                         value={roomFormData.weekendPrice}
                         onChange={(e) => setRoomFormData({ ...roomFormData, weekendPrice: parseFloat(e.target.value) })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         min="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">{t.serviceManagement.holidayPrice || 'Holiday Price'} (VND)</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.holidayPrice || 'Holiday Price'} (VND)</label>
                       <input
                         type="number"
                         value={roomFormData.holidayPrice}
                         onChange={(e) => setRoomFormData({ ...roomFormData, holidayPrice: parseFloat(e.target.value) })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         min="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Deluxe Upgrade Price (VND)</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Deluxe Upgrade Price (VND)</label>
                       <input
                         type="number"
                         value={roomFormData.deluxeUpgradePrice}
                         onChange={(e) => setRoomFormData({ ...roomFormData, deluxeUpgradePrice: parseFloat(e.target.value) })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         min="0"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Additional cost to upgrade to Deluxe</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Additional cost to upgrade to Deluxe</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Suite Upgrade Price (VND)</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Suite Upgrade Price (VND)</label>
                       <input
                         type="number"
                         value={roomFormData.suiteUpgradePrice}
                         onChange={(e) => setRoomFormData({ ...roomFormData, suiteUpgradePrice: parseFloat(e.target.value) })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         min="0"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Additional cost to upgrade to Suite</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Additional cost to upgrade to Suite</p>
                     </div>
                     <div className="col-span-2">
-                      <label className="block text-sm font-medium mb-1">{t.serviceManagement.uploadImages || 'Upload Room Images'}</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.uploadImages || 'Upload Room Images'}</label>
                       <input
                         type="file"
                         accept="image/*"
                         multiple
                         onChange={handleRoomImageUpload}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-300"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Upload multiple images for this room</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Upload multiple images for this room</p>
                       
                       {/* Image Preview */}
                       {roomFormData.images.length > 0 && (
@@ -690,7 +691,7 @@ const AccommodationManagement = () => {
                               <button
                                 type="button"
                                 onClick={() => removeRoomImage(index)}
-                                className="absolute top-0 right-0 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-700"
+                                className="absolute top-0 right-0 bg-red-600 dark:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-700 dark:hover:bg-red-800"
                               >
                                 ×
                               </button>
@@ -701,7 +702,7 @@ const AccommodationManagement = () => {
                     </div>
                   </div>
                   <div className="flex gap-2 mt-4">
-                    <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    <button type="submit" className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-800">
                       {t.serviceManagement.save}
                     </button>
                     <button
@@ -729,7 +730,7 @@ const AccommodationManagement = () => {
                           images: [],
                         });
                       }}
-                      className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                      className="bg-gray-500 dark:bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-600 dark:hover:bg-gray-700"
                     >
                       {t.serviceManagement.cancel}
                     </button>

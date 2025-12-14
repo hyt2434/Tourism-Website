@@ -849,6 +849,10 @@ export default {
   sendCredentials: "Gửi thông tin đăng nhập cho đối tác",
   rejectedSuccess: "Đăng ký đối tác đã bị từ chối",
   noPendingPartners: "Không có đăng ký đối tác chờ xử lý",
+  submitted: "Đã gửi",
+  completeRegistrationDetails: "Chi tiết đăng ký đầy đủ",
+  vehicleTypes: "Loại xe",
+  routes: "Tuyến đường",
 
   // Social Moderation
   socialModeration: "Kiểm duyệt Mạng xã hội",

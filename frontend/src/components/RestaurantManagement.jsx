@@ -318,27 +318,27 @@ const RestaurantManagement = () => {
   const categories = ['appetizer', 'mainCourse', 'dessert', 'beverage', 'soup', 'salad'];
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">{t.serviceManagement.restaurants}</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t.serviceManagement.restaurants}</h2>
         <button
           onClick={() => {
             resetForm();
             setShowForm(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-800"
         >
           {t.serviceManagement.addRestaurant}
         </button>
       </div>
 
-      {error && <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>}
+      {error && <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-4 rounded mb-4">{error}</div>}
 
       {/* Restaurant List */}
       {!showForm && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {restaurants.map((restaurant) => (
-            <div key={restaurant.id} className="border rounded-lg p-4 shadow hover:shadow-lg transition">
+            <div key={restaurant.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow hover:shadow-lg transition bg-white dark:bg-gray-800">
               {restaurant.primaryImage && (
                 <img
                   src={restaurant.primaryImage}
@@ -346,12 +346,12 @@ const RestaurantManagement = () => {
                   className="w-full h-48 object-cover rounded mb-3"
                 />
               )}
-              <h3 className="font-bold text-lg mb-2">{restaurant.name}</h3>
-              <p className="text-gray-600 text-sm mb-2">{t.serviceManagement[restaurant.cuisineType] || restaurant.cuisineType}</p>
-              <p className="text-gray-500 text-xs mb-2">
+              <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">{restaurant.name}</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{t.serviceManagement[restaurant.cuisineType] || restaurant.cuisineType}</p>
+              <p className="text-gray-500 dark:text-gray-400 text-xs mb-2">
                 {cities.find(c => c.id === restaurant.cityId)?.name || restaurant.cityId}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {restaurant.openingTime && restaurant.closingTime
                   ? `${restaurant.openingTime} - ${restaurant.closingTime}`
                   : restaurant.openingHours || ''}
@@ -359,7 +359,7 @@ const RestaurantManagement = () => {
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={() => handleEdit(restaurant)}
-                  className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                  className="bg-green-600 dark:bg-green-700 text-white px-3 py-1 rounded text-sm hover:bg-green-700 dark:hover:bg-green-800"
                 >
                   {t.serviceManagement.edit}
                 </button>
@@ -370,13 +370,13 @@ const RestaurantManagement = () => {
                     loadMenuItems(restaurant.id);
                     loadSetMeals(restaurant.id);
                   }}
-                  className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
+                  className="bg-purple-600 dark:bg-purple-700 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 dark:hover:bg-purple-800"
                 >
                   Manage Menu
                 </button>
                 <button
                   onClick={() => handleDelete(restaurant.id)}
-                  className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                  className="bg-red-600 dark:bg-red-700 text-white px-3 py-1 rounded text-sm hover:bg-red-700 dark:hover:bg-red-800"
                 >
                   {t.serviceManagement.delete}
                 </button>
@@ -388,28 +388,28 @@ const RestaurantManagement = () => {
 
       {/* Restaurant Form */}
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-bold mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
             {selectedRestaurant ? t.serviceManagement.editRestaurant : t.serviceManagement.addRestaurant}
           </h3>
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.restaurantName} *</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.restaurantName} *</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.city}</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.city}</label>
                 <select
                   value={formData.cityId}
                   onChange={(e) => setFormData({ ...formData, cityId: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option value="">{t.serviceManagement.selectCity || 'Select City'}</option>
                   {cities.map((city) => (
@@ -420,20 +420,20 @@ const RestaurantManagement = () => {
                 </select>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.address}</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.address}</label>
                 <input
                   type="text"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">{t.serviceManagement.restaurantDescription}</label>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">{t.serviceManagement.restaurantDescription}</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   rows="3"
                 />
               </div>
@@ -442,7 +442,7 @@ const RestaurantManagement = () => {
                 <select
                   value={formData.cuisineType}
                   onChange={(e) => setFormData({ ...formData, cuisineType: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   {cuisineTypes.map((type) => (
                     <option key={type} value={type}>{t.serviceManagement[type]}</option>
@@ -455,7 +455,7 @@ const RestaurantManagement = () => {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div>
@@ -464,7 +464,7 @@ const RestaurantManagement = () => {
                   type="time"
                   value={formData.openingTime}
                   onChange={(e) => setFormData({ ...formData, openingTime: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div>
@@ -473,7 +473,7 @@ const RestaurantManagement = () => {
                   type="time"
                   value={formData.closingTime}
                   onChange={(e) => setFormData({ ...formData, closingTime: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div className="md:col-span-2">
@@ -483,7 +483,7 @@ const RestaurantManagement = () => {
                   accept="image/*"
                   multiple
                   onChange={handleImageUpload}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
                 <p className="text-xs text-gray-500 mt-1">{t.serviceManagement.dragDropImages}</p>
               </div>
@@ -492,7 +492,7 @@ const RestaurantManagement = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                className="bg-blue-600 dark:bg-blue-700 text-white px-6 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50"
               >
                 {loading ? 'Saving...' : t.serviceManagement.save}
               </button>
@@ -502,7 +502,7 @@ const RestaurantManagement = () => {
                   setShowForm(false);
                   resetForm();
                 }}
-                className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600"
+                className="bg-gray-500 dark:bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-600 dark:hover:bg-gray-700"
               >
                 {t.serviceManagement.cancel}
               </button>
@@ -513,29 +513,29 @@ const RestaurantManagement = () => {
 
       {/* Menu Management Modal with Tabs */}
       {selectedRestaurant && !showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">Menu Management - {selectedRestaurant.name}</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Menu Management - {selectedRestaurant.name}</h3>
               <button
                 onClick={() => {
                   setSelectedRestaurant(null);
                   setViewMode('menu');
                 }}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl"
               >
                 ×
               </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b mb-4">
+            <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
               <button
                 onClick={() => setViewMode('menu')}
                 className={`px-4 py-2 font-medium ${
                   viewMode === 'menu'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-800'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                 }`}
               >
                 Menu Items
@@ -544,8 +544,8 @@ const RestaurantManagement = () => {
                 onClick={() => setViewMode('setMeals')}
                 className={`px-4 py-2 font-medium ${
                   viewMode === 'setMeals'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-800'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                 }`}
               >
                 Set Meals (For Tours)
@@ -557,7 +557,7 @@ const RestaurantManagement = () => {
               <>
                 <button
                   onClick={() => setShowMenuForm(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700"
+                  className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700 dark:hover:bg-blue-800"
                 >
                   {t.serviceManagement.addMenuItem || 'Add Menu Item'}
                 </button>
@@ -565,7 +565,7 @@ const RestaurantManagement = () => {
                 {/* Menu Item List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {menuItems.map((item) => (
-                <div key={item.id} className="border rounded p-4">
+                <div key={item.id} className="border border-gray-200 dark:border-gray-700 rounded p-4 bg-white dark:bg-gray-800">
                   {/* Display menu item images */}
                   {item.images && item.images.length > 0 && (
                     <div className="mb-3">
@@ -576,35 +576,35 @@ const RestaurantManagement = () => {
                       />
                     </div>
                   )}
-                  <h4 className="font-bold">{item.name}</h4>
-                  <p className="text-xs text-gray-500">{t.serviceManagement[item.category] || item.category}</p>
-                  <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                  <p className="text-lg font-bold text-green-600 mt-2">{item.price?.toLocaleString()} VND</p>
+                  <h4 className="font-bold text-gray-900 dark:text-white">{item.name}</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t.serviceManagement[item.category] || item.category}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{item.description}</p>
+                  <p className="text-lg font-bold text-green-600 dark:text-green-400 mt-2">{item.price?.toLocaleString()} VND</p>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {item.isVegetarian && (
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                      <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded">
                         {t.serviceManagement.isVegetarian}
                       </span>
                     )}
                     {item.isVegan && (
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">
                         {t.serviceManagement.isVegan}
                       </span>
                     )}
                     {item.mealTypes && (
                       <>
                         {item.mealTypes.breakfast && (
-                          <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                          <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded">
                             {t.serviceManagement.breakfast}
                           </span>
                         )}
                         {item.mealTypes.lunch && (
-                          <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                          <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 px-2 py-1 rounded">
                             {t.serviceManagement.lunch}
                           </span>
                         )}
                         {item.mealTypes.dinner && (
-                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                          <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-2 py-1 rounded">
                             {t.serviceManagement.dinner}
                           </span>
                         )}
@@ -614,13 +614,13 @@ const RestaurantManagement = () => {
                   <div className="flex gap-2 mt-3">
                     <button
                       onClick={() => handleMenuEdit(item)}
-                      className="flex-1 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                      className="flex-1 bg-green-600 dark:bg-green-700 text-white px-3 py-1 rounded text-sm hover:bg-green-700 dark:hover:bg-green-800"
                     >
                       {t.serviceManagement.edit}
                     </button>
                     <button
                       onClick={() => handleMenuDelete(item.id)}
-                      className="flex-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                      className="flex-1 bg-red-600 dark:bg-red-700 text-white px-3 py-1 rounded text-sm hover:bg-red-700 dark:hover:bg-red-800"
                     >
                       {t.serviceManagement.delete}
                     </button>
@@ -643,7 +643,7 @@ const RestaurantManagement = () => {
                         type="text"
                         value={menuFormData.name}
                         onChange={(e) => setMenuFormData({ ...menuFormData, name: e.target.value })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         required
                       />
                     </div>
@@ -652,7 +652,7 @@ const RestaurantManagement = () => {
                       <select
                         value={menuFormData.category}
                         onChange={(e) => setMenuFormData({ ...menuFormData, category: e.target.value })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       >
                         {categories.map((cat) => (
                           <option key={cat} value={cat}>{t.serviceManagement[cat]}</option>
@@ -664,7 +664,7 @@ const RestaurantManagement = () => {
                       <textarea
                         value={menuFormData.description}
                         onChange={(e) => setMenuFormData({ ...menuFormData, description: e.target.value })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         rows="2"
                       />
                     </div>
@@ -674,7 +674,7 @@ const RestaurantManagement = () => {
                         type="number"
                         value={menuFormData.price}
                         onChange={(e) => setMenuFormData({ ...menuFormData, price: parseFloat(e.target.value) })}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         min="0"
                       />
                     </div>
@@ -735,7 +735,7 @@ const RestaurantManagement = () => {
                         accept="image/*"
                         multiple
                         onChange={handleMenuImageUpload}
-                        className="w-full border rounded px-3 py-2"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       />
                       <p className="text-xs text-gray-500 mt-1">{t.serviceManagement.dragDropImages}</p>
                       
@@ -788,7 +788,7 @@ const RestaurantManagement = () => {
               <>
                 <button
                   onClick={() => setShowSetMealForm(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700"
+                  className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700 dark:hover:bg-blue-800"
                 >
                   Add Set Meal
                 </button>
@@ -796,44 +796,44 @@ const RestaurantManagement = () => {
                 {/* Set Meal List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {setMeals.map((setMeal) => (
-                    <div key={setMeal.id} className="border rounded p-4 bg-gradient-to-br from-blue-50 to-white">
+                    <div key={setMeal.id} className="border border-gray-200 dark:border-gray-700 rounded p-4 bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-800">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-lg">{setMeal.name}</h4>
+                        <h4 className="font-bold text-lg text-gray-900 dark:text-white">{setMeal.name}</h4>
                         <span className={`text-xs px-2 py-1 rounded ${
-                          setMeal.mealSession === 'morning' ? 'bg-yellow-100 text-yellow-800' :
-                          setMeal.mealSession === 'noon' ? 'bg-orange-100 text-orange-800' :
-                          'bg-purple-100 text-purple-800'
+                          setMeal.mealSession === 'morning' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                          setMeal.mealSession === 'noon' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
+                          'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
                         }`}>
                           {setMeal.mealSession === 'morning' ? 'Breakfast' : 
                            setMeal.mealSession === 'noon' ? 'Lunch' : 'Dinner'}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-3">{setMeal.description}</p>
-                      <div className="bg-white rounded p-2 mb-3">
-                        <p className="text-xs font-medium text-gray-500 mb-1">Includes:</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{setMeal.description}</p>
+                      <div className="bg-white dark:bg-gray-800 rounded p-2 mb-3 border border-gray-200 dark:border-gray-700">
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Includes:</p>
                         <ul className="text-sm space-y-1">
                           {setMeal.menuItems && setMeal.menuItems.map((item) => (
-                            <li key={item.id} className="flex justify-between">
+                            <li key={item.id} className="flex justify-between text-gray-700 dark:text-gray-300">
                               <span>• {item.name}</span>
-                              <span className="text-gray-500 text-xs">{item.price?.toLocaleString()} VND</span>
+                              <span className="text-gray-500 dark:text-gray-400 text-xs">{item.price?.toLocaleString()} VND</span>
                             </li>
                           ))}
                         </ul>
                       </div>
-                      <p className="text-lg font-bold text-green-600 mb-2">
+                      <p className="text-lg font-bold text-green-600 dark:text-green-400 mb-2">
                         {setMeal.totalPrice?.toLocaleString()} VND
-                        <span className="text-xs text-gray-500 font-normal"> (for 2 people)</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-normal"> (for 1 person)</span>
                       </p>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleSetMealEdit(setMeal)}
-                          className="flex-1 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                          className="flex-1 bg-green-600 dark:bg-green-700 text-white px-3 py-1 rounded text-sm hover:bg-green-700 dark:hover:bg-green-800"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleSetMealDelete(setMeal.id)}
-                          className="flex-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                          className="flex-1 bg-red-600 dark:bg-red-700 text-white px-3 py-1 rounded text-sm hover:bg-red-700 dark:hover:bg-red-800"
                         >
                           Delete
                         </button>
@@ -844,29 +844,29 @@ const RestaurantManagement = () => {
 
                 {/* Set Meal Form */}
                 {showSetMealForm && (
-                  <div className="mt-6 border-t pt-4">
-                    <h4 className="font-bold mb-3">
+                  <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <h4 className="font-bold mb-3 text-gray-900 dark:text-white">
                       {selectedSetMeal ? 'Edit Set Meal' : 'Create New Set Meal'}
                     </h4>
                     <form onSubmit={handleSetMealSubmit}>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium mb-1">Set Meal Name *</label>
+                          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Set Meal Name *</label>
                           <input
                             type="text"
                             value={setMealFormData.name}
                             onChange={(e) => setSetMealFormData({ ...setMealFormData, name: e.target.value })}
-                            className="w-full border rounded px-3 py-2"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             required
                             placeholder="e.g., Set Trưa A, Breakfast Combo"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Meal Session *</label>
+                          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Meal Session *</label>
                           <select
                             value={setMealFormData.mealSession}
                             onChange={(e) => setSetMealFormData({ ...setMealFormData, mealSession: e.target.value })}
-                            className="w-full border rounded px-3 py-2"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             required
                           >
                             <option value="morning">Morning (Breakfast)</option>
@@ -875,24 +875,24 @@ const RestaurantManagement = () => {
                           </select>
                         </div>
                         <div className="col-span-2">
-                          <label className="block text-sm font-medium mb-1">Description</label>
+                          <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Description</label>
                           <textarea
                             value={setMealFormData.description}
                             onChange={(e) => setSetMealFormData({ ...setMealFormData, description: e.target.value })}
-                            className="w-full border rounded px-3 py-2"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             rows="2"
                             placeholder="Describe the set meal..."
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className="block text-sm font-medium mb-2">Select Dishes for this Set *</label>
-                          <div className="border rounded p-3 max-h-60 overflow-y-auto bg-gray-50">
+                          <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Select Dishes for this Set *</label>
+                          <div className="border border-gray-300 dark:border-gray-600 rounded p-3 max-h-60 overflow-y-auto bg-gray-50 dark:bg-gray-700">
                             {menuItems.length === 0 ? (
-                              <p className="text-gray-500 text-sm">No menu items available. Please create menu items first.</p>
+                              <p className="text-gray-500 dark:text-gray-400 text-sm">No menu items available. Please create menu items first.</p>
                             ) : (
                               <div className="space-y-2">
                                 {menuItems.map((item) => (
-                                  <label key={item.id} className="flex items-start gap-2 p-2 hover:bg-white rounded cursor-pointer">
+                                  <label key={item.id} className="flex items-start gap-2 p-2 hover:bg-white dark:hover:bg-gray-600 rounded cursor-pointer">
                                     <input
                                       type="checkbox"
                                       checked={setMealFormData.menuItemIds.includes(item.id)}
@@ -902,30 +902,30 @@ const RestaurantManagement = () => {
                                           : setMealFormData.menuItemIds.filter(id => id !== item.id);
                                         setSetMealFormData({ ...setMealFormData, menuItemIds: newIds });
                                       }}
-                                      className="mt-1"
+                                      className="mt-1 text-blue-600 dark:text-blue-400"
                                     />
                                     <div className="flex-1">
-                                      <div className="font-medium text-sm">{item.name}</div>
-                                      <div className="text-xs text-gray-500">{item.category} - {item.price?.toLocaleString()} VND</div>
+                                      <div className="font-medium text-sm text-gray-900 dark:text-white">{item.name}</div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">{item.category} - {item.price?.toLocaleString()} VND</div>
                                     </div>
                                   </label>
                                 ))}
                               </div>
                             )}
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             Selected: {setMealFormData.menuItemIds.length} dish(es). 
                             Total: {menuItems
                               .filter(item => setMealFormData.menuItemIds.includes(item.id))
                               .reduce((sum, item) => sum + (item.price || 0), 0)
-                              .toLocaleString()} VND (for 2 people)
+                              .toLocaleString()} VND (for 1 person)
                           </p>
                         </div>
                       </div>
                       <div className="flex gap-2 mt-4">
                         <button 
                           type="submit" 
-                          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                          className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50"
                           disabled={setMealFormData.menuItemIds.length === 0}
                         >
                           Save Set Meal
@@ -936,7 +936,7 @@ const RestaurantManagement = () => {
                             setShowSetMealForm(false);
                             resetSetMealForm();
                           }}
-                          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                          className="bg-gray-500 dark:bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-600 dark:hover:bg-gray-700"
                         >
                           Cancel
                         </button>
